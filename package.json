@@ -3,16 +3,18 @@
   "version": "1.0.0",
   "description": "Monorepo do projeto Dindinho - PWA Financeiro",
   "private": true,
+  "packageManager": "npm@11.6.2",
   "workspaces": [
     "backend",
     "frontend"
   ],
-  "scripts": {
+"scripts": {
     "db:up": "docker-compose up -d",
     "db:down": "docker-compose down",
     "db:logs": "docker-compose logs -f",
-    "dev:backend": "npm run start:dev --workspace=backend",
-    "dev:frontend": "npm run start --workspace=frontend",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
     "install:all": "npm install"
   },
   "keywords": [
@@ -22,5 +24,8 @@
     "finance"
   ],
   "author": "Forja Corp",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "turbo": "^2.6.3"
+  }
 }
