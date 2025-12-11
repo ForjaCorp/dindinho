@@ -1,29 +1,85 @@
-import Fastify from "fastify";
+import Fastify, { FastifyReply } from "fastify";
 import cors from "@fastify/cors";
+import fastifyJwt from "@fastify/jwt";
 import {
   serializerCompiler,
   validatorCompiler,
 } from "fastify-type-provider-zod";
+import { z } from "zod";
 import { usersRoutes } from "./users/users.routes";
-
+import { authRoutes } from "./auth/auth.routes";
+/**
+ * Constrói e configura a aplicação Fastify
+ * @function buildApp
+ * @returns {FastifyInstance} Instância do Fastify configurada
+ *
+ * @example
+ * // Uso típico no server.ts
+ * const app = buildApp();
+ * app.listen({ port: 3000 });
+ */
 export function buildApp() {
   const app = Fastify({ logger: true });
-
-  // Configuração do Zod
+  // Verificação de variáveis de ambiente obrigatórias
+  if (!process.env.JWT_SECRET) {
+    console.error("FATAL: JWT_SECRET não definida no .env");
+    process.exit(1);
+  }
+  // Configuração do Zod para validação e serialização
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
-
   // Plugins
-  app.register(cors, { origin: "*" });
+  app.register(cors, {
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  });
+  // Configuração do JWT
+  app.register(fastifyJwt, {
+    secret: process.env.JWT_SECRET,
+    sign: {
+      expiresIn: "7d", // Token expira em 7 dias
+    },
+  });
+  // Error Handler Global
+  app.setErrorHandler((error: unknown, request, reply) => {
+    if (error instanceof Error && "validation" in error) {
+      return reply.status(400).send({
+        statusCode: 400,
+        error: "Bad Request",
+        message: error.message,
+        issues: error.validation,
+      });
+    }
+    if (error instanceof SyntaxError) {
+      return reply.status(400).send({
+        statusCode: 400,
+        error: "Bad Request",
+        message: "JSON inválido",
+      });
+    }
 
-  // Rotas
-  app.register(usersRoutes);
-
+    // Erros não tratados
+    app.log.error(error);
+    return reply.status(500).send({
+      statusCode: 500,
+      error: "Internal Server Error",
+      message: "Erro interno do servidor",
+    });
+  });
+  // Rotas da aplicação
+  app.register(usersRoutes, { prefix: "/api" });
+  app.register(authRoutes, { prefix: "/api" });
   // Rota raiz
   app.get("/", async () => {
     return {
       message: "Bem-vindo à API do Dindinho! 💸",
-      docs: "Rotas disponíveis: POST /users",
+      docs: "Rotas disponíveis: POST /users, POST /login",
+      endpoints: {
+        health: "/health",
+        test_db: "/test-db",
+      },
     };
   });
 

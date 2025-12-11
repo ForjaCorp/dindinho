@@ -55,7 +55,7 @@ describe("Users Routes", () => {
 
     const response = await app.inject({
       method: "POST",
-      url: "/users",
+      url: "/api/users",
       payload: {
         name: "Vini Teste",
         email: "vini@teste.com",
@@ -86,7 +86,7 @@ describe("Users Routes", () => {
 
     const response = await app.inject({
       method: "POST",
-      url: "/users",
+      url: "/api/users",
       payload: {
         name: "Novo Tentativa",
         email: "duplicado@teste.com",
@@ -105,7 +105,7 @@ describe("Users Routes", () => {
   it("deve retornar 400 quando faltar campos obrigatórios", async () => {
     const response = await app.inject({
       method: "POST",
-      url: "/users",
+      url: "/api/users",
       payload: {},
     });
 
@@ -121,7 +121,7 @@ describe("Users Routes", () => {
   it("deve retornar 400 para email inválido", async () => {
     const response = await app.inject({
       method: "POST",
-      url: "/users",
+      url: "/api/users",
       payload: {
         name: "Teste",
         email: "email-invalido",
@@ -141,7 +141,7 @@ describe("Users Routes", () => {
   it("deve retornar 400 para senha muito curta", async () => {
     const response = await app.inject({
       method: "POST",
-      url: "/users",
+      url: "/api/users",
       payload: {
         name: "Teste",
         email: "teste@exemplo.com",
@@ -165,7 +165,7 @@ describe("Users Routes", () => {
 
     const response = await app.inject({
       method: "POST",
-      url: "/users",
+      url: "/api/users",
       payload: {
         name: "Teste",
         email: "erro@teste.com",
@@ -202,7 +202,7 @@ describe("Users Routes", () => {
 
     const response = await app.inject({
       method: "POST",
-      url: "/users",
+      url: "/api/users",
       payload: {
         name: "Teste",
         email: "teste@exemplo.com",
