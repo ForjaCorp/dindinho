@@ -1,0 +1,83 @@
+import { PrismaClient } from "@prisma/client";
+import { hash } from "bcryptjs";
+import { z } from "zod";
+
+/**
+ * Esquema de validação para criação de usuário
+ * @constant {z.ZodObject} createUserSchema
+ * @property {string} name - Nome do usuário (mínimo 2 caracteres)
+ * @property {string} email - Email válido
+ * @property {string} password - Senha (mínimo 6 caracteres)
+ */
+export const createUserSchema = z.object({
+  name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+  email: z.string().email("Email inválido"),
+  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+});
+
+/**
+ * Tipo TypeScript derivado do schema de validação
+ * @typedef {Object} CreateUserDTO
+ * @property {string} name - Nome do usuário
+ * @property {string} email - Email do usuário
+ * @property {string} password - Senha do usuário
+ */
+export type CreateUserDTO = z.infer<typeof createUserSchema>;
+
+/**
+ * Serviço responsável por operações relacionadas a usuários
+ * @class UsersService
+ */
+export class UsersService {
+  /**
+   * Cria uma nova instância do serviço de usuários
+   * @param {PrismaClient} prisma - Instância do Prisma Client
+   */
+  constructor(private prisma: PrismaClient) {}
+
+  /**
+   * Cria um novo usuário no sistema
+   * @async
+   * @param {CreateUserDTO} data - Dados do usuário a ser criado
+   * @returns {Promise<Object>} Dados do usuário criado (sem a senha)
+   * @throws {Error} Lança um erro se o email já estiver em uso
+   *
+   * @example
+   * const userService = new UsersService(prisma);
+   * const newUser = await userService.create({
+   *   name: "João Silva",
+   *   email: "joao@example.com",
+   *   password: "senha123"
+   * });
+   */
+  async create(data: CreateUserDTO) {
+    // 1. Verificar se o email já existe
+    const userExists = await this.prisma.user.findUnique({
+      where: { email: data.email },
+    });
+
+    if (userExists) {
+      throw new Error("Email já cadastrado.");
+    }
+
+    // 2. Hash da senha
+    const passwordHash = await hash(data.password, 8);
+
+    // 3. Criar usuário no banco
+    const user = await this.prisma.user.create({
+      data: {
+        name: data.name,
+        email: data.email,
+        passwordHash,
+      },
+    });
+
+    // 4. Retornar usuário sem a senha (segurança)
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      createdAt: user.createdAt,
+    };
+  }
+}
