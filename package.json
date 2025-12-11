@@ -8,14 +8,15 @@
     "backend",
     "frontend"
   ],
-"scripts": {
+  "scripts": {
     "db:up": "docker-compose up -d",
     "db:down": "docker-compose down",
     "db:logs": "docker-compose logs -f",
     "dev": "turbo run dev",
     "build": "turbo run build",
     "test": "turbo run test",
-    "install:all": "npm install"
+    "install:all": "npm install",
+    "prepare": "husky"
   },
   "keywords": [
     "angular",
@@ -26,6 +27,20 @@
   "author": "Forja Corp",
   "license": "ISC",
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.7.4",
     "turbo": "^2.6.3"
+  },
+  "lint-staged": {
+    "backend/**/*.ts": [
+      "bash -c 'cd backend && tsc --noEmit'"
+    ],
+    "frontend/**/*.{ts,html,css}": [
+      "bash -c 'cd frontend && npm run ng -- lint --fix'"
+    ],
+    "*.{ts,js,json,md,html,css}": [
+      "prettier --write"
+    ]
   }
 }
