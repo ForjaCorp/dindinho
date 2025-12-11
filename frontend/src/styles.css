@@ -16,20 +16,20 @@
  */
 
 /* 1. Importações de bibliotecas */
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* 2. Reset e estilos base */
 :root {
   /* Cores da marca */
-  --color-primary: #10b981;  /* emerald-500 */
+  --color-primary: #10b981; /* emerald-500 */
   --color-primary-dark: #059669; /* emerald-600 */
   --color-secondary: #0d9488; /* teal-600 */
-  
+
   /* Cores neutras */
   --color-text: #1f2937; /* gray-800 */
   --color-text-light: #6b7280; /* gray-500 */
   --color-bg: #f9fafb; /* gray-50 */
-  
+
   /* Espaçamentos */
   --spacing-unit: 0.25rem; /* 4px */
 }
@@ -37,12 +37,21 @@
 /* 3. Estilos base */
 body {
   @apply bg-gray-50 text-gray-800 antialiased;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    sans-serif;
   line-height: 1.5;
 }
 
 /* 4. Tipografia responsiva */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   @apply font-bold text-gray-900 leading-tight;
 }
 
@@ -58,10 +67,17 @@ a {
 
 /* 7. Animações */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .fade-in {
   animation: fadeIn 0.3s ease-in-out;
 }
+
+/* 8. Ícones */
+@import 'primeicons/primeicons.css';

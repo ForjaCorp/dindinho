@@ -42,5 +42,8 @@
     "*.{ts,js,json,md,html,css}": [
       "prettier --write"
     ]
+  },
+  "dependencies": {
+    "primeicons": "^7.0.0"
   }
 }
