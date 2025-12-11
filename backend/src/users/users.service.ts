@@ -1,28 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
-import { z } from "zod";
-
-/**
- * Esquema de validação para criação de usuário
- * @constant {z.ZodObject} createUserSchema
- * @property {string} name - Nome do usuário (mínimo 2 caracteres)
- * @property {string} email - Email válido
- * @property {string} password - Senha (mínimo 6 caracteres)
- */
-export const createUserSchema = z.object({
-  name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  email: z.string().email("Email inválido"),
-  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
-});
-
-/**
- * Tipo TypeScript derivado do schema de validação
- * @typedef {Object} CreateUserDTO
- * @property {string} name - Nome do usuário
- * @property {string} email - Email do usuário
- * @property {string} password - Senha do usuário
- */
-export type CreateUserDTO = z.infer<typeof createUserSchema>;
+import { CreateUserDTO } from "@dindinho/shared";
 
 /**
  * Serviço responsável por operações relacionadas a usuários

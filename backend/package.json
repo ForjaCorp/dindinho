@@ -13,6 +13,7 @@
     "prisma:migrate": "prisma migrate dev"
   },
   "dependencies": {
+    "@dindinho/shared": "*",
     "@fastify/cors": "^10.0.0",
     "@fastify/jwt": "^9.0.0",
     "@prisma/adapter-mariadb": "^7.1.0",

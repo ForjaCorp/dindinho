@@ -40,7 +40,6 @@ describe("Users Routes", () => {
    * @test {POST /users} Deve retornar 201 e os dados do usuário criado
    */
   it("deve criar um usuário com sucesso", async () => {
-    // CORREÇÃO 1: Usar um UUID válido
     const validUuid = "550e8400-e29b-41d4-a716-446655440000";
 
     prismaMock.user.findUnique.mockResolvedValue(null);
@@ -91,12 +90,139 @@ describe("Users Routes", () => {
       payload: {
         name: "Novo Tentativa",
         email: "duplicado@teste.com",
-        // CORREÇÃO 2: Usar uma senha válida (> 6 chars) para passar na validação do Zod
         password: "senha-valida",
       },
     });
 
     expect(response.statusCode).toBe(409);
     expect(JSON.parse(response.body).message).toBe("Email já cadastrado.");
+  });
+
+  /**
+   * Testa a validação de campos obrigatórios
+   * @test {POST /users} Deve retornar 400 quando campos obrigatórios estiverem faltando
+   */
+  it("deve retornar 400 quando faltar campos obrigatórios", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/users",
+      payload: {},
+    });
+
+    expect(response.statusCode).toBe(400);
+    const body = JSON.parse(response.body);
+    expect(body.message).toContain("Required");
+  });
+
+  /**
+   * Testa a validação de formato de email
+   * @test {POST /users} Deve retornar 400 para email inválido
+   */
+  it("deve retornar 400 para email inválido", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/users",
+      payload: {
+        name: "Teste",
+        email: "email-invalido",
+        password: "senha123",
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    const body = JSON.parse(response.body);
+    expect(body.message).toContain("Email inválido");
+  });
+
+  /**
+   * Testa a validação de tamanho mínimo de senha
+   * @test {POST /users} Deve retornar 400 para senha muito curta
+   */
+  it("deve retornar 400 para senha muito curta", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/users",
+      payload: {
+        name: "Teste",
+        email: "teste@exemplo.com",
+        password: "123",
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    const body = JSON.parse(response.body);
+    expect(body.message).toContain("Senha deve ter pelo menos 6 caracteres");
+  });
+
+  /**
+   * Testa o tratamento de erros inesperados
+   * @test {POST /users} Deve retornar 500 para erros inesperados
+   */
+  it("deve retornar 500 para erros inesperados", async () => {
+    prismaMock.user.findUnique.mockRejectedValue(
+      new Error("Erro inesperado no banco de dados"),
+    );
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/users",
+      payload: {
+        name: "Teste",
+        email: "erro@teste.com",
+        password: "senha123",
+      },
+    });
+
+    expect(response.statusCode).toBe(500);
+    const body = JSON.parse(response.body);
+    expect(body).toMatchObject({
+      statusCode: 500,
+      error: "Internal Server Error",
+    });
+    expect(body.message).toBeDefined();
+  });
+
+  /**
+   * Testa se campos sensíveis não são retornados na resposta
+   * @test {POST /users} Não deve retornar campos sensíveis
+   */
+  it("não deve retornar campos sensíveis na resposta", async () => {
+    const mockDate = new Date();
+    const validUuid = "550e8400-e29b-41d4-a716-446655440000";
+
+    prismaMock.user.findUnique.mockResolvedValue(null);
+    prismaMock.user.create.mockResolvedValue({
+      id: validUuid,
+      name: "Teste",
+      email: "teste@exemplo.com",
+      passwordHash: "hash-seguro",
+      createdAt: mockDate,
+      updatedAt: mockDate,
+    } as any);
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/users",
+      payload: {
+        name: "Teste",
+        email: "teste@exemplo.com",
+        password: "senha123",
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    const body = JSON.parse(response.body);
+
+    // Verifica se os campos sensíveis não estão presentes
+    expect(body).not.toHaveProperty("passwordHash");
+    expect(body).not.toHaveProperty("password");
+
+    // Verifica se os campos necessários estão presentes
+    expect(body).toMatchObject({
+      id: validUuid,
+      name: "Teste",
+      email: "teste@exemplo.com",
+      createdAt: mockDate.toISOString(),
+    });
   });
 });

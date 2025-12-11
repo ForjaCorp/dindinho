@@ -2,7 +2,8 @@ import { FastifyInstance } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
-import { UsersService, createUserSchema } from "./users.service";
+import { UsersService } from "./users.service";
+import { createUserSchema } from "@dindinho/shared";
 
 /**
  * Configura as rotas relacionadas a usuários
