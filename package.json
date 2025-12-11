@@ -1,0 +1,26 @@
+{
+  "name": "dindinho-monorepo",
+  "version": "1.0.0",
+  "description": "Monorepo do projeto Dindinho - PWA Financeiro",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "db:up": "docker-compose up -d",
+    "db:down": "docker-compose down",
+    "db:logs": "docker-compose logs -f",
+    "dev:backend": "npm run start:dev --workspace=backend",
+    "dev:frontend": "npm run start --workspace=frontend",
+    "install:all": "npm install"
+  },
+  "keywords": [
+    "angular",
+    "node",
+    "prisma",
+    "finance"
+  ],
+  "author": "Forja Corp",
+  "license": "ISC"
+}

@@ -1,0 +1,118 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum WalletType {
+  STANDARD
+  CREDIT
+}
+
+enum Role {
+  VIEWER
+  EDITOR
+  ADMIN
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  myWallets     Wallet[]       @relation("Owner")
+  sharedWallets WalletAccess[]
+  categories    Category[]
+}
+
+model Wallet {
+  id    String     @id @default(uuid())
+  name  String
+  color String
+  icon  String
+  type  WalletType @default(STANDARD)
+
+  ownerId String
+  owner   User   @relation("Owner", fields: [ownerId], references: [id])
+
+  accessList     WalletAccess[]
+  transactions   Transaction[]
+  creditCardInfo CreditCardInfo?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CreditCardInfo {
+  id       String @id @default(uuid())
+  walletId String @unique
+  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  closingDay Int
+  dueDay     Int
+  limit      Decimal? @db.Decimal(10, 2)
+  brand      String?
+}
+
+model WalletAccess {
+  id       String @id @default(uuid())
+  walletId String
+  userId   String
+  role     Role   @default(VIEWER)
+
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([walletId, userId])
+}
+
+model Category {
+  id       String  @id @default(uuid())
+  name     String
+  icon     String
+  userId   String?
+  parentId String?
+
+  user     User?      @relation(fields: [userId], references: [id])
+  parent   Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  children Category[] @relation("SubCategories")
+
+  transactions Transaction[]
+}
+
+model Transaction {
+  id          String          @id @default(uuid())
+  walletId    String
+  categoryId  String?
+  amount      Decimal         @db.Decimal(10, 2)
+  description String?
+  date        DateTime
+  type        TransactionType
+  isPaid      Boolean         @default(true)
+
+  recurrenceId      String?
+  installmentNumber Int?
+  totalInstallments Int?
+
+  wallet   Wallet    @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  category Category? @relation(fields: [categoryId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+  @@index([walletId])
+}

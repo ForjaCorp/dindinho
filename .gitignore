@@ -1,0 +1,51 @@
+# Dependências
+node_modules/
+.pnp
+.pnp.js
+
+# Ambiente
+.env
+.env.*
+!.env.example
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Build
+/dist
+/build
+/.next
+/out
+
+# Cache
+.cache
+.parcel-cache
+.next
+.nuxt
+.angular/
+
+# Editor
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Prisma
+prisma/migrations/
+!prisma/migrations/.gitkeep
+
+# Docker
+.docker
+
+# Misc
+.DS_Store
+*.pem
+
+# PWA
+ngsw/

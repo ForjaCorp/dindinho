@@ -1,0 +1,21 @@
+services:
+  # Serviço do MySQL para Desenvolvimento
+  db:
+    image: mysql:8.0
+    container_name: dindinho_mysql_dev
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: dindinho_dev
+    volumes:
+      # Garante que os dados não sumam se desligar o container
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+volumes:
+  mysql_data:
