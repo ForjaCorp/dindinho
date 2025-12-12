@@ -2,11 +2,11 @@
 
 Última atualização: 2025-12-12
 
-## 1.0.0 - 2025-12-12
+## 0.1.0 - 2025-12-12
 
-Nota: esta tag `v1.0.0` representa o primeiro release/snapshot do projeto — um baseline inicial do MVP em desenvolvimento.
+Nota: esta tag `v0.1.0` representa um snapshot de desenvolvimento (release inicial não‑final).
 
-**Observação**: também mantemos referência a `0.1.0` como versão do pacote compartilhado `@dindinho/shared`.
+**Observação**: a versão do pacote compartilhado `@dindinho/shared` é `0.1.0`.
 
 ## Principais mudanças
 
