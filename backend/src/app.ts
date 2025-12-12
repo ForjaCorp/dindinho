@@ -7,7 +7,8 @@ import {
 } from "fastify-type-provider-zod";
 import { usersRoutes } from "./users/users.routes";
 import { authRoutes } from "./auth/auth.routes";
-import { ApiResponseDTO } from "@dindinho/shared";
+import { ApiResponseDTO, HealthCheckDTO, DbTestDTO } from "@dindinho/shared";
+import { prisma } from "./lib/prisma";
 /**
  * Constrói e configura a aplicação Fastify
  * @function buildApp
@@ -81,6 +82,33 @@ export function buildApp(): FastifyInstance {
         test_db: "/test-db",
       },
     };
+  });
+
+  // Health endpoints
+  app.get<{ Reply: HealthCheckDTO }>("/health", async () => {
+    return {
+      status: "ok",
+      timestamp: new Date().toISOString(),
+      app: "Dindinho API",
+    };
+  });
+
+  app.get<{ Reply: DbTestDTO }>("/test-db", async () => {
+    try {
+      const usersCount = await prisma.user.count();
+      return {
+        success: true,
+        message: "Prisma conectado com sucesso!",
+        usersCount,
+      };
+    } catch (error) {
+      app.log.error(error);
+      return {
+        success: false,
+        error: "Erro na conexão via Prisma",
+        details: String(error),
+      };
+    }
   });
 
   return app;

@@ -1,20 +1,28 @@
 /**
- * Configuração e exportação da instância do Prisma Client.
- *
- * Este módulo configura o Prisma Client para se conectar ao banco de dados MariaDB
- * usando as variáveis de ambiente fornecidas.
- *
+ * @file Configuração e exportação da instância do Prisma Client
+ * @description Este módulo configura o Prisma Client para se conectar ao banco de dados MariaDB
+ * usando as variáveis de ambiente fornecidas, com otimizações para desenvolvimento e produção
  * @module lib/prisma
  * @requires @prisma/client
  * @requires @prisma/adapter-mariadb
  * @requires dotenv/config
+ * @version 1.0.0
+ * @author Dindinho Team
  *
  * @example
- * // Exemplo de uso:
- * import { prisma } from '@/lib/prisma';
+ * // Exemplo de uso em services:
+ * import { prisma } from '../lib/prisma';
  *
  * async function getUsers() {
  *   return await prisma.user.findMany();
+ * }
+ *
+ * @example
+ * // Exemplo com tratamento de erro:
+ * try {
+ *   const user = await prisma.user.create({...});
+ * } catch (error) {
+ *   console.error('Erro no banco:', error);
  * }
  */
 
@@ -32,17 +40,22 @@ const isDev = process.env.NODE_ENV !== "production";
 
 /**
  * Configuração do adaptador MariaDB para o Prisma
- *
- * @property {string} host - Endereço do servidor de banco de dados
+ * @description Configurações de conexão otimizadas para desenvolvimento e produção
+ * @type {PrismaMariaDb}
+ * @property {string} host - Endereço do servidor de banco de dados (extraído do DATABASE_URL)
  * @property {number} port - Porta de conexão (padrão: 3306)
- * @property {string} user - Nome de usuário para autenticação
- * @property {string} password - Senha para autenticação
- * @property {string} database - Nome do banco de dados
+ * @property {string} user - Nome de usuário para autenticação (extraído do DATABASE_URL)
+ * @property {string} password - Senha para autenticação (extraído do DATABASE_URL)
+ * @property {string} database - Nome do banco de dados (extraído do DATABASE_URL)
  * @property {number} connectionLimit - Número máximo de conexões no pool (padrão: 10)
  * @property {number} connectTimeout - Tempo máximo de espera para conexão em ms (padrão: 20000)
  * @property {number} acquireTimeout - Tempo máximo para adquirir conexão em ms (padrão: 20000)
  * @property {boolean} allowPublicKeyRetrieval - Habilita recuperação de chave pública (desativado em produção)
  * @property {boolean|object} ssl - Configuração SSL (habilitado em produção)
+ *
+ * @example
+ * // Em desenvolvimento: SSL desativado, allowPublicKeyRetrieval ativado
+ * // Em produção: SSL ativado, allowPublicKeyRetrieval desativado
  */
 const adapter = new PrismaMariaDb({
   host: dbUrl.hostname,
@@ -60,7 +73,23 @@ const adapter = new PrismaMariaDb({
 
 /**
  * Instância do Prisma Client configurada para o MariaDB
+ * @description Cliente Prisma com adaptador MariaDB e logging configurado por ambiente
  * @type {PrismaClient}
+ * @global
+ *
+ * @example
+ * // Uso direto em operações de banco:
+ * const users = await prisma.user.findMany();
+ *
+ * @example
+ * // Com transações:
+ * await prisma.$transaction(async (tx) => {
+ *   await tx.user.create({...});
+ *   await tx.post.create({...});
+ * });
+ *
+ * @see {@link https://www.prisma.io/docs/concepts/components/prisma-client} Para documentação completa
+ * @since 1.0.0
  */
 export const prisma = new PrismaClient({
   adapter,
