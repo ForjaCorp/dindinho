@@ -1,59 +1,63 @@
-# Frontend
+# Frontend — Dindinho
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.0.3.
+Este diretório contém o frontend da aplicação, desenvolvido em Angular (PWA).
 
-## Development server
+Resumo rápido:
 
-To start a local development server, run:
+- Framework: Angular 21
+- Tipo: Progressive Web App (PWA)
+- Bundler: Angular CLI
 
-```bash
-ng serve
-```
+Visão do projeto (frontend)
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+- O frontend consome a API do backend localizada em `http://localhost:3333` por padrão em ambiente de desenvolvimento.
+- O pacote compartilhado `@dindinho/shared` existe como workspace e contém schemas/DTOs usados pelo frontend e backend.
 
-## Code scaffolding
+Pré-requisitos (desenvolvimento)
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+- Node.js (LTS 20+)
+- npm
+- Backend rodando localmente (veja `backend/README.md`)
 
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
+Como rodar (desenvolvimento)
 
 ```bash
-ng build
+# no root do monorepo
+npm install
+
+# iniciar backend em outro terminal (porta 3333 por padrão)
+cd backend
+npm run start:dev
+
+# iniciar frontend
+cd frontend
+ng serve --open
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+Testes
 
-## Running unit tests
+- Unitários (Angular/Jasmine/Karma):
+  ```bash
+  cd frontend
+  ng test --watch=false
+  ```
+- Os testes de integração e e2e ainda não estão configurados; usar mocks e testes unitários durante desenvolvimento.
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+Campo `refreshToken`
 
-```bash
-ng test
-```
+- Observação: a API de autenticação pode retornar `refreshToken` no momento do login. Em desenvolvimento, os mocks e testes do frontend já foram adaptados para receber esse campo quando aplicável.
 
-## Running end-to-end tests
+Foco atual e próximos passos (MVP)
 
-For end-to-end (e2e) testing, run:
+- Prioridade de desenvolvimento para o frontend:
+  - Implementar telas e serviços para `Categorias` (CRUD simples).
+  - Implementar telas e serviços para `Transações` (registro, listagem e parcelamento básico).
+  - Conectar as rotas e integrar o fluxo de autenticação com rotação de refresh tokens (`/refresh`) quando o backend estiver integrado.
 
-```bash
-ng e2e
-```
+Contribuição
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+- Este projeto usa workspace monorepo; ao desenvolver, prefira executar e testar localmente usando as ferramentas do monorepo.
 
-## Additional Resources
+Mais informações
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- Consulte `backend/README.md` para instruções do backend e `CHANGELOG_PTBR.md` para um resumo das mudanças recentes.
