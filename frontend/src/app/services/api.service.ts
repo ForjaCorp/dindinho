@@ -1,7 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { ApiResponseDTO, LoginDTO, LoginResponseDTO } from '@dindinho/shared';
+import {
+  ApiResponseDTO,
+  LoginDTO,
+  LoginResponseDTO,
+  CreateWalletDTO,
+  WalletDTO,
+} from '@dindinho/shared';
 
 /**
  * Serviço responsável por realizar chamadas à API do backend
@@ -33,5 +39,13 @@ export class ApiService {
 
   login(data: LoginDTO): Observable<LoginResponseDTO> {
     return this.http.post<LoginResponseDTO>(`${this.baseUrl}/api/login`, data);
+  }
+
+  createWallet(data: CreateWalletDTO): Observable<WalletDTO> {
+    return this.http.post<WalletDTO>(`${this.baseUrl}/api/wallets`, data);
+  }
+
+  getWallets(): Observable<WalletDTO[]> {
+    return this.http.get<WalletDTO[]>(`${this.baseUrl}/api/wallets`);
   }
 }
