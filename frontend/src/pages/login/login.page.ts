@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   ReactiveFormsModule,
@@ -48,6 +48,7 @@ interface LoginFormValues {
 @Component({
   selector: 'app-login',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
     ReactiveFormsModule,
@@ -79,7 +80,7 @@ interface LoginFormValues {
               formControlName="email"
               placeholder="seu@email.com"
               class="w-full"
-              [ngClass]="{ 'ng-invalid ng-dirty': isFieldInvalid('email') }"
+              [class]="isFieldInvalid('email') ? 'ng-invalid ng-dirty w-full' : 'w-full'"
             />
             @if (isFieldInvalid('email')) {
               <small class="text-red-500">Email inválido</small>

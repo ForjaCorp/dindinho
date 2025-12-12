@@ -11,16 +11,18 @@
  * @example
  * <app-dashboard></app-dashboard>
  */
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ApiService } from '../app/services/api.service';
 import { ApiResponseDTO } from '@dindinho/shared';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, ButtonModule, CardModule],
   template: `
     <div class="flex flex-col gap-4 p-4 pb-24">
@@ -178,11 +180,11 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit() {
     this.apiService.getHello().subscribe({
-      next: (response) => {
+      next: (response: ApiResponseDTO) => {
         console.log('Resposta do Backend:', response);
         this.apiData.set(response);
       },
-      error: (err) => {
+      error: (err: Error | HttpErrorResponse) => {
         console.error('Erro ao conectar com o backend:', err);
         this.error.set(true);
       },

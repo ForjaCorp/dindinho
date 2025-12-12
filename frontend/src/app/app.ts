@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -10,20 +10,15 @@ import { ButtonModule } from 'primeng/button';
  * - Gerenciar o estado global da aplicação
  * - Fornecer o template base para todas as rotas
  * - Manter a navegação principal
- * 
+ *
  * @class App
  * @implements {OnInit}
  */
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [
-    CommonModule, 
-    RouterOutlet, 
-    RouterLink, 
-    RouterLinkActive,
-    ButtonModule
-  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, ButtonModule],
   templateUrl: './app.html',
 })
 export class App {
@@ -31,7 +26,7 @@ export class App {
    * @description
    * Título da aplicação, gerenciado como um Signal para reatividade.
    * Pode ser usado para atualizações dinâmicas do título da página.
-   * 
+   *
    * @type {Signal<string>}
    * @default 'Dindinho'
    */
