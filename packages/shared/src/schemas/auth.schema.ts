@@ -49,6 +49,7 @@ export type LoginDTO = z.infer<typeof loginSchema>;
  */
 export const loginResponseSchema = z.object({
   token: z.string(),
+  refreshToken: z.string(),
   user: z.object({
     id: z.string(),
     name: z.string(),

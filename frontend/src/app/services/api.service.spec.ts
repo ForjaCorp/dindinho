@@ -45,6 +45,7 @@ describe('ApiService', () => {
       email: 'test@example.com',
     },
     token: 'mock-jwt-token',
+    refreshToken: 'mock-refresh-token',
   };
 
   const mockCreateWalletData: CreateWalletDTO = {

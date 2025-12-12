@@ -127,7 +127,9 @@ describe('LoginComponent', () => {
         password: 'password123',
       };
       getComponentAny().loginForm.setValue(credentials);
-      vi.spyOn(authService, 'login').mockReturnValue(of({ user: mockUser, token: mockToken }));
+      vi.spyOn(authService, 'login').mockReturnValue(
+        of({ user: mockUser, token: mockToken, refreshToken: 'mock-refresh' }),
+      );
 
       component.onSubmit();
 

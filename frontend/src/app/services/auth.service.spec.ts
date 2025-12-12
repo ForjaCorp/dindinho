@@ -33,6 +33,7 @@ describe('AuthService', () => {
   const mockLoginResponse: LoginResponseDTO = {
     user: mockUser,
     token: 'test-token',
+    refreshToken: 'test-refresh',
   };
 
   beforeEach(() => {
