@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { provideRouter } from '@angular/router';
 import { provideLocationMocks } from '@angular/common/testing';
-import { LoginComponent } from './login';
+import { LoginComponent } from './login.page';
 import { AuthService, UserState } from '../../app/services/auth.service';
 import { of, throwError, Subject } from 'rxjs';
 import { LoginDTO } from '@dindinho/shared';
