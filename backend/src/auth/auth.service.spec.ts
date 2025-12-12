@@ -10,10 +10,11 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { DeepMockProxy, mockReset } from "vitest-mock-extended";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, User } from "@prisma/client";
 import { hash } from "bcryptjs";
 
 import { AuthService } from "./auth.service";
+import { RefreshTokenService } from "./refresh-token.service";
 
 vi.mock("../lib/prisma", async () => {
   const { mockDeep } = await import("vitest-mock-extended");
@@ -28,15 +29,34 @@ import { prisma } from "../lib/prisma";
 const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>;
 
 /**
+ * Factory function para criar mocks de usuário para testes
+ * @function createMockUser
+ * @param overrides - Campos para sobrescreprogramar noShare default
+ * @returns {User} Mock completo do usuário Prisma
+ */
+const createMockUser = (overrides?: Partial<User>): User => ({
+  id: "default-id",
+  name: "Default Name",
+  email: "default@test.com",
+  passwordHash: "default-hash",
+  avatarUrl: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  ...overrides,
+});
+
+/**
  * Conjunto de testes para o AuthService
  * @group unit/auth
  */
 describe("AuthService", () => {
   let authService: AuthService;
+  let refreshTokenService: RefreshTokenService;
 
   beforeEach(() => {
     mockReset(prismaMock);
-    authService = new AuthService(prismaMock);
+    refreshTokenService = new RefreshTokenService(prismaMock);
+    authService = new AuthService(prismaMock, refreshTokenService);
   });
 
   /**
@@ -47,15 +67,19 @@ describe("AuthService", () => {
     const password = "senha-secreta";
     const passwordHash = await hash(password, 8);
 
-    prismaMock.user.findUnique.mockResolvedValue({
-      id: "uuid-user",
-      name: "Usuario Teste",
-      email: "teste@auth.com",
-      passwordHash,
-      avatarUrl: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    } as any);
+    prismaMock.user.findUnique.mockResolvedValue(
+      createMockUser({
+        id: "uuid-user",
+        name: "Usuario Teste",
+        email: "teste@auth.com",
+        passwordHash,
+      }),
+    );
+
+    // Mock do refresh token
+    vi.spyOn(refreshTokenService, "createToken").mockResolvedValue(
+      "mock-refresh-token",
+    );
 
     const result = await authService.authenticate({
       email: "teste@auth.com",
@@ -66,10 +90,12 @@ describe("AuthService", () => {
       id: "uuid-user",
       name: "Usuario Teste",
       email: "teste@auth.com",
+      refreshToken: "mock-refresh-token",
     });
     expect(prismaMock.user.findUnique).toHaveBeenCalledWith({
       where: { email: "teste@auth.com" },
     });
+    expect(refreshTokenService.createToken).toHaveBeenCalledWith("uuid-user");
   });
 
   /**
@@ -98,15 +124,14 @@ describe("AuthService", () => {
   it("deve lançar erro quando senha está incorreta", async () => {
     const correctPasswordHash = await hash("senha-correta", 8);
 
-    prismaMock.user.findUnique.mockResolvedValue({
-      id: "uuid-user",
-      name: "Usuario Teste",
-      email: "teste@auth.com",
-      passwordHash: correctPasswordHash,
-      avatarUrl: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    } as any);
+    prismaMock.user.findUnique.mockResolvedValue(
+      createMockUser({
+        id: "uuid-user",
+        name: "Usuario Teste",
+        email: "teste@auth.com",
+        passwordHash: correctPasswordHash,
+      }),
+    );
 
     await expect(
       authService.authenticate({
@@ -140,15 +165,20 @@ describe("AuthService", () => {
     const password = "senha-secreta";
     const passwordHash = await hash(password, 8);
 
-    prismaMock.user.findUnique.mockResolvedValue({
-      id: "uuid-user",
-      name: "Usuario Teste",
-      email: "teste@auth.com",
-      passwordHash,
-      avatarUrl: "http://example.com/avatar.jpg",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    } as any);
+    prismaMock.user.findUnique.mockResolvedValue(
+      createMockUser({
+        id: "uuid-user",
+        name: "Usuario Teste",
+        email: "teste@auth.com",
+        passwordHash,
+        avatarUrl: "http://example.com/avatar.jpg",
+      }),
+    );
+
+    // Mock do refresh token
+    vi.spyOn(refreshTokenService, "createToken").mockResolvedValue(
+      "mock-refresh-token",
+    );
 
     const result = await authService.authenticate({
       email: "teste@auth.com",
@@ -160,5 +190,6 @@ describe("AuthService", () => {
     expect(result).not.toHaveProperty("avatarUrl");
     expect(result).not.toHaveProperty("createdAt");
     expect(result).not.toHaveProperty("updatedAt");
+    expect(result).toHaveProperty("refreshToken");
   });
 });

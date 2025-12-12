@@ -8,6 +8,7 @@ import {
 import { usersRoutes } from "./users/users.routes";
 import { authRoutes } from "./auth/auth.routes";
 import { walletsRoutes } from "./wallets/wallets.routes";
+import { RefreshTokenService } from "./auth/refresh-token.service";
 import { ApiResponseDTO, HealthCheckDTO, DbTestDTO } from "@dindinho/shared";
 import { prisma } from "./lib/prisma";
 /**
@@ -31,8 +32,15 @@ export function buildApp(): FastifyInstance {
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
   // Plugins
+  // Configuração CORS seguro
+  const allowedOrigins = [
+    "http://localhost:4200", // Angular dev
+    "http://localhost:3333", // Backend local
+    process.env.FRONTEND_URL, // Produção
+  ].filter((origin): origin is string => Boolean(origin));
+
   app.register(cors, {
-    origin: "*",
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
@@ -41,7 +49,7 @@ export function buildApp(): FastifyInstance {
   app.register(fastifyJwt, {
     secret: process.env.JWT_SECRET,
     sign: {
-      expiresIn: "7d", // Token expira em 7 dias
+      expiresIn: "15m", // Access Token expira em 15 minutos
     },
   });
   // Error Handler Global
@@ -83,7 +91,33 @@ export function buildApp(): FastifyInstance {
   });
   // Rotas da aplicação
   app.register(usersRoutes, { prefix: "/api" });
-  app.register(authRoutes, { prefix: "/api" });
+
+  // Instancia o RefreshTokenService com o logger da aplicação
+  const refreshTokenService = new RefreshTokenService(prisma, app.log);
+
+  // Agendar limpeza de tokens expirados se habilitado via env
+  if (process.env.ENABLE_REFRESH_CLEANUP === "true") {
+    const intervalMinutes = parseInt(
+      process.env.REFRESH_CLEANUP_INTERVAL_MINUTES ?? "60",
+      10,
+    );
+    const ms = Math.max(1000 * 60, intervalMinutes * 60 * 1000);
+    setInterval(async () => {
+      try {
+        await refreshTokenService.cleanupExpiredTokens();
+      } catch (err) {
+        app.log.error({
+          err,
+          message: "Falha ao limpar tokens de refresh expirados",
+        });
+      }
+    }, ms);
+    app.log.info(
+      `Limpeza de tokens de refresh agendada a cada ${intervalMinutes} minutos`,
+    );
+  }
+
+  app.register(authRoutes, { prefix: "/api", refreshTokenService });
   app.register(walletsRoutes, { prefix: "/api/wallets" });
   // Rota raiz
   app.get<{ Reply: ApiResponseDTO }>("/", async () => {

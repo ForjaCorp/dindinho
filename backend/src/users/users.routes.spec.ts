@@ -59,7 +59,7 @@ describe("Users Routes", () => {
       payload: {
         name: "Vini Teste",
         email: "vini@teste.com",
-        password: "senha-secreta-123",
+        password: "SenhaForte123@",
       },
     });
 
@@ -90,7 +90,7 @@ describe("Users Routes", () => {
       payload: {
         name: "Novo Tentativa",
         email: "duplicado@teste.com",
-        password: "senha-valida",
+        password: "SenhaForte123@",
       },
     });
 
@@ -151,7 +151,7 @@ describe("Users Routes", () => {
 
     expect(response.statusCode).toBe(400);
     const body = JSON.parse(response.body);
-    expect(body.message).toContain("Senha deve ter pelo menos 6 caracteres");
+    expect(body.message).toContain("Senha deve ter pelo menos 8 caracteres");
   });
 
   /**
@@ -169,7 +169,7 @@ describe("Users Routes", () => {
       payload: {
         name: "Teste",
         email: "erro@teste.com",
-        password: "senha123",
+        password: "SenhaForte123@",
       },
     });
 
@@ -206,7 +206,7 @@ describe("Users Routes", () => {
       payload: {
         name: "Teste",
         email: "teste@exemplo.com",
-        password: "senha123",
+        password: "SenhaForte123@",
       },
     });
 
