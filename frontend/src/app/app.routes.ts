@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { DashboardComponent } from '../pages/dashboard';
 import { LoginComponent } from '../pages/login/login';
+import { authGuard } from './guards/auth.guard';
 
 /**
  * @description
@@ -25,6 +26,7 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     component: DashboardComponent,
+    canActivate: [authGuard],
   },
   // Rota curinga para tratamento de rotas não encontradas
   {

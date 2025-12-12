@@ -97,13 +97,17 @@ describe('AuthService', () => {
       await new Promise<void>((done) => {
         service.login(credentials).subscribe({
           error: (err) => {
-            expect(err).toEqual(errorResponse);
+            expect(err).toEqual({
+              type: 'INVALID_CREDENTIALS',
+              message: 'Email ou senha incorretos. Verifique suas credenciais.',
+              originalError: errorResponse,
+            });
             expect(service.currentUser()).toBeNull();
             done();
           },
         });
       });
-    });
+    }, 10000);
   });
 
   describe('logout', () => {

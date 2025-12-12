@@ -28,7 +28,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 const dbUrl = new URL(process.env.DATABASE_URL);
-const isDev = process.env.NODE_ENV === "development";
+const isDev = process.env.NODE_ENV !== "production";
 
 /**
  * Configuração do adaptador MariaDB para o Prisma
