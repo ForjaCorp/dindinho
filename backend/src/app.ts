@@ -1,13 +1,13 @@
-import Fastify, { FastifyReply } from "fastify";
+import Fastify, { FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
 import {
   serializerCompiler,
   validatorCompiler,
 } from "fastify-type-provider-zod";
-import { z } from "zod";
 import { usersRoutes } from "./users/users.routes";
 import { authRoutes } from "./auth/auth.routes";
+import { ApiResponseDTO } from "@dindinho/shared";
 /**
  * Constrói e configura a aplicação Fastify
  * @function buildApp
@@ -18,7 +18,7 @@ import { authRoutes } from "./auth/auth.routes";
  * const app = buildApp();
  * app.listen({ port: 3000 });
  */
-export function buildApp() {
+export function buildApp(): FastifyInstance {
   const app = Fastify({ logger: true });
   // Verificação de variáveis de ambiente obrigatórias
   if (!process.env.JWT_SECRET) {
@@ -72,10 +72,10 @@ export function buildApp() {
   app.register(usersRoutes, { prefix: "/api" });
   app.register(authRoutes, { prefix: "/api" });
   // Rota raiz
-  app.get("/", async () => {
+  app.get<{ Reply: ApiResponseDTO }>("/", async () => {
     return {
       message: "Bem-vindo à API do Dindinho! 💸",
-      docs: "Rotas disponíveis: POST /users, POST /login",
+      docs: "Rotas disponíveis: POST /api/users, POST /api/login",
       endpoints: {
         health: "/health",
         test_db: "/test-db",

@@ -15,7 +15,8 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
-import { ApiService, ApiResponse } from '../app/services/api.service';
+import { ApiService } from '../app/services/api.service';
+import { ApiResponseDTO } from '@dindinho/shared';
 
 @Component({
   selector: 'app-dashboard',
@@ -33,7 +34,7 @@ import { ApiService, ApiResponse } from '../app/services/api.service';
         @if (apiData(); as data) {
           <div class="text-xs text-slate-600">
             <p class="font-medium text-emerald-600">{{ data.message }}</p>
-            <p class="mt-1 opacity-70">{{ data.aviso }}</p>
+            <p class="mt-1 opacity-70">{{ data.docs }}</p>
           </div>
         } @else if (error()) {
           <div class="text-xs text-red-500 bg-red-50 p-2 rounded-lg">
@@ -168,8 +169,7 @@ export class DashboardComponent implements OnInit {
    * Armazena os dados recebidos da API
    * @type {Signal<ApiResponse | null>}
    */
-  protected apiData = signal<ApiResponse | null>(null);
-
+  protected apiData = signal<ApiResponseDTO | null>(null);
   /**
    * Indica se houve erro na comunicação com o backend
    * @type {Signal<boolean>}

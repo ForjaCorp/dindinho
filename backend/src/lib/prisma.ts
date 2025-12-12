@@ -28,9 +28,21 @@ if (!process.env.DATABASE_URL) {
 }
 
 const dbUrl = new URL(process.env.DATABASE_URL);
+const isDev = process.env.NODE_ENV === "development";
 
 /**
  * Configuração do adaptador MariaDB para o Prisma
+ *
+ * @property {string} host - Endereço do servidor de banco de dados
+ * @property {number} port - Porta de conexão (padrão: 3306)
+ * @property {string} user - Nome de usuário para autenticação
+ * @property {string} password - Senha para autenticação
+ * @property {string} database - Nome do banco de dados
+ * @property {number} connectionLimit - Número máximo de conexões no pool (padrão: 10)
+ * @property {number} connectTimeout - Tempo máximo de espera para conexão em ms (padrão: 20000)
+ * @property {number} acquireTimeout - Tempo máximo para adquirir conexão em ms (padrão: 20000)
+ * @property {boolean} allowPublicKeyRetrieval - Habilita recuperação de chave pública (desativado em produção)
+ * @property {boolean|object} ssl - Configuração SSL (habilitado em produção)
  */
 const adapter = new PrismaMariaDb({
   host: dbUrl.hostname,
@@ -38,6 +50,12 @@ const adapter = new PrismaMariaDb({
   user: dbUrl.username,
   password: dbUrl.password,
   database: dbUrl.pathname.slice(1),
+  connectionLimit: 10,
+  connectTimeout: 20000,
+  acquireTimeout: 20000,
+  // Configurações de segurança para desenvolvimento
+  allowPublicKeyRetrieval: isDev,
+  ssl: !isDev,
 });
 
 /**
@@ -46,8 +64,5 @@ const adapter = new PrismaMariaDb({
  */
 export const prisma = new PrismaClient({
   adapter,
-  log:
-    process.env.NODE_ENV === "development"
-      ? ["query", "error", "warn"]
-      : ["error"],
+  log: isDev ? ["query", "error", "warn"] : ["error"],
 });
