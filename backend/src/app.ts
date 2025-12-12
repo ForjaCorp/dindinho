@@ -7,6 +7,7 @@ import {
 } from "fastify-type-provider-zod";
 import { usersRoutes } from "./users/users.routes";
 import { authRoutes } from "./auth/auth.routes";
+import { walletsRoutes } from "./wallets/wallets.routes";
 import { ApiResponseDTO, HealthCheckDTO, DbTestDTO } from "@dindinho/shared";
 import { prisma } from "./lib/prisma";
 /**
@@ -44,20 +45,31 @@ export function buildApp(): FastifyInstance {
     },
   });
   // Error Handler Global
-  app.setErrorHandler((error: unknown, request, reply) => {
+  app.setErrorHandler((error: any, request, reply) => {
+    // Erros de Validação Zod
     if (error instanceof Error && "validation" in error) {
       return reply.status(400).send({
         statusCode: 400,
         error: "Bad Request",
         message: error.message,
-        issues: error.validation,
+        issues: (error as any).validation,
       });
     }
+
     if (error instanceof SyntaxError) {
       return reply.status(400).send({
         statusCode: 400,
         error: "Bad Request",
         message: "JSON inválido",
+      });
+    }
+
+    // Erros com statusCode definido (ex: lançados manualmente ou pelo JWT)
+    if (error.statusCode) {
+      return reply.status(error.statusCode).send({
+        statusCode: error.statusCode,
+        error: error.name || "Error",
+        message: error.message,
       });
     }
 
@@ -72,6 +84,7 @@ export function buildApp(): FastifyInstance {
   // Rotas da aplicação
   app.register(usersRoutes, { prefix: "/api" });
   app.register(authRoutes, { prefix: "/api" });
+  app.register(walletsRoutes, { prefix: "/api/wallets" });
   // Rota raiz
   app.get<{ Reply: ApiResponseDTO }>("/", async () => {
     return {
