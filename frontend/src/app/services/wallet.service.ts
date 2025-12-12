@@ -1,5 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { finalize } from 'rxjs/operators';
+import { finalize, tap } from 'rxjs/operators';
+import { Observable, throwError } from 'rxjs';
 import { CreateWalletDTO, WalletDTO } from '@dindinho/shared';
 import { ApiService } from './api.service';
 
@@ -202,49 +203,60 @@ export class WalletService {
   }
 
   /**
-   * Cria uma nova carteira e a adiciona à lista local
-   * @description Envia dados para criar nova carteira e atualiza estado local com otimização
+   * Cria uma nova carteira e atualiza o estado local.
+   * Retorna o Observable para que o componente possa reagir ao sucesso/erro.
+   *
    * @param data - Dados da carteira a ser criada
-   * @throws {Error} Erro de validação quando dados são inválidos
-   * @throws {Error} Erro de conflito quando nome já existe
-   * @throws {Error} Erro de autenticação quando sessão expirou
-   * @throws {Error} Erro de conexão quando offline
+   * @returns Observable<WalletDTO> - Observable com a carteira criada
+   *
    * @example
    * this.walletService.createWallet({
    *   name: 'Nova Carteira',
    *   color: '#FF5722',
    *   icon: 'pi-wallet',
    *   type: 'STANDARD'
+   * }).subscribe({
+   *   next: (wallet) => console.log('Sucesso:', wallet),
+   *   error: (err) => console.error('Erro:', err)
    * });
    */
-  createWallet(data: CreateWalletDTO) {
-    // Validar dados localmente antes de enviar para API
+  createWallet(data: CreateWalletDTO): Observable<WalletDTO> {
+    // 1. Validação Síncrona
     try {
       this.validateCreateWalletData(data);
     } catch (error) {
-      this.state.update((s) => ({ ...s, error: (error as Error).message }));
-      return;
+      const msg = (error as Error).message;
+      this.state.update((s) => ({ ...s, error: msg }));
+      // Retorna um erro observável para o componente saber que falhou imediatamente
+      return throwError(() => new Error(msg));
     }
 
+    // 2. Preparação do Estado (Loading)
     this.state.update((s) => ({ ...s, loading: true, error: null }));
 
-    return this.api
-      .createWallet(data)
-      .pipe(finalize(() => this.state.update((s) => ({ ...s, loading: false }))))
-      .subscribe({
+    // 3. Chamada API com Efeitos Colaterais (Tap)
+    return this.api.createWallet(data).pipe(
+      tap({
         next: (newWallet) => {
-          // Atualização otimista/local da lista
+          // Sucesso: Atualiza o Signal de wallets
           this.state.update((s) => ({
             ...s,
             wallets: [...s.wallets, newWallet],
+            loading: false,
           }));
         },
         error: (err) => {
+          // Erro: Atualiza o Signal de erro e loading
           console.error('Erro ao criar carteira:', err);
           const errorMessage = this.extractErrorMessage(err);
-          this.state.update((s) => ({ ...s, error: errorMessage }));
+          this.state.update((s) => ({
+            ...s,
+            error: errorMessage,
+            loading: false,
+          }));
         },
-      });
+      }),
+    );
   }
 
   /**

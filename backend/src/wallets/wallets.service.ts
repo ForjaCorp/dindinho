@@ -163,11 +163,6 @@ export class WalletsService {
    */
   async create(userId: string, data: CreateWalletDTO) {
     try {
-      // Validações adicionais
-      this.validateCreateWalletData(userId, data);
-
-      // Prepara os dados para criação
-      // Se for CREDIT, configuramos a relação com CreditCardInfo
       const creditCardData =
         data.type === "CREDIT" && data.closingDay && data.dueDay
           ? {
@@ -190,23 +185,24 @@ export class WalletsService {
           creditCardInfo: creditCardData,
         },
         include: {
-          creditCardInfo: true, // Retorna os dados do cartão criados
+          creditCardInfo: true,
         },
       });
 
       return {
         ...wallet,
-        // Converte Decimal do Prisma para number para compatibilidade com JSON/Zod
         creditCardInfo: wallet.creditCardInfo
           ? {
               ...wallet.creditCardInfo,
               limit: wallet.creditCardInfo.limit?.toNumber() ?? null,
             }
           : null,
-        balance: 0, // Placeholder para o futuro
+        balance: 0,
+        createdAt: wallet.createdAt.toISOString(),
+        updatedAt: wallet.updatedAt.toISOString(),
       };
     } catch (error) {
-      this.handleCreateWalletError(error, data.name);
+      return this.handleCreateWalletError(error, data.name);
     }
   }
 
@@ -226,9 +222,6 @@ export class WalletsService {
    */
   async findAllByUserId(userId: string) {
     try {
-      // Validação do userId
-      this.validateUserId(userId);
-
       const wallets = await this.prisma.wallet.findMany({
         where: { ownerId: userId },
         include: { creditCardInfo: true },
@@ -243,77 +236,12 @@ export class WalletsService {
               limit: w.creditCardInfo.limit?.toNumber() ?? null,
             }
           : null,
-        balance: 0, // Aqui entraremos com a soma das transações depois
+        balance: 0,
+        createdAt: w.createdAt.toISOString(),
+        updatedAt: w.updatedAt.toISOString(),
       }));
     } catch (error) {
       this.handleFindWalletsError(error);
-    }
-  }
-
-  /**
-   * Valida dados para criação de carteira
-   * @param userId - ID do usuário
-   * @param data - Dados da carteira
-   * @throws {WalletValidationError} Quando dados são inválidos
-   * @private
-   */
-  private validateCreateWalletData(
-    userId: string,
-    data: CreateWalletDTO,
-  ): void {
-    if (!userId || userId.trim().length === 0) {
-      throw new WalletValidationError("ID do usuário é obrigatório");
-    }
-
-    if (!data.name || data.name.trim().length === 0) {
-      throw new WalletValidationError("Nome da carteira é obrigatório");
-    }
-
-    if (data.name.length > 100) {
-      throw new WalletValidationError(
-        "Nome da carteira deve ter no máximo 100 caracteres",
-      );
-    }
-
-    if (!data.color || !data.color.match(/^#[0-9A-Fa-f]{6}$/)) {
-      throw new WalletValidationError(
-        "Cor deve estar no formato hexadecimal (#RRGGBB)",
-      );
-    }
-
-    if (!data.icon || data.icon.trim().length === 0) {
-      throw new WalletValidationError("Ícone é obrigatório");
-    }
-
-    // Validações específicas para cartão de crédito
-    if (data.type === "CREDIT") {
-      if (!data.closingDay || data.closingDay < 1 || data.closingDay > 31) {
-        throw new WalletValidationError(
-          "Dia de fechamento deve estar entre 1 e 31",
-        );
-      }
-
-      if (!data.dueDay || data.dueDay < 1 || data.dueDay > 31) {
-        throw new WalletValidationError(
-          "Dia de vencimento deve estar entre 1 e 31",
-        );
-      }
-
-      if (data.limit !== undefined && data.limit <= 0) {
-        throw new WalletValidationError("Limite deve ser positivo");
-      }
-    }
-  }
-
-  /**
-   * Valida ID do usuário
-   * @param userId - ID do usuário
-   * @throws {WalletValidationError} Quando ID é inválido
-   * @private
-   */
-  private validateUserId(userId: string): void {
-    if (!userId || userId.trim().length === 0) {
-      throw new WalletValidationError("ID do usuário é obrigatório");
     }
   }
 

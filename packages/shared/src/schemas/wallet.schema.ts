@@ -25,33 +25,18 @@ export const WalletTypeEnum = z.enum(["STANDARD", "CREDIT"]);
  * };
  * const result = createWalletSchema.parse(walletData);
  */
-export const createWalletSchema = z
-  .object({
-    name: z.string().min(1, "Nome é obrigatório"),
-    color: z.string().min(4, "Cor inválida"), // Ex: #FFF ou #FFFFFF
-    icon: z.string().min(1, "Ícone é obrigatório"), // Ex: 'pi-wallet'
-    type: WalletTypeEnum.default("STANDARD"),
+export const createWalletSchema = z.object({
+  name: z.string().min(1, "Nome é obrigatório"),
+  color: z.string().min(4, "Cor inválida"),
+  icon: z.string().min(1, "Ícone é obrigatório"),
+  type: WalletTypeEnum.default("STANDARD"),
 
-    // Campos específicos para Cartão de Crédito
-    closingDay: z.number().min(1).max(31).optional(),
-    dueDay: z.number().min(1).max(31).optional(),
-    limit: z.number().positive("Limite deve ser positivo").optional(),
-    brand: z.string().optional(), // Visa, Master, etc.
-  })
-  .refine(
-    (data) => {
-      if (data.type === "CREDIT") {
-        // Se for crédito, exige dia de corte e vencimento
-        return data.closingDay !== undefined && data.dueDay !== undefined;
-      }
-      return true;
-    },
-    {
-      message:
-        "Dia de fechamento e vencimento são obrigatórios para cartões de crédito",
-      path: ["closingDay"], // O erro será associado a este campo
-    },
-  );
+  // Campos específicos para Cartão de Crédito
+  closingDay: z.number().min(1).max(31).optional(),
+  dueDay: z.number().min(1).max(31).optional(),
+  limit: z.number().positive("Limite deve ser positivo").optional(),
+  brand: z.string().optional(),
+});
 
 /**
  * Tipo para criação de carteira inferido do schema.
@@ -87,7 +72,7 @@ export const walletSchema = z.object({
   icon: z.string(),
   type: WalletTypeEnum,
   ownerId: z.string(),
-  balance: z.number().optional().default(0),
+  balance: z.coerce.number().optional().default(0),
   creditCardInfo: z
     .object({
       closingDay: z.number(),
@@ -97,6 +82,8 @@ export const walletSchema = z.object({
     })
     .nullable()
     .optional(),
+  createdAt: z.date().or(z.string()),
+  updatedAt: z.date().or(z.string()),
 });
 
 /**

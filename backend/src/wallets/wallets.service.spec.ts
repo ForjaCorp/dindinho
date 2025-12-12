@@ -76,6 +76,8 @@ describe("WalletsService", () => {
       expect(result).toEqual({
         ...mockWallet,
         balance: 0,
+        createdAt: mockWallet.createdAt.toISOString(),
+        updatedAt: mockWallet.updatedAt.toISOString(),
       });
     });
 
@@ -134,6 +136,8 @@ describe("WalletsService", () => {
           limit: 5000,
         },
         balance: 0,
+        createdAt: mockWallet.createdAt.toISOString(),
+        updatedAt: mockWallet.updatedAt.toISOString(),
       });
     });
 
@@ -239,6 +243,8 @@ describe("WalletsService", () => {
       expect(result[0]).toEqual({
         ...mockWallets[0],
         balance: 0,
+        createdAt: mockWallets[0].createdAt.toISOString(),
+        updatedAt: mockWallets[0].updatedAt.toISOString(),
       });
       expect(result[1]).toEqual({
         ...mockWallets[1],
@@ -247,6 +253,8 @@ describe("WalletsService", () => {
           limit: 5000,
         },
         balance: 0,
+        createdAt: mockWallets[1].createdAt.toISOString(),
+        updatedAt: mockWallets[1].updatedAt.toISOString(),
       });
     });
 

@@ -26,6 +26,8 @@ describe('WalletService', () => {
       type: 'STANDARD',
       ownerId: 'user-123',
       balance: 1000.0,
+      createdAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-01-01'),
     },
     {
       id: 'wallet-2',
@@ -35,6 +37,8 @@ describe('WalletService', () => {
       type: 'CREDIT',
       ownerId: 'user-123',
       balance: 500.5,
+      createdAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-01-01'),
       creditCardInfo: {
         closingDay: 10,
         dueDay: 15,
@@ -206,15 +210,20 @@ describe('WalletService', () => {
       type: 'STANDARD',
       ownerId: 'user-123',
       balance: 0,
+      createdAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-01-01'),
     };
 
     it('deve criar carteira com sucesso', () => {
       // Testa criação partindo do estado inicial vazio
       apiService.createWallet.mockReturnValue(of(newWallet));
 
-      service.createWallet(mockCreateWalletData);
+      const observable = service.createWallet(mockCreateWalletData);
 
       expect(apiService.createWallet).toHaveBeenCalledWith(mockCreateWalletData);
+
+      // Se inscreve para executar a operação (como o componente faz)
+      observable.subscribe();
 
       vi.useFakeTimers();
       vi.runAllTimers();
@@ -227,13 +236,13 @@ describe('WalletService', () => {
     });
 
     it('deve tratar erro de nome duplicado', () => {
-      const duplicateError = {
-        status: 409,
-        error: { message: 'Nome já existe' },
-      };
+      const duplicateError = { status: 409, error: { message: 'Nome já existe' } };
       apiService.createWallet.mockReturnValue(throwError(() => duplicateError));
 
-      service.createWallet(mockCreateWalletData);
+      const observable = service.createWallet(mockCreateWalletData);
+
+      // Se inscreve para executar a operação
+      observable.subscribe();
 
       vi.useFakeTimers();
       vi.runAllTimers();
@@ -249,7 +258,10 @@ describe('WalletService', () => {
       };
       apiService.createWallet.mockReturnValue(throwError(() => validationError));
 
-      service.createWallet(mockCreateWalletData);
+      const observable = service.createWallet(mockCreateWalletData);
+
+      // Se inscreve para executar a operação
+      observable.subscribe();
 
       vi.useFakeTimers();
       vi.runAllTimers();
@@ -291,6 +303,8 @@ describe('WalletService', () => {
         type: 'STANDARD',
         ownerId: 'user-123',
         balance: 0,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
       };
 
       service.updateWalletInState(newWallet);
@@ -307,6 +321,8 @@ describe('WalletService', () => {
         type: 'STANDARD',
         ownerId: 'user-123',
         balance: 0,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
       };
 
       service.updateWalletInState(newWallet);
@@ -547,6 +563,8 @@ describe('WalletService', () => {
         type: 'STANDARD',
         ownerId: 'user-123',
         balance: 0,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
       };
 
       const mockWallet4: WalletDTO = {
@@ -557,6 +575,8 @@ describe('WalletService', () => {
         type: 'CREDIT',
         ownerId: 'user-123',
         balance: 0,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
       };
 
       apiService.createWallet
@@ -585,10 +605,16 @@ describe('WalletService', () => {
         type: 'STANDARD',
         ownerId: 'user-123',
         balance: 0,
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-01'),
       };
 
       apiService.createWallet.mockReturnValue(of(newWallet));
-      service.createWallet(mockCreateWalletData);
+
+      const observable = service.createWallet(mockCreateWalletData);
+
+      // Se inscreve para executar a operação
+      observable.subscribe();
 
       vi.useFakeTimers();
       vi.runAllTimers();

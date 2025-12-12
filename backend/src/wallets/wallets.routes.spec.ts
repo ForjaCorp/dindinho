@@ -108,8 +108,14 @@ describe("Wallets Routes", () => {
         {
           id: "w1",
           name: "Carteira 1",
+          color: "#FF5722",
+          icon: "pi-wallet",
           type: "STANDARD",
+          ownerId: "user-123",
+          balance: 0,
           creditCardInfo: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         } as any,
       ]);
 

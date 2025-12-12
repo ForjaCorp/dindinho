@@ -3,11 +3,7 @@ import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { WalletsService } from "./wallets.service";
-import {
-  createWalletSchema,
-  walletSchema,
-  CreateWalletDTO,
-} from "@dindinho/shared";
+import { createWalletSchema, walletSchema } from "@dindinho/shared";
 
 /**
  * Rotas da API para gerenciamento de carteiras.
@@ -39,10 +35,7 @@ export async function walletsRoutes(app: FastifyInstance) {
     try {
       await request.jwtVerify();
     } catch (err) {
-      // Repassa o erro original do JWT ou cria um novo com status
-      const error = new Error("Token inválido ou expirado");
-      (error as any).statusCode = 401;
-      throw error;
+      throw { statusCode: 401, message: "Token inválido ou expirado" };
     }
   });
 
@@ -68,10 +61,7 @@ export async function walletsRoutes(app: FastifyInstance) {
    */
   app.post("/", async (request, reply) => {
     const { sub: userId } = request.user as { sub: string };
-    const wallet = await service.create(
-      userId,
-      request.body as CreateWalletDTO,
-    );
+    const wallet = await service.create(userId, request.body as any);
     return reply.status(201).send(wallet);
   });
 
@@ -100,7 +90,7 @@ export async function walletsRoutes(app: FastifyInstance) {
    *   }
    * ]
    */
-  app.get("/", async (request, reply) => {
+  app.get("/", async (request) => {
     const { sub: userId } = request.user as { sub: string };
     return service.findAllByUserId(userId);
   });

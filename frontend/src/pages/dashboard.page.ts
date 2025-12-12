@@ -22,17 +22,17 @@ import {
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
-import { HttpErrorResponse } from '@angular/common/http';
 import { ApiService } from '../app/services/api.service';
 import { ApiResponseDTO } from '@dindinho/shared';
 import { WalletService } from '../app/services/wallet.service';
 import { CurrencyPipe } from '@angular/common';
+import { CreateWalletDialogComponent } from '../app/components/wallets/create-wallet-dialog.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ButtonModule, CardModule, CurrencyPipe],
+  imports: [CommonModule, ButtonModule, CardModule, CurrencyPipe, CreateWalletDialogComponent],
   template: `
     <div class="flex flex-col gap-4 p-4 pb-24">
       <!-- Card temporário para teste de conexão com o backend -->
@@ -90,6 +90,68 @@ import { CurrencyPipe } from '@angular/common';
           />
         </div>
       </div>
+
+      <div class="flex flex-col gap-2">
+        <div class="flex justify-between items-center px-1">
+          <h2 class="text-lg font-bold text-slate-800">Minhas Carteiras</h2>
+
+          <button
+            (click)="createWalletDialog.show()"
+            class="text-emerald-600 text-sm font-medium hover:text-emerald-700 transition-colors"
+          >
+            Nova
+          </button>
+        </div>
+
+        <!-- Lista de Carteiras -->
+        @if (walletService.wallets().length > 0) {
+          <div class="flex gap-2 overflow-x-auto pb-2 px-1">
+            @for (wallet of walletService.wallets(); track wallet.id) {
+              <div
+                class="shrink-0 bg-white rounded-xl p-3 border border-slate-100 shadow-sm min-w-[140px]"
+              >
+                <div class="flex items-center gap-2 mb-2">
+                  <div
+                    class="w-8 h-8 rounded-lg flex items-center justify-center"
+                    [style]="{ backgroundColor: wallet.color + '20', color: wallet.color }"
+                  >
+                    <i class="pi text-sm" [class]="wallet.icon"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-slate-800 truncate">{{ wallet.name }}</p>
+                    <p class="text-xs text-slate-500">
+                      {{ wallet.type === 'CREDIT' ? 'Cartão' : 'Conta' }}
+                    </p>
+                  </div>
+                </div>
+                <div class="text-lg font-bold text-slate-900">
+                  {{ wallet.balance || 0 | currency: 'BRL' }}
+                </div>
+                @if (wallet.type === 'CREDIT' && wallet.creditCardInfo?.limit) {
+                  <div class="text-xs text-slate-500 mt-1">
+                    Limite: {{ wallet.creditCardInfo?.limit | currency: 'BRL' }}
+                  </div>
+                }
+              </div>
+            } @empty {
+              <div class="w-full py-8 text-center text-slate-400">
+                <i class="pi pi-wallet text-2xl mb-2"></i>
+                <p class="text-sm">Nenhuma carteira encontrada</p>
+              </div>
+            }
+          </div>
+        } @else {
+          <div
+            class="w-full py-8 text-center text-slate-400 bg-white rounded-xl border border-slate-100"
+          >
+            <i class="pi pi-wallet text-2xl mb-2"></i>
+            <p class="text-sm">Nenhuma carteira encontrada</p>
+            <p class="text-xs mt-1">Clique em "Nova" para criar sua primeira carteira</p>
+          </div>
+        }
+      </div>
+
+      <app-create-wallet-dialog #createWalletDialog />
 
       <!-- Atalhos Rápidos -->
       <div data-testid="quick-links-section">
@@ -178,7 +240,7 @@ import { CurrencyPipe } from '@angular/common';
  */
 export class DashboardComponent implements OnInit {
   private apiService = inject(ApiService);
-  private walletService = inject(WalletService);
+  protected walletService = inject(WalletService);
 
   apiData = signal<ApiResponseDTO | null>(null);
   error = signal<string | null>(null);
@@ -195,11 +257,9 @@ export class DashboardComponent implements OnInit {
   checkBackendConnection() {
     this.apiService.getHello().subscribe({
       next: (response: ApiResponseDTO) => {
-        console.log('Resposta do Backend:', response);
         this.apiData.set(response);
       },
-      error: (err: Error | HttpErrorResponse) => {
-        console.error('Erro ao conectar com o backend:', err);
+      error: () => {
         this.error.set('Erro ao conectar com o backend');
       },
     });
