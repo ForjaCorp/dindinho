@@ -60,7 +60,7 @@ describe("Auth Routes", () => {
     prismaMock.refreshToken.deleteMany.mockResolvedValue({ count: 0 });
     prismaMock.refreshToken.create.mockResolvedValue({
       id: "refresh-token-id",
-      token: "mock-refresh-token",
+      token: Buffer.from("mock-refresh-token"),
       userId: "uuid-user",
       expiresAt: new Date(),
       createdAt: new Date(),
@@ -68,7 +68,7 @@ describe("Auth Routes", () => {
     prismaMock.refreshToken.findUnique.mockResolvedValue(null);
     prismaMock.refreshToken.delete.mockResolvedValue({
       id: "refresh-token-id",
-      token: "mock-refresh-token",
+      token: Buffer.from("mock-refresh-token"),
       userId: "uuid-user",
       expiresAt: new Date(),
       createdAt: new Date(),

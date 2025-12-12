@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 import { randomBytes, createHash } from "crypto";
 
 type Logger = {
@@ -59,7 +59,7 @@ export class RefreshTokenService {
 
     await this.prisma.refreshToken.create({
       data: {
-        token: hashed as any,
+        token: hashed as Prisma.Bytes,
         userId,
         expiresAt,
       },
@@ -83,7 +83,7 @@ export class RefreshTokenService {
     const hashed = createHash("sha256").update(token).digest();
 
     const refreshToken = await this.prisma.refreshToken.findUnique({
-      where: { token: hashed as any },
+      where: { token: hashed as Prisma.Bytes },
     });
 
     if (!refreshToken) return null;
@@ -107,7 +107,7 @@ export class RefreshTokenService {
     try {
       const hashed = createHash("sha256").update(token).digest();
       await this.prisma.refreshToken.delete({
-        where: { token: hashed as any },
+        where: { token: hashed as Prisma.Bytes },
       });
       this.logger.info(`Refresh token revoked`);
       return true;
