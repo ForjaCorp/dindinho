@@ -151,9 +151,10 @@ function calculateTotal(items: { value: number }[]): number {
 ## Padrões de Teste
 
 - Usar `data-testid` para selecionar elementos
-- Nomes de testes em português
+- **Nomes de testes em português** (manter consistência com documentação)
 - Um `expect` por teste quando possível
 - Usar `describe` para agrupar testes relacionados
+- **Documentação JSDoc em português** para manter consistência com o restante do projeto
 
 ### Convenção de data-testid
 

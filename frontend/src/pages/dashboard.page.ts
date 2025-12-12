@@ -55,7 +55,9 @@ import { ApiResponseDTO } from '@dindinho/shared';
         <!-- Efeito de fundo decorativo -->
         <div class="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
 
-        <span class="text-emerald-50 text-sm font-medium">Saldo Total</span>
+        <span class="text-emerald-50 text-sm font-medium" data-testid="balance-title"
+          >Saldo Total</span
+        >
         <div class="text-3xl font-bold mt-1 tracking-tight">R$ 0,00</div>
 
         <div class="flex gap-3 mt-6">
