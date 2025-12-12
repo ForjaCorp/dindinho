@@ -23,6 +23,15 @@ describe('appConfig', () => {
     expect(config.providers).toHaveLength(4);
   });
 
+  it('should include auth interceptor in http client configuration', () => {
+    TestBed.configureTestingModule({
+      providers: config.providers,
+    });
+
+    const http = TestBed.inject(HttpClient);
+    expect(http).toBeTruthy();
+  });
+
   it('should include router provider', () => {
     TestBed.configureTestingModule({
       providers: config.providers,
