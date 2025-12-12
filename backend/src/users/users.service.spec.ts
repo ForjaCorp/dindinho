@@ -10,7 +10,7 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { DeepMockProxy, mockReset } from "vitest-mock-extended";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, User } from "@prisma/client";
 import { hash } from "bcryptjs";
 
 import { UsersService } from "./users.service";
@@ -56,7 +56,7 @@ describe("UsersService", () => {
       avatarUrl: null,
       createdAt: mockDate,
       updatedAt: mockDate,
-    } as any);
+    } as User);
 
     const result = await usersService.create({
       name: "João Silva",
@@ -97,7 +97,7 @@ describe("UsersService", () => {
       avatarUrl: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as any);
+    } as User);
 
     await expect(
       usersService.create({
@@ -131,7 +131,7 @@ describe("UsersService", () => {
       avatarUrl: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as any);
+    } as User);
 
     await usersService.create({
       name: "Test User",
@@ -163,7 +163,7 @@ describe("UsersService", () => {
       avatarUrl: "http://example.com/avatar.jpg",
       createdAt: mockDate,
       updatedAt: mockDate,
-    } as any);
+    } as User);
 
     const result = await usersService.create({
       name: "Test User",
@@ -232,7 +232,7 @@ describe("UsersService", () => {
       avatarUrl: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as any);
+    } as User);
 
     await usersService.create({
       name: "Test",

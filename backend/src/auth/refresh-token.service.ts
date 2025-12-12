@@ -18,7 +18,7 @@ export class RefreshTokenService {
 
   constructor(
     private prisma: PrismaClient,
-    logger: Logger = console as any,
+    logger: Logger = console,
     ttlDays?: number,
   ) {
     this.logger = logger;
@@ -112,7 +112,7 @@ export class RefreshTokenService {
       this.logger.info(`Refresh token revoked`);
       return true;
     } catch (err) {
-      this.logger.warn?.("Failed to revoke refresh token", err as any);
+      this.logger.warn?.("Failed to revoke refresh token", err);
       return false;
     }
   }

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { DeepMockProxy, mockReset } from "vitest-mock-extended";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, RefreshToken, Prisma } from "@prisma/client";
 import { createHash } from "crypto";
 
 vi.mock("../lib/prisma", async () => {
@@ -18,56 +18,53 @@ const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>;
 
 beforeEach(() => {
   mockReset(prismaMock);
-  prismaMock.refreshToken.deleteMany.mockResolvedValue({ count: 0 } as any);
+  prismaMock.refreshToken.deleteMany.mockResolvedValue({
+    count: 0,
+  } as Prisma.BatchPayload);
 });
 
 describe("Serviço de RefreshToken", () => {
   it("createToken armazena hash do token e retorna token raw com TTL padrão", async () => {
-    const service = new RefreshTokenService(prismaMock, console as any, 7);
+    const service = new RefreshTokenService(prismaMock, console, 7);
 
-    let captured: any = null;
-    (prismaMock.refreshToken.create as any).mockImplementation(
-      async (args: any) => {
-        captured = args;
-        return {
-          id: "rt1",
-          token: args.data.token,
-          userId: args.data.userId,
-          expiresAt: args.data.expiresAt,
-          createdAt: new Date(),
-          // Prisma client result may include relation helpers; cast to any for test
-          user: { id: args.data.userId, email: "test@x.com" },
-        } as any;
-      },
-    );
+    // Prepare a resolved value for create and capture the call args afterwards
+    prismaMock.refreshToken.create.mockResolvedValue({
+      id: "rt1",
+      token: Buffer.alloc(32),
+      userId: "user-123",
+      expiresAt: new Date(),
+      createdAt: new Date(),
+    } as unknown as RefreshToken);
 
     const raw = await service.createToken("user-123");
     expect(typeof raw).toBe("string");
 
     const hashedHex = createHash("sha256").update(raw).digest("hex");
+    const captured = prismaMock.refreshToken.create.mock.calls[0][0];
     expect(captured).toBeTruthy();
-    // captured.data.token is stored as Buffer (binário). Compare em hex.
+    // captured.data.token is armazenado como Buffer. Compare em hex.
     expect((captured.data.token as Buffer).toString("hex")).toBe(hashedHex);
     expect(captured.data.userId).toBe("user-123");
 
     const diffDays =
-      (captured.data.expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+      ((captured.data.expiresAt as Date).getTime() - Date.now()) /
+      (1000 * 60 * 60 * 24);
     expect(diffDays).toBeGreaterThan(6.9);
   });
 
   it("validateToken retorna userId para token válido e remove token expirado", async () => {
-    const service = new RefreshTokenService(prismaMock, console as any, 7);
+    const service = new RefreshTokenService(prismaMock, console, 7);
 
     const raw = "my-raw-token";
     const hashed = createHash("sha256").update(raw).digest("hex");
 
     prismaMock.refreshToken.findUnique.mockResolvedValue({
       id: "rt-valid",
-      token: hashed,
+      token: Buffer.from(hashed, "hex"),
       userId: "user-x",
       expiresAt: new Date(Date.now() + 1000 * 60 * 60),
       createdAt: new Date(),
-    } as any);
+    } as unknown as RefreshToken);
 
     const uid = await service.validateToken(raw);
     expect(uid).toBe("user-x");
@@ -75,28 +72,43 @@ describe("Serviço de RefreshToken", () => {
     // expired case
     prismaMock.refreshToken.findUnique.mockResolvedValue({
       id: "rt-expired",
-      token: hashed,
+      token: Buffer.from(hashed, "hex"),
       userId: "user-x",
       expiresAt: new Date(Date.now() - 1000 * 60 * 60),
       createdAt: new Date(),
-    } as any);
+    } as unknown as RefreshToken);
 
-    prismaMock.refreshToken.delete.mockResolvedValue({} as any);
+    prismaMock.refreshToken.delete.mockResolvedValue({
+      id: "rt-expired",
+      token: Buffer.from(hashed, "hex"),
+      userId: "user-x",
+      expiresAt: new Date(Date.now() - 1000 * 60 * 60),
+      createdAt: new Date(),
+    } as unknown as RefreshToken);
     const uid2 = await service.validateToken(raw);
     expect(uid2).toBeNull();
     expect(prismaMock.refreshToken.delete).toHaveBeenCalled();
   });
 
   it("revokeToken remove token hash e retorna booleano", async () => {
-    const service = new RefreshTokenService(prismaMock, console as any, 7);
+    const service = new RefreshTokenService(prismaMock, console, 7);
     const raw = "some-token";
     const expectedHex = createHash("sha256").update(raw).digest("hex");
 
-    prismaMock.refreshToken.delete.mockResolvedValue({} as any);
+    prismaMock.refreshToken.delete.mockResolvedValue({
+      id: "rt-del",
+      token: Buffer.from(expectedHex, "hex"),
+      userId: "user-x",
+      expiresAt: new Date(),
+      createdAt: new Date(),
+    } as unknown as RefreshToken);
     const ok = await service.revokeToken(raw);
     expect(ok).toBe(true);
     expect(prismaMock.refreshToken.delete).toHaveBeenCalled();
-    const callArg = prismaMock.refreshToken.delete.mock.calls[0][0] as any;
+    const callArg = prismaMock.refreshToken.delete.mock
+      .calls[0][0] as unknown as {
+      where: { token: Uint8Array };
+    };
     // o token é passado como Buffer; compare em hex
     expect(Buffer.from(callArg.where.token).toString("hex")).toBe(expectedHex);
 

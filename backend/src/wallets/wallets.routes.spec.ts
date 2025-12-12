@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { DeepMockProxy, mockReset } from "vitest-mock-extended";
-import { PrismaClient, WalletType } from "@prisma/client";
+import { PrismaClient, WalletType, Wallet } from "@prisma/client";
 
 // Mock profundo do Prisma
 vi.mock("../lib/prisma", async () => {
@@ -61,7 +61,7 @@ describe("Wallets Routes", () => {
           brand: validWallet.brand,
           walletId: "wallet-123",
         },
-      } as any);
+      } as unknown as Wallet);
 
       const response = await app.inject({
         method: "POST",
@@ -116,7 +116,7 @@ describe("Wallets Routes", () => {
           creditCardInfo: null,
           createdAt: new Date(),
           updatedAt: new Date(),
-        } as any,
+        } as unknown as Wallet,
       ]);
 
       const response = await app.inject({

@@ -11,6 +11,7 @@ vi.mock("../lib/prisma", async () => {
 });
 
 import { prisma } from "../lib/prisma";
+import { Prisma } from "@prisma/client";
 import { buildApp } from "../app";
 import { hash } from "bcryptjs";
 import { RefreshTokenService } from "./refresh-token.service";
@@ -32,7 +33,9 @@ vi.stubEnv("JWT_SECRET", "test-secret");
 
 beforeEach(() => {
   mockReset(prismaMock);
-  prismaMock.refreshToken.deleteMany.mockResolvedValue({ count: 0 } as any);
+  prismaMock.refreshToken.deleteMany.mockResolvedValue({
+    count: 0,
+  } as Prisma.BatchPayload);
 });
 
 describe("Integração de autenticação (login -> rotação de refresh)", () => {

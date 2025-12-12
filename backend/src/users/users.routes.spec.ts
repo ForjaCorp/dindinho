@@ -9,7 +9,7 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { DeepMockProxy, mockReset } from "vitest-mock-extended";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, User } from "@prisma/client";
 
 vi.mock("../lib/prisma", async () => {
   const { mockDeep } = await import("vitest-mock-extended");
@@ -51,7 +51,7 @@ describe("Users Routes", () => {
       avatarUrl: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as any);
+    } as User);
 
     const response = await app.inject({
       method: "POST",
@@ -82,7 +82,7 @@ describe("Users Routes", () => {
       avatarUrl: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as any);
+    } as User);
 
     const response = await app.inject({
       method: "POST",
@@ -198,7 +198,7 @@ describe("Users Routes", () => {
       passwordHash: "hash-seguro",
       createdAt: mockDate,
       updatedAt: mockDate,
-    } as any);
+    } as User);
 
     const response = await app.inject({
       method: "POST",

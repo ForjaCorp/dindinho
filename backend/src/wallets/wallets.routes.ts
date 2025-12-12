@@ -61,7 +61,9 @@ export async function walletsRoutes(app: FastifyInstance) {
    */
   app.post("/", async (request, reply) => {
     const { sub: userId } = request.user as { sub: string };
-    const wallet = await service.create(userId, request.body as any);
+    // Validamos o payload com o schema compartilhado para garantir tipagem correta
+    const payload = createWalletSchema.parse(request.body);
+    const wallet = await service.create(userId, payload);
     return reply.status(201).send(wallet);
   });
 
