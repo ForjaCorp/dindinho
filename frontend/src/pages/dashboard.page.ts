@@ -11,19 +11,28 @@
  * @example
  * <app-dashboard></app-dashboard>
  */
-import { Component, inject, signal, OnInit, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  OnInit,
+  ChangeDetectionStrategy,
+  computed,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ApiService } from '../app/services/api.service';
 import { ApiResponseDTO } from '@dindinho/shared';
+import { WalletService } from '../app/services/wallet.service';
+import { CurrencyPipe } from '@angular/common';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ButtonModule, CardModule],
+  imports: [CommonModule, ButtonModule, CardModule, CurrencyPipe],
   template: `
     <div class="flex flex-col gap-4 p-4 pb-24">
       <!-- Card temporário para teste de conexão com o backend -->
@@ -58,7 +67,9 @@ import { ApiResponseDTO } from '@dindinho/shared';
         <span class="text-emerald-50 text-sm font-medium" data-testid="balance-title"
           >Saldo Total</span
         >
-        <div class="text-3xl font-bold mt-1 tracking-tight">R$ 0,00</div>
+        <div class="text-3xl font-bold mt-1 tracking-tight">
+          {{ totalBalance() | currency: 'BRL' }}
+        </div>
 
         <div class="flex gap-3 mt-6">
           <p-button
@@ -166,21 +177,22 @@ import { ApiResponseDTO } from '@dindinho/shared';
  * @since 1.0.0
  */
 export class DashboardComponent implements OnInit {
-  /** Serviço responsável por chamadas à API do backend */
   private apiService = inject(ApiService);
+  private walletService = inject(WalletService);
 
-  /**
-   * Armazena os dados recebidos da API
-   * @type {Signal<ApiResponse | null>}
-   */
-  protected apiData = signal<ApiResponseDTO | null>(null);
-  /**
-   * Indica se houve erro na comunicação com o backend
-   * @type {Signal<boolean>}
-   */
-  protected error = signal<boolean>(false);
+  apiData = signal<ApiResponseDTO | null>(null);
+  error = signal<string | null>(null);
+  isLoading = signal(false);
+
+  // Signal reativo para o saldo total
+  totalBalance = computed(() => this.walletService.totalBalance());
 
   ngOnInit() {
+    this.checkBackendConnection();
+    this.loadWallets();
+  }
+
+  checkBackendConnection() {
     this.apiService.getHello().subscribe({
       next: (response: ApiResponseDTO) => {
         console.log('Resposta do Backend:', response);
@@ -188,8 +200,12 @@ export class DashboardComponent implements OnInit {
       },
       error: (err: Error | HttpErrorResponse) => {
         console.error('Erro ao conectar com o backend:', err);
-        this.error.set(true);
+        this.error.set('Erro ao conectar com o backend');
       },
     });
+  }
+
+  loadWallets() {
+    this.walletService.loadWallets();
   }
 }

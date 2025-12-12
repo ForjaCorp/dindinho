@@ -145,7 +145,7 @@ describe("WalletsService", () => {
       vi.mocked(mockPrisma.wallet.create).mockRejectedValue(error);
 
       await expect(service.create(userId, validWalletData)).rejects.toThrow(
-        "Já existe uma carteira com este nome para este usuário",
+        'Já existe uma carteira com nome "Cartão Nubank" para este usuário',
       );
     });
 
@@ -177,11 +177,11 @@ describe("WalletsService", () => {
      * Testa tratamento de erro genérico.
      */
     it("deve lançar erro genérico para falhas desconhecidas", async () => {
-      const error = new Error("Database connection failed");
+      const error = new Error("Unknown database error");
       vi.mocked(mockPrisma.wallet.create).mockRejectedValue(error);
 
       await expect(service.create(userId, validWalletData)).rejects.toThrow(
-        "Erro ao criar carteira. Tente novamente mais tarde.",
+        "Erro inesperado ao criar carteira",
       );
     });
   });
@@ -282,7 +282,7 @@ describe("WalletsService", () => {
       vi.mocked(mockPrisma.wallet.findMany).mockRejectedValue(error);
 
       await expect(service.findAllByUserId(userId)).rejects.toThrow(
-        "Erro ao buscar carteiras. Tente novamente mais tarde.",
+        "Erro inesperado ao buscar carteira",
       );
     });
   });
