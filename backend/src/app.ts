@@ -1,4 +1,5 @@
 import Fastify, { FastifyInstance } from "fastify";
+import { ZodError } from "zod";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
 import {
@@ -53,14 +54,14 @@ export function buildApp(): FastifyInstance {
     },
   });
   // Error Handler Global
-  app.setErrorHandler((error: any, request, reply) => {
+  app.setErrorHandler((error: unknown, request, reply) => {
     // Erros de Validação Zod
-    if (error instanceof Error && "validation" in error) {
+    if (error instanceof ZodError) {
       return reply.status(400).send({
         statusCode: 400,
         error: "Bad Request",
         message: error.message,
-        issues: (error as any).validation,
+        issues: error.issues,
       });
     }
 
@@ -73,11 +74,16 @@ export function buildApp(): FastifyInstance {
     }
 
     // Erros com statusCode definido (ex: lançados manualmente ou pelo JWT)
-    if (error.statusCode) {
-      return reply.status(error.statusCode).send({
-        statusCode: error.statusCode,
-        error: error.name || "Error",
-        message: error.message,
+    if (typeof error === "object" && error !== null && "statusCode" in error) {
+      const e = error as {
+        statusCode: number;
+        name?: string;
+        message?: string;
+      };
+      return reply.status(e.statusCode).send({
+        statusCode: e.statusCode,
+        error: e.name || "Error",
+        message: e.message,
       });
     }
 

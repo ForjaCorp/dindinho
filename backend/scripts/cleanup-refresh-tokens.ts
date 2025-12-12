@@ -3,7 +3,7 @@ import { prisma } from "../src/lib/prisma";
 import { RefreshTokenService } from "../src/auth/refresh-token.service";
 
 async function main() {
-  const service = new RefreshTokenService(prisma, console as any);
+  const service = new RefreshTokenService(prisma, console);
   try {
     const count = await service.cleanupExpiredTokens();
     console.log(`Cleanup finished. Removed ${count} expired refresh tokens.`);
