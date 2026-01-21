@@ -35,7 +35,10 @@ export function buildApp(): FastifyInstance {
   // Plugins
   // Configuração CORS seguro
   const allowedOrigins = [
-    "http://localhost:4200", // Angular dev
+    "http://localhost:4200", // Angular dev default
+    "http://localhost:4201", // Angular dev alternative
+    "http://127.0.0.1:4200", // Angular dev IP default
+    "http://127.0.0.1:4201", // Angular dev IP alternative
     "http://localhost:3333", // Backend local
     process.env.FRONTEND_URL, // Produção
   ].filter((origin): origin is string => Boolean(origin));

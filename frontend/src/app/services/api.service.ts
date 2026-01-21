@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpBackend } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
@@ -9,6 +9,11 @@ import {
   CreateWalletDTO,
   WalletDTO,
 } from '@dindinho/shared';
+
+export interface RefreshResponse {
+  token: string;
+  refreshToken: string;
+}
 
 /**
  * Serviço responsável por realizar chamadas à API do backend.
@@ -43,6 +48,8 @@ import {
 })
 export class ApiService {
   private http = inject(HttpClient);
+  private handler = inject(HttpBackend);
+  private httpNoInterceptor = new HttpClient(this.handler);
   private readonly baseUrl = environment.apiUrl;
   private readonly baseUrlWithoutApi = environment.apiUrl.replace('/api', '');
 
@@ -73,6 +80,18 @@ export class ApiService {
    */
   login(data: LoginDTO): Observable<LoginResponseDTO> {
     return this.http.post<LoginResponseDTO>(`${this.baseUrl}/login`, data);
+  }
+
+  /**
+   * Renova o token de acesso usando um refresh token.
+   *
+   * @param {string} refreshToken - O refresh token atual
+   * @returns {Observable<RefreshResponse>} Observable com novos tokens
+   */
+  refresh(refreshToken: string): Observable<RefreshResponse> {
+    return this.httpNoInterceptor.post<RefreshResponse>(`${this.baseUrl}/refresh`, {
+      refreshToken,
+    });
   }
 
   /**

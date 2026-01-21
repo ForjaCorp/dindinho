@@ -1,5 +1,15 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { TestBed } from '@angular/core/testing';
+/**
+ * @vitest-environment jsdom
+ */
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { TestBed, getTestBed } from '@angular/core/testing';
+import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
+
+const testBed = getTestBed();
+if (!testBed.platform) {
+  testBed.initTestEnvironment(BrowserTestingModule, platformBrowserTesting());
+}
+
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { Router, provideRouter } from '@angular/router';
@@ -44,6 +54,7 @@ describe('AuthService', () => {
 
     const apiServiceSpy = {
       login: vi.fn(),
+      refresh: vi.fn(),
     };
 
     TestBed.configureTestingModule({
@@ -67,6 +78,7 @@ describe('AuthService', () => {
   });
 
   afterEach(() => {
+    TestBed.resetTestingModule();
     consoleErrorSpy.mockRestore();
     consoleWarnSpy.mockRestore();
     localStorage.removeItem('dindinho_token');
@@ -87,6 +99,7 @@ describe('AuthService', () => {
         service.login(credentials).subscribe((response) => {
           expect(response).toEqual(mockLoginResponse);
           expect(setItemSpy).toHaveBeenCalledWith('dindinho_token', 'test-token');
+          expect(setItemSpy).toHaveBeenCalledWith('dindinho_refresh_token', 'test-refresh');
           expect(service.currentUser()).toBeTruthy();
           done();
         });
@@ -126,8 +139,64 @@ describe('AuthService', () => {
       service.logout();
 
       expect(removeItemSpy).toHaveBeenCalledWith('dindinho_token');
+      expect(removeItemSpy).toHaveBeenCalledWith('dindinho_refresh_token');
       expect(service.currentUser()).toBeNull();
       expect(navigateSpy).toHaveBeenCalledWith(['/login']);
+    });
+  });
+
+  describe('refreshToken', () => {
+    it('should refresh token and update storage', async () => {
+      const mockRefreshResponse = {
+        token: 'new-token',
+        refreshToken: 'new-refresh-token',
+      };
+
+      vi.spyOn(Storage.prototype, 'getItem').mockReturnValue('old-refresh-token');
+      vi.spyOn(apiService, 'refresh').mockReturnValue(of(mockRefreshResponse));
+      const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
+
+      await new Promise<void>((done) => {
+        service.refreshToken().subscribe((newToken) => {
+          expect(newToken).toBe('new-token');
+          expect(setItemSpy).toHaveBeenCalledWith('dindinho_token', 'new-token');
+          expect(setItemSpy).toHaveBeenCalledWith('dindinho_refresh_token', 'new-refresh-token');
+          done();
+        });
+      });
+    });
+
+    it('should logout if no refresh token available', async () => {
+      vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
+      const logoutSpy = vi.spyOn(service, 'logout');
+
+      await new Promise<void>((done) => {
+        service.refreshToken().subscribe({
+          error: (err) => {
+            expect(logoutSpy).toHaveBeenCalled();
+            expect(err.message).toBe('No refresh token available');
+            done();
+          },
+        });
+      });
+    });
+
+    it('should logout on refresh error', async () => {
+      vi.spyOn(Storage.prototype, 'getItem').mockReturnValue('old-refresh-token');
+      vi.spyOn(apiService, 'refresh').mockReturnValue(
+        throwError(() => new Error('Refresh failed')),
+      );
+      const logoutSpy = vi.spyOn(service, 'logout');
+
+      await new Promise<void>((done) => {
+        service.refreshToken().subscribe({
+          error: (err) => {
+            expect(logoutSpy).toHaveBeenCalled();
+            expect(err.message).toBe('Refresh failed');
+            done();
+          },
+        });
+      });
     });
   });
 

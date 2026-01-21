@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService } from './api.service';
 import { LoginDTO, LoginResponseDTO } from '@dindinho/shared';
-import { tap, catchError } from 'rxjs/operators';
+import { tap, catchError, map } from 'rxjs/operators';
 import { Observable, throwError } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 
@@ -87,6 +87,7 @@ export class AuthService {
   private api = inject(ApiService);
   private router = inject(Router);
   private readonly TOKEN_KEY = 'dindinho_token';
+  private readonly REFRESH_TOKEN_KEY = 'dindinho_refresh_token';
 
   /**
    * Estado reativo do usuário atual.
@@ -143,8 +144,8 @@ export class AuthService {
   login(credentials: LoginDTO): Observable<LoginResponseDTO> {
     return this.api.login(credentials).pipe(
       tap((response) => {
-        // Armazena o token e atualiza o estado do usuário
-        this.storeToken(response.token);
+        // Armazena os tokens e atualiza o estado do usuário
+        this.storeTokens(response.token, response.refreshToken);
         this.currentUser.set(response.user);
 
         // Redireciona para o dashboard
@@ -204,6 +205,30 @@ export class AuthService {
       // Força redirecionamento mesmo em caso de erro
       this.router.navigate(['/login']);
     }
+  }
+
+  /**
+   * Tenta renovar o token de acesso.
+   *
+   * @returns {Observable<string>} Observable com o novo token de acesso
+   */
+  refreshToken(): Observable<string> {
+    const refreshToken = this.getRefreshToken();
+    if (!refreshToken) {
+      this.logout();
+      return throwError(() => new Error('No refresh token available'));
+    }
+
+    return this.api.refresh(refreshToken).pipe(
+      tap((response) => {
+        this.storeTokens(response.token, response.refreshToken);
+      }),
+      map((response) => response.token),
+      catchError((error) => {
+        this.logout();
+        return throwError(() => error);
+      }),
+    );
   }
 
   /**
@@ -367,27 +392,39 @@ export class AuthService {
   }
 
   /**
-   * Armazena o token JWT de forma segura no localStorage.
+   * Armazena os tokens JWT de forma segura no localStorage.
    *
    * @private
-   * @param {string} token - O token JWT a ser armazenado
-   * @throws {AuthError.STORAGE_ERROR} Quando não é possível armazenar o token
+   * @param {string} token - O token de acesso
+   * @param {string} refreshToken - O refresh token
+   * @throws {AuthError.STORAGE_ERROR} Quando não é possível armazenar os tokens
    */
-  private storeToken(token: string): void {
+  private storeTokens(token: string, refreshToken: string): void {
     try {
       if (typeof localStorage === 'undefined') {
         throw new Error('localStorage não disponível');
       }
 
-      if (!token || typeof token !== 'string') {
-        throw new Error('Token inválido para armazenamento');
+      if (!token || !refreshToken) {
+        throw new Error('Tokens inválidos para armazenamento');
       }
 
       localStorage.setItem(this.TOKEN_KEY, token);
+      localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
     } catch (error) {
-      console.error('Erro ao armazenar token:', error);
+      console.error('Erro ao armazenar tokens:', error);
       throw new Error(AuthError.STORAGE_ERROR);
     }
+  }
+
+  /**
+   * Recupera o refresh token do armazenamento.
+   *
+   * @returns {string | null} O refresh token ou null se não existir
+   */
+  getRefreshToken(): string | null {
+    if (typeof localStorage === 'undefined') return null;
+    return localStorage.getItem(this.REFRESH_TOKEN_KEY);
   }
 
   /**
@@ -395,7 +432,7 @@ export class AuthService {
    *
    * @private
    * @description
-   * Remove o token do localStorage e limpa o estado do usuário.
+   * Remove os tokens do localStorage e limpa o estado do usuário.
    * Trata erros de localStorage de forma silenciosa para não
    * interromper o fluxo de logout.
    */
@@ -403,9 +440,10 @@ export class AuthService {
     try {
       if (typeof localStorage !== 'undefined') {
         localStorage.removeItem(this.TOKEN_KEY);
+        localStorage.removeItem(this.REFRESH_TOKEN_KEY);
       }
     } catch (error) {
-      console.error('Erro ao limpar token do localStorage:', error);
+      console.error('Erro ao limpar tokens do localStorage:', error);
     }
 
     this.currentUser.set(null);

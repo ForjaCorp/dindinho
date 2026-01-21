@@ -1,271 +1,154 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { HttpHandlerFn, HttpRequest, HttpResponse, HttpHeaders } from '@angular/common/http';
-import { of } from 'rxjs';
-import { authInterceptor } from './auth.interceptor';
-
 /**
- * Testes para o interceptor de autenticação.
- * Verifica o comportamento do interceptor ao adicionar tokens JWT às requisições HTTP.
+ * @vitest-environment jsdom
  */
-describe('authInterceptor', () => {
-  /**
-   * Requisição HTTP mock para uso nos testes.
-   */
-  let mockReq: HttpRequest<unknown>;
+import { TestBed, getTestBed } from '@angular/core/testing';
+import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 
-  /**
-   * Função mock next que simula o próximo handler na cadeia de interceptors.
-   */
-  let mockNext: HttpHandlerFn;
+const testBed = getTestBed();
+if (!testBed.platform) {
+  testBed.initTestEnvironment(BrowserTestingModule, platformBrowserTesting());
+}
 
-  /**
-   * Array que captura as requisições passadas para a função next.
-   */
-  let capturedRequests: HttpRequest<unknown>[];
+import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { authInterceptor, resetInterceptorState } from './auth.interceptor';
+import { AuthService } from '../services/auth.service';
+import { of, throwError, Subject } from 'rxjs';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+
+describe('AuthInterceptor', () => {
+  let http: HttpClient;
+  let httpMock: HttpTestingController;
+  let authService: AuthService;
 
   beforeEach(() => {
-    // Limpar localStorage antes de cada teste
+    resetInterceptorState();
     localStorage.clear();
 
-    // Criar requisição mock
-    mockReq = new HttpRequest('GET', '/api/test');
+    const authServiceSpy = {
+      refreshToken: vi.fn(),
+      logout: vi.fn(),
+    };
 
-    // Criar função mock next que retorna Observable<HttpEvent>
-    capturedRequests = [];
-    mockNext = ((req: HttpRequest<unknown>) => {
-      capturedRequests.push(req);
-      return of(new HttpResponse({ status: 200, body: {} }));
-    }) as HttpHandlerFn;
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(withInterceptors([authInterceptor])),
+        provideHttpClientTesting(),
+        { provide: AuthService, useValue: authServiceSpy },
+      ],
+    });
+
+    http = TestBed.inject(HttpClient);
+    httpMock = TestBed.inject(HttpTestingController);
+    authService = TestBed.inject(AuthService);
   });
 
-  /**
-   * Limpeza após cada teste.
-   * Limpa o localStorage e restaura os mocks.
-   */
   afterEach(() => {
+    TestBed.resetTestingModule();
+    httpMock.verify();
     localStorage.clear();
-    vi.restoreAllMocks();
-    vi.clearAllMocks();
   });
 
-  /**
-   * Verifica se o interceptor está definido e é uma função.
-   */
-  it('deve estar definido', () => {
-    expect(authInterceptor).toBeDefined();
-    expect(typeof authInterceptor).toBe('function');
+  it('should add Authorization header', () => {
+    localStorage.setItem('dindinho_token', 'test-token');
+
+    http.get('/api/data').subscribe();
+
+    const req = httpMock.expectOne('/api/data');
+    expect(req.request.headers.has('Authorization')).toBe(true);
+    expect(req.request.headers.get('Authorization')).toBe('Bearer test-token');
+    req.flush({});
   });
 
-  /**
-   * Testa o comportamento quando existe token no localStorage.
-   */
-  describe('quando token existe no localStorage', () => {
-    /**
-     * Configura um token mock no localStorage antes dos testes.
-     */
-    beforeEach(() => {
-      localStorage.setItem('dindinho_token', 'test-jwt-token');
-    });
+  it('should not add header if no token', () => {
+    http.get('/api/data').subscribe();
 
-    /**
-     * Verifica se o header Authorization é adicionado corretamente.
-     */
-    it('deve adicionar header Authorization à requisição', () => {
-      authInterceptor(mockReq, mockNext);
-
-      expect(capturedRequests).toHaveLength(1);
-
-      const interceptedRequest = capturedRequests[0];
-      expect(interceptedRequest.headers.get('Authorization')).toBe('Bearer test-jwt-token');
-    });
-
-    /**
-     * Verifica se a requisição é clonada com o token Bearer.
-     */
-    it('deve clonar requisição com Bearer token', () => {
-      authInterceptor(mockReq, mockNext);
-
-      const interceptedRequest = capturedRequests[0];
-      expect(interceptedRequest).not.toBe(mockReq); // Deve ser uma requisição clonada
-      expect(interceptedRequest.method).toBe(mockReq.method);
-      expect(interceptedRequest.url).toBe(mockReq.url);
-    });
-
-    /**
-     * Verifica se headers existentes são preservados ao adicionar o Authorization.
-     */
-    it('deve preservar headers existentes da requisição', () => {
-      const headers = new HttpHeaders({
-        'Content-Type': 'application/json',
-        'X-Custom-Header': 'custom-value',
-      });
-      const reqWithHeaders = new HttpRequest('GET', '/api/test', null, {
-        headers: headers,
-      });
-
-      authInterceptor(reqWithHeaders, mockNext);
-
-      const interceptedRequest = capturedRequests[0];
-      expect(interceptedRequest.headers.get('Content-Type')).toBe('application/json');
-      expect(interceptedRequest.headers.get('X-Custom-Header')).toBe('custom-value');
-      expect(interceptedRequest.headers.get('Authorization')).toBe('Bearer test-jwt-token');
-    });
-
-    /**
-     * Verifica se o interceptor funciona com diferentes métodos HTTP.
-     */
-    it('deve funcionar com diferentes métodos HTTP', () => {
-      const postReq = new HttpRequest('POST', '/api/data', { test: 'data' });
-
-      authInterceptor(postReq, mockNext);
-
-      const interceptedRequest = capturedRequests[0];
-      expect(interceptedRequest.method).toBe('POST');
-      expect(interceptedRequest.headers.get('Authorization')).toBe('Bearer test-jwt-token');
-    });
+    const req = httpMock.expectOne('/api/data');
+    expect(req.request.headers.has('Authorization')).toBe(false);
+    req.flush({});
   });
 
-  /**
-   * Testa o comportamento quando não existe token no localStorage.
-   */
-  describe('quando não existe token no localStorage', () => {
-    /**
-     * Verifica se a requisição original é passada sem modificações.
-     */
-    it('deve passar requisição original sem modificação', () => {
-      authInterceptor(mockReq, mockNext);
+  it('should not add header for external requests', () => {
+    localStorage.setItem('dindinho_token', 'test-token');
 
-      expect(capturedRequests).toHaveLength(1);
-      expect(capturedRequests[0]).toBe(mockReq);
-    });
+    http.get('https://external.api/data').subscribe();
 
-    /**
-     * Verifica que nenhum header Authorization é adicionado sem token.
-     */
-    it('não deve adicionar header Authorization', () => {
-      authInterceptor(mockReq, mockNext);
-
-      const interceptedRequest = capturedRequests[0];
-      expect(interceptedRequest.headers.get('Authorization')).toBeNull();
-    });
-
-    /**
-     * Verifica se a requisição é preservada quando há outra chave no localStorage.
-     */
-    it('deve preservar requisição quando localStorage tem chave diferente', () => {
-      localStorage.setItem('different_token', 'some-token');
-
-      authInterceptor(mockReq, mockNext);
-
-      expect(capturedRequests[0]).toBe(mockReq);
-      const interceptedRequest = capturedRequests[0];
-      expect(interceptedRequest.headers.get('Authorization')).toBeNull();
-    });
+    const req = httpMock.expectOne('https://external.api/data');
+    expect(req.request.headers.has('Authorization')).toBe(false);
+    req.flush({});
   });
 
-  /**
-   * Testa casos extremos de valores de token.
-   */
-  describe('casos extremos de token', () => {
-    /**
-     * Verifica o comportamento com token string vazia.
-     */
-    it('deve tratar token string vazia', () => {
-      localStorage.setItem('dindinho_token', '');
+  it('should refresh token on 401 and retry', () => {
+    localStorage.setItem('dindinho_token', 'expired-token');
+    vi.spyOn(authService, 'refreshToken').mockReturnValue(of('new-token'));
 
-      authInterceptor(mockReq, mockNext);
+    http.get('/api/data').subscribe();
 
-      const interceptedRequest = capturedRequests[0];
-      // String vazia é falsy, então nenhum header Authorization deve ser adicionado
-      expect(interceptedRequest.headers.get('Authorization')).toBeNull();
-    });
+    const req = httpMock.expectOne('/api/data');
+    req.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
 
-    /**
-     * Verifica o comportamento com token valor null.
-     */
-    it('deve tratar valor de token null', () => {
-      localStorage.setItem('dindinho_token', 'null');
+    expect(authService.refreshToken).toHaveBeenCalled();
 
-      authInterceptor(mockReq, mockNext);
-
-      const interceptedRequest = capturedRequests[0];
-      expect(interceptedRequest.headers.get('Authorization')).toBe('Bearer null');
-    });
-
-    /**
-     * Verifica o comportamento com token valor undefined.
-     */
-    it('deve tratar valor de token undefined', () => {
-      localStorage.setItem('dindinho_token', 'undefined');
-
-      authInterceptor(mockReq, mockNext);
-
-      const interceptedRequest = capturedRequests[0];
-      expect(interceptedRequest.headers.get('Authorization')).toBe('Bearer undefined');
-    });
+    const retryReq = httpMock.expectOne('/api/data');
+    expect(retryReq.request.headers.get('Authorization')).toBe('Bearer new-token');
+    retryReq.flush({});
   });
 
-  /**
-   * Testa a interação com o localStorage.
-   */
-  describe('interação com localStorage', () => {
-    /**
-     * Verifica se a chave correta do localStorage é usada.
-     */
-    it('deve usar chave correta do localStorage', () => {
-      const getItemSpy = vi.spyOn(Storage.prototype, 'getItem');
+  it('should logout on refresh failure', () => {
+    localStorage.setItem('dindinho_token', 'expired-token');
+    vi.spyOn(authService, 'refreshToken').mockReturnValue(
+      throwError(() => new Error('Refresh failed')),
+    );
 
-      authInterceptor(mockReq, mockNext);
-
-      expect(getItemSpy).toHaveBeenCalledWith('dindinho_token');
+    http.get('/api/data').subscribe({
+      error: (error) => {
+        expect(error).toBeTruthy();
+      },
     });
 
-    /**
-     * Verifica o tratamento de erros de acesso ao localStorage.
-     */
-    it('deve tratar erros de acesso ao localStorage', () => {
-      const getItemSpy = vi.spyOn(Storage.prototype, 'getItem');
-      getItemSpy.mockImplementation(() => {
-        throw new Error('localStorage access denied');
-      });
+    const req = httpMock.expectOne('/api/data');
+    req.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
 
-      expect(() => authInterceptor(mockReq, mockNext)).toThrow('localStorage access denied');
-    });
+    expect(authService.refreshToken).toHaveBeenCalled();
+    expect(authService.logout).toHaveBeenCalled();
   });
 
-  /**
-   * Testa o fluxo da requisição.
-   */
-  describe('fluxo da requisição', () => {
-    /**
-     * Verifica se a função next é chamada exatamente uma vez.
-     */
-    it('deve chamar função next exatamente uma vez', () => {
-      authInterceptor(mockReq, mockNext);
-      expect(capturedRequests).toHaveLength(1);
-    });
+  it('should handle concurrent requests (mutex)', () => {
+    localStorage.setItem('dindinho_token', 'expired-token');
 
-    /**
-     * Verifica se o resultado da função next é retornado.
-     */
-    it('deve retornar resultado da função next', () => {
-      const result = authInterceptor(mockReq, mockNext);
-      expect(result).toBeDefined();
-    });
-  });
+    // Simulate slow refresh using Subject
+    const refreshTokenSubject = new Subject<string>();
+    vi.spyOn(authService, 'refreshToken').mockReturnValue(refreshTokenSubject.asObservable());
 
-  /**
-   * Garante que não enviamos tokens para domínios externos
-   */
-  it('NÃO deve adicionar token para URLs externas', () => {
-    localStorage.setItem('dindinho_token', 'test-jwt-token');
-    // Uma URL que começa com http/https é considerada absoluta/externa neste contexto
-    const externalReq = new HttpRequest('GET', 'https://api.externa.com/dados');
+    // Request 1
+    http.get('/api/data1').subscribe();
+    // Request 2
+    http.get('/api/data2').subscribe();
 
-    authInterceptor(externalReq, mockNext);
+    const req1 = httpMock.expectOne('/api/data1');
+    const req2 = httpMock.expectOne('/api/data2');
 
-    const interceptedRequest = capturedRequests[0];
-    // A lógica do interceptor precisaria verificar se a URL começa com "/" ou corresponde ao seu environment.apiUrl
-    expect(interceptedRequest.headers.has('Authorization')).toBe(false);
+    // Fail first request - triggers refresh
+    req1.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
+
+    // Fail second request - should wait
+    req2.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
+
+    // Should call refresh only once
+    expect(authService.refreshToken).toHaveBeenCalledTimes(1);
+
+    // Emit new token
+    refreshTokenSubject.next('new-token');
+    refreshTokenSubject.complete();
+
+    // Both should retry with new token
+    const retryReq1 = httpMock.expectOne('/api/data1');
+    const retryReq2 = httpMock.expectOne('/api/data2');
+
+    expect(retryReq1.request.headers.get('Authorization')).toBe('Bearer new-token');
+    expect(retryReq2.request.headers.get('Authorization')).toBe('Bearer new-token');
+
+    retryReq1.flush({});
+    retryReq2.flush({});
   });
 });

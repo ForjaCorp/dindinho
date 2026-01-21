@@ -1,6 +1,6 @@
-import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterOutlet } from '@angular/router';
 
 /**
  * @description
@@ -17,17 +17,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
   selector: 'app-root',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
-  templateUrl: './app.html',
+  imports: [CommonModule, RouterOutlet],
+  template: `<router-outlet></router-outlet>`,
 })
-export class App {
-  /**
-   * @description
-   * Título da aplicação, gerenciado como um Signal para reatividade.
-   * Pode ser usado para atualizações dinâmicas do título da página.
-   *
-   * @type {Signal<string>}
-   * @default 'Dindinho'
-   */
-  protected readonly title = signal('Dindinho');
-}
+export class App {}

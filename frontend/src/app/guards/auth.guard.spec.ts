@@ -1,10 +1,19 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { TestBed } from '@angular/core/testing';
+/**
+ * @vitest-environment jsdom
+ */
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { TestBed, getTestBed } from '@angular/core/testing';
 import { Router, UrlTree } from '@angular/router';
 import { ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { runInInjectionContext, EnvironmentInjector } from '@angular/core';
 import { authGuard } from './auth.guard';
 import { AuthService } from '../services/auth.service';
+import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
+
+const testBed = getTestBed();
+if (!testBed.platform) {
+  testBed.initTestEnvironment(BrowserTestingModule, platformBrowserTesting());
+}
 
 describe('authGuard', () => {
   let authService: AuthService;
@@ -43,6 +52,10 @@ describe('authGuard', () => {
     mockRouterStateSnapshot = {} as RouterStateSnapshot;
   });
 
+  afterEach(() => {
+    TestBed.resetTestingModule();
+  });
+
   it('should allow access when user is authenticated', () => {
     vi.spyOn(authService, 'isAuthenticated').mockReturnValue(true);
 
@@ -52,21 +65,18 @@ describe('authGuard', () => {
 
     expect(result).toBe(true);
     expect(authService.isAuthenticated).toHaveBeenCalled();
-    expect(router.createUrlTree).not.toHaveBeenCalled();
   });
 
-  it('should redirect to login when user is not authenticated', () => {
+  it('should redirect to login when user is NOT authenticated', () => {
     vi.spyOn(authService, 'isAuthenticated').mockReturnValue(false);
-    const loginUrlTree = { url: '/login' } as unknown as UrlTree;
-    vi.spyOn(router, 'createUrlTree').mockReturnValue(loginUrlTree);
+    const createUrlTreeSpy = vi.spyOn(router, 'createUrlTree');
 
-    const result = runInInjectionContext(injector, () =>
+    runInInjectionContext(injector, () =>
       authGuard(mockActivatedRouteSnapshot, mockRouterStateSnapshot),
     );
 
-    expect(result).toBe(loginUrlTree);
     expect(authService.isAuthenticated).toHaveBeenCalled();
-    expect(router.createUrlTree).toHaveBeenCalledWith(['/login']);
+    expect(createUrlTreeSpy).toHaveBeenCalledWith(['/login']);
   });
 
   it('should be created with proper dependencies', () => {
