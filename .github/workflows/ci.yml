@@ -51,13 +51,13 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Quality (PR: affected)
+      - name: "Quality (PR: affected)"
         if: ${{ github.event_name == 'pull_request' }}
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: npm run quality:ci -- --filter="...[$BASE_SHA]"
 
-      - name: Quality (main: full)
+      - name: "Quality (main: full)"
         if: ${{ github.event_name != 'pull_request' }}
         run: npm run quality:ci
 
