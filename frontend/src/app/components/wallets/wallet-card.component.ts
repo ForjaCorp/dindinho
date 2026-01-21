@@ -11,20 +11,23 @@ import { WalletDTO } from '@dindinho/shared';
     class: 'block',
   },
   template: `
-    <div [class]="containerClass()">
+    <div [class]="containerClass()" [attr.data-testid]="walletCardTestId()">
       <div [class]="headerClass()">
         <div
           [class]="iconClass()"
           [style]="{ backgroundColor: wallet().color + '20', color: wallet().color }"
+          [attr.data-testid]="walletIconTestId()"
         >
           <i [class]="'pi ' + wallet().icon"></i>
         </div>
 
-        <span [class]="tagClass()">{{ typeLabel() }}</span>
+        <span [class]="tagClass()" [attr.data-testid]="walletTypeTestId()">{{ typeLabel() }}</span>
       </div>
 
       <div class="min-w-0">
-        <p [class]="nameClass()" [title]="wallet().name">{{ wallet().name }}</p>
+        <p [class]="nameClass()" [title]="wallet().name" [attr.data-testid]="walletNameTestId()">
+          {{ wallet().name }}
+        </p>
       </div>
 
       @if (variant() === 'full') {
@@ -38,29 +41,45 @@ import { WalletDTO } from '@dindinho/shared';
             <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">
               Limite Disponível
             </p>
-            <p class="text-lg font-semibold text-slate-700">
+            <p
+              class="text-lg font-semibold text-slate-700"
+              [attr.data-testid]="walletValueTestId()"
+            >
               {{ wallet().creditCardInfo!.limit | currency: 'BRL' }}
             </p>
           </div>
         } @else {
           <div class="mt-3 pt-3 border-t border-slate-50">
             <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Saldo Atual</p>
-            <p class="text-lg font-semibold text-emerald-600">
+            <p
+              class="text-lg font-semibold text-emerald-600"
+              [attr.data-testid]="walletValueTestId()"
+            >
               {{ wallet().balance || 0 | currency: 'BRL' }}
             </p>
           </div>
         }
       } @else {
         @if (wallet().type === 'CREDIT' && wallet().creditCardInfo?.limit) {
-          <p class="mt-2 text-base font-bold text-slate-900">
+          <p
+            class="mt-2 text-base font-bold text-slate-900"
+            [attr.data-testid]="walletValueTestId()"
+          >
             {{ wallet().creditCardInfo!.limit | currency: 'BRL' }}
           </p>
-          <p class="text-xs text-slate-500">Limite disponível</p>
+          <p class="text-xs text-slate-500" [attr.data-testid]="walletCaptionTestId()">
+            Limite disponível
+          </p>
         } @else {
-          <p class="mt-2 text-base font-bold text-slate-900">
+          <p
+            class="mt-2 text-base font-bold text-slate-900"
+            [attr.data-testid]="walletValueTestId()"
+          >
             {{ wallet().balance || 0 | currency: 'BRL' }}
           </p>
-          <p class="text-xs text-slate-500">Saldo atual</p>
+          <p class="text-xs text-slate-500" [attr.data-testid]="walletCaptionTestId()">
+            Saldo atual
+          </p>
         }
       }
     </div>
@@ -71,6 +90,13 @@ export class WalletCardComponent {
   variant = input<'compact' | 'full'>('full');
 
   typeLabel = computed(() => (this.wallet().type === 'CREDIT' ? 'Crédito' : 'Conta'));
+
+  walletCardTestId = computed(() => `wallet-card-${this.wallet().id}`);
+  walletIconTestId = computed(() => `wallet-icon-${this.wallet().id}`);
+  walletTypeTestId = computed(() => `wallet-type-${this.wallet().id}`);
+  walletNameTestId = computed(() => `wallet-name-${this.wallet().id}`);
+  walletValueTestId = computed(() => `wallet-value-${this.wallet().id}`);
+  walletCaptionTestId = computed(() => `wallet-caption-${this.wallet().id}`);
 
   containerClass = computed(() => {
     if (this.variant() === 'compact') {
