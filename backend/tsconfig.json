@@ -10,10 +10,10 @@
     "incremental": true,
     "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
     "outDir": "./dist",
-    "rootDir": "./",
     "baseUrl": "./src",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@dindinho/shared": ["../../packages/shared/src/index.ts"]
     }
   },
   "include": ["src/**/*", "prisma.config.ts"],
