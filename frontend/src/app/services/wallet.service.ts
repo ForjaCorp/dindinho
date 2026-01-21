@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { finalize, tap } from 'rxjs/operators';
-import { Observable } from 'rxjs';
+import { Observable, throwError } from 'rxjs';
 import { CreateWalletDTO, WalletDTO } from '@dindinho/shared';
 import { ApiService } from './api.service';
 
@@ -188,7 +188,14 @@ export class WalletService {
         finalize(() => this.updateState({ loading: false })),
         tap({
           next: (wallets) => this.updateState({ wallets }),
-          error: () => this.updateState({ error: 'Erro ao carregar carteiras' }),
+          error: (err) =>
+            this.updateState({
+              wallets: [],
+              error: this.mapHttpError(err, {
+                defaultMessage: 'Erro ao carregar carteiras',
+                validationFallback: 'Dados inválidos',
+              }),
+            }),
         }),
       )
       .subscribe();
@@ -201,6 +208,13 @@ export class WalletService {
    * @returns Observable com a carteira criada
    */
   createWallet(payload: CreateWalletDTO): Observable<WalletDTO> {
+    try {
+      this.validateCreateWalletData(payload);
+    } catch (error) {
+      this.updateState({ loading: false, error: error instanceof Error ? error.message : 'Erro' });
+      return throwError(() => error);
+    }
+
     this.updateState({ loading: true, error: null });
 
     return this.api.createWallet(payload).pipe(
@@ -210,9 +224,42 @@ export class WalletService {
           const currentWallets = this.state().wallets;
           this.updateState({ wallets: [...currentWallets, newWallet] });
         },
-        error: () => this.updateState({ error: 'Erro ao criar carteira' }),
+        error: (err) =>
+          this.updateState({
+            error: this.mapHttpError(err, {
+              defaultMessage: 'Erro ao criar carteira',
+              validationFallback: 'Dados inválidos',
+            }),
+          }),
       }),
     );
+  }
+
+  private mapHttpError(
+    err: unknown,
+    opts: { defaultMessage: string; validationFallback: string },
+  ): string {
+    const errObj = err && typeof err === 'object' ? (err as Record<string, unknown>) : undefined;
+
+    const status =
+      typeof errObj?.['status'] === 'number' ? (errObj['status'] as number) : undefined;
+    const errorValue = errObj?.['error'];
+    const errorObj =
+      errorValue && typeof errorValue === 'object'
+        ? (errorValue as Record<string, unknown>)
+        : undefined;
+    const message =
+      typeof errorObj?.['message'] === 'string' ? (errorObj['message'] as string) : undefined;
+
+    if (status === 0) return 'Erro de conexão. Verifique sua internet.';
+    if (status === 401) return 'Sessão expirada. Faça login novamente.';
+    if (status === 400) return message ?? opts.validationFallback;
+    if (status === 409) return message ?? opts.defaultMessage;
+    if (typeof status === 'number' && status >= 500) {
+      return 'Erro no servidor. Tente novamente mais tarde.';
+    }
+
+    return 'Ocorreu um erro inesperado.';
   }
 
   /**

@@ -64,7 +64,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
           class="flex flex-col items-center gap-1 text-slate-400 w-16 py-1 transition-colors group"
         >
           <i class="pi pi-wallet text-xl group-hover:text-emerald-500 transition-colors"></i>
-          <span class="text-[10px] font-medium">Carteira</span>
+          <span class="text-[10px] font-medium">Carteiras</span>
         </a>
 
         <!-- Botão central de ação rápida -->
