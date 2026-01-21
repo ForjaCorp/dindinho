@@ -142,19 +142,35 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
   `,
   styles: [
     `
+      :host ::ng-deep .p-selectbutton {
+        background: #f1f5f9;
+        padding: 0.25rem;
+        border-radius: 0.75rem;
+        border: 1px solid #e2e8f0;
+        display: flex;
+        width: 100%;
+      }
       :host ::ng-deep .p-selectbutton .p-button {
-        width: 50%;
+        flex: 1;
+        border: none !important;
+        background: transparent !important;
+        color: #64748b;
+        transition: all 0.2s ease;
+        border-radius: 0.5rem !important;
+        margin: 0;
+        box-shadow: none !important;
+        font-weight: 600;
         font-size: 0.875rem;
+        padding: 0.75rem 1rem;
+      }
+      :host ::ng-deep .p-selectbutton .p-button:not(.p-highlight):hover {
+        background: #e2e8f0 !important;
+        color: #334155;
       }
       :host ::ng-deep .p-selectbutton .p-button.p-highlight {
-        background-color: #10b981;
-        border-color: #10b981;
-        color: #ffffff;
-      }
-      :host ::ng-deep .p-selectbutton .p-button:not(.p-highlight):not(.p-disabled):hover {
-        background-color: #ecfdf5; /* emerald-50 */
-        border-color: #10b981;
-        color: #059669; /* emerald-600 */
+        background: #10b981 !important;
+        color: white !important;
+        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2) !important;
       }
       :host ::ng-deep .p-inputnumber {
         width: 100%;
@@ -166,17 +182,12 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
         width: 42px;
         height: 42px;
         border-radius: 8px;
+        border: 1px solid #e2e8f0;
       }
       @media (max-width: 640px) {
         :host ::ng-deep .p-dialog {
           margin: 1rem;
-        }
-        :host ::ng-deep .p-dialog-content {
-          padding: 1rem;
-        }
-        :host ::ng-deep .p-selectbutton .p-button {
-          font-size: 0.75rem;
-          padding: 0.5rem;
+          max-width: calc(100vw - 2rem);
         }
       }
     `,
