@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { finalize, tap } from 'rxjs/operators';
-import { Observable, throwError } from 'rxjs';
+import { Observable } from 'rxjs';
 import { CreateWalletDTO, WalletDTO } from '@dindinho/shared';
 import { ApiService } from './api.service';
 
@@ -176,87 +176,51 @@ export class WalletService {
   }
 
   /**
-   * Carrega as carteiras do backend e atualiza o estado
-   * @description Busca todas as carteiras do usuário no backend e atualiza o estado local
-   * @throws {Error} Erro de conexão quando não há acesso à internet
-   * @throws {Error} Erro de autenticação quando a sessão expirou
-   * @throws {Error} Erro de servidor quando há falha no backend
-   * @example
-   * this.walletService.loadWallets();
+   * Carrega as carteiras do servidor
+   * @description Busca a lista de carteiras e atualiza o estado
    */
-  loadWallets() {
-    this.state.update((s) => ({ ...s, loading: true, error: null }));
+  loadWallets(): void {
+    this.updateState({ loading: true, error: null });
 
     this.api
       .getWallets()
-      .pipe(finalize(() => this.state.update((s) => ({ ...s, loading: false }))))
-      .subscribe({
-        next: (wallets) => {
-          this.state.update((s) => ({ ...s, wallets }));
-        },
-        error: (err) => {
-          console.error('Erro ao carregar carteiras:', err);
-          const errorMessage = this.extractErrorMessage(err);
-          this.state.update((s) => ({ ...s, error: errorMessage }));
-        },
-      });
+      .pipe(
+        finalize(() => this.updateState({ loading: false })),
+        tap({
+          next: (wallets) => this.updateState({ wallets }),
+          error: () => this.updateState({ error: 'Erro ao carregar carteiras' }),
+        }),
+      )
+      .subscribe();
   }
 
   /**
-   * Cria uma nova carteira e atualiza o estado local.
-   * Retorna o Observable para que o componente possa reagir ao sucesso/erro.
-   *
-   * @param data - Dados da carteira a ser criada
-   * @returns Observable<WalletDTO> - Observable com a carteira criada
-   *
-   * @example
-   * this.walletService.createWallet({
-   *   name: 'Nova Carteira',
-   *   color: '#FF5722',
-   *   icon: 'pi-wallet',
-   *   type: 'STANDARD'
-   * }).subscribe({
-   *   next: (wallet) => console.log('Sucesso:', wallet),
-   *   error: (err) => console.error('Erro:', err)
-   * });
+   * Cria uma nova carteira
+   * @description Envia os dados para criar uma nova carteira e atualiza a lista
+   * @param payload Dados da nova carteira
+   * @returns Observable com a carteira criada
    */
-  createWallet(data: CreateWalletDTO): Observable<WalletDTO> {
-    // 1. Validação Síncrona
-    try {
-      this.validateCreateWalletData(data);
-    } catch (error) {
-      const msg = (error as Error).message;
-      this.state.update((s) => ({ ...s, error: msg }));
-      // Retorna um erro observável para o componente saber que falhou imediatamente
-      return throwError(() => new Error(msg));
-    }
+  createWallet(payload: CreateWalletDTO): Observable<WalletDTO> {
+    this.updateState({ loading: true, error: null });
 
-    // 2. Preparação do Estado (Loading)
-    this.state.update((s) => ({ ...s, loading: true, error: null }));
-
-    // 3. Chamada API com Efeitos Colaterais (Tap)
-    return this.api.createWallet(data).pipe(
+    return this.api.createWallet(payload).pipe(
+      finalize(() => this.updateState({ loading: false })),
       tap({
         next: (newWallet) => {
-          // Sucesso: Atualiza o Signal de wallets
-          this.state.update((s) => ({
-            ...s,
-            wallets: [...s.wallets, newWallet],
-            loading: false,
-          }));
+          const currentWallets = this.state().wallets;
+          this.updateState({ wallets: [...currentWallets, newWallet] });
         },
-        error: (err) => {
-          // Erro: Atualiza o Signal de erro e loading
-          console.error('Erro ao criar carteira:', err);
-          const errorMessage = this.extractErrorMessage(err);
-          this.state.update((s) => ({
-            ...s,
-            error: errorMessage,
-            loading: false,
-          }));
-        },
+        error: () => this.updateState({ error: 'Erro ao criar carteira' }),
       }),
     );
+  }
+
+  /**
+   * Atualiza o estado parcialmente
+   * @private
+   */
+  private updateState(partial: Partial<WalletState>): void {
+    this.state.update((current) => ({ ...current, ...partial }));
   }
 
   /**

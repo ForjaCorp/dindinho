@@ -44,6 +44,10 @@ export const routes: Routes = [
         path: 'dashboard',
         loadComponent: () => import('../pages/dashboard.page').then((m) => m.DashboardComponent),
       },
+      {
+        path: 'wallets',
+        loadComponent: () => import('../pages/wallets/wallets.page').then((m) => m.WalletsPage),
+      },
       // Outras rotas autenticadas virão aqui (wallet, reports, profile)
     ],
   },

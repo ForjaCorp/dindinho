@@ -59,7 +59,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
         <!-- Botão para acessar a página de carteira -->
         <a
           data-testid="nav-wallet"
-          routerLink="/wallet"
+          routerLink="/wallets"
           routerLinkActive="text-emerald-600 !font-semibold"
           class="flex flex-col items-center gap-1 text-slate-400 w-16 py-1 transition-colors group"
         >
