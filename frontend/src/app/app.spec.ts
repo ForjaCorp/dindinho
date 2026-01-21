@@ -14,14 +14,11 @@ import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { App } from './app';
 import { describe, it, expect, beforeEach } from 'vitest';
-import {
-  BrowserDynamicTestingModule,
-  platformBrowserDynamicTesting,
-} from '@angular/platform-browser-dynamic/testing';
+import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 
 const testBed = getTestBed();
 if (!testBed.platform) {
-  testBed.initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting());
+  testBed.initTestEnvironment(BrowserTestingModule, platformBrowserTesting());
 }
 
 describe('App', () => {
@@ -52,53 +49,10 @@ describe('App', () => {
   });
 
   /**
-   * Testa se o template renderiza o título e a logo corretamente.
+   * Testa se o componente contém o router-outlet.
    */
-  it('deve renderizar o título e a logo', () => {
-    const titleElement = fixture.nativeElement.querySelector('[data-testid="app-title"]');
-    const logoElement = fixture.nativeElement.querySelector('[data-testid="logo"]');
-
-    expect(titleElement).toBeTruthy();
-    expect(titleElement.textContent).toContain('Dindinho');
-    expect(logoElement).toBeTruthy();
-  });
-
-  /**
-   * Testa se a navegação inferior está sendo renderizada corretamente.
-   */
-  it('deve renderizar a navegação inferior com os botões corretos', () => {
-    const navElement = fixture.nativeElement.querySelector('[data-testid="bottom-navigation"]');
-    const navItems = [
-      { testId: 'nav-home', text: 'Início' },
-      { testId: 'nav-wallet', text: 'Carteira' },
-      { testId: 'add-button' },
-      { testId: 'nav-reports', text: 'Relatórios' },
-      { testId: 'nav-profile', text: 'Perfil' },
-    ];
-
-    expect(navElement).toBeTruthy();
-
-    // Verifica cada item de navegação
-    navItems.forEach((item) => {
-      const element = fixture.nativeElement.querySelector(`[data-testid="${item.testId}"]`);
-      expect(element).toBeTruthy();
-
-      // Verifica o texto se existir
-      if (item.text) {
-        expect(element.textContent).toContain(item.text);
-      }
-    });
-  });
-
-  /**
-   * Testa se a área de conteúdo principal está presente.
-   */
-  it('deve conter a área de conteúdo principal', () => {
-    const mainElement = fixture.nativeElement.querySelector('[data-testid="main-content"]');
-    expect(mainElement).toBeTruthy();
-
-    // Verifica se o router-outlet está presente dentro do main
-    const routerOutlet = mainElement.querySelector('router-outlet');
+  it('deve conter o router-outlet', () => {
+    const routerOutlet = fixture.nativeElement.querySelector('router-outlet');
     expect(routerOutlet).toBeTruthy();
   });
 });

@@ -2,14 +2,11 @@
  * @vitest-environment jsdom
  */
 import { TestBed, getTestBed } from '@angular/core/testing';
-import {
-  BrowserDynamicTestingModule,
-  platformBrowserDynamicTesting,
-} from '@angular/platform-browser-dynamic/testing';
+import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 
 const testBed = getTestBed();
 if (!testBed.platform) {
-  testBed.initTestEnvironment(BrowserDynamicTestingModule, platformBrowserDynamicTesting());
+  testBed.initTestEnvironment(BrowserTestingModule, platformBrowserTesting());
 }
 
 import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';

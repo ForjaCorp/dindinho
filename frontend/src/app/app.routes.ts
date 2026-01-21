@@ -1,5 +1,8 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
+import { guestGuard } from './guards/guest.guard';
+import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
+import { AuthLayoutComponent } from './layouts/auth-layout/auth-layout.component';
 
 /**
  * @description
@@ -9,26 +12,45 @@ import { authGuard } from './guards/auth.guard';
  * @constant {Routes}
  */
 export const routes: Routes = [
-  // Rota padrão redireciona para o dashboard
+  // Redirecionamento inicial
   {
     path: '',
-    redirectTo: 'dashboard',
+    redirectTo: 'login',
     pathMatch: 'full',
   },
-  // Login
+
+  // Rotas de Autenticação (Sem Header/Footer)
   {
-    path: 'login',
-    loadComponent: () => import('../pages/login/login.page').then((m) => m.LoginComponent),
+    path: '',
+    component: AuthLayoutComponent,
+    children: [
+      {
+        path: 'login',
+        loadComponent: () => import('../pages/login/login.page').then((m) => m.LoginComponent),
+        canActivate: [guestGuard],
+      },
+      // Futuro registro:
+      // { path: 'register', ... }
+    ],
   },
-  // Dashboard
+
+  // Rotas Principais (Com Header/Footer)
   {
-    path: 'dashboard',
-    loadComponent: () => import('../pages/dashboard.page').then((m) => m.DashboardComponent),
+    path: '',
+    component: MainLayoutComponent,
     canActivate: [authGuard],
+    children: [
+      {
+        path: 'dashboard',
+        loadComponent: () => import('../pages/dashboard.page').then((m) => m.DashboardComponent),
+      },
+      // Outras rotas autenticadas virão aqui (wallet, reports, profile)
+    ],
   },
-  // Rota curinga para tratamento de rotas não encontradas
+
+  // Rota curinga
   {
     path: '**',
-    redirectTo: 'dashboard',
+    redirectTo: 'login',
   },
 ];
