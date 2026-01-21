@@ -147,11 +147,14 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
         font-size: 0.875rem;
       }
       :host ::ng-deep .p-selectbutton .p-button.p-highlight {
-        background-color: #10b981;
-        border-color: #10b981;
-        color: #ffffff;
+        background-color: #10b981 !important;
+        border-color: #10b981 !important;
+        color: #ffffff !important;
       }
       :host ::ng-deep .p-inputnumber {
+        width: 100%;
+      }
+      :host ::ng-deep .p-inputnumber-input {
         width: 100%;
       }
       :host ::ng-deep .p-colorpicker-preview {
