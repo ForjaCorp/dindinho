@@ -38,7 +38,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
       <form
         [formGroup]="form"
         (ngSubmit)="onSubmit()"
-        class="flex flex-col gap-4 mt-2 max-h-[70vh] overflow-y-auto px-1"
+        class="flex flex-col gap-4 mt-2 max-h-[70vh] overflow-y-auto overflow-x-hidden px-1"
       >
         <div class="flex flex-col gap-2">
           <p-selectButton
@@ -48,11 +48,13 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
             optionValue="value"
             styleClass="w-full"
             aria-label="Tipo de carteira"
+            [allowEmpty]="false"
+            [unselectable]="true"
           />
         </div>
 
-        <div class="flex flex-col sm:flex-row gap-3">
-          <div class="flex-1 flex flex-col gap-2">
+        <div class="flex flex-row gap-3 items-end">
+          <div class="flex-1 flex flex-col gap-2 min-w-0">
             <label for="name" class="font-medium text-slate-700 text-sm">Nome</label>
             <input
               pInputText
@@ -62,7 +64,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
               class="w-full"
             />
           </div>
-          <div class="flex flex-col gap-2 sm:w-auto">
+          <div class="flex flex-col gap-2 shrink-0">
             <label for="color" class="font-medium text-slate-700 text-sm">Cor</label>
             <p-colorPicker formControlName="color" appendTo="body" />
           </div>
@@ -113,7 +115,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
                 mode="currency"
                 currency="BRL"
                 locale="pt-BR"
-                placeholder="0,00"
+                placeholder="R$ 0,00"
                 class="w-full"
               />
             </div>
@@ -142,25 +144,44 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
   `,
   styles: [
     `
-      :host ::ng-deep .p-selectbutton .p-button {
+      :host ::ng-deep .p-selectbutton .p-button,
+      :host ::ng-deep .p-selectbutton .p-togglebutton {
         width: 50%;
         font-size: 0.875rem;
+      }
+      :host ::ng-deep .p-selectbutton .p-togglebutton.p-togglebutton-checked,
+      :host ::ng-deep .p-selectbutton .p-togglebutton.p-highlight {
+        background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+        border-color: #10b981;
+        color: #ffffff;
+      }
+      :host
+        ::ng-deep
+        .p-selectbutton
+        .p-togglebutton.p-togglebutton-checked
+        .p-togglebutton-content,
+      :host ::ng-deep .p-selectbutton .p-togglebutton.p-togglebutton-checked .p-togglebutton-label,
+      :host ::ng-deep .p-selectbutton .p-togglebutton.p-highlight .p-togglebutton-content,
+      :host ::ng-deep .p-selectbutton .p-togglebutton.p-highlight .p-togglebutton-label {
+        background: transparent;
+        color: #ffffff;
+      }
+      :host ::ng-deep .p-inputnumber {
+        width: 100%;
+      }
+      :host ::ng-deep .p-inputnumber-input {
+        width: 100%;
       }
       :host ::ng-deep .p-colorpicker-preview {
         width: 42px;
         height: 42px;
         border-radius: 8px;
+        border: 1px solid #e2e8f0;
       }
       @media (max-width: 640px) {
         :host ::ng-deep .p-dialog {
           margin: 1rem;
-        }
-        :host ::ng-deep .p-dialog-content {
-          padding: 1rem;
-        }
-        :host ::ng-deep .p-selectbutton .p-button {
-          font-size: 0.75rem;
-          padding: 0.5rem;
+          max-width: calc(100vw - 2rem);
         }
       }
     `,
