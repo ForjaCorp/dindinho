@@ -1,6 +1,8 @@
-import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterOutlet, RouterLink, RouterLinkActive, Router, NavigationEnd } from '@angular/router';
+import { filter, map } from 'rxjs/operators';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 /**
  * @description
@@ -21,6 +23,8 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
   templateUrl: './app.html',
 })
 export class App {
+  private router = inject(Router);
+
   /**
    * @description
    * Título da aplicação, gerenciado como um Signal para reatividade.
@@ -30,4 +34,20 @@ export class App {
    * @default 'Dindinho'
    */
   protected readonly title = signal('Dindinho');
+
+  /**
+   * @description
+   * Signal que indica se a rota atual é uma rota de autenticação (login/register).
+   * Usado para ocultar elementos de navegação nessas páginas.
+   */
+  protected readonly isAuthRoute = toSignal(
+    this.router.events.pipe(
+      filter((e) => e instanceof NavigationEnd),
+      map((e) => {
+        const url = (e as NavigationEnd).urlAfterRedirects;
+        return url.includes('/login') || url.includes('/register');
+      }),
+    ),
+    { initialValue: false },
+  );
 }
