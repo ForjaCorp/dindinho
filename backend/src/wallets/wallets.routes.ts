@@ -3,7 +3,11 @@ import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { WalletsService } from "./wallets.service";
-import { createWalletSchema, walletSchema } from "@dindinho/shared";
+import {
+  CreateWalletDTO,
+  createWalletSchema,
+  walletSchema,
+} from "@dindinho/shared";
 
 /**
  * Rotas da API para gerenciamento de carteiras.
@@ -59,13 +63,28 @@ export async function walletsRoutes(app: FastifyInstance) {
    *   "brand": "Mastercard"
    * }
    */
-  app.post("/", async (request, reply) => {
-    const { sub: userId } = request.user as { sub: string };
-    // Validamos o payload com o schema compartilhado para garantir tipagem correta
-    const payload = createWalletSchema.parse(request.body);
-    const wallet = await service.create(userId, payload);
-    return reply.status(201).send(wallet);
-  });
+  app.withTypeProvider<ZodTypeProvider>().post(
+    "/",
+    {
+      schema: {
+        summary: "Criar carteira",
+        tags: ["wallets"],
+        body: createWalletSchema,
+        response: {
+          201: walletSchema,
+          401: z.object({
+            message: z.string(),
+          }),
+        },
+      },
+    },
+    async (request, reply) => {
+      const { sub: userId } = request.user as { sub: string };
+      const payload: CreateWalletDTO = createWalletSchema.parse(request.body);
+      const wallet = await service.create(userId, payload);
+      return reply.status(201).send(wallet);
+    },
+  );
 
   /**
    * Endpoint para listar todas as carteiras do usuário.
@@ -92,8 +111,23 @@ export async function walletsRoutes(app: FastifyInstance) {
    *   }
    * ]
    */
-  app.get("/", async (request) => {
-    const { sub: userId } = request.user as { sub: string };
-    return service.findAllByUserId(userId);
-  });
+  app.withTypeProvider<ZodTypeProvider>().get(
+    "/",
+    {
+      schema: {
+        summary: "Listar carteiras",
+        tags: ["wallets"],
+        response: {
+          200: z.array(walletSchema),
+          401: z.object({
+            message: z.string(),
+          }),
+        },
+      },
+    },
+    async (request) => {
+      const { sub: userId } = request.user as { sub: string };
+      return service.findAllByUserId(userId);
+    },
+  );
 }

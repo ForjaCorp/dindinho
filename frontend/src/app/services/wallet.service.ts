@@ -120,7 +120,7 @@ export class WalletService {
    * @example
    * const creditCards = this.walletService.getWalletsByType('CREDIT');
    */
-  getWalletsByType(type: 'STANDARD' | 'CREDIT'): WalletDTO[] {
+  getWalletsByType(type: WalletDTO['type']): WalletDTO[] {
     return this.wallets().filter((w) => w.type === type);
   }
 

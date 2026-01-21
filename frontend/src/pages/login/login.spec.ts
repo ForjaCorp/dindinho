@@ -20,6 +20,8 @@ describe('LoginComponent', () => {
   let component: LoginComponent;
   let fixture: ComponentFixture<LoginComponent>;
   let authService: AuthService;
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
 
   const mockUser: UserState = {
     id: '1',
@@ -30,6 +32,9 @@ describe('LoginComponent', () => {
   const mockToken = 'test-token';
 
   beforeEach(async () => {
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
     const authServiceSpy = {
       login: vi.fn(),
     };
@@ -55,6 +60,15 @@ describe('LoginComponent', () => {
 
     authService = TestBed.inject(AuthService);
     vi.clearAllMocks();
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
   });
 
   beforeEach(() => {

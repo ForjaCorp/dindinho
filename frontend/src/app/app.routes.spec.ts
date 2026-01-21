@@ -1,7 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { routes } from './app.routes';
-import { LoginComponent } from '../pages/login/login.page';
-import { DashboardComponent } from '../pages/dashboard.page';
 import { authGuard } from './guards/auth.guard';
 import { Route } from '@angular/router';
 
@@ -34,7 +32,9 @@ describe('app.routes', () => {
     const loginRoute = routesList.find((route) => route.path === 'login');
     expect(loginRoute).toBeDefined();
     if (loginRoute) {
-      expect(loginRoute.component).toBe(LoginComponent);
+      expect(loginRoute.loadComponent).toBeDefined();
+      expect(typeof loginRoute.loadComponent).toBe('function');
+      expect(loginRoute.component).toBeUndefined();
       expect(loginRoute.canActivate).toBeUndefined();
     }
   });
@@ -43,7 +43,9 @@ describe('app.routes', () => {
     const dashboardRoute = routesList.find((route) => route.path === 'dashboard');
     expect(dashboardRoute).toBeDefined();
     if (dashboardRoute) {
-      expect(dashboardRoute.component).toBe(DashboardComponent);
+      expect(dashboardRoute.loadComponent).toBeDefined();
+      expect(typeof dashboardRoute.loadComponent).toBe('function');
+      expect(dashboardRoute.component).toBeUndefined();
       expect(dashboardRoute.canActivate).toBeDefined();
       expect(dashboardRoute.canActivate).toContain(authGuard);
     }
@@ -67,10 +69,10 @@ describe('app.routes', () => {
     const dashboardRoute = routesList.find((route) => route.path === 'dashboard');
 
     if (loginRoute) {
-      expect(loginRoute.component).toBe(LoginComponent);
+      expect(loginRoute.loadComponent).toBeDefined();
     }
     if (dashboardRoute) {
-      expect(dashboardRoute.component).toBe(DashboardComponent);
+      expect(dashboardRoute.loadComponent).toBeDefined();
     }
   });
 
@@ -94,6 +96,9 @@ describe('app.routes', () => {
       }
       if (route.component) {
         expect(typeof route.component).toBe('function');
+      }
+      if (route.loadComponent) {
+        expect(typeof route.loadComponent).toBe('function');
       }
       if (route.path) {
         expect(typeof route.path).toBe('string');

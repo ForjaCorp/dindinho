@@ -11,13 +11,16 @@
       "outputs": ["node_modules/.prisma", "node_modules/@prisma/client"]
     },
     "dev": {
-      "dependsOn": ["prisma:generate"], 
+      "dependsOn": ["prisma:generate"],
       "cache": false,
       "persistent": true
     },
     "test": {
       "dependsOn": ["build"],
       "inputs": ["src/**/*.tsx", "src/**/*.ts", "test/**/*.ts"]
+    },
+    "lint": {
+      "dependsOn": ["^lint"]
     }
   }
 }

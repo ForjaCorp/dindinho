@@ -1,5 +1,5 @@
 import { PrismaClient, WalletType } from "@prisma/client";
-import { CreateWalletDTO } from "@dindinho/shared";
+import { CreateWalletDTO, WalletDTO } from "@dindinho/shared";
 
 /**
  * Erro base para operações de carteira
@@ -161,7 +161,7 @@ export class WalletsService {
    *   type: 'STANDARD'
    * });
    */
-  async create(userId: string, data: CreateWalletDTO) {
+  async create(userId: string, data: CreateWalletDTO): Promise<WalletDTO> {
     try {
       const creditCardData =
         data.type === "CREDIT" && data.closingDay && data.dueDay
@@ -220,7 +220,7 @@ export class WalletsService {
    * const wallets = await service.findAllByUserId('user-123');
    * console.log(wallets.length); // Número de carteiras do usuário
    */
-  async findAllByUserId(userId: string) {
+  async findAllByUserId(userId: string): Promise<WalletDTO[]> {
     try {
       const wallets = await this.prisma.wallet.findMany({
         where: { ownerId: userId },

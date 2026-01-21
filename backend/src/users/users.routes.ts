@@ -15,7 +15,7 @@ import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { UsersService } from "./users.service";
-import { createUserSchema } from "@dindinho/shared";
+import { CreateUserDTO, createUserSchema } from "@dindinho/shared";
 
 /**
  * Configura as rotas relacionadas a usuários
@@ -102,14 +102,10 @@ export async function usersRoutes(app: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      const { name, email, password } = request.body as {
-        name: string;
-        email: string;
-        password: string;
-      };
+      const data = request.body as CreateUserDTO;
 
       try {
-        const user = await service.create({ name, email, password });
+        const user = await service.create(data);
         return reply.status(201).send({
           ...user,
           createdAt: user.createdAt.toISOString(),

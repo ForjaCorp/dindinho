@@ -20,11 +20,14 @@ describe("Wallets Routes", () => {
   let app: ReturnType<typeof buildApp>;
   let token: string;
 
+  const userId = "123e4567-e89b-12d3-a456-426614174000";
+  const walletId = "123e4567-e89b-12d3-a456-426614174001";
+
   beforeEach(async () => {
     mockReset(prismaMock);
     app = buildApp();
     await app.ready();
-    token = app.jwt.sign({ sub: "user-123" });
+    token = app.jwt.sign({ sub: userId });
   });
 
   afterEach(() => {
@@ -45,21 +48,21 @@ describe("Wallets Routes", () => {
 
     it("deve criar carteira com autenticação válida", async () => {
       prismaMock.wallet.create.mockResolvedValue({
-        id: "wallet-123",
+        id: walletId,
         name: validWallet.name,
         color: validWallet.color,
         icon: validWallet.icon,
         type: "CREDIT" as WalletType,
-        ownerId: "user-123",
+        ownerId: userId,
         createdAt: new Date(),
         updatedAt: new Date(),
         creditCardInfo: {
-          id: "credit-123",
+          id: "123e4567-e89b-12d3-a456-426614174002",
           closingDay: validWallet.closingDay,
           dueDay: validWallet.dueDay,
           limit: { toNumber: () => validWallet.limit }, // Mock do Decimal
           brand: validWallet.brand,
-          walletId: "wallet-123",
+          walletId,
         },
       } as unknown as Wallet);
 
@@ -106,12 +109,12 @@ describe("Wallets Routes", () => {
     it("deve listar carteiras", async () => {
       prismaMock.wallet.findMany.mockResolvedValue([
         {
-          id: "w1",
+          id: walletId,
           name: "Carteira 1",
           color: "#FF5722",
           icon: "pi-wallet",
           type: "STANDARD",
-          ownerId: "user-123",
+          ownerId: userId,
           balance: 0,
           creditCardInfo: null,
           createdAt: new Date(),

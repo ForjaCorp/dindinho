@@ -254,7 +254,7 @@ export class CreateWalletDialogComponent {
       color: formValue.color!,
       // Ícone baseado no tipo de carteira
       icon: formValue.type === 'CREDIT' ? 'pi-credit-card' : 'pi-wallet',
-      type: formValue.type as 'STANDARD' | 'CREDIT',
+      type: formValue.type as CreateWalletDTO['type'],
       ...(formValue.type === 'CREDIT'
         ? {
             closingDay: formValue.closingDay!,

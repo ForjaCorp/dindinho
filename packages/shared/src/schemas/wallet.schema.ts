@@ -82,8 +82,8 @@ export const walletSchema = z.object({
     })
     .nullable()
     .optional(),
-  createdAt: z.date().or(z.string()),
-  updatedAt: z.date().or(z.string()),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
 });
 
 /**

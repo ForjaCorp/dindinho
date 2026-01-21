@@ -14,9 +14,14 @@ import { FastifyInstance } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
-import { AuthService, AuthResult } from "./auth.service";
+import { AuthService } from "./auth.service";
 import { RefreshTokenService } from "./refresh-token.service";
-import { loginSchema, loginResponseSchema } from "@dindinho/shared";
+import {
+  LoginDTO,
+  LoginResponseDTO,
+  loginSchema,
+  loginResponseSchema,
+} from "@dindinho/shared";
 
 /**
  * Configura as rotas de autenticação da aplicação
@@ -99,27 +104,28 @@ export async function authRoutes(
       },
     },
     async (request, reply) => {
-      // O cast 'as LoginDTO' ajuda o TS a inferir corretamente do shared
-      const { email, password } = request.body;
+      const { email, password } = request.body as LoginDTO;
 
       try {
-        const user = await service.authenticate({ email, password });
+        const authResult = await service.authenticate({ email, password });
 
         // Gera o Access Token JWT (expira em 15 minutos)
         const token = app.jwt.sign(
-          { name: user.name, email: user.email },
-          { sub: user.id, expiresIn: "15m" },
+          { name: authResult.name, email: authResult.email },
+          { sub: authResult.id, expiresIn: "15m" },
         );
 
-        return reply.status(200).send({
+        const response: LoginResponseDTO = {
           token,
-          refreshToken: user.refreshToken,
+          refreshToken: authResult.refreshToken,
           user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
+            id: authResult.id,
+            name: authResult.name,
+            email: authResult.email,
           },
-        });
+        };
+
+        return reply.status(200).send(response);
       } catch (error) {
         if (
           error instanceof Error &&

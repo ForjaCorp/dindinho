@@ -16,6 +16,8 @@ describe('WalletService', () => {
     getWallets: ReturnType<typeof vi.fn>;
     createWallet: ReturnType<typeof vi.fn>;
   };
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
 
   const mockWallets: WalletDTO[] = [
     {
@@ -26,8 +28,8 @@ describe('WalletService', () => {
       type: 'STANDARD',
       ownerId: 'user-123',
       balance: 1000.0,
-      createdAt: new Date('2024-01-01'),
-      updatedAt: new Date('2024-01-01'),
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z',
     },
     {
       id: 'wallet-2',
@@ -37,8 +39,8 @@ describe('WalletService', () => {
       type: 'CREDIT',
       ownerId: 'user-123',
       balance: 500.5,
-      createdAt: new Date('2024-01-01'),
-      updatedAt: new Date('2024-01-01'),
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z',
       creditCardInfo: {
         closingDay: 10,
         dueDay: 15,
@@ -56,6 +58,9 @@ describe('WalletService', () => {
   };
 
   beforeEach(() => {
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
     apiService = {
       getWallets: vi.fn(),
       createWallet: vi.fn(),
@@ -69,6 +74,8 @@ describe('WalletService', () => {
   });
 
   afterEach(() => {
+    consoleErrorSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
     vi.clearAllMocks();
   });
 
@@ -210,8 +217,8 @@ describe('WalletService', () => {
       type: 'STANDARD',
       ownerId: 'user-123',
       balance: 0,
-      createdAt: new Date('2024-01-01'),
-      updatedAt: new Date('2024-01-01'),
+      createdAt: '2024-01-01T00:00:00.000Z',
+      updatedAt: '2024-01-01T00:00:00.000Z',
     };
 
     it('deve criar carteira com sucesso', () => {
@@ -303,8 +310,8 @@ describe('WalletService', () => {
         type: 'STANDARD',
         ownerId: 'user-123',
         balance: 0,
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01'),
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z',
       };
 
       service.updateWalletInState(newWallet);
@@ -321,8 +328,8 @@ describe('WalletService', () => {
         type: 'STANDARD',
         ownerId: 'user-123',
         balance: 0,
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01'),
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z',
       };
 
       service.updateWalletInState(newWallet);
@@ -563,8 +570,8 @@ describe('WalletService', () => {
         type: 'STANDARD',
         ownerId: 'user-123',
         balance: 0,
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01'),
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z',
       };
 
       const mockWallet4: WalletDTO = {
@@ -575,8 +582,8 @@ describe('WalletService', () => {
         type: 'CREDIT',
         ownerId: 'user-123',
         balance: 0,
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01'),
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z',
       };
 
       apiService.createWallet
@@ -605,8 +612,8 @@ describe('WalletService', () => {
         type: 'STANDARD',
         ownerId: 'user-123',
         balance: 0,
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01'),
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z',
       };
 
       apiService.createWallet.mockReturnValue(of(newWallet));
@@ -696,7 +703,7 @@ describe('WalletService', () => {
     });
 
     it('deve validar tipo inválido', () => {
-      const invalidData = { ...mockCreateWalletData, type: 'INVALID' as 'STANDARD' | 'CREDIT' };
+      const invalidData = { ...mockCreateWalletData, type: 'INVALID' as CreateWalletDTO['type'] };
       service.createWallet(invalidData);
 
       vi.useFakeTimers();

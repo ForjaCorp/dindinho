@@ -23,6 +23,8 @@ describe('AuthService', () => {
   let service: AuthService;
   let router: Router;
   let apiService: ApiService;
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
 
   const mockUser: UserState = {
     id: '1',
@@ -37,6 +39,9 @@ describe('AuthService', () => {
   };
 
   beforeEach(() => {
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
     const apiServiceSpy = {
       login: vi.fn(),
     };
@@ -62,6 +67,8 @@ describe('AuthService', () => {
   });
 
   afterEach(() => {
+    consoleErrorSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
     localStorage.removeItem('dindinho_token');
   });
 

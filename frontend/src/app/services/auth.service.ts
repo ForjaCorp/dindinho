@@ -21,14 +21,7 @@ export enum AuthError {
 /**
  * Interface que representa o estado do usuário autenticado
  */
-export interface UserState {
-  /** ID único do usuário */
-  id: string;
-  /** Nome do usuário */
-  name: string;
-  /** Email do usuário */
-  email: string;
-}
+export type UserState = LoginResponseDTO['user'];
 
 /**
  * Interface que representa o payload do token JWT

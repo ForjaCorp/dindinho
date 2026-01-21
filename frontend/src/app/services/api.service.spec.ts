@@ -67,8 +67,8 @@ describe('ApiService', () => {
     type: 'CREDIT',
     ownerId: 'user-123',
     balance: 1500.5,
-    createdAt: new Date('2024-01-01'),
-    updatedAt: new Date('2024-01-01'),
+    createdAt: '2024-01-01T00:00:00.000Z',
+    updatedAt: '2024-01-01T00:00:00.000Z',
     creditCardInfo: {
       closingDay: 10,
       dueDay: 15,
@@ -295,8 +295,8 @@ describe('ApiService', () => {
         type: 'STANDARD',
         ownerId: 'user-123',
         balance: 1000.0,
-        createdAt: new Date('2024-01-01'),
-        updatedAt: new Date('2024-01-01'),
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z',
       };
 
       service.createWallet(standardWalletData).subscribe((response) => {
@@ -387,8 +387,8 @@ describe('ApiService', () => {
           type: 'STANDARD',
           ownerId: 'user-123',
           balance: 5000.0,
-          createdAt: new Date('2024-01-01'),
-          updatedAt: new Date('2024-01-01'),
+          createdAt: '2024-01-01T00:00:00.000Z',
+          updatedAt: '2024-01-01T00:00:00.000Z',
         },
       ];
 
