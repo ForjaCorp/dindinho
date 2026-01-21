@@ -48,3 +48,6 @@ ngsw/
 
 # Turborepo
 .turbo
+
+# TypeScript incremental
+*.tsbuildinfo

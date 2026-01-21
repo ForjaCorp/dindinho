@@ -2,6 +2,10 @@
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
   "tasks": {
+    "typecheck": {
+      "dependsOn": ["^typecheck"],
+      "outputs": ["tsconfig.tsbuildinfo"]
+    },
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
@@ -16,8 +20,13 @@
       "persistent": true
     },
     "test": {
-      "dependsOn": ["build"],
-      "inputs": ["src/**/*.tsx", "src/**/*.ts", "test/**/*.ts"]
+      "dependsOn": ["^test"]
+    },
+    "test:unit": {
+      "dependsOn": ["typecheck"]
+    },
+    "test:integration": {
+      "dependsOn": ["typecheck", "build"]
     },
     "lint": {
       "dependsOn": ["^lint"]

@@ -17,6 +17,12 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "test:unit": "turbo run test:unit",
+    "test:integration": "turbo run test:integration",
+    "quality:precommit": "lint-staged",
+    "quality:prepush": "turbo run typecheck build test:integration --continue",
+    "quality:ci": "turbo run lint typecheck build test test:integration --continue",
     "install:all": "npm install",
     "prepare": "husky"
   },
@@ -35,14 +41,18 @@
     "turbo": "^2.6.3"
   },
   "lint-staged": {
-    "backend/**/*.ts": [
-      "bash -c 'cd backend && tsc --noEmit'"
-    ],
-    "frontend/**/*.{ts,html,css}": [
-      "bash -c 'cd frontend && npm run ng -- lint --fix'"
-    ],
-    "*.{ts,js,json,md,html,css}": [
+    "*.{ts,tsx,js,jsx,mjs,cjs,json,css,scss,html,md}": [
       "prettier --write"
+    ],
+    "packages/shared/**/*.{ts,tsx}": [
+      "bash -c 'cd packages/shared && npm run typecheck'"
+    ],
+    "backend/**/*.{ts,tsx}": [
+      "bash -c 'cd backend && npm run typecheck'",
+      "bash -c 'cd backend && npm run test:unit'"
+    ],
+    "frontend/**/*.{ts,html}": [
+      "npm --prefix frontend run lint:staged --"
     ]
   },
   "dependencies": {

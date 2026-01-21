@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+BASE_REF="origin/main"
+
+if git rev-parse --verify "$BASE_REF" >/dev/null 2>&1; then
+  npm run quality:prepush -- --filter="...[$BASE_REF]"
+else
+  npm run quality:prepush
+fi
