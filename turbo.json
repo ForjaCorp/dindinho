@@ -22,11 +22,11 @@
     "test": {
       "dependsOn": ["^test"]
     },
-    "test:unit": {
-      "dependsOn": ["typecheck"]
-    },
     "test:integration": {
       "dependsOn": ["typecheck", "build"]
+    },
+    "test:unit": {
+      "dependsOn": ["^build", "typecheck"]
     },
     "lint": {
       "dependsOn": ["^lint"]

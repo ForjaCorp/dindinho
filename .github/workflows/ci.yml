@@ -51,6 +51,11 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Generate Prisma Client (Backend)
+        run: npx turbo run prisma:generate --filter=dindinho-backend
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/dindinho" # Dummy URL for build
+
       - name: "Quality (PR: affected)"
         if: ${{ github.event_name == 'pull_request' }}
         env:
