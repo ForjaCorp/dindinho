@@ -17,7 +17,7 @@ import { SkeletonModule } from 'primeng/skeleton';
     SkeletonModule,
   ],
   template: `
-    <div class="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+    <div data-testid="wallets-page" class="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -25,6 +25,7 @@ import { SkeletonModule } from 'primeng/skeleton';
           <p class="text-slate-500 mt-1">Gerencie suas contas e cartões de crédito</p>
         </div>
         <p-button
+          data-testid="wallets-create-wallet-btn"
           label="Nova Carteira"
           icon="pi pi-plus"
           (onClick)="dialog.show()"
@@ -44,6 +45,7 @@ import { SkeletonModule } from 'primeng/skeleton';
       <!-- Empty State -->
       @if (!walletService.isLoading() && !walletService.wallets().length) {
         <div
+          data-testid="wallets-empty-state"
           class="flex flex-col items-center justify-center py-12 px-4 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200"
         >
           <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
@@ -55,6 +57,7 @@ import { SkeletonModule } from 'primeng/skeleton';
             controlar suas finanças.
           </p>
           <p-button
+            data-testid="wallets-empty-create-btn"
             label="Criar Primeira Carteira"
             icon="pi pi-plus"
             (onClick)="dialog.show()"
@@ -64,7 +67,10 @@ import { SkeletonModule } from 'primeng/skeleton';
       }
 
       <!-- Wallets Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div
+        data-testid="wallets-grid"
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+      >
         @for (wallet of walletService.wallets(); track wallet.id) {
           <app-wallet-card [wallet]="wallet" />
         }

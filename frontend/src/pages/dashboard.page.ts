@@ -81,6 +81,7 @@ import { WalletCardComponent } from '../app/components/wallets/wallet-card.compo
           <h2 class="text-lg font-bold text-slate-800">Minhas Carteiras</h2>
 
           <button
+            data-testid="dashboard-create-wallet-btn"
             (click)="createWalletDialog.show()"
             class="flex items-center gap-1 text-emerald-600 text-sm font-semibold hover:text-emerald-700 transition-colors"
           >
@@ -91,7 +92,7 @@ import { WalletCardComponent } from '../app/components/wallets/wallet-card.compo
 
         <!-- Lista de Carteiras -->
         @if (walletService.wallets().length > 0) {
-          <div class="flex gap-2 overflow-x-auto pb-2 px-1">
+          <div data-testid="dashboard-wallet-list" class="flex gap-2 overflow-x-auto pb-2 px-1">
             @for (wallet of walletService.wallets(); track wallet.id) {
               <app-wallet-card [wallet]="wallet" variant="compact" />
             } @empty {
@@ -103,6 +104,7 @@ import { WalletCardComponent } from '../app/components/wallets/wallet-card.compo
           </div>
         } @else {
           <div
+            data-testid="dashboard-wallet-empty"
             class="w-full py-8 text-center text-slate-400 bg-white rounded-xl border border-slate-100"
           >
             <i class="pi pi-wallet text-2xl mb-2"></i>
@@ -192,7 +194,10 @@ import { WalletCardComponent } from '../app/components/wallets/wallet-card.compo
         </div>
       </div>
 
-      <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+      <div
+        data-testid="backend-status-card"
+        class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100"
+      >
         <h3 class="text-sm font-bold text-slate-700 mb-2 flex items-center gap-2">
           <i class="pi pi-server text-emerald-500"></i> Status do Backend
         </h3>

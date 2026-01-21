@@ -10,22 +10,66 @@
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { of } from 'rxjs';
 import { DashboardComponent } from './dashboard.page';
+import { ApiService } from '../app/services/api.service';
+import { WalletService } from '../app/services/wallet.service';
+import { ApiResponseDTO, WalletDTO } from '@dindinho/shared';
 
 describe('DashboardComponent', () => {
   let component: DashboardComponent;
   let fixture: ComponentFixture<DashboardComponent>;
+  let apiServiceMock: { getHello: ReturnType<typeof vi.fn> };
+  let walletServiceMock: {
+    wallets: ReturnType<typeof vi.fn>;
+    isLoading: ReturnType<typeof vi.fn>;
+    totalBalance: ReturnType<typeof vi.fn>;
+    loadWallets: ReturnType<typeof vi.fn>;
+  };
 
   /**
    * Configura o ambiente de teste antes de cada caso de teste.
    */
   beforeEach(async () => {
+    const wallet: WalletDTO = {
+      id: 'wallet-1',
+      name: 'Carteira Padrão',
+      color: '#10b981',
+      icon: 'pi-wallet',
+      type: 'STANDARD',
+      ownerId: 'user-1',
+      balance: 100,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+
+    const apiResponse: ApiResponseDTO = {
+      message: 'ok',
+      docs: 'docs',
+      endpoints: {
+        health: '/health',
+        test_db: '/test-db',
+      },
+    };
+
+    apiServiceMock = {
+      getHello: vi.fn(() => of(apiResponse)),
+    };
+
+    walletServiceMock = {
+      wallets: vi.fn(() => [wallet]),
+      isLoading: vi.fn(() => false),
+      totalBalance: vi.fn(() => 100),
+      loadWallets: vi.fn(),
+    };
+
     await TestBed.configureTestingModule({
-      imports: [DashboardComponent, ButtonModule, CardModule],
+      imports: [DashboardComponent],
       providers: [
-        provideRouter([]), // Fornece o roteador para testes
+        provideRouter([]),
+        { provide: ApiService, useValue: apiServiceMock },
+        { provide: WalletService, useValue: walletServiceMock },
       ],
     }).compileComponents();
 
@@ -93,5 +137,29 @@ describe('DashboardComponent', () => {
     expect(transactionsSection.textContent).toContain('Últimas Transações');
     expect(transactionsSection.textContent).toContain('Nenhuma transação recente');
     expect(viewAllButton.textContent).toContain('Ver todas');
+  });
+
+  it('deve exibir o botão "Nova Carteira"', () => {
+    const button = fixture.nativeElement.querySelector(
+      '[data-testid="dashboard-create-wallet-btn"]',
+    );
+
+    expect(button).toBeTruthy();
+    expect(button.textContent).toContain('Nova Carteira');
+  });
+
+  it('deve renderizar lista de carteiras quando há dados', () => {
+    const list = fixture.nativeElement.querySelector('[data-testid="dashboard-wallet-list"]');
+    const card = fixture.nativeElement.querySelector('[data-testid="wallet-card-wallet-1"]');
+
+    expect(list).toBeTruthy();
+    expect(card).toBeTruthy();
+  });
+
+  it('deve exibir o card de status do backend', () => {
+    const statusCard = fixture.nativeElement.querySelector('[data-testid="backend-status-card"]');
+
+    expect(statusCard).toBeTruthy();
+    expect(statusCard.textContent).toContain('Status do Backend');
   });
 });
