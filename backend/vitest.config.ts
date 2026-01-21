@@ -17,7 +17,7 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
       "@dindinho/shared": path.resolve(
         __dirname,
-        "../packages/shared/dist/index.js",
+        "../packages/shared/src/index.ts",
       ),
     },
   },
