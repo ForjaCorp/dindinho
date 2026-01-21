@@ -5,12 +5,22 @@
  */
 
 import { defineConfig } from "vitest/config";
+import path from "path";
 
 /**
  * Configuração do Vitest para execução de testes
  * @type {import('vitest/config').UserConfig}
  */
 export default defineConfig({
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+      "@dindinho/shared": path.resolve(
+        __dirname,
+        "../packages/shared/dist/index.js",
+      ),
+    },
+  },
   test: {
     /**
      * Padrão de arquivos de teste a serem incluídos
