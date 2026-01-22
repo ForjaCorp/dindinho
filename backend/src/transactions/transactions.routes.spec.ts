@@ -1,0 +1,305 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { DeepMockProxy, mockReset } from "vitest-mock-extended";
+import { PrismaClient, Prisma, TransactionType } from "@prisma/client";
+
+vi.mock("../lib/prisma", async () => {
+  const { mockDeep } = await import("vitest-mock-extended");
+  return {
+    __esModule: true,
+    prisma: mockDeep<PrismaClient>(),
+  };
+});
+
+import { buildApp } from "../app";
+import { prisma } from "../lib/prisma";
+
+const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>;
+
+describe("Rotas de Transações", () => {
+  let app: ReturnType<typeof buildApp>;
+  let token: string;
+
+  const userId = "123e4567-e89b-12d3-a456-426614174000";
+  const walletId = "123e4567-e89b-12d3-a456-426614174001";
+  const categoryId = "123e4567-e89b-12d3-a456-426614174099";
+
+  beforeEach(async () => {
+    vi.stubEnv("JWT_SECRET", "test-secret");
+    mockReset(prismaMock);
+
+    prismaMock.$transaction.mockImplementation(async (fn: any) => {
+      return fn(prismaMock as any);
+    });
+
+    app = buildApp();
+    await app.ready();
+    token = app.jwt.sign({ sub: userId });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe("POST /api/transactions", () => {
+    it("deve retornar 401 sem token", async () => {
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/transactions",
+        payload: {
+          walletId,
+          categoryId,
+          amount: 10,
+          description: "Teste",
+          type: "EXPENSE",
+          date: new Date().toISOString(),
+        },
+      });
+
+      expect(response.statusCode).toBe(401);
+    });
+
+    it("deve criar uma transação simples", async () => {
+      const payload = {
+        walletId,
+        categoryId,
+        amount: 123.45,
+        description: "Café",
+        type: "EXPENSE",
+        isPaid: true,
+        date: new Date("2026-01-01T00:00:00.000Z").toISOString(),
+      };
+
+      prismaMock.wallet.findUnique.mockResolvedValue({
+        id: walletId,
+        ownerId: userId,
+      } as any);
+
+      prismaMock.category.findUnique.mockResolvedValue({
+        id: categoryId,
+        userId: null,
+      } as any);
+
+      prismaMock.transaction.create.mockResolvedValue({
+        id: "123e4567-e89b-12d3-a456-426614174010",
+        walletId,
+        categoryId,
+        amount: { toNumber: () => payload.amount },
+        description: payload.description,
+        date: new Date(payload.date),
+        type: TransactionType.EXPENSE,
+        isPaid: true,
+        transferId: null,
+        recurrenceId: null,
+        recurrenceFrequency: null,
+        recurrenceIntervalDays: null,
+        installmentNumber: null,
+        totalInstallments: null,
+        tags: null,
+        purchaseDate: null,
+        invoiceMonth: null,
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+      } as any);
+
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/transactions",
+        headers: { authorization: `Bearer ${token}` },
+        payload,
+      });
+
+      expect(response.statusCode).toBe(201);
+      const body = JSON.parse(response.body);
+      expect(body.walletId).toBe(walletId);
+      expect(body.amount).toBe(payload.amount);
+      expect(body.type).toBe("EXPENSE");
+    });
+
+    it("deve retornar 404 se o banco rejeitar categoryId inexistente", async () => {
+      const payload = {
+        walletId,
+        categoryId,
+        amount: 123.45,
+        description: "Café",
+        type: "EXPENSE",
+        isPaid: true,
+        date: new Date("2026-01-01T00:00:00.000Z").toISOString(),
+      };
+
+      prismaMock.wallet.findUnique.mockResolvedValue({
+        id: walletId,
+        ownerId: userId,
+      } as any);
+
+      prismaMock.category.findUnique.mockResolvedValue({
+        id: categoryId,
+        userId: null,
+      } as any);
+
+      const prismaError = new Prisma.PrismaClientKnownRequestError(
+        "Foreign key",
+        {
+          code: "P2003",
+          clientVersion: "test",
+          meta: { field_name: "Transaction_categoryId_fkey" },
+        },
+      );
+
+      prismaMock.transaction.create.mockRejectedValue(prismaError as any);
+
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/transactions",
+        headers: { authorization: `Bearer ${token}` },
+        payload,
+      });
+
+      expect(response.statusCode).toBe(404);
+      const body = JSON.parse(response.body);
+      expect(body.message).toBe("Categoria não encontrada");
+    });
+
+    it("deve criar transações parceladas", async () => {
+      const payload = {
+        walletId,
+        categoryId,
+        amount: 1000,
+        description: "Notebook",
+        type: "EXPENSE",
+        isPaid: true,
+        totalInstallments: 3,
+        date: new Date("2026-01-01T00:00:00.000Z").toISOString(),
+      };
+
+      prismaMock.wallet.findUnique.mockResolvedValue({
+        id: walletId,
+        ownerId: userId,
+      } as any);
+
+      prismaMock.category.findUnique.mockResolvedValue({
+        id: categoryId,
+        userId: null,
+      } as any);
+
+      prismaMock.transaction.create
+        .mockResolvedValueOnce({
+          id: "123e4567-e89b-12d3-a456-426614174011",
+          walletId,
+          categoryId,
+          amount: { toNumber: () => 333.33 },
+          description: payload.description,
+          date: new Date("2026-01-01T00:00:00.000Z"),
+          type: TransactionType.EXPENSE,
+          isPaid: true,
+          transferId: null,
+          recurrenceId: "rec",
+          recurrenceFrequency: null,
+          recurrenceIntervalDays: null,
+          installmentNumber: 1,
+          totalInstallments: 3,
+          tags: null,
+          purchaseDate: null,
+          invoiceMonth: null,
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+        } as any)
+        .mockResolvedValueOnce({
+          id: "123e4567-e89b-12d3-a456-426614174012",
+          walletId,
+          categoryId,
+          amount: { toNumber: () => 333.33 },
+          description: payload.description,
+          date: new Date("2026-02-01T00:00:00.000Z"),
+          type: TransactionType.EXPENSE,
+          isPaid: false,
+          transferId: null,
+          recurrenceId: "rec",
+          recurrenceFrequency: null,
+          recurrenceIntervalDays: null,
+          installmentNumber: 2,
+          totalInstallments: 3,
+          tags: null,
+          purchaseDate: null,
+          invoiceMonth: null,
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+        } as any)
+        .mockResolvedValueOnce({
+          id: "123e4567-e89b-12d3-a456-426614174013",
+          walletId,
+          categoryId,
+          amount: { toNumber: () => 333.34 },
+          description: payload.description,
+          date: new Date("2026-03-01T00:00:00.000Z"),
+          type: TransactionType.EXPENSE,
+          isPaid: false,
+          transferId: null,
+          recurrenceId: "rec",
+          recurrenceFrequency: null,
+          recurrenceIntervalDays: null,
+          installmentNumber: 3,
+          totalInstallments: 3,
+          tags: null,
+          purchaseDate: null,
+          invoiceMonth: null,
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+        } as any);
+
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/transactions",
+        headers: { authorization: `Bearer ${token}` },
+        payload,
+      });
+
+      expect(response.statusCode).toBe(201);
+      const body = JSON.parse(response.body);
+      expect(Array.isArray(body)).toBe(true);
+      expect(body).toHaveLength(3);
+      const amounts = body.map((t: any) => t.amount);
+      expect(amounts.reduce((a: number, b: number) => a + b, 0)).toBe(1000);
+    });
+  });
+
+  describe("GET /api/transactions", () => {
+    it("deve listar transações da carteira", async () => {
+      prismaMock.wallet.findFirst.mockResolvedValue({ id: walletId } as any);
+
+      prismaMock.transaction.findMany.mockResolvedValue([
+        {
+          id: "123e4567-e89b-12d3-a456-426614174014",
+          walletId,
+          categoryId: null,
+          amount: { toNumber: () => 10 },
+          description: null,
+          date: new Date("2026-01-01T00:00:00.000Z"),
+          type: TransactionType.INCOME,
+          isPaid: true,
+          transferId: null,
+          recurrenceId: null,
+          recurrenceFrequency: null,
+          recurrenceIntervalDays: null,
+          installmentNumber: null,
+          totalInstallments: null,
+          tags: null,
+          purchaseDate: null,
+          invoiceMonth: null,
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+        },
+      ] as any);
+
+      const response = await app.inject({
+        method: "GET",
+        url: `/api/transactions?walletId=${walletId}`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body).toHaveLength(1);
+      expect(body[0].walletId).toBe(walletId);
+    });
+  });
+});
