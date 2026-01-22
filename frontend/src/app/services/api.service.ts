@@ -6,8 +6,12 @@ import {
   ApiResponseDTO,
   LoginDTO,
   LoginResponseDTO,
+  CategoryDTO,
+  CreateCategoryDTO,
   CreateWalletDTO,
   WalletDTO,
+  CreateTransactionDTO,
+  TransactionDTO,
 } from '@dindinho/shared';
 
 export interface RefreshResponse {
@@ -134,5 +138,17 @@ export class ApiService {
    */
   getWallets(): Observable<WalletDTO[]> {
     return this.http.get<WalletDTO[]>(`${this.baseUrl}/wallets`);
+  }
+
+  createTransaction(data: CreateTransactionDTO): Observable<TransactionDTO | TransactionDTO[]> {
+    return this.http.post<TransactionDTO | TransactionDTO[]>(`${this.baseUrl}/transactions`, data);
+  }
+
+  getCategories(): Observable<CategoryDTO[]> {
+    return this.http.get<CategoryDTO[]>(`${this.baseUrl}/categories`);
+  }
+
+  createCategory(data: CreateCategoryDTO): Observable<CategoryDTO> {
+    return this.http.post<CategoryDTO>(`${this.baseUrl}/categories`, data);
   }
 }

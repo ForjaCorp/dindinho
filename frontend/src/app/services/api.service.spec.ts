@@ -12,8 +12,12 @@ import {
   ApiResponseDTO,
   LoginDTO,
   LoginResponseDTO,
+  CategoryDTO,
+  CreateCategoryDTO,
   CreateWalletDTO,
   WalletDTO,
+  CreateTransactionDTO,
+  TransactionDTO,
 } from '@dindinho/shared';
 
 /**
@@ -400,6 +404,95 @@ describe('ApiService', () => {
       const req = httpMock.expectOne('http://localhost:3333/api/wallets');
       expect(req.request.method).toBe('GET');
       req.flush(multipleWallets);
+    });
+  });
+
+  describe('createTransaction()', () => {
+    it('deve fazer requisição POST para endpoint de transações', () => {
+      const payload: CreateTransactionDTO = {
+        walletId: '123e4567-e89b-12d3-a456-426614174000',
+        categoryId: '123e4567-e89b-12d3-a456-426614174099',
+        amount: 10.5,
+        type: 'EXPENSE',
+        date: '2026-01-01T00:00:00.000Z',
+        isPaid: true,
+        description: 'Café',
+        totalInstallments: 1,
+      };
+
+      const responseBody: TransactionDTO = {
+        id: '123e4567-e89b-12d3-a456-426614174111',
+        walletId: payload.walletId,
+        categoryId: payload.categoryId,
+        amount: payload.amount,
+        description: payload.description ?? null,
+        date: payload.date!,
+        type: payload.type,
+        isPaid: true,
+        recurrenceId: null,
+        installmentNumber: null,
+        totalInstallments: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      };
+
+      service.createTransaction(payload).subscribe((response) => {
+        expect(response).toEqual(responseBody);
+      });
+
+      const req = httpMock.expectOne('http://localhost:3333/api/transactions');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(payload);
+      req.flush(responseBody);
+    });
+  });
+
+  describe('getCategories()', () => {
+    it('deve fazer requisição GET para endpoint de categorias', () => {
+      const responseBody: CategoryDTO[] = [
+        {
+          id: '123e4567-e89b-12d3-a456-426614174099',
+          name: 'Mercado',
+          icon: 'pi-shopping-cart',
+          parentId: null,
+          userId: 'user-1',
+        },
+      ];
+
+      service.getCategories().subscribe((response) => {
+        expect(response).toEqual(responseBody);
+      });
+
+      const req = httpMock.expectOne('http://localhost:3333/api/categories');
+      expect(req.request.method).toBe('GET');
+      req.flush(responseBody);
+    });
+  });
+
+  describe('createCategory()', () => {
+    it('deve fazer requisição POST para endpoint de categorias', () => {
+      const payload: CreateCategoryDTO = {
+        name: 'Mercado',
+        icon: 'pi-shopping-cart',
+        parentId: null,
+      };
+
+      const responseBody: CategoryDTO = {
+        id: '123e4567-e89b-12d3-a456-426614174099',
+        name: payload.name,
+        icon: payload.icon,
+        parentId: null,
+        userId: 'user-1',
+      };
+
+      service.createCategory(payload).subscribe((response) => {
+        expect(response).toEqual(responseBody);
+      });
+
+      const req = httpMock.expectOne('http://localhost:3333/api/categories');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(payload);
+      req.flush(responseBody);
     });
   });
 
