@@ -48,6 +48,14 @@ export const routes: Routes = [
         path: 'wallets',
         loadComponent: () => import('../pages/wallets/wallets.page').then((m) => m.WalletsPage),
       },
+      {
+        path: 'transactions/new',
+        loadComponent: () =>
+          import('../pages/transactions/create-transaction.page').then(
+            (m) => m.CreateTransactionPage,
+          ),
+        data: { title: 'Nova transação' },
+      },
       // Outras rotas autenticadas virão aqui (wallet, reports, profile)
     ],
   },

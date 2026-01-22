@@ -1,6 +1,8 @@
-import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, DestroyRef, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-main-layout',
@@ -36,7 +38,10 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
       </header>
 
       <!-- Conteúdo Principal -->
-      <main data-testid="main-content" class="flex-1 overflow-y-auto scroll-smooth pb-24">
+      <main
+        data-testid="main-content"
+        class="flex-1 overflow-y-auto scroll-smooth overscroll-contain pb-[calc(4.5rem+env(safe-area-inset-bottom))]"
+      >
         <router-outlet></router-outlet>
       </main>
 
@@ -69,12 +74,13 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 
         <!-- Botão central de ação rápida -->
         <div class="relative -mt-8">
-          <button
+          <a
             data-testid="add-button"
+            routerLink="/transactions/new"
             class="w-16 h-16 rounded-full bg-linear-to-r from-emerald-500 to-teal-600 text-white shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow"
           >
-            <i class="pi pi-plus text-2xl"></i>
-          </button>
+            <i class="pi pi-plus text-2xl text-white!"></i>
+          </a>
         </div>
 
         <!-- Botão para acessar a página de relatórios -->
@@ -103,5 +109,38 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
   `,
 })
 export class MainLayoutComponent {
+  private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
+
   protected readonly title = signal('Dindinho');
+
+  constructor() {
+    const updateTitle = () => {
+      const title = this.getDeepestRouteTitle();
+      this.title.set(title ?? 'Dindinho');
+    };
+
+    this.router.events
+      .pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe(() => updateTitle());
+  }
+
+  private getDeepestRouteTitle(): string | null {
+    const root = this.router.routerState.snapshot.root;
+
+    let current: typeof root | null = root;
+    while (current?.firstChild) {
+      current = current.firstChild;
+    }
+
+    const value = (current as unknown as { data?: Record<string, unknown> } | null)?.data?.[
+      'title'
+    ];
+    if (typeof value !== 'string') return null;
+    const normalized = value.trim();
+    return normalized.length > 0 ? normalized : null;
+  }
 }
