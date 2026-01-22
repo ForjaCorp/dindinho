@@ -77,6 +77,7 @@ import { filter } from 'rxjs/operators';
           <a
             data-testid="add-button"
             routerLink="/transactions/new"
+            [queryParams]="{ openAmount: 1 }"
             class="w-16 h-16 rounded-full bg-linear-to-r from-emerald-500 to-teal-600 text-white shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow"
           >
             <i class="pi pi-plus text-2xl text-white!"></i>

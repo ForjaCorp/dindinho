@@ -260,7 +260,7 @@ export class DashboardComponent implements OnInit {
 
   protected onQuickAdd(type: 'INCOME' | 'EXPENSE') {
     this.router.navigate(['/transactions/new'], {
-      queryParams: { type },
+      queryParams: { type, openAmount: 1 },
     });
   }
 }

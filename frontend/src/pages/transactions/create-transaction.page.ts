@@ -2,11 +2,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  ElementRef,
+  PLATFORM_ID,
   computed,
   inject,
   signal,
 } from '@angular/core';
-import { CommonModule, CurrencyPipe } from '@angular/common';
+import { CommonModule, CurrencyPipe, isPlatformBrowser } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs/operators';
@@ -260,7 +262,7 @@ const categoryIconOptions = [
               } @else {
                 <div class="text-white/85 text-base font-semibold">Toque para informar</div>
               }
-              <i class="pi pi-chevron-up text-white/80"></i>
+              <i class="pi pi-chevron-up text-white/80 pointer-events-none"></i>
             </button>
 
             @if (amountExpressionError()) {
@@ -633,15 +635,6 @@ const categoryIconOptions = [
                     <div class="text-sm text-slate-500">Digite um valor ou expressão</div>
                   }
                 </div>
-
-                <button
-                  data-testid="amount-sheet-cancel"
-                  type="button"
-                  class="h-10 px-3 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium"
-                  (click)="closeAmountSheet()"
-                >
-                  Cancelar
-                </button>
               </div>
 
               <input
@@ -681,15 +674,26 @@ const categoryIconOptions = [
                 }
               </div>
 
-              <button
-                data-testid="amount-sheet-confirm"
-                type="button"
-                class="h-12 rounded-2xl bg-emerald-600 text-white text-base font-semibold flex items-center justify-center gap-2"
-                (click)="confirmAmountSheet()"
-              >
-                <i class="pi pi-check"></i>
-                Concluir
-              </button>
+              <div class="grid grid-cols-2 gap-3">
+                <button
+                  data-testid="amount-sheet-cancel"
+                  type="button"
+                  class="h-12 rounded-2xl border border-slate-200 text-slate-700 text-base font-semibold"
+                  (click)="closeAmountSheet()"
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  data-testid="amount-sheet-confirm"
+                  type="button"
+                  class="h-12 rounded-2xl bg-emerald-600 text-white text-base font-semibold flex items-center justify-center gap-2"
+                  (click)="confirmAmountSheet()"
+                >
+                  <i class="pi pi-check"></i>
+                  Concluir
+                </button>
+              </div>
             </div>
           </div>
         }
@@ -783,6 +787,8 @@ export class CreateTransactionPage {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private destroyRef = inject(DestroyRef);
+  private platformId = inject(PLATFORM_ID);
+  private host = inject(ElementRef<HTMLElement>);
 
   protected readonly wallets = this.walletService.wallets;
   protected readonly walletsLoading = this.walletService.isLoading;
@@ -809,8 +815,8 @@ export class CreateTransactionPage {
   protected readonly datePreset = signal<'TODAY' | 'YESTERDAY' | 'OTHER'>('TODAY');
 
   protected readonly typeOptions = [
-    { label: 'Receita', value: 'INCOME' as const, icon: 'pi-arrow-down' },
-    { label: 'Despesa', value: 'EXPENSE' as const, icon: 'pi-arrow-up' },
+    { label: 'Receita', value: 'INCOME' as const, icon: 'pi-arrow-up' },
+    { label: 'Despesa', value: 'EXPENSE' as const, icon: 'pi-arrow-down' },
     { label: 'Transf.', value: 'TRANSFER' as const, icon: 'pi-arrow-right-arrow-left' },
   ];
 
@@ -1073,6 +1079,11 @@ export class CreateTransactionPage {
       .subscribe((v) => {
         this.syncDatePresetFromValue(v);
       });
+
+    const openAmount = this.route.snapshot.queryParamMap.get('openAmount');
+    if (openAmount === '1' || openAmount === 'true') {
+      queueMicrotask(() => this.openAmountSheet());
+    }
   }
 
   private loadCategories() {
@@ -1112,6 +1123,22 @@ export class CreateTransactionPage {
     this.amountDraftError.set(null);
     this.amountDraft.set(this.form.controls.amountExpression.value);
     this.amountSheetVisible.set(true);
+
+    this.focusAmountInputIfDesktop();
+  }
+
+  private focusAmountInputIfDesktop() {
+    if (!isPlatformBrowser(this.platformId as object)) return;
+    const coarse = window.matchMedia?.('(pointer: coarse)')?.matches ?? false;
+    if (coarse) return;
+
+    setTimeout(() => {
+      const input = this.host.nativeElement.querySelector(
+        '[data-testid="amount-sheet-input"]',
+      ) as HTMLInputElement | null;
+      input?.focus();
+      input?.select?.();
+    }, 0);
   }
 
   protected closeAmountSheet() {
