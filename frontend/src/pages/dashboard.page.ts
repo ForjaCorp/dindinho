@@ -27,6 +27,7 @@ import { WalletService } from '../app/services/wallet.service';
 import { CurrencyPipe } from '@angular/common';
 import { CreateWalletDialogComponent } from '../app/components/wallets/create-wallet-dialog.component';
 import { WalletCardComponent } from '../app/components/wallets/wallet-card.component';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-dashboard',
@@ -64,6 +65,7 @@ import { WalletCardComponent } from '../app/components/wallets/wallet-card.compo
             size="small"
             [rounded]="true"
             styleClass="!bg-white/20 !border-0 text-white hover:!bg-white/30 w-full"
+            (onClick)="onQuickAdd('INCOME')"
           />
           <p-button
             data-testid="expense-button"
@@ -72,6 +74,7 @@ import { WalletCardComponent } from '../app/components/wallets/wallet-card.compo
             size="small"
             [rounded]="true"
             styleClass="!bg-white/20 !border-0 text-white hover:!bg-white/30 w-full"
+            (onClick)="onQuickAdd('EXPENSE')"
           />
         </div>
       </div>
@@ -226,6 +229,7 @@ import { WalletCardComponent } from '../app/components/wallets/wallet-card.compo
 export class DashboardComponent implements OnInit {
   private apiService = inject(ApiService);
   protected walletService = inject(WalletService);
+  private router = inject(Router);
 
   apiData = signal<ApiResponseDTO | null>(null);
   error = signal<string | null>(null);
@@ -252,5 +256,11 @@ export class DashboardComponent implements OnInit {
 
   loadWallets() {
     this.walletService.loadWallets();
+  }
+
+  protected onQuickAdd(type: 'INCOME' | 'EXPENSE') {
+    this.router.navigate(['/transactions/new'], {
+      queryParams: { type },
+    });
   }
 }
