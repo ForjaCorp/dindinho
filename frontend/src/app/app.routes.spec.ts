@@ -57,6 +57,10 @@ describe('Rotas da aplicação', () => {
     expect(dashboardChild).toBeDefined();
     expect(dashboardChild?.loadComponent).toBeDefined();
 
+    const transactionsChild = mainRoute?.children?.find((child) => child.path === 'transactions');
+    expect(transactionsChild).toBeDefined();
+    expect(transactionsChild?.loadComponent).toBeDefined();
+
     const createTxChild = mainRoute?.children?.find((child) => child.path === 'transactions/new');
     expect(createTxChild).toBeDefined();
     expect(createTxChild?.loadComponent).toBeDefined();

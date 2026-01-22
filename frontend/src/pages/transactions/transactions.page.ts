@@ -1,0 +1,401 @@
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
+import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { Router } from '@angular/router';
+import { finalize } from 'rxjs/operators';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ButtonModule } from 'primeng/button';
+import { TransactionDTO, WalletDTO } from '@dindinho/shared';
+import { ApiService } from '../../app/services/api.service';
+import { WalletService } from '../../app/services/wallet.service';
+
+type TransactionTypeFilter = '' | TransactionDTO['type'];
+
+@Component({
+  selector: 'app-transactions-page',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [CommonModule, ButtonModule, CurrencyPipe, DatePipe],
+  template: `
+    <div data-testid="transactions-page" class="p-4 pb-24 max-w-3xl mx-auto flex flex-col gap-4">
+      <div class="flex items-center justify-between">
+        <div class="flex flex-col">
+          <h1 class="text-xl font-bold text-slate-900">Transações</h1>
+          <span class="text-sm text-slate-500"
+            >Todas as transações, da mais nova pra mais velha</span
+          >
+        </div>
+
+        <p-button
+          data-testid="transactions-create-btn"
+          label="Nova"
+          icon="pi pi-plus"
+          size="small"
+          (onClick)="onNewTransaction()"
+        />
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-col gap-4">
+        <div class="flex gap-2 items-center">
+          <div class="flex-1 min-w-0">
+            <label class="sr-only" for="q">Pesquisar</label>
+            <input
+              data-testid="transactions-search"
+              id="q"
+              type="text"
+              class="h-11 w-full rounded-xl border border-slate-200 px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+              placeholder="Pesquisar (ex: mercado, uber, salário)"
+              [value]="searchDraft()"
+              (input)="onSearchDraftInput($event)"
+              aria-label="Pesquisar"
+            />
+          </div>
+
+          <p-button
+            data-testid="transactions-filters-toggle"
+            [icon]="filtersOpen() ? 'pi pi-times' : 'pi pi-filter'"
+            [rounded]="true"
+            [text]="true"
+            size="small"
+            (onClick)="toggleFilters()"
+          />
+        </div>
+
+        @if (filtersOpen()) {
+          <div data-testid="transactions-filters" class="grid grid-cols-2 gap-2">
+            <div class="flex flex-col gap-1">
+              <label class="sr-only" for="type">Tipo</label>
+              <select
+                data-testid="transactions-type-select"
+                id="type"
+                class="h-10 rounded-xl border border-slate-200 px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                [value]="typeFilter()"
+                (change)="onTypeFilterChange($event)"
+                aria-label="Tipo"
+              >
+                <option value="">Todos os tipos</option>
+                <option value="INCOME">Receita</option>
+                <option value="EXPENSE">Despesa</option>
+                <option value="TRANSFER">Transferência</option>
+              </select>
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="sr-only" for="walletId">Carteira</label>
+              <select
+                data-testid="transactions-wallet-select"
+                id="walletId"
+                class="h-10 rounded-xl border border-slate-200 px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                [value]="walletFilterId()"
+                (change)="onWalletFilterChange($event)"
+                aria-label="Carteira"
+              >
+                <option value="">Todas as carteiras</option>
+                @for (w of wallets(); track w.id) {
+                  <option [value]="w.id">{{ w.name }}</option>
+                }
+              </select>
+            </div>
+          </div>
+        }
+
+        @if (initialLoading()) {
+          <div data-testid="transactions-loading" class="text-sm text-slate-500">Carregando...</div>
+        } @else if (error()) {
+          <div
+            data-testid="transactions-error"
+            class="rounded-xl bg-red-50 text-red-700 border border-red-100 px-3 py-2 text-sm"
+          >
+            {{ error() }}
+          </div>
+        } @else if (!items().length) {
+          <div
+            data-testid="transactions-empty"
+            class="rounded-xl bg-slate-50 border border-dashed border-slate-200 px-4 py-6 text-center text-slate-500"
+          >
+            Nenhuma transação encontrada.
+          </div>
+        } @else {
+          <div data-testid="transactions-list" class="flex flex-col">
+            @for (t of items(); track t.id) {
+              <div
+                [attr.data-testid]="'transactions-item-' + t.id"
+                class="flex items-center justify-between py-3 border-b border-slate-100 last:border-b-0"
+              >
+                <div class="flex flex-col gap-0.5 min-w-0">
+                  <span class="text-sm font-semibold text-slate-800 truncate">{{
+                    transactionTitle(t)
+                  }}</span>
+                  <div class="flex items-center gap-2 text-xs text-slate-500">
+                    <span>{{ t.date | date: 'dd/MM/yyyy' }}</span>
+                    <span aria-hidden="true">•</span>
+                    <span class="truncate">{{ walletName(t.walletId) }}</span>
+                  </div>
+                </div>
+
+                <div class="flex flex-col items-end gap-0.5">
+                  <span class="text-sm font-bold" [class]="amountClass(t)">
+                    {{ signedAmount(t) | currency: 'BRL' }}
+                  </span>
+                  <span class="text-xs text-slate-500">{{ transactionTypeLabel(t) }}</span>
+                </div>
+              </div>
+            }
+          </div>
+
+          <div
+            data-testid="transactions-load-more"
+            class="py-2 text-center text-xs text-slate-500"
+            [class.hidden]="!hasMore() && !loadingMore()"
+          >
+            @if (loadingMore()) {
+              Carregando mais...
+            } @else if (hasMore()) {
+              Role para carregar mais
+            }
+          </div>
+        }
+      </div>
+    </div>
+  `,
+})
+export class TransactionsPage {
+  private api = inject(ApiService);
+  private walletService = inject(WalletService);
+  private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
+  private host = inject(ElementRef<HTMLElement>);
+
+  protected readonly wallets = this.walletService.wallets;
+
+  protected readonly searchDraft = signal('');
+  protected readonly searchQuery = signal('');
+  protected readonly walletFilterId = signal<string>('');
+  protected readonly typeFilter = signal<TransactionTypeFilter>('');
+
+  protected readonly items = signal<TransactionDTO[]>([]);
+  protected readonly nextCursorId = signal<string | null>(null);
+  protected readonly initialLoading = signal(false);
+  protected readonly loadingMore = signal(false);
+  protected readonly error = signal<string | null>(null);
+
+  protected readonly hasMore = computed(() => this.nextCursorId() !== null);
+
+  protected readonly walletMap = computed(() => {
+    const map = new Map<string, WalletDTO>();
+    for (const w of this.wallets()) map.set(w.id, w);
+    return map;
+  });
+
+  private searchDebounceHandle: number | null = null;
+  private observer: IntersectionObserver | null = null;
+  private observedEl: HTMLElement | null = null;
+  private initialLoadSeq = 0;
+
+  protected readonly filtersOpen = signal(false);
+
+  constructor() {
+    this.walletService.loadWallets();
+
+    effect(() => {
+      const draft = this.searchDraft();
+
+      if (this.searchDebounceHandle !== null) {
+        clearTimeout(this.searchDebounceHandle);
+      }
+
+      this.searchDebounceHandle = window.setTimeout(() => {
+        const next = draft.trim();
+        if (this.searchQuery() === next) return;
+        this.searchQuery.set(next);
+      }, 250);
+    });
+
+    effect(() => {
+      const q = this.searchQuery();
+      const walletId = this.walletFilterId();
+      const type = this.typeFilter();
+
+      this.resetAndLoad({
+        q: q || undefined,
+        walletId: walletId || undefined,
+        type: type || undefined,
+      });
+    });
+
+    effect(() => {
+      this.items();
+      this.initialLoading();
+      queueMicrotask(() => this.setupInfiniteScroll());
+    });
+
+    queueMicrotask(() => this.setupInfiniteScroll());
+  }
+
+  protected onNewTransaction() {
+    this.router.navigate(['/transactions/new'], { queryParams: { openAmount: 1 } });
+  }
+
+  protected toggleFilters() {
+    this.filtersOpen.update((v) => !v);
+  }
+
+  protected onSearchDraftInput(event: Event) {
+    const value = (event.target as HTMLInputElement | null)?.value ?? '';
+    this.searchDraft.set(value);
+  }
+
+  protected onWalletFilterChange(event: Event) {
+    const value = (event.target as HTMLSelectElement | null)?.value ?? '';
+    this.walletFilterId.set(value);
+  }
+
+  protected onTypeFilterChange(event: Event) {
+    const value = (event.target as HTMLSelectElement | null)?.value ?? '';
+    this.typeFilter.set(value as TransactionTypeFilter);
+  }
+
+  protected signedAmount(t: TransactionDTO): number {
+    if (t.type === 'TRANSFER') return typeof t.amount === 'number' ? t.amount : 0;
+
+    const base = typeof t.amount === 'number' ? Math.abs(t.amount) : 0;
+    return t.type === 'INCOME' ? base : -base;
+  }
+
+  protected amountClass(t: TransactionDTO): string {
+    const value = this.signedAmount(t);
+    if (value > 0) return 'text-emerald-700';
+    if (value < 0) return 'text-rose-700';
+    return 'text-slate-600';
+  }
+
+  protected transactionTypeLabel(t: TransactionDTO): string {
+    if (t.type === 'INCOME') return 'Receita';
+    if (t.type === 'EXPENSE') return 'Despesa';
+    return 'Transferência';
+  }
+
+  protected transactionTitle(t: TransactionDTO): string {
+    const raw = typeof t.description === 'string' ? t.description.trim() : '';
+    if (raw) return raw;
+    return this.transactionTypeLabel(t);
+  }
+
+  protected walletName(walletId: string): string {
+    return this.walletMap().get(walletId)?.name ?? 'Carteira';
+  }
+
+  private resetAndLoad(filters: { q?: string; walletId?: string; type?: TransactionDTO['type'] }) {
+    const seq = ++this.initialLoadSeq;
+    this.error.set(null);
+    this.items.set([]);
+    this.nextCursorId.set(null);
+    this.loadingMore.set(false);
+
+    this.initialLoading.set(true);
+    this.api
+      .getTransactions({ ...filters, limit: 30 })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (res) => {
+          if (seq !== this.initialLoadSeq) return;
+          this.items.set(res.items);
+          this.nextCursorId.set(res.nextCursorId);
+          this.initialLoading.set(false);
+        },
+        error: () => {
+          if (seq !== this.initialLoadSeq) return;
+          this.error.set('Erro ao carregar transações');
+          this.initialLoading.set(false);
+        },
+      });
+  }
+
+  protected loadMore() {
+    if (this.initialLoading() || this.loadingMore()) return;
+
+    const cursorId = this.nextCursorId();
+    if (!cursorId) return;
+
+    const seq = this.initialLoadSeq;
+
+    const q = this.searchQuery();
+    const walletId = this.walletFilterId();
+    const type = this.typeFilter();
+
+    this.loadingMore.set(true);
+    this.api
+      .getTransactions({
+        cursorId,
+        limit: 30,
+        q: q || undefined,
+        walletId: walletId || undefined,
+        type: type || undefined,
+      })
+      .pipe(
+        finalize(() => this.loadingMore.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (res) => {
+          if (seq !== this.initialLoadSeq) return;
+          const current = this.items();
+          const next = res.items;
+          this.items.set([...current, ...next]);
+          this.nextCursorId.set(res.nextCursorId);
+        },
+        error: () => {
+          if (seq !== this.initialLoadSeq) return;
+          this.error.set('Erro ao carregar transações');
+        },
+      });
+  }
+
+  private setupInfiniteScroll() {
+    if (typeof IntersectionObserver === 'undefined') return;
+
+    const el = this.host.nativeElement.querySelector(
+      '[data-testid="transactions-load-more"]',
+    ) as HTMLElement | null;
+
+    if (!el) {
+      this.observer?.disconnect();
+      this.observer = null;
+      this.observedEl = null;
+      return;
+    }
+
+    if (this.observer && this.observedEl === el) return;
+
+    this.observer?.disconnect();
+
+    this.observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+        this.loadMore();
+      },
+      { root: null, rootMargin: '200px', threshold: 0 },
+    );
+
+    this.observedEl = el;
+    this.observer.observe(el);
+
+    this.destroyRef.onDestroy(() => {
+      try {
+        this.observer?.disconnect();
+      } finally {
+        this.observer = null;
+        this.observedEl = null;
+      }
+    });
+  }
+}

@@ -154,4 +154,50 @@ describe('CreateTransactionPage', () => {
 
     expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
   });
+
+  it('deve concluir o sheet de valor ao pressionar Enter', async () => {
+    localStorage.clear();
+    const walletServiceMock = createWalletServiceMock({ wallets, loading: false });
+    const apiServiceMock = {
+      createTransaction: vi.fn(() => of({})),
+      getCategories: vi.fn(() => of(categories)),
+      createCategory: vi.fn(() => of(categories[0])),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [CreateTransactionPage],
+      providers: [
+        provideRouter([]),
+        { provide: WalletService, useValue: walletServiceMock },
+        { provide: ApiService, useValue: apiServiceMock },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(CreateTransactionPage);
+    fixture.detectChanges();
+
+    const component = fixture.componentInstance as unknown as {
+      form: FormGroup;
+      openAmountSheet: () => void;
+    };
+
+    component.form.controls['amountExpression']?.setValue('');
+    component.openAmountSheet();
+    fixture.detectChanges();
+
+    const input = fixture.nativeElement.querySelector(
+      '[data-testid="amount-sheet-input"]',
+    ) as HTMLInputElement;
+    expect(input).toBeTruthy();
+
+    input.value = '10+5';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    fixture.detectChanges();
+
+    expect(component.form.controls['amountExpression']?.value).toBe('10+5');
+    expect(fixture.nativeElement.querySelector('[data-testid="amount-sheet"]')).toBeFalsy();
+  });
 });

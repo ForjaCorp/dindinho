@@ -298,8 +298,81 @@ describe("Rotas de Transações", () => {
 
       expect(response.statusCode).toBe(200);
       const body = JSON.parse(response.body);
-      expect(body).toHaveLength(1);
-      expect(body[0].walletId).toBe(walletId);
+      expect(body.items).toHaveLength(1);
+      expect(body.items[0].walletId).toBe(walletId);
+      expect(body.nextCursorId).toBeNull();
+    });
+
+    it("deve listar transações com paginação", async () => {
+      prismaMock.transaction.findMany
+        .mockResolvedValueOnce([
+          {
+            id: "123e4567-e89b-12d3-a456-426614174014",
+            walletId,
+            categoryId: null,
+            amount: { toNumber: () => 10 },
+            description: null,
+            date: new Date("2026-01-02T00:00:00.000Z"),
+            type: TransactionType.INCOME,
+            isPaid: true,
+            transferId: null,
+            recurrenceId: null,
+            recurrenceFrequency: null,
+            recurrenceIntervalDays: null,
+            installmentNumber: null,
+            totalInstallments: null,
+            tags: null,
+            purchaseDate: null,
+            invoiceMonth: null,
+            createdAt: new Date("2026-01-02T00:00:00.000Z"),
+            updatedAt: new Date("2026-01-02T00:00:00.000Z"),
+          },
+        ] as any)
+        .mockResolvedValueOnce([
+          {
+            id: "123e4567-e89b-12d3-a456-426614174013",
+            walletId,
+            categoryId: null,
+            amount: { toNumber: () => 5 },
+            description: null,
+            date: new Date("2026-01-01T00:00:00.000Z"),
+            type: TransactionType.INCOME,
+            isPaid: true,
+            transferId: null,
+            recurrenceId: null,
+            recurrenceFrequency: null,
+            recurrenceIntervalDays: null,
+            installmentNumber: null,
+            totalInstallments: null,
+            tags: null,
+            purchaseDate: null,
+            invoiceMonth: null,
+            createdAt: new Date("2026-01-01T00:00:00.000Z"),
+            updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+          },
+        ] as any);
+
+      const response1 = await app.inject({
+        method: "GET",
+        url: `/api/transactions?limit=1`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response1.statusCode).toBe(200);
+      const body1 = JSON.parse(response1.body);
+      expect(body1.items).toHaveLength(1);
+      expect(body1.nextCursorId).toBe("123e4567-e89b-12d3-a456-426614174014");
+
+      const response2 = await app.inject({
+        method: "GET",
+        url: `/api/transactions?limit=1&cursorId=${body1.nextCursorId}`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response2.statusCode).toBe(200);
+      const body2 = JSON.parse(response2.body);
+      expect(body2.items).toHaveLength(1);
+      expect(body2.items[0].id).toBe("123e4567-e89b-12d3-a456-426614174013");
     });
   });
 });

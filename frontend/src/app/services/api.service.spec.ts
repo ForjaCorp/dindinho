@@ -447,6 +447,64 @@ describe('ApiService', () => {
     });
   });
 
+  describe('getTransactions()', () => {
+    it('deve fazer requisição GET para endpoint de transações com walletId', () => {
+      const walletId = '123e4567-e89b-12d3-a456-426614174000';
+
+      const responseBody: { items: TransactionDTO[]; nextCursorId: string | null } = {
+        items: [
+          {
+            id: '123e4567-e89b-12d3-a456-426614174111',
+            walletId,
+            categoryId: null,
+            amount: 10.5,
+            description: null,
+            date: '2026-01-01T00:00:00.000Z',
+            type: 'INCOME',
+            isPaid: true,
+            recurrenceId: null,
+            installmentNumber: null,
+            totalInstallments: null,
+            createdAt: '2026-01-01T00:00:00.000Z',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+          },
+        ],
+        nextCursorId: null,
+      };
+
+      service.getTransactions({ walletId }).subscribe((response) => {
+        expect(response).toEqual(responseBody);
+      });
+
+      const req = httpMock.expectOne(
+        (r) =>
+          r.url === 'http://localhost:3333/api/transactions' &&
+          r.params.get('walletId') === walletId,
+      );
+      expect(req.request.method).toBe('GET');
+      req.flush(responseBody);
+    });
+
+    it('deve enviar parâmetros de data quando informados', () => {
+      const from = '2026-01-01T00:00:00.000Z';
+      const to = '2026-01-31T23:59:59.000Z';
+
+      service.getTransactions({ from, to, limit: 30 }).subscribe((response) => {
+        expect(response).toEqual({ items: [], nextCursorId: null });
+      });
+
+      const req = httpMock.expectOne(
+        (r) =>
+          r.url === 'http://localhost:3333/api/transactions' &&
+          r.params.get('from') === from &&
+          r.params.get('to') === to &&
+          r.params.get('limit') === '30',
+      );
+      expect(req.request.method).toBe('GET');
+      req.flush({ items: [], nextCursorId: null });
+    });
+  });
+
   describe('getCategories()', () => {
     it('deve fazer requisição GET para endpoint de categorias', () => {
       const responseBody: CategoryDTO[] = [

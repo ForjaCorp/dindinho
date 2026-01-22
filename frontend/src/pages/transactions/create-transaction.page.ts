@@ -250,6 +250,10 @@ const categoryIconOptions = [
               data-testid="transaction-amount-trigger"
               type="button"
               class="mt-3 h-12 w-full rounded-2xl bg-white/15 border border-white/20 px-4 flex items-center justify-between gap-3 focus:outline-none focus:ring-2 focus:ring-white/50"
+              [attr.aria-haspopup]="'dialog'"
+              [attr.aria-expanded]="amountSheetVisible()"
+              [attr.aria-controls]="'amount-sheet'"
+              aria-label="Informar valor"
               (click)="openAmountSheet()"
             >
               @if (!amountExpressionError() && amountPreview() !== null) {
@@ -618,6 +622,10 @@ const categoryIconOptions = [
           ></button>
           <div
             data-testid="amount-sheet"
+            id="amount-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Informar valor"
             class="fixed inset-x-0 bottom-0 z-71 bg-white rounded-t-3xl shadow-2xl border-t border-slate-200 pb-safe"
           >
             <div class="max-w-xl mx-auto p-4 flex flex-col gap-3">
@@ -645,6 +653,8 @@ const categoryIconOptions = [
                 placeholder="Ex: 10+5"
                 [value]="amountDraft()"
                 (input)="onAmountDraftInput($event)"
+                (keydown)="onAmountSheetKeydown($event)"
+                aria-label="Valor"
               />
 
               @if (amountDraftError()) {
@@ -660,6 +670,7 @@ const categoryIconOptions = [
                   <button
                     data-testid="amount-sheet-key"
                     type="button"
+                    [attr.aria-label]="amountKeyAriaLabel(k)"
                     [class]="
                       k.kind === 'action'
                         ? 'h-12 rounded-2xl bg-slate-100 text-slate-800 text-sm font-semibold active:scale-[0.99] transition'
@@ -1150,6 +1161,41 @@ export class CreateTransactionPage {
     const value = (event.target as HTMLInputElement | null)?.value ?? '';
     this.amountDraftError.set(null);
     this.amountDraft.set(value);
+  }
+
+  protected onAmountSheetKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.confirmAmountSheet();
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.closeAmountSheet();
+    }
+  }
+
+  protected amountKeyAriaLabel(key: AmountKey): string {
+    if (key.kind === 'action') {
+      if (key.id === 'del') return 'Apagar último caractere';
+      if (key.id === 'c') return 'Limpar';
+      return key.label;
+    }
+
+    if (key.kind === 'operator') {
+      if (key.token === '+') return 'Somar';
+      if (key.token === '-') return 'Subtrair';
+      if (key.token === '*') return 'Multiplicar';
+      if (key.token === '/') return 'Dividir';
+      if (key.token === '(') return 'Abrir parênteses';
+      if (key.token === ')') return 'Fechar parênteses';
+      return key.label;
+    }
+
+    return key.label;
   }
 
   protected onAmountKeypadPress(key: AmountKey) {

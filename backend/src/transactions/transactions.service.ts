@@ -505,4 +505,84 @@ export class TransactionsService {
 
     return txs.map(toTransactionDTO);
   }
+
+  async list(
+    userId: string,
+    input: {
+      walletId?: string;
+      from?: string;
+      to?: string;
+      q?: string;
+      type?: "INCOME" | "EXPENSE" | "TRANSFER";
+      limit?: number;
+      cursorId?: string;
+    },
+  ): Promise<{ items: TransactionDTO[]; nextCursorId: string | null }> {
+    const walletId =
+      typeof input.walletId === "string" ? input.walletId : undefined;
+    const from = input.from ? new Date(input.from) : undefined;
+    const to = input.to ? new Date(input.to) : undefined;
+    const limit = typeof input.limit === "number" ? input.limit : 30;
+    const cursorId =
+      typeof input.cursorId === "string" ? input.cursorId : undefined;
+    const q = typeof input.q === "string" ? input.q.trim() : "";
+    const type = input.type;
+
+    if (walletId) {
+      await this.assertCanReadWallet(userId, walletId);
+    }
+
+    const dateFilter =
+      from || to
+        ? {
+            date: {
+              ...(from ? { gte: from } : {}),
+              ...(to ? { lte: to } : {}),
+            },
+          }
+        : {};
+
+    const where: Prisma.TransactionWhereInput = {
+      ...(walletId
+        ? { walletId }
+        : {
+            wallet: {
+              OR: [
+                { ownerId: userId },
+                {
+                  accessList: {
+                    some: { userId },
+                  },
+                },
+              ],
+            },
+          }),
+      ...(q
+        ? {
+            description: {
+              contains: q,
+            },
+          }
+        : {}),
+      ...(type ? { type: type as any } : {}),
+      ...dateFilter,
+    };
+
+    const txs = await this.prisma.transaction.findMany({
+      where,
+      orderBy: [{ date: "desc" }, { id: "desc" }],
+      take: limit,
+      ...(cursorId
+        ? {
+            cursor: { id: cursorId },
+            skip: 1,
+          }
+        : {}),
+    });
+
+    const items = txs.map(toTransactionDTO);
+    const nextCursorId =
+      items.length === limit ? items[items.length - 1]!.id : null;
+    return { items, nextCursorId };
+  }
 }

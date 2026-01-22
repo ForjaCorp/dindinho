@@ -22,7 +22,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { ApiService } from '../app/services/api.service';
-import { ApiResponseDTO } from '@dindinho/shared';
+import { ApiResponseDTO, TransactionDTO, WalletDTO } from '@dindinho/shared';
 import { WalletService } from '../app/services/wallet.service';
 import { CurrencyPipe } from '@angular/common';
 import { CreateWalletDialogComponent } from '../app/components/wallets/create-wallet-dialog.component';
@@ -176,25 +176,81 @@ import { Router } from '@angular/router';
           <button
             data-testid="view-all-transactions"
             class="text-sm text-emerald-600 font-medium hover:text-emerald-700"
+            (click)="onViewAllTransactions()"
           >
             Ver todas
           </button>
         </div>
 
-        <div
-          class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 flex flex-col items-center justify-center text-slate-400 gap-3"
-        >
-          <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-1">
-            <i class="pi pi-inbox text-3xl opacity-50"></i>
+        @if (recentTransactionsLoading()) {
+          <div
+            data-testid="dashboard-transactions-loading"
+            class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 text-sm text-slate-500"
+          >
+            Carregando...
           </div>
-          <span class="text-sm">Nenhuma transação recente</span>
-          <p-button
-            label="Nova Transação"
-            [text]="true"
-            size="small"
-            styleClass="text-emerald-600"
-          />
-        </div>
+        } @else if (recentTransactionsError()) {
+          <div
+            data-testid="dashboard-transactions-error"
+            class="bg-red-50 text-red-700 border border-red-100 rounded-2xl p-4 text-sm"
+          >
+            Erro ao carregar transações
+          </div>
+        } @else if (recentTransactions().length > 0) {
+          <div
+            data-testid="dashboard-transactions-list"
+            class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden"
+          >
+            @for (t of recentTransactions(); track t.id) {
+              <div
+                [attr.data-testid]="'dashboard-transaction-item-' + t.id"
+                class="flex items-center justify-between px-4 py-3 border-b border-slate-100 last:border-b-0"
+              >
+                <div class="flex flex-col gap-0.5 min-w-0">
+                  <span class="text-sm font-semibold text-slate-800 truncate">{{
+                    transactionTitle(t)
+                  }}</span>
+                  <div class="flex items-center gap-2 text-xs text-slate-500">
+                    <span>{{ t.date | date: 'dd/MM/yyyy' }}</span>
+                    <span aria-hidden="true">•</span>
+                    <span class="truncate">{{ walletName(t.walletId) }}</span>
+                  </div>
+                </div>
+
+                <div class="flex flex-col items-end gap-0.5">
+                  <span class="text-sm font-bold" [class]="amountClass(t)">
+                    {{ signedAmount(t) | currency: 'BRL' }}
+                  </span>
+                  <span class="text-xs text-slate-500">{{ transactionTypeLabel(t) }}</span>
+                </div>
+              </div>
+            }
+
+            <button
+              data-testid="dashboard-new-transaction"
+              class="w-full text-center text-sm text-emerald-600 font-medium hover:text-emerald-700 px-4 py-3"
+              (click)="onNewTransaction()"
+            >
+              Nova Transação
+            </button>
+          </div>
+        } @else {
+          <div
+            class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8 flex flex-col items-center justify-center text-slate-400 gap-3"
+          >
+            <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-1">
+              <i class="pi pi-inbox text-3xl opacity-50"></i>
+            </div>
+            <span class="text-sm">Nenhuma transação recente</span>
+            <button
+              data-testid="dashboard-new-transaction"
+              class="text-sm text-emerald-600 font-medium hover:text-emerald-700"
+              (click)="onNewTransaction()"
+            >
+              Nova Transação
+            </button>
+          </div>
+        }
       </div>
 
       <div
@@ -235,12 +291,23 @@ export class DashboardComponent implements OnInit {
   error = signal<string | null>(null);
   isLoading = signal(false);
 
+  protected recentTransactions = signal<TransactionDTO[]>([]);
+  protected recentTransactionsLoading = signal(false);
+  protected recentTransactionsError = signal(false);
+
+  protected walletMap = computed(() => {
+    const map = new Map<string, WalletDTO>();
+    for (const w of this.walletService.wallets()) map.set(w.id, w);
+    return map;
+  });
+
   // Signal reativo para o saldo total
   totalBalance = computed(() => this.walletService.totalBalance());
 
   ngOnInit() {
     this.checkBackendConnection();
     this.loadWallets();
+    this.loadRecentTransactions();
   }
 
   checkBackendConnection() {
@@ -258,9 +325,64 @@ export class DashboardComponent implements OnInit {
     this.walletService.loadWallets();
   }
 
+  protected loadRecentTransactions() {
+    this.recentTransactionsError.set(false);
+    this.recentTransactionsLoading.set(true);
+    this.apiService.getTransactions({ limit: 5 }).subscribe({
+      next: (res) => {
+        this.recentTransactions.set(res.items);
+        this.recentTransactionsLoading.set(false);
+      },
+      error: () => {
+        this.recentTransactionsError.set(true);
+        this.recentTransactionsLoading.set(false);
+      },
+    });
+  }
+
+  protected signedAmount(t: TransactionDTO): number {
+    if (t.type === 'TRANSFER') return typeof t.amount === 'number' ? t.amount : 0;
+
+    const base = typeof t.amount === 'number' ? Math.abs(t.amount) : 0;
+    return t.type === 'INCOME' ? base : -base;
+  }
+
+  protected amountClass(t: TransactionDTO): string {
+    const value = this.signedAmount(t);
+    if (value > 0) return 'text-emerald-700';
+    if (value < 0) return 'text-rose-700';
+    return 'text-slate-600';
+  }
+
+  protected transactionTypeLabel(t: TransactionDTO): string {
+    if (t.type === 'INCOME') return 'Receita';
+    if (t.type === 'EXPENSE') return 'Despesa';
+    return 'Transferência';
+  }
+
+  protected transactionTitle(t: TransactionDTO): string {
+    const raw = typeof t.description === 'string' ? t.description.trim() : '';
+    if (raw) return raw;
+    return this.transactionTypeLabel(t);
+  }
+
+  protected walletName(walletId: string): string {
+    return this.walletMap().get(walletId)?.name ?? 'Carteira';
+  }
+
   protected onQuickAdd(type: 'INCOME' | 'EXPENSE') {
     this.router.navigate(['/transactions/new'], {
       queryParams: { type, openAmount: 1 },
+    });
+  }
+
+  protected onViewAllTransactions() {
+    this.router.navigate(['/transactions']);
+  }
+
+  protected onNewTransaction() {
+    this.router.navigate(['/transactions/new'], {
+      queryParams: { openAmount: 1 },
     });
   }
 }

@@ -15,12 +15,16 @@ import { of } from 'rxjs';
 import { DashboardComponent } from './dashboard.page';
 import { ApiService } from '../app/services/api.service';
 import { WalletService } from '../app/services/wallet.service';
-import { ApiResponseDTO, WalletDTO } from '@dindinho/shared';
+import { ApiResponseDTO, TransactionDTO, WalletDTO } from '@dindinho/shared';
+import { Router } from '@angular/router';
 
 describe('DashboardComponent', () => {
   let component: DashboardComponent;
   let fixture: ComponentFixture<DashboardComponent>;
-  let apiServiceMock: { getHello: ReturnType<typeof vi.fn> };
+  let apiServiceMock: {
+    getHello: ReturnType<typeof vi.fn>;
+    getTransactions: ReturnType<typeof vi.fn>;
+  };
   let walletServiceMock: {
     wallets: ReturnType<typeof vi.fn>;
     isLoading: ReturnType<typeof vi.fn>;
@@ -55,6 +59,7 @@ describe('DashboardComponent', () => {
 
     apiServiceMock = {
       getHello: vi.fn(() => of(apiResponse)),
+      getTransactions: vi.fn(() => of({ items: [], nextCursorId: null })),
     };
 
     walletServiceMock = {
@@ -139,6 +144,36 @@ describe('DashboardComponent', () => {
     expect(viewAllButton.textContent).toContain('Ver todas');
   });
 
+  it('deve renderizar lista de últimas transações quando há dados', () => {
+    const txs: TransactionDTO[] = [
+      {
+        id: 'tx-1',
+        walletId: 'wallet-1',
+        categoryId: null,
+        amount: 10,
+        description: 'Mercado',
+        date: '2026-01-02T00:00:00.000Z',
+        type: 'EXPENSE',
+        isPaid: true,
+        recurrenceId: null,
+        installmentNumber: null,
+        totalInstallments: null,
+        createdAt: '2026-01-02T00:00:00.000Z',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      },
+    ];
+
+    apiServiceMock.getTransactions.mockReturnValueOnce(of({ items: txs, nextCursorId: null }));
+
+    fixture = TestBed.createComponent(DashboardComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    const list = fixture.nativeElement.querySelector('[data-testid="dashboard-transactions-list"]');
+    expect(list).toBeTruthy();
+    expect(list.textContent).toContain('Mercado');
+  });
+
   it('deve exibir o botão "Nova Carteira"', () => {
     const button = fixture.nativeElement.querySelector(
       '[data-testid="dashboard-create-wallet-btn"]',
@@ -161,5 +196,35 @@ describe('DashboardComponent', () => {
 
     expect(statusCard).toBeTruthy();
     expect(statusCard.textContent).toContain('Status do Backend');
+  });
+
+  it('deve navegar para lista de transações ao clicar em "Ver todas"', () => {
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    const viewAllButton = fixture.nativeElement.querySelector(
+      '[data-testid="view-all-transactions"]',
+    ) as HTMLButtonElement;
+
+    viewAllButton.click();
+    fixture.detectChanges();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/transactions']);
+  });
+
+  it('deve navegar para nova transação ao clicar em "Nova Transação"', () => {
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    const button = fixture.nativeElement.querySelector(
+      '[data-testid="dashboard-new-transaction"]',
+    ) as HTMLButtonElement;
+
+    button.click();
+    fixture.detectChanges();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/transactions/new'], {
+      queryParams: { openAmount: 1 },
+    });
   });
 });

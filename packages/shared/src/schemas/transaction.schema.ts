@@ -104,6 +104,29 @@ export const transactionSchema = z.object({
 
 export type TransactionDTO = z.infer<typeof transactionSchema>;
 
+export const listTransactionsQuerySchema = z.object({
+  walletId: z.string().uuid().optional(),
+  from: z.string().datetime().optional(),
+  to: z.string().datetime().optional(),
+  q: z.string().trim().min(1).max(120).optional(),
+  type: TransactionTypeEnum.optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+  cursorId: z.string().uuid().optional(),
+});
+
+export type ListTransactionsQueryDTO = z.infer<
+  typeof listTransactionsQuerySchema
+>;
+
+export const paginatedTransactionsSchema = z.object({
+  items: z.array(transactionSchema),
+  nextCursorId: z.string().uuid().nullable(),
+});
+
+export type PaginatedTransactionsDTO = z.infer<
+  typeof paginatedTransactionsSchema
+>;
+
 export const categorySchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1),

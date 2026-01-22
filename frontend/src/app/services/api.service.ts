@@ -144,6 +144,33 @@ export class ApiService {
     return this.http.post<TransactionDTO | TransactionDTO[]>(`${this.baseUrl}/transactions`, data);
   }
 
+  getTransactions(params: {
+    walletId?: string;
+    from?: string;
+    to?: string;
+    q?: string;
+    type?: TransactionDTO['type'];
+    limit?: number;
+    cursorId?: string;
+  }): Observable<{ items: TransactionDTO[]; nextCursorId: string | null }> {
+    const queryParams: Record<string, string> = {
+      ...(params.walletId ? { walletId: params.walletId } : {}),
+      ...(params.from ? { from: params.from } : {}),
+      ...(params.to ? { to: params.to } : {}),
+      ...(params.q ? { q: params.q } : {}),
+      ...(params.type ? { type: params.type } : {}),
+      ...(typeof params.limit === 'number' ? { limit: String(params.limit) } : {}),
+      ...(params.cursorId ? { cursorId: params.cursorId } : {}),
+    };
+
+    return this.http.get<{ items: TransactionDTO[]; nextCursorId: string | null }>(
+      `${this.baseUrl}/transactions`,
+      {
+        params: queryParams,
+      },
+    );
+  }
+
   getCategories(): Observable<CategoryDTO[]> {
     return this.http.get<CategoryDTO[]>(`${this.baseUrl}/categories`);
   }

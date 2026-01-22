@@ -6,6 +6,8 @@ import { TransactionsService } from "./transactions.service";
 import {
   CreateTransactionDTO,
   createTransactionSchema,
+  listTransactionsQuerySchema,
+  paginatedTransactionsSchema,
   transactionSchema,
 } from "@dindinho/shared";
 
@@ -51,13 +53,9 @@ export async function transactionsRoutes(app: FastifyInstance) {
       schema: {
         summary: "Listar transações por carteira",
         tags: ["transactions"],
-        querystring: z.object({
-          walletId: z.string().uuid(),
-          from: z.string().datetime().optional(),
-          to: z.string().datetime().optional(),
-        }),
+        querystring: listTransactionsQuerySchema,
         response: {
-          200: z.array(transactionSchema),
+          200: paginatedTransactionsSchema,
           401: z.object({ message: z.string() }),
           403: z.object({ message: z.string() }),
         },
@@ -65,12 +63,8 @@ export async function transactionsRoutes(app: FastifyInstance) {
     },
     async (request) => {
       const { sub: userId } = request.user as { sub: string };
-      const { walletId, from, to } = request.query as {
-        walletId: string;
-        from?: string;
-        to?: string;
-      };
-      return service.listByWallet(userId, { walletId, from, to });
+      const parsed = listTransactionsQuerySchema.parse(request.query);
+      return service.list(userId, parsed);
     },
   );
 }
