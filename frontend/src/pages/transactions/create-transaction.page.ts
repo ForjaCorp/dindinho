@@ -296,14 +296,12 @@ const categoryIconOptions = [
                     type="button"
                     [attr.data-testid]="'transaction-type-' + o.value.toLowerCase()"
                     [attr.aria-pressed]="type() === o.value"
-                    [class]="
-                      type() === o.value
-                        ? 'h-11 rounded-xl bg-emerald-600 border border-emerald-600 text-white text-sm font-semibold shadow-sm'
-                        : 'h-11 rounded-xl bg-white border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50'
-                    "
+                    [class]="typeButtonClass(o.value)"
                     (click)="setType(o.value)"
                   >
-                    {{ o.label }}
+                    <span class="sr-only">{{ o.label }}</span>
+                    <i [class]="'pi ' + o.icon + ' text-lg sm:hidden'"></i>
+                    <span class="hidden sm:inline">{{ o.label }}</span>
                   </button>
                 }
               </div>
@@ -377,27 +375,30 @@ const categoryIconOptions = [
           </div>
 
           <div class="flex flex-col gap-2">
-            <span class="text-sm font-medium text-slate-700">Categoria</span>
-            <button
-              data-testid="transaction-category-trigger"
-              type="button"
-              class="h-11 rounded-xl border border-slate-200 bg-white px-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-200 flex items-center justify-between gap-3"
-              (click)="openCategoryPicker()"
+            <div class="flex items-center justify-between gap-3">
+              <label class="text-sm font-medium text-slate-700" for="categoryId">Categoria</label>
+              <button
+                data-testid="transaction-category-new"
+                type="button"
+                class="h-9 px-3 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50"
+                (click)="openCreateCategoryDialog()"
+              >
+                <span class="sr-only">Nova categoria</span>
+                <i class="pi pi-plus sm:hidden"></i>
+                <span class="hidden sm:inline">Nova</span>
+              </button>
+            </div>
+            <select
+              data-testid="transaction-category"
+              id="categoryId"
+              class="h-11 rounded-xl border border-slate-200 px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+              formControlName="categoryId"
             >
-              <div class="flex items-center gap-2 min-w-0">
-                @if (selectedCategory(); as selected) {
-                  <span
-                    class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0"
-                  >
-                    <i [class]="'pi ' + selected.icon"></i>
-                  </span>
-                  <span class="text-sm font-medium truncate">{{ selected.name }}</span>
-                } @else {
-                  <span class="text-sm text-slate-500">Selecione uma categoria</span>
-                }
-              </div>
-              <i class="pi pi-chevron-right text-slate-400"></i>
-            </button>
+              <option value="" disabled>Selecione uma categoria</option>
+              @for (c of sortedCategories(); track c.id) {
+                <option [value]="c.id">{{ c.name }}</option>
+              }
+            </select>
           </div>
 
           @if (type() === 'TRANSFER') {
@@ -771,74 +772,6 @@ const categoryIconOptions = [
             </div>
           </form>
         </p-dialog>
-
-        <p-dialog
-          data-testid="category-picker-dialog"
-          header="Categoria"
-          [modal]="true"
-          [(visible)]="categoryPickerVisible"
-          [style]="{ width: '95vw', maxWidth: '520px', maxHeight: '90vh' }"
-          [draggable]="false"
-          [resizable]="false"
-          (onHide)="resetCategoryPicker()"
-        >
-          <div class="flex flex-col gap-3 mt-2 max-h-[70vh] overflow-y-auto overflow-x-hidden px-1">
-            <div class="flex items-center gap-2">
-              <input
-                data-testid="category-picker-search"
-                pInputText
-                class="h-11 rounded-xl w-full"
-                placeholder="Buscar categoria"
-                [value]="categorySearch()"
-                (input)="onCategorySearch($event)"
-              />
-              <p-button
-                data-testid="category-picker-new"
-                type="button"
-                label="Nova"
-                icon="pi pi-plus"
-                [outlined]="true"
-                severity="secondary"
-                (onClick)="openCreateCategoryFromPicker()"
-              />
-            </div>
-
-            @if (filteredCategories().length > 0) {
-              <div data-testid="category-picker-list" class="grid grid-cols-2 gap-2">
-                @for (c of filteredCategories(); track c.id) {
-                  <button
-                    data-testid="category-picker-item"
-                    type="button"
-                    class="rounded-2xl border border-slate-100 bg-white p-3 text-left flex items-center gap-3 hover:border-emerald-200 hover:bg-emerald-50/30 active:scale-[0.99] transition"
-                    (click)="selectCategoryFromPicker(c.id)"
-                  >
-                    <span
-                      class="w-10 h-10 rounded-2xl bg-slate-50 text-slate-700 flex items-center justify-center shrink-0"
-                    >
-                      <i [class]="'pi ' + c.icon"></i>
-                    </span>
-                    <span class="text-sm font-medium text-slate-800 truncate">{{ c.name }}</span>
-                  </button>
-                }
-              </div>
-            } @else {
-              <div
-                data-testid="category-picker-empty"
-                class="rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm text-slate-600"
-              >
-                Nenhuma categoria encontrada
-              </div>
-              <p-button
-                data-testid="category-picker-empty-new"
-                type="button"
-                label="Criar nova categoria"
-                icon="pi pi-plus"
-                styleClass="w-full"
-                (onClick)="openCreateCategoryFromPicker()"
-              />
-            }
-          </div>
-        </p-dialog>
       </div>
     </div>
   `,
@@ -859,8 +792,6 @@ export class CreateTransactionPage {
   protected readonly createCategoryLoading = signal(false);
   protected readonly createCategoryError = signal<string | null>(null);
   protected readonly createCategoryDialogVisible = signal(false);
-  protected readonly categoryPickerVisible = signal(false);
-  protected readonly categorySearch = signal('');
 
   protected readonly isLoading = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -878,10 +809,29 @@ export class CreateTransactionPage {
   protected readonly datePreset = signal<'TODAY' | 'YESTERDAY' | 'OTHER'>('TODAY');
 
   protected readonly typeOptions = [
-    { label: 'Despesa', value: 'EXPENSE' as const },
-    { label: 'Receita', value: 'INCOME' as const },
-    { label: 'Transf.', value: 'TRANSFER' as const },
+    { label: 'Receita', value: 'INCOME' as const, icon: 'pi-arrow-down' },
+    { label: 'Despesa', value: 'EXPENSE' as const, icon: 'pi-arrow-up' },
+    { label: 'Transf.', value: 'TRANSFER' as const, icon: 'pi-arrow-right-arrow-left' },
   ];
+
+  protected typeButtonClass(value: 'INCOME' | 'EXPENSE' | 'TRANSFER') {
+    const isSelected = this.type() === value;
+    const base =
+      'h-11 rounded-xl border text-sm font-semibold shadow-sm flex items-center justify-center gap-2';
+
+    if (!isSelected) {
+      return `${base} bg-white border-slate-200 text-slate-700 hover:bg-slate-50`;
+    }
+
+    const palette =
+      value === 'INCOME'
+        ? 'bg-emerald-600 border-emerald-600 text-white'
+        : value === 'EXPENSE'
+          ? 'bg-rose-600 border-rose-600 text-white'
+          : 'bg-sky-600 border-sky-600 text-white';
+
+    return `${base} ${palette}`;
+  }
 
   protected setType(value: 'INCOME' | 'EXPENSE' | 'TRANSFER') {
     this.form.controls.type.setValue(value);
@@ -924,18 +874,9 @@ export class CreateTransactionPage {
   ];
 
   protected readonly categoryIconOptions = categoryIconOptions;
-  protected readonly selectedCategory = computed(
-    () => this.categories().find((c) => c.id === this.categoryId()) ?? null,
+  protected readonly sortedCategories = computed(() =>
+    [...this.categories()].sort((a, b) => a.name.localeCompare(b.name)),
   );
-
-  protected readonly filteredCategories = computed(() => {
-    const term = this.categorySearch().trim().toLowerCase();
-    const all = this.categories();
-    if (term === '') return [...all].sort((a, b) => a.name.localeCompare(b.name));
-    return all
-      .filter((c) => c.name.toLowerCase().includes(term))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  });
 
   protected readonly selectedWallet = computed(
     () => this.wallets().find((w) => w.id === this.walletId()) ?? null,
@@ -1314,29 +1255,6 @@ export class CreateTransactionPage {
   protected openCreateCategoryDialog() {
     this.createCategoryError.set(null);
     this.createCategoryDialogVisible.set(true);
-  }
-
-  protected openCategoryPicker() {
-    this.categoryPickerVisible.set(true);
-  }
-
-  protected resetCategoryPicker() {
-    this.categorySearch.set('');
-  }
-
-  protected onCategorySearch(event: Event) {
-    const value = (event.target as HTMLInputElement | null)?.value ?? '';
-    this.categorySearch.set(value);
-  }
-
-  protected selectCategoryFromPicker(categoryId: string) {
-    this.form.controls.categoryId.setValue(categoryId);
-    this.categoryPickerVisible.set(false);
-  }
-
-  protected openCreateCategoryFromPicker() {
-    this.categoryPickerVisible.set(false);
-    this.openCreateCategoryDialog();
   }
 
   protected resetCreateCategoryForm() {

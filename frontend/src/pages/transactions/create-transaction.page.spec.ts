@@ -84,7 +84,7 @@ describe('CreateTransactionPage', () => {
 
     expect(fixture.nativeElement.querySelector('[data-testid="transaction-wallet"]')).toBeTruthy();
     expect(
-      fixture.nativeElement.querySelector('[data-testid="transaction-category-trigger"]'),
+      fixture.nativeElement.querySelector('[data-testid="transaction-category"]'),
     ).toBeTruthy();
     expect(
       fixture.nativeElement.querySelector('[data-testid="transaction-submit-btn"]'),
