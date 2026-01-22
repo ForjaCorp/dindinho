@@ -24,6 +24,13 @@ enum TransactionType {
   TRANSFER
 }
 
+enum RecurrenceFrequency {
+  MONTHLY
+  WEEKLY
+  YEARLY
+  CUSTOM
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -103,6 +110,16 @@ model Transaction {
   date        DateTime
   type        TransactionType
   isPaid      Boolean         @default(true)
+
+  transferId String?
+
+  recurrenceFrequency   RecurrenceFrequency?
+  recurrenceIntervalDays Int?
+
+  tags Json?
+
+  purchaseDate DateTime?
+  invoiceMonth String?
 
   recurrenceId      String?
   installmentNumber Int?
