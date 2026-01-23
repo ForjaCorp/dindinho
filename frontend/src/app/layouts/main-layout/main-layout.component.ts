@@ -61,15 +61,15 @@ import { filter } from 'rxjs/operators';
           <span class="text-[10px] font-medium">Início</span>
         </a>
 
-        <!-- Botão para acessar a página de contas -->
+        <!-- Botão para acessar a página de transações -->
         <a
-          data-testid="nav-accounts"
-          routerLink="/accounts"
+          data-testid="nav-transactions"
+          routerLink="/transactions"
           routerLinkActive="text-emerald-600 !font-semibold"
           class="flex flex-col items-center gap-1 text-slate-400 w-16 py-1 transition-colors group"
         >
-          <i class="pi pi-wallet text-xl group-hover:text-emerald-500 transition-colors"></i>
-          <span class="text-[10px] font-medium">Contas</span>
+          <i class="pi pi-list text-xl group-hover:text-emerald-500 transition-colors"></i>
+          <span class="text-[10px] font-medium">Transações</span>
         </a>
 
         <!-- Botão central de ação rápida -->
