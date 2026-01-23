@@ -263,7 +263,7 @@ describe("Rotas de Transações", () => {
   });
 
   describe("GET /api/transactions", () => {
-    it("deve listar transações da carteira", async () => {
+    it("deve listar transações da conta", async () => {
       prismaMock.wallet.findFirst.mockResolvedValue({ id: walletId } as any);
 
       prismaMock.transaction.findMany.mockResolvedValue([

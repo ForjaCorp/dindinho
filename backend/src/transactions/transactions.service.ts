@@ -134,7 +134,7 @@ export class TransactionsService {
           throw new NotFoundError("Categoria não encontrada");
         }
         if (normalized.includes("wallet")) {
-          throw new NotFoundError("Carteira não encontrada");
+          throw new NotFoundError("Conta não encontrada");
         }
         throw new NotFoundError("Recurso relacionado não encontrado");
       }
@@ -154,7 +154,7 @@ export class TransactionsService {
     });
 
     if (!wallet) {
-      throw new NotFoundError("Carteira não encontrada");
+      throw new NotFoundError("Conta não encontrada");
     }
 
     if (wallet.ownerId === userId) return wallet;
@@ -174,7 +174,7 @@ export class TransactionsService {
       (access.role !== Role.EDITOR && access.role !== Role.ADMIN)
     ) {
       throw new ForbiddenError(
-        "Sem permissão para lançar transações nesta carteira",
+        "Sem permissão para lançar transações nesta conta",
       );
     }
 
@@ -198,7 +198,7 @@ export class TransactionsService {
     });
 
     if (!wallet) {
-      throw new ForbiddenError("Sem permissão para acessar esta carteira");
+      throw new ForbiddenError("Sem permissão para acessar esta conta");
     }
   }
 
@@ -209,7 +209,7 @@ export class TransactionsService {
     });
 
     if (!wallet) {
-      throw new NotFoundError("Carteira não encontrada");
+      throw new NotFoundError("Conta não encontrada");
     }
 
     if (wallet.ownerId === userId) return;
@@ -229,7 +229,7 @@ export class TransactionsService {
       (access.role !== Role.EDITOR && access.role !== Role.ADMIN)
     ) {
       throw new ForbiddenError(
-        "Sem permissão para lançar transações nesta carteira",
+        "Sem permissão para lançar transações nesta conta",
       );
     }
   }

@@ -51,7 +51,7 @@ export async function transactionsRoutes(app: FastifyInstance) {
     "/",
     {
       schema: {
-        summary: "Listar transações por carteira",
+        summary: "Listar transações por conta",
         tags: ["transactions"],
         querystring: listTransactionsQuerySchema,
         response: {
