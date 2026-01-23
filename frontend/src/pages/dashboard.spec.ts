@@ -183,12 +183,28 @@ describe('DashboardComponent', () => {
     expect(button.textContent).toContain('Nova Conta');
   });
 
+  it('deve exibir o botão "Novo Cartão"', () => {
+    const button = fixture.nativeElement.querySelector(
+      '[data-testid="dashboard-create-credit-card-btn"]',
+    );
+
+    expect(button).toBeTruthy();
+    expect(button.textContent).toContain('Novo Cartão');
+  });
+
   it('deve renderizar lista de contas quando há dados', () => {
     const list = fixture.nativeElement.querySelector('[data-testid="dashboard-account-list"]');
     const card = fixture.nativeElement.querySelector('[data-testid="account-card-account-1"]');
 
     expect(list).toBeTruthy();
     expect(card).toBeTruthy();
+  });
+
+  it('deve exibir estado vazio para cartões quando não há cartões', () => {
+    const empty = fixture.nativeElement.querySelector(
+      '[data-testid="dashboard-credit-card-empty"]',
+    );
+    expect(empty).toBeTruthy();
   });
 
   it('deve exibir o card de status do backend', () => {

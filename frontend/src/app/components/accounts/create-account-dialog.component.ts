@@ -263,6 +263,11 @@ export class CreateAccountDialogComponent {
     this.visible.set(true);
   }
 
+  showForType(type: 'STANDARD' | 'CREDIT') {
+    this.visible.set(true);
+    this.form.controls.type.setValue(type);
+  }
+
   resetForm() {
     this.form.reset({
       name: '',
