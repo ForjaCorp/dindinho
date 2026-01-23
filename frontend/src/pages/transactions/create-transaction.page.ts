@@ -16,6 +16,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
+import { DrawerModule } from 'primeng/drawer';
 import { ApiService } from '../../app/services/api.service';
 import { AccountService } from '../../app/services/account.service';
 import {
@@ -226,6 +227,7 @@ const categoryIconOptions = [
     ButtonModule,
     InputTextModule,
     DialogModule,
+    DrawerModule,
     CurrencyPipe,
   ],
   template: `
@@ -612,102 +614,106 @@ const categoryIconOptions = [
           </div>
         </form>
 
-        @if (amountSheetVisible()) {
-          <button
-            data-testid="amount-sheet-overlay"
-            type="button"
-            aria-label="Fechar"
-            class="fixed inset-0 z-70 bg-black/30"
-            (click)="closeAmountSheet()"
-          ></button>
-          <div
-            data-testid="amount-sheet"
-            id="amount-sheet"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Informar valor"
-            class="fixed inset-x-0 bottom-0 z-71 bg-white rounded-t-3xl shadow-2xl border-t border-slate-200 pb-safe"
-          >
-            <div class="max-w-xl mx-auto p-4 flex flex-col gap-3">
-              <div class="flex items-center justify-between gap-3">
-                <div class="flex flex-col min-w-0">
-                  <div class="text-sm font-medium text-slate-700">Valor</div>
-                  @if (amountDraftPreview() !== null) {
-                    <div
-                      data-testid="amount-sheet-preview"
-                      class="text-2xl font-bold text-slate-900 tracking-tight tabular-nums"
+        <p-drawer
+          [(visible)]="amountSheetVisible"
+          position="bottom"
+          [modal]="true"
+          [blockScroll]="true"
+          [showCloseIcon]="false"
+          [style]="{ height: 'auto', maxHeight: 'calc(100dvh - 5rem)' }"
+          [styleClass]="'!rounded-t-3xl !w-full !max-w-none !border-0 !h-auto'"
+          (onHide)="closeAmountSheet()"
+        >
+          @if (amountSheetVisible()) {
+            <div
+              data-testid="amount-sheet"
+              id="amount-sheet"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Informar valor"
+              class="bg-white rounded-t-3xl pb-safe"
+            >
+              <div class="max-w-xl mx-auto px-4 pt-1 pb-4 flex flex-col gap-2">
+                <div class="flex items-center justify-between gap-3">
+                  <div class="flex flex-col min-w-0">
+                    <div class="text-sm font-medium text-slate-700">Valor</div>
+                    @if (amountDraftPreview() !== null) {
+                      <div
+                        data-testid="amount-sheet-preview"
+                        class="text-2xl font-bold text-slate-900 tracking-tight tabular-nums"
+                      >
+                        {{ amountDraftPreview() | currency: 'BRL' }}
+                      </div>
+                    } @else {
+                      <div class="text-sm text-slate-500">Digite um valor ou expressão</div>
+                    }
+                  </div>
+                </div>
+
+                <input
+                  data-testid="amount-sheet-input"
+                  pInputText
+                  inputmode="decimal"
+                  class="h-12 rounded-2xl w-full text-right text-xl font-semibold tracking-tight"
+                  placeholder="Ex: 10+5"
+                  [value]="amountDraft()"
+                  (input)="onAmountDraftInput($event)"
+                  (keydown)="onAmountSheetKeydown($event)"
+                  aria-label="Valor"
+                />
+
+                @if (amountDraftError()) {
+                  <div data-testid="amount-sheet-error" class="text-sm text-red-600">
+                    {{ amountDraftError() }}
+                  </div>
+                } @else if (amountDraftLiveError()) {
+                  <div class="text-sm text-slate-500">{{ amountDraftLiveError() }}</div>
+                }
+
+                <div data-testid="amount-sheet-keypad" class="grid grid-cols-4 gap-2">
+                  @for (k of amountKeypadKeys; track k.id) {
+                    <button
+                      data-testid="amount-sheet-key"
+                      type="button"
+                      [attr.aria-label]="amountKeyAriaLabel(k)"
+                      [class]="
+                        k.kind === 'action'
+                          ? 'h-12 rounded-2xl bg-slate-100 text-slate-800 text-sm font-semibold active:scale-[0.99] transition'
+                          : k.kind === 'operator'
+                            ? 'h-12 rounded-2xl bg-emerald-50 text-emerald-700 text-sm font-semibold active:scale-[0.99] transition'
+                            : 'h-12 rounded-2xl bg-white border border-slate-200 text-slate-900 text-lg font-semibold active:scale-[0.99] transition'
+                      "
+                      (click)="onAmountKeypadPress(k)"
                     >
-                      {{ amountDraftPreview() | currency: 'BRL' }}
-                    </div>
-                  } @else {
-                    <div class="text-sm text-slate-500">Digite um valor ou expressão</div>
+                      {{ k.label }}
+                    </button>
                   }
                 </div>
-              </div>
 
-              <input
-                data-testid="amount-sheet-input"
-                pInputText
-                inputmode="decimal"
-                class="h-12 rounded-2xl w-full text-right text-xl font-semibold tracking-tight"
-                placeholder="Ex: 10+5"
-                [value]="amountDraft()"
-                (input)="onAmountDraftInput($event)"
-                (keydown)="onAmountSheetKeydown($event)"
-                aria-label="Valor"
-              />
-
-              @if (amountDraftError()) {
-                <div data-testid="amount-sheet-error" class="text-sm text-red-600">
-                  {{ amountDraftError() }}
-                </div>
-              } @else if (amountDraftLiveError()) {
-                <div class="text-sm text-slate-500">{{ amountDraftLiveError() }}</div>
-              }
-
-              <div data-testid="amount-sheet-keypad" class="grid grid-cols-4 gap-2">
-                @for (k of amountKeypadKeys; track k.id) {
+                <div class="grid grid-cols-2 gap-3">
                   <button
-                    data-testid="amount-sheet-key"
+                    data-testid="amount-sheet-cancel"
                     type="button"
-                    [attr.aria-label]="amountKeyAriaLabel(k)"
-                    [class]="
-                      k.kind === 'action'
-                        ? 'h-12 rounded-2xl bg-slate-100 text-slate-800 text-sm font-semibold active:scale-[0.99] transition'
-                        : k.kind === 'operator'
-                          ? 'h-12 rounded-2xl bg-emerald-50 text-emerald-700 text-sm font-semibold active:scale-[0.99] transition'
-                          : 'h-12 rounded-2xl bg-white border border-slate-200 text-slate-900 text-lg font-semibold active:scale-[0.99] transition'
-                    "
-                    (click)="onAmountKeypadPress(k)"
+                    class="h-12 rounded-2xl border border-slate-200 text-slate-700 text-base font-semibold"
+                    (click)="closeAmountSheet()"
                   >
-                    {{ k.label }}
+                    Cancelar
                   </button>
-                }
-              </div>
 
-              <div class="grid grid-cols-2 gap-3">
-                <button
-                  data-testid="amount-sheet-cancel"
-                  type="button"
-                  class="h-12 rounded-2xl border border-slate-200 text-slate-700 text-base font-semibold"
-                  (click)="closeAmountSheet()"
-                >
-                  Cancelar
-                </button>
-
-                <button
-                  data-testid="amount-sheet-confirm"
-                  type="button"
-                  class="h-12 rounded-2xl bg-emerald-600 text-white text-base font-semibold flex items-center justify-center gap-2"
-                  (click)="confirmAmountSheet()"
-                >
-                  <i class="pi pi-check"></i>
-                  Concluir
-                </button>
+                  <button
+                    data-testid="amount-sheet-confirm"
+                    type="button"
+                    class="h-12 rounded-2xl bg-emerald-600 text-white text-base font-semibold flex items-center justify-center gap-2"
+                    (click)="confirmAmountSheet()"
+                  >
+                    <i class="pi pi-check"></i>
+                    Concluir
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        }
+          }
+        </p-drawer>
 
         <p-dialog
           data-testid="create-category-dialog"
@@ -819,7 +825,7 @@ export class CreateTransactionPage {
 
   protected readonly amountPreview = signal<number | null>(null);
   protected readonly amountExpressionError = signal<string | null>(null);
-  protected readonly amountSheetVisible = signal(false);
+  protected amountSheetVisible = signal(false);
   protected readonly amountDraft = signal('');
   protected readonly amountDraftError = signal<string | null>(null);
 
