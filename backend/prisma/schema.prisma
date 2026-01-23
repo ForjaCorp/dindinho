@@ -53,6 +53,8 @@ model Wallet {
   icon  String
   type  WalletType @default(STANDARD)
 
+  initialBalance Decimal @default(0) @db.Decimal(10, 2)
+
   ownerId String
   owner   User   @relation("Owner", fields: [ownerId], references: [id])
 
