@@ -27,7 +27,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
   ],
   template: `
     <p-dialog
-      header="Nova Conta"
+      [header]="isCredit() ? 'Novo Cartão' : 'Nova Conta'"
       [modal]="true"
       [(visible)]="visible"
       [style]="{ width: '95vw', maxWidth: '500px', maxHeight: '90vh' }"

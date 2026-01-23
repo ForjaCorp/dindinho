@@ -50,6 +50,11 @@ export const routes: Routes = [
         data: { title: 'Contas' },
       },
       {
+        path: 'cards',
+        loadComponent: () => import('../pages/cards/cards.page').then((m) => m.CardsPage),
+        data: { title: 'Cartões' },
+      },
+      {
         path: 'transactions',
         loadComponent: () =>
           import('../pages/transactions/transactions.page').then((m) => m.TransactionsPage),

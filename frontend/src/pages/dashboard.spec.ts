@@ -279,7 +279,7 @@ describe('DashboardComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/accounts']);
   });
 
-  it('deve navegar para contas ao clicar em "Cartões" nos atalhos', () => {
+  it('deve navegar para cartões ao clicar em "Cartões" nos atalhos', () => {
     const router = TestBed.inject(Router);
     vi.spyOn(router, 'navigate').mockResolvedValue(true);
 
@@ -290,7 +290,7 @@ describe('DashboardComponent', () => {
     button.click();
     fixture.detectChanges();
 
-    expect(router.navigate).toHaveBeenCalledWith(['/accounts']);
+    expect(router.navigate).toHaveBeenCalledWith(['/cards']);
   });
 
   it('deve renderizar lista de contas quando há dados', () => {

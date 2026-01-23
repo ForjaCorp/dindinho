@@ -86,7 +86,7 @@ import { TransactionDrawerComponent } from '../app/components/transaction-drawer
             data-testid="quick-link-cards"
             type="button"
             class="flex flex-col items-center gap-2 p-2 active:scale-95 transition-transform group"
-            (click)="onOpenAccounts()"
+            (click)="onOpenCards()"
           >
             <div
               class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:bg-purple-100 transition-colors"
@@ -326,6 +326,10 @@ export class DashboardComponent implements OnInit {
 
   protected onOpenAccounts() {
     this.router.navigate(['/accounts']);
+  }
+
+  protected onOpenCards() {
+    this.router.navigate(['/cards']);
   }
 
   protected onNewTransaction() {

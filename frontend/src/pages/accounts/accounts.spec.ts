@@ -72,4 +72,42 @@ describe('AccountsPage', () => {
       fixture.nativeElement.querySelector('[data-testid="account-card-account-1"]'),
     ).toBeTruthy();
   });
+
+  it('não deve renderizar contas quando há apenas cartões', async () => {
+    const accountServiceMock = createAccountServiceMock({
+      accounts: [
+        {
+          id: 'card-1',
+          name: 'Nubank',
+          color: '#8A2BE2',
+          icon: 'pi-credit-card',
+          type: 'CREDIT',
+          ownerId: 'user-1',
+          balance: 0,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          creditCardInfo: {
+            closingDay: 10,
+            dueDay: 15,
+            limit: 5000,
+            brand: 'Mastercard',
+          },
+        },
+      ],
+      loading: false,
+    });
+
+    await TestBed.configureTestingModule({
+      imports: [AccountsPage],
+      providers: [{ provide: AccountService, useValue: accountServiceMock }],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(AccountsPage);
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="accounts-empty-state"]'),
+    ).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="account-card-card-1"]')).toBeFalsy();
+  });
 });

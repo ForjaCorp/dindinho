@@ -9,7 +9,7 @@ import { ButtonModule } from 'primeng/button';
 import { SkeletonModule } from 'primeng/skeleton';
 
 @Component({
-  selector: 'app-accounts-page',
+  selector: 'app-cards-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
@@ -22,21 +22,19 @@ import { SkeletonModule } from 'primeng/skeleton';
     SkeletonModule,
   ],
   template: `
-    <div data-testid="accounts-page" class="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
-      <!-- Header -->
-      <app-page-header title="Minhas Contas" subtitle="Gerencie suas contas">
+    <div data-testid="cards-page" class="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+      <app-page-header title="Meus Cartões" subtitle="Gerencie seus cartões de crédito">
         <p-button
           page-header-actions
-          data-testid="accounts-create-account-btn"
-          label="Nova Conta"
+          data-testid="cards-create-btn"
+          label="Novo Cartão"
           icon="pi pi-plus"
-          (onClick)="dialog.showForType('STANDARD')"
+          (onClick)="dialog.showForType('CREDIT')"
           styleClass="w-full sm:w-auto shadow-sm"
         />
       </app-page-header>
 
-      <!-- Loading State -->
-      @if (accountService.isLoading() && !standardAccounts().length) {
+      @if (accountService.isLoading() && !creditCards().length) {
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           @for (i of [1, 2, 3]; track i) {
             <p-skeleton height="160px" styleClass="rounded-xl" />
@@ -44,32 +42,30 @@ import { SkeletonModule } from 'primeng/skeleton';
         </div>
       }
 
-      <!-- Empty State -->
-      @if (!accountService.isLoading() && !standardAccounts().length) {
+      @if (!accountService.isLoading() && !creditCards().length) {
         <app-empty-state
-          testId="accounts-empty-state"
-          icon="pi-wallet"
-          title="Nenhuma conta encontrada"
-          description="Você ainda não possui contas cadastradas. Crie sua primeira conta para começar a controlar suas finanças."
+          testId="cards-empty-state"
+          icon="pi-credit-card"
+          title="Nenhum cartão cadastrado"
+          description="Você ainda não possui cartões cadastrados. Adicione seu primeiro cartão para acompanhar limites e gastos."
         >
           <p-button
             empty-state-actions
-            data-testid="accounts-empty-create-btn"
-            label="Criar Primeira Conta"
+            data-testid="cards-empty-create-btn"
+            label="Adicionar Primeiro Cartão"
             icon="pi pi-plus"
-            (onClick)="dialog.showForType('STANDARD')"
+            (onClick)="dialog.showForType('CREDIT')"
             outlined="true"
           />
         </app-empty-state>
       }
 
-      <!-- Accounts Grid -->
       <div
-        data-testid="accounts-grid"
+        data-testid="cards-grid"
         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
       >
-        @for (account of standardAccounts(); track account.id) {
-          <app-account-card [account]="account" />
+        @for (card of creditCards(); track card.id) {
+          <app-account-card [account]="card" />
         }
       </div>
 
@@ -81,16 +77,16 @@ import { SkeletonModule } from 'primeng/skeleton';
       :host {
         display: block;
         min-height: 100%;
-        background-color: #f8fafc; /* Slate 50 */
+        background-color: #f8fafc;
       }
     `,
   ],
 })
-export class AccountsPage implements OnInit {
-  accountService = inject(AccountService);
+export class CardsPage implements OnInit {
+  protected readonly accountService = inject(AccountService);
 
-  protected readonly standardAccounts = computed(() =>
-    this.accountService.accounts().filter((a) => a.type === 'STANDARD'),
+  protected readonly creditCards = computed(() =>
+    this.accountService.accounts().filter((a) => a.type === 'CREDIT'),
   );
 
   ngOnInit() {
