@@ -51,11 +51,8 @@ import { AccountDTO } from '@dindinho/shared';
         } @else {
           <div class="mt-3 pt-3 border-t border-slate-50">
             <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Saldo Atual</p>
-            <p
-              class="text-lg font-semibold text-emerald-600"
-              [attr.data-testid]="accountValueTestId()"
-            >
-              {{ account().balance || 0 | currency: 'BRL' }}
+            <p [class]="standardBalanceValueClass()" [attr.data-testid]="accountValueTestId()">
+              {{ standardBalance() | currency: 'BRL' }}
             </p>
           </div>
         }
@@ -71,11 +68,8 @@ import { AccountDTO } from '@dindinho/shared';
             Limite disponível
           </p>
         } @else {
-          <p
-            class="mt-2 text-base font-bold text-slate-900"
-            [attr.data-testid]="accountValueTestId()"
-          >
-            {{ account().balance || 0 | currency: 'BRL' }}
+          <p [class]="standardBalanceValueClass()" [attr.data-testid]="accountValueTestId()">
+            {{ standardBalance() | currency: 'BRL' }}
           </p>
           <p class="text-xs text-slate-500" [attr.data-testid]="accountCaptionTestId()">
             Saldo atual
@@ -102,6 +96,25 @@ export class AccountCardComponent {
           : null;
 
     return typeof value === 'number' && Number.isFinite(value) ? value : null;
+  });
+
+  standardBalance = computed(() => {
+    const value = this.account().balance;
+    return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+  });
+
+  private standardBalanceColorClass = computed(() => {
+    if (this.account().type === 'CREDIT') return 'text-slate-900';
+    const value = this.standardBalance();
+    if (value > 0) return 'text-emerald-600';
+    if (value < 0) return 'text-rose-600';
+    return 'text-slate-700';
+  });
+
+  standardBalanceValueClass = computed(() => {
+    const base =
+      this.variant() === 'compact' ? 'mt-2 text-base font-bold' : 'text-lg font-semibold';
+    return `${base} ${this.standardBalanceColorClass()}`;
   });
 
   accountCardTestId = computed(() => `account-card-${this.account().id}`);

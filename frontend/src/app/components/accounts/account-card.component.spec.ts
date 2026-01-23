@@ -69,6 +69,19 @@ describe('AccountCardComponent', () => {
     expect(value.textContent).toContain('R$');
   });
 
+  it('deve exibir saldo negativo em vermelho para conta padrão', () => {
+    fixture.componentRef.setInput('account', { ...standardAccount, balance: -118 });
+    fixture.componentRef.setInput('variant', 'full');
+    fixture.detectChanges();
+
+    const value = fixture.nativeElement.querySelector(
+      '[data-testid="account-value-account-1"]',
+    ) as HTMLElement;
+
+    expect(value).toBeTruthy();
+    expect(value.className).toContain('text-rose-');
+  });
+
   it('deve renderizar cartão de crédito no modo compact', () => {
     fixture.componentRef.setInput('account', creditAccount);
     fixture.componentRef.setInput('variant', 'compact');
