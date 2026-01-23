@@ -3,7 +3,7 @@ import {
   Prisma,
   Role,
   TransactionType,
-  WalletType,
+  AccountType,
   RecurrenceFrequency,
 } from "@prisma/client";
 import { randomUUID } from "node:crypto";
@@ -81,7 +81,7 @@ const computeInvoiceMonth = (purchaseDate: Date, closingDay: number) => {
 
 const toTransactionDTO = (t: any): TransactionDTO => ({
   id: t.id,
-  walletId: t.walletId,
+  accountId: t.accountId,
   categoryId: t.categoryId ?? null,
   amount:
     typeof t.amount?.toNumber === "function" ? t.amount.toNumber() : t.amount,
@@ -105,14 +105,14 @@ const toTransactionDTO = (t: any): TransactionDTO => ({
 export class TransactionsService {
   constructor(private prisma: PrismaClient) {}
 
-  private ensureCreditCardInfo(wallet: {
-    type: WalletType;
+  private ensureCreditCardInfo(account: {
+    type: AccountType;
     creditCardInfo: any | null;
   }) {
-    if (wallet.type !== WalletType.CREDIT) return;
+    if (account.type !== AccountType.CREDIT) return;
     if (
-      !wallet.creditCardInfo ||
-      typeof wallet.creditCardInfo.closingDay !== "number"
+      !account.creditCardInfo ||
+      typeof account.creditCardInfo.closingDay !== "number"
     ) {
       throw new InternalError("Cartão de crédito sem dados de fatura");
     }
@@ -133,7 +133,7 @@ export class TransactionsService {
         if (normalized.includes("category")) {
           throw new NotFoundError("Categoria não encontrada");
         }
-        if (normalized.includes("wallet")) {
+        if (normalized.includes("account")) {
           throw new NotFoundError("Conta não encontrada");
         }
         throw new NotFoundError("Recurso relacionado não encontrado");
@@ -147,22 +147,22 @@ export class TransactionsService {
     throw error;
   }
 
-  private async getWritableWallet(userId: string, walletId: string) {
-    const wallet = await this.prisma.wallet.findUnique({
-      where: { id: walletId },
+  private async getWritableAccount(userId: string, accountId: string) {
+    const account = await this.prisma.account.findUnique({
+      where: { id: accountId },
       include: { creditCardInfo: true },
     });
 
-    if (!wallet) {
+    if (!account) {
       throw new NotFoundError("Conta não encontrada");
     }
 
-    if (wallet.ownerId === userId) return wallet;
+    if (account.ownerId === userId) return account;
 
-    const access = await this.prisma.walletAccess.findUnique({
+    const access = await this.prisma.accountAccess.findUnique({
       where: {
-        walletId_userId: {
-          walletId,
+        accountId_userId: {
+          accountId,
           userId,
         },
       },
@@ -178,13 +178,13 @@ export class TransactionsService {
       );
     }
 
-    return wallet;
+    return account;
   }
 
-  private async assertCanReadWallet(userId: string, walletId: string) {
-    const wallet = await this.prisma.wallet.findFirst({
+  private async assertCanReadAccount(userId: string, accountId: string) {
+    const account = await this.prisma.account.findFirst({
       where: {
-        id: walletId,
+        id: accountId,
         OR: [
           { ownerId: userId },
           {
@@ -197,27 +197,27 @@ export class TransactionsService {
       select: { id: true },
     });
 
-    if (!wallet) {
+    if (!account) {
       throw new ForbiddenError("Sem permissão para acessar esta conta");
     }
   }
 
-  private async assertCanWriteWallet(userId: string, walletId: string) {
-    const wallet = await this.prisma.wallet.findUnique({
-      where: { id: walletId },
+  private async assertCanWriteAccount(userId: string, accountId: string) {
+    const account = await this.prisma.account.findUnique({
+      where: { id: accountId },
       select: { id: true, ownerId: true },
     });
 
-    if (!wallet) {
+    if (!account) {
       throw new NotFoundError("Conta não encontrada");
     }
 
-    if (wallet.ownerId === userId) return;
+    if (account.ownerId === userId) return;
 
-    const access = await this.prisma.walletAccess.findUnique({
+    const access = await this.prisma.accountAccess.findUnique({
       where: {
-        walletId_userId: {
-          walletId,
+        accountId_userId: {
+          accountId,
           userId,
         },
       },
@@ -250,8 +250,11 @@ export class TransactionsService {
     data: CreateTransactionDTO,
   ): Promise<TransactionDTO | TransactionDTO[]> {
     try {
-      const originWallet = await this.getWritableWallet(userId, data.walletId);
-      this.ensureCreditCardInfo(originWallet);
+      const originAccount = await this.getWritableAccount(
+        userId,
+        data.accountId,
+      );
+      this.ensureCreditCardInfo(originAccount);
 
       await this.assertCategoryAccess(userId, data.categoryId);
 
@@ -259,27 +262,27 @@ export class TransactionsService {
       const tags = data.tags && data.tags.length ? data.tags : undefined;
 
       if (data.type === "TRANSFER") {
-        const destinationWallet = await this.getWritableWallet(
+        const destinationAccount = await this.getWritableAccount(
           userId,
-          data.destinationWalletId as string,
+          data.destinationAccountId as string,
         );
-        this.ensureCreditCardInfo(destinationWallet);
+        this.ensureCreditCardInfo(destinationAccount);
 
         const transferId = randomUUID();
         const invoiceMonth =
           typeof data.invoiceMonth === "string"
             ? data.invoiceMonth
-            : destinationWallet.type === WalletType.CREDIT
+            : destinationAccount.type === AccountType.CREDIT
               ? computeInvoiceMonth(
                   baseDate,
-                  destinationWallet.creditCardInfo!.closingDay,
+                  destinationAccount.creditCardInfo!.closingDay,
                 )
               : undefined;
 
         const created = await this.prisma.$transaction(async (tx) => {
           const outTx = await tx.transaction.create({
             data: {
-              walletId: originWallet.id,
+              accountId: originAccount.id,
               categoryId: data.categoryId,
               amount: -Math.abs(data.amount),
               description: data.description,
@@ -293,7 +296,7 @@ export class TransactionsService {
 
           const inTx = await tx.transaction.create({
             data: {
-              walletId: destinationWallet.id,
+              accountId: destinationAccount.id,
               categoryId: data.categoryId,
               amount: Math.abs(data.amount),
               description: data.description,
@@ -302,16 +305,16 @@ export class TransactionsService {
               isPaid: data.isPaid,
               transferId,
               tags,
-              ...(destinationWallet.type === WalletType.CREDIT && invoiceMonth
+              ...(destinationAccount.type === AccountType.CREDIT && invoiceMonth
                 ? { invoiceMonth }
                 : {}),
             },
           });
 
-          if (destinationWallet.type === WalletType.CREDIT && data.isPaid) {
+          if (destinationAccount.type === AccountType.CREDIT && data.isPaid) {
             await tx.transaction.updateMany({
               where: {
-                walletId: destinationWallet.id,
+                accountId: destinationAccount.id,
                 type: TransactionType.EXPENSE,
                 isPaid: false,
                 invoiceMonth,
@@ -326,7 +329,7 @@ export class TransactionsService {
         return created.map(toTransactionDTO);
       }
 
-      if (originWallet.type === WalletType.CREDIT && data.recurrence) {
+      if (originAccount.type === AccountType.CREDIT && data.recurrence) {
         throw new ForbiddenError(
           "Recorrência não é permitida em cartão de crédito",
         );
@@ -361,7 +364,7 @@ export class TransactionsService {
 
             const t = await tx.transaction.create({
               data: {
-                walletId: originWallet.id,
+                accountId: originAccount.id,
                 categoryId: data.categoryId,
                 amount: data.amount,
                 description: data.description,
@@ -387,27 +390,27 @@ export class TransactionsService {
 
       if (totalInstallments <= 1) {
         const invoiceMonth =
-          originWallet.type === WalletType.CREDIT
+          originAccount.type === AccountType.CREDIT
             ? typeof data.invoiceMonth === "string"
               ? data.invoiceMonth
               : computeInvoiceMonth(
                   baseDate,
-                  originWallet.creditCardInfo!.closingDay,
+                  originAccount.creditCardInfo!.closingDay,
                 )
             : null;
 
         const created = await this.prisma.transaction.create({
           data: {
-            walletId: originWallet.id,
+            accountId: originAccount.id,
             categoryId: data.categoryId,
             amount: data.amount,
             description: data.description,
             date: baseDate,
             type: data.type as TransactionType,
             isPaid:
-              originWallet.type === WalletType.CREDIT ? false : data.isPaid,
+              originAccount.type === AccountType.CREDIT ? false : data.isPaid,
             tags,
-            ...(originWallet.type === WalletType.CREDIT
+            ...(originAccount.type === AccountType.CREDIT
               ? { purchaseDate: baseDate, invoiceMonth }
               : {}),
           },
@@ -419,12 +422,12 @@ export class TransactionsService {
       const baseCents = Math.floor(totalCents / totalInstallments);
       const installmentsGroupId = randomUUID();
       const firstInvoiceMonth =
-        originWallet.type === WalletType.CREDIT
+        originAccount.type === AccountType.CREDIT
           ? typeof data.invoiceMonth === "string"
             ? data.invoiceMonth
             : computeInvoiceMonth(
                 baseDate,
-                originWallet.creditCardInfo!.closingDay,
+                originAccount.creditCardInfo!.closingDay,
               )
           : null;
 
@@ -438,20 +441,20 @@ export class TransactionsService {
           const amount = cents / 100;
           const installmentDate = addMonths(baseDate, i - 1);
           const invoiceMonth =
-            originWallet.type === WalletType.CREDIT && firstInvoiceMonth
+            originAccount.type === AccountType.CREDIT && firstInvoiceMonth
               ? addInvoiceMonths(firstInvoiceMonth, i - 1)
               : null;
 
           const t = await tx.transaction.create({
             data: {
-              walletId: originWallet.id,
+              accountId: originAccount.id,
               categoryId: data.categoryId,
               amount,
               description: data.description,
               date: installmentDate,
               type: data.type as TransactionType,
               isPaid:
-                originWallet.type === WalletType.CREDIT
+                originAccount.type === AccountType.CREDIT
                   ? false
                   : i === 1
                     ? data.isPaid
@@ -460,7 +463,7 @@ export class TransactionsService {
               installmentNumber: i,
               totalInstallments,
               tags,
-              ...(originWallet.type === WalletType.CREDIT
+              ...(originAccount.type === AccountType.CREDIT
                 ? { purchaseDate: baseDate, invoiceMonth }
                 : {}),
             },
@@ -476,11 +479,11 @@ export class TransactionsService {
     }
   }
 
-  async listByWallet(
+  async listByAccount(
     userId: string,
-    input: { walletId: string; from?: string; to?: string },
+    input: { accountId: string; from?: string; to?: string },
   ): Promise<TransactionDTO[]> {
-    await this.assertCanReadWallet(userId, input.walletId);
+    await this.assertCanReadAccount(userId, input.accountId);
 
     const from = input.from ? new Date(input.from) : undefined;
     const to = input.to ? new Date(input.to) : undefined;
@@ -497,7 +500,7 @@ export class TransactionsService {
 
     const txs = await this.prisma.transaction.findMany({
       where: {
-        walletId: input.walletId,
+        accountId: input.accountId,
         ...dateFilter,
       },
       orderBy: { date: "desc" },
@@ -509,7 +512,7 @@ export class TransactionsService {
   async list(
     userId: string,
     input: {
-      walletId?: string;
+      accountId?: string;
       from?: string;
       to?: string;
       q?: string;
@@ -518,8 +521,8 @@ export class TransactionsService {
       cursorId?: string;
     },
   ): Promise<{ items: TransactionDTO[]; nextCursorId: string | null }> {
-    const walletId =
-      typeof input.walletId === "string" ? input.walletId : undefined;
+    const accountId =
+      typeof input.accountId === "string" ? input.accountId : undefined;
     const from = input.from ? new Date(input.from) : undefined;
     const to = input.to ? new Date(input.to) : undefined;
     const limit = typeof input.limit === "number" ? input.limit : 30;
@@ -528,8 +531,8 @@ export class TransactionsService {
     const q = typeof input.q === "string" ? input.q.trim() : "";
     const type = input.type;
 
-    if (walletId) {
-      await this.assertCanReadWallet(userId, walletId);
+    if (accountId) {
+      await this.assertCanReadAccount(userId, accountId);
     }
 
     const dateFilter =
@@ -543,10 +546,10 @@ export class TransactionsService {
         : {};
 
     const where: Prisma.TransactionWhereInput = {
-      ...(walletId
-        ? { walletId }
+      ...(accountId
+        ? { accountId }
         : {
-            wallet: {
+            account: {
               OR: [
                 { ownerId: userId },
                 {

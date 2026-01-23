@@ -45,8 +45,9 @@ export const routes: Routes = [
         loadComponent: () => import('../pages/dashboard.page').then((m) => m.DashboardComponent),
       },
       {
-        path: 'wallets',
-        loadComponent: () => import('../pages/wallets/wallets.page').then((m) => m.WalletsPage),
+        path: 'accounts',
+        loadComponent: () => import('../pages/accounts/accounts.page').then((m) => m.AccountsPage),
+        data: { title: 'Contas' },
       },
       {
         path: 'transactions',
@@ -62,7 +63,7 @@ export const routes: Routes = [
           ),
         data: { title: 'Nova transação' },
       },
-      // Outras rotas autenticadas virão aqui (wallet, reports, profile)
+      // Outras rotas autenticadas virão aqui (accounts, reports, profile)
     ],
   },
 

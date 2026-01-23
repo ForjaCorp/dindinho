@@ -34,7 +34,7 @@ export const transactionRecurrenceSchema = z
 
 export const createTransactionSchema = z
   .object({
-    walletId: z.string().uuid(),
+    accountId: z.string().uuid(),
     categoryId: z.string().uuid(),
     amount: z.number().positive("Valor deve ser positivo"),
     description: z.string().trim().min(1, "Descrição é obrigatória"),
@@ -42,7 +42,7 @@ export const createTransactionSchema = z
     type: TransactionTypeEnum,
     isPaid: z.boolean().optional().default(true),
     totalInstallments: z.number().int().min(1).max(360).optional(),
-    destinationWalletId: z.string().uuid().optional(),
+    destinationAccountId: z.string().uuid().optional(),
     recurrence: transactionRecurrenceSchema.optional(),
     tags: z.array(z.string().trim().min(1)).max(20).optional(),
     invoiceMonth: invoiceMonthSchema.optional(),
@@ -59,17 +59,17 @@ export const createTransactionSchema = z
   )
   .refine(
     (data) =>
-      data.type !== "TRANSFER" || data.destinationWalletId !== undefined,
+      data.type !== "TRANSFER" || data.destinationAccountId !== undefined,
     {
-      path: ["destinationWalletId"],
+      path: ["destinationAccountId"],
       message: "Conta de destino é obrigatória para transferência",
     },
   )
   .refine(
     (data) =>
-      data.type === "TRANSFER" || data.destinationWalletId === undefined,
+      data.type === "TRANSFER" || data.destinationAccountId === undefined,
     {
-      path: ["destinationWalletId"],
+      path: ["destinationAccountId"],
       message: "Conta de destino só é usada em transferências",
     },
   )
@@ -82,7 +82,7 @@ export type CreateTransactionDTO = z.infer<typeof createTransactionSchema>;
 
 export const transactionSchema = z.object({
   id: z.string().uuid(),
-  walletId: z.string().uuid(),
+  accountId: z.string().uuid(),
   categoryId: z.string().uuid().nullable().optional(),
   amount: z.coerce.number(),
   description: z.string().nullable().optional(),
@@ -105,7 +105,7 @@ export const transactionSchema = z.object({
 export type TransactionDTO = z.infer<typeof transactionSchema>;
 
 export const listTransactionsQuerySchema = z.object({
-  walletId: z.string().uuid().optional(),
+  accountId: z.string().uuid().optional(),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
   q: z.string().trim().min(1).max(120).optional(),

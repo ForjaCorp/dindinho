@@ -1,16 +1,16 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { finalize, tap } from 'rxjs/operators';
 import { Observable, throwError } from 'rxjs';
-import { CreateWalletDTO, WalletDTO } from '@dindinho/shared';
+import { CreateAccountDTO, AccountDTO } from '@dindinho/shared';
 import { ApiService } from './api.service';
 
 /**
  * Interface do estado de contas
  * @description Define a estrutura do estado reativo do serviço de contas
  */
-interface WalletState {
+interface AccountState {
   /** Lista de contas do usuário */
-  wallets: WalletDTO[];
+  accounts: AccountDTO[];
   /** Indica se operação está em andamento */
   loading: boolean;
   /** Mensagem de erro da última operação */
@@ -23,19 +23,19 @@ interface WalletState {
  * @since 1.0.0
  * @example
  * // Injetar e usar no componente
- * constructor(private walletService: WalletService) {}
+ * constructor(private accountService: AccountService) {}
  *
  * // Acessar contas reativas
- * const wallets = this.walletService.wallets();
+ * const accounts = this.accountService.accounts();
  *
  * // Carregar contas
- * this.walletService.loadWallets();
+ * this.accountService.loadAccounts();
  */
 
 @Injectable({
   providedIn: 'root',
 })
-export class WalletService {
+export class AccountService {
   private api = inject(ApiService);
 
   /**
@@ -43,8 +43,8 @@ export class WalletService {
    * @description Signal interno que mantém o estado completo das contas
    * @private
    */
-  private state = signal<WalletState>({
-    wallets: [],
+  private state = signal<AccountState>({
+    accounts: [],
     loading: false,
     error: null,
   });
@@ -53,15 +53,15 @@ export class WalletService {
    * Signal readonly para lista de contas
    * @description Retorna a lista atual de contas do usuário
    * @example
-   * const wallets = this.walletService.wallets();
+   * const accounts = this.accountService.accounts();
    */
-  readonly wallets = computed(() => this.state().wallets);
+  readonly accounts = computed(() => this.state().accounts);
 
   /**
    * Signal readonly para estado de carregamento
    * @description Indica se alguma operação está em andamento
    * @example
-   * const isLoading = this.walletService.isLoading();
+   * const isLoading = this.accountService.isLoading();
    */
   readonly isLoading = computed(() => this.state().loading);
 
@@ -69,7 +69,7 @@ export class WalletService {
    * Signal readonly para mensagem de erro
    * @description Retorna a mensagem de erro da última operação, se houver
    * @example
-   * const error = this.walletService.error();
+   * const error = this.accountService.error();
    */
   readonly error = computed(() => this.state().error);
 
@@ -77,39 +77,39 @@ export class WalletService {
    * Signal computado para saldo total
    * @description Soma dos saldos de todas as contas
    * @example
-   * const total = this.walletService.totalBalance();
+   * const total = this.accountService.totalBalance();
    */
   readonly totalBalance = computed(() =>
-    this.wallets().reduce((acc, wallet) => acc + (wallet.balance || 0), 0),
+    this.accounts().reduce((acc, account) => acc + (account.balance || 0), 0),
   );
 
   /**
    * Signal computado para contas por tipo
    * @description Retorna contas agrupadas por tipo (STANDARD, CREDIT)
    * @example
-   * const byType = this.walletService.walletsByType();
+   * const byType = this.accountService.accountsByType();
    */
-  readonly walletsByType = computed(() => {
-    const wallets = this.wallets();
+  readonly accountsByType = computed(() => {
+    const accounts = this.accounts();
     return {
-      standard: wallets.filter((w) => w.type === 'STANDARD'),
-      credit: wallets.filter((w) => w.type === 'CREDIT'),
+      standard: accounts.filter((a) => a.type === 'STANDARD'),
+      credit: accounts.filter((a) => a.type === 'CREDIT'),
     };
   });
 
   /**
    * Busca uma conta pelo ID
    * @description Retorna uma conta específica pelo seu ID
-   * @param walletId - ID da conta a ser buscada
+   * @param accountId - ID da conta a ser buscada
    * @returns Conta encontrada ou undefined se não existir
    * @example
-   * const wallet = this.walletService.getWalletById('wallet-123');
+   * const account = this.accountService.getAccountById('account-123');
    */
-  getWalletById(walletId: string): WalletDTO | undefined {
-    if (!walletId) {
+  getAccountById(accountId: string): AccountDTO | undefined {
+    if (!accountId) {
       return undefined;
     }
-    return this.wallets().find((w) => w.id === walletId);
+    return this.accounts().find((a) => a.id === accountId);
   }
 
   /**
@@ -118,10 +118,10 @@ export class WalletService {
    * @param type - Tipo das contas (STANDARD ou CREDIT)
    * @returns Array de contas do tipo especificado
    * @example
-   * const creditCards = this.walletService.getWalletsByType('CREDIT');
+   * const creditCards = this.accountService.getAccountsByType('CREDIT');
    */
-  getWalletsByType(type: WalletDTO['type']): WalletDTO[] {
-    return this.wallets().filter((w) => w.type === type);
+  getAccountsByType(type: AccountDTO['type']): AccountDTO[] {
+    return this.accounts().filter((a) => a.type === type);
   }
 
   /**
@@ -131,12 +131,15 @@ export class WalletService {
    * @param direction - Direção da ordenação (asc ou desc)
    * @returns Array de contas ordenado
    * @example
-   * const sorted = this.walletService.sortWallets('balance', 'desc');
+   * const sorted = this.accountService.sortAccounts('balance', 'desc');
    */
-  sortWallets(sortBy: 'name' | 'balance' | 'type', direction: 'asc' | 'desc' = 'asc'): WalletDTO[] {
-    const wallets = [...this.wallets()];
+  sortAccounts(
+    sortBy: 'name' | 'balance' | 'type',
+    direction: 'asc' | 'desc' = 'asc',
+  ): AccountDTO[] {
+    const accounts = [...this.accounts()];
 
-    return wallets.sort((a, b) => {
+    return accounts.sort((a, b) => {
       let comparison = 0;
 
       switch (sortBy) {
@@ -161,17 +164,17 @@ export class WalletService {
    * @param searchTerm - Termo para filtrar (busca em nome e tipo)
    * @returns Array de contas filtrado
    * @example
-   * const filtered = this.walletService.filterWallets('nubank');
+   * const filtered = this.accountService.filterAccounts('nubank');
    */
-  filterWallets(searchTerm: string): WalletDTO[] {
+  filterAccounts(searchTerm: string): AccountDTO[] {
     if (!searchTerm || searchTerm.trim() === '') {
-      return [...this.wallets()];
+      return [...this.accounts()];
     }
 
     const term = searchTerm.toLowerCase().trim();
-    return this.wallets().filter(
-      (wallet) =>
-        wallet.name.toLowerCase().includes(term) || wallet.type.toLowerCase().includes(term),
+    return this.accounts().filter(
+      (account) =>
+        account.name.toLowerCase().includes(term) || account.type.toLowerCase().includes(term),
     );
   }
 
@@ -179,18 +182,18 @@ export class WalletService {
    * Carrega as contas do servidor
    * @description Busca a lista de contas e atualiza o estado
    */
-  loadWallets(): void {
+  loadAccounts(): void {
     this.updateState({ loading: true, error: null });
 
     this.api
-      .getWallets()
+      .getAccounts()
       .pipe(
         finalize(() => this.updateState({ loading: false })),
         tap({
-          next: (wallets) => this.updateState({ wallets }),
+          next: (accounts) => this.updateState({ accounts }),
           error: (err) =>
             this.updateState({
-              wallets: [],
+              accounts: [],
               error: this.mapHttpError(err, {
                 defaultMessage: 'Erro ao carregar contas',
                 validationFallback: 'Dados inválidos',
@@ -198,7 +201,9 @@ export class WalletService {
             }),
         }),
       )
-      .subscribe();
+      .subscribe({
+        error: () => undefined,
+      });
   }
 
   /**
@@ -207,9 +212,9 @@ export class WalletService {
    * @param payload Dados da nova conta
    * @returns Observable com a conta criada
    */
-  createWallet(payload: CreateWalletDTO): Observable<WalletDTO> {
+  createAccount(payload: CreateAccountDTO): Observable<AccountDTO> {
     try {
-      this.validateCreateWalletData(payload);
+      this.validateCreateAccountData(payload);
     } catch (error) {
       this.updateState({ loading: false, error: error instanceof Error ? error.message : 'Erro' });
       return throwError(() => error);
@@ -217,12 +222,12 @@ export class WalletService {
 
     this.updateState({ loading: true, error: null });
 
-    return this.api.createWallet(payload).pipe(
+    return this.api.createAccount(payload).pipe(
       finalize(() => this.updateState({ loading: false })),
       tap({
-        next: (newWallet) => {
-          const currentWallets = this.state().wallets;
-          this.updateState({ wallets: [...currentWallets, newWallet] });
+        next: (newAccount) => {
+          const currentAccounts = this.state().accounts;
+          this.updateState({ accounts: [...currentAccounts, newAccount] });
         },
         error: (err) =>
           this.updateState({
@@ -266,7 +271,7 @@ export class WalletService {
    * Atualiza o estado parcialmente
    * @private
    */
-  private updateState(partial: Partial<WalletState>): void {
+  private updateState(partial: Partial<AccountState>): void {
     this.state.update((current) => ({ ...current, ...partial }));
   }
 
@@ -274,7 +279,7 @@ export class WalletService {
    * Limpa o estado de erro
    * @description Remove mensagem de erro do estado
    * @example
-   * this.walletService.clearError();
+   * this.accountService.clearError();
    */
   clearError() {
     this.state.update((s) => ({ ...s, error: null }));
@@ -283,19 +288,19 @@ export class WalletService {
   /**
    * Remove uma conta do estado local
    * @description Remove conta da lista local (não deleta no backend)
-   * @param walletId - ID da conta a ser removida
-   * @throws {Error} Quando walletId é inválido ou nulo
+   * @param accountId - ID da conta a ser removida
+   * @throws {Error} Quando accountId é inválido ou nulo
    * @example
-   * this.walletService.removeWalletFromState('wallet-123');
+   * this.accountService.removeAccountFromState('account-123');
    */
-  removeWalletFromState(walletId: string) {
-    if (!walletId || walletId.trim() === '') {
+  removeAccountFromState(accountId: string) {
+    if (!accountId || accountId.trim() === '') {
       throw new Error('ID da conta é obrigatório');
     }
 
     this.state.update((s) => ({
       ...s,
-      wallets: s.wallets.filter((w) => w.id !== walletId),
+      accounts: s.accounts.filter((a) => a.id !== accountId),
     }));
   }
 
@@ -307,7 +312,7 @@ export class WalletService {
    * @private
    * @throws {Error} Quando dados são inválidos
    */
-  private validateCreateWalletData(data: CreateWalletDTO): boolean {
+  private validateCreateAccountData(data: CreateAccountDTO): boolean {
     if (!data.name || data.name.trim() === '') {
       throw new Error('Nome da conta é obrigatório');
     }
@@ -329,11 +334,11 @@ export class WalletService {
     }
 
     // Verificar se nome já existe localmente
-    const existingWallet = this.wallets().find(
-      (w) => w.name.toLowerCase() === data.name.toLowerCase(),
+    const existingAccount = this.accounts().find(
+      (a) => a.name.toLowerCase() === data.name.toLowerCase(),
     );
 
-    if (existingWallet) {
+    if (existingAccount) {
       throw new Error('Já existe uma conta com este nome');
     }
 
@@ -343,24 +348,24 @@ export class WalletService {
   /**
    * Cria múltiplas contas em lote
    * @description Envia múltiplas contas para criação em lote
-   * @param walletsData - Array com dados das contas a serem criadas
+   * @param accountsData - Array com dados das contas a serem criadas
    * @throws {Error} Quando algum dado é inválido
    * @example
-   * this.walletService.createMultipleWallets([
+   * this.accountService.createMultipleAccounts([
    *   { name: 'Conta 1', color: '#FF0000', icon: 'pi-wallet', type: 'STANDARD' },
    *   { name: 'Conta 2', color: '#00FF00', icon: 'pi-credit-card', type: 'CREDIT' }
    * ]);
    */
-  createMultipleWallets(walletsData: CreateWalletDTO[]) {
-    if (!Array.isArray(walletsData) || walletsData.length === 0) {
+  createMultipleAccounts(accountsData: CreateAccountDTO[]) {
+    if (!Array.isArray(accountsData) || accountsData.length === 0) {
       this.state.update((s) => ({ ...s, error: 'Array de contas é obrigatório' }));
       return;
     }
 
     // Validar todas as contas antes de enviar
-    for (const data of walletsData) {
+    for (const data of accountsData) {
       try {
-        this.validateCreateWalletData(data);
+        this.validateCreateAccountData(data);
       } catch (error) {
         this.state.update((s) => ({ ...s, error: (error as Error).message }));
         return;
@@ -370,32 +375,32 @@ export class WalletService {
     this.state.update((s) => ({ ...s, loading: true, error: null }));
 
     // Criar contas sequencialmente (poderia ser paralelo, mas sequencial é mais seguro)
-    const createdWallets: WalletDTO[] = [];
+    const createdAccounts: AccountDTO[] = [];
     let currentIndex = 0;
 
     const createNext = () => {
-      if (currentIndex >= walletsData.length) {
+      if (currentIndex >= accountsData.length) {
         // Todas criadas com sucesso
         this.state.update((s) => ({
           ...s,
-          wallets: [...s.wallets, ...createdWallets],
+          accounts: [...s.accounts, ...createdAccounts],
           loading: false,
         }));
         return;
       }
 
       this.api
-        .createWallet(walletsData[currentIndex])
+        .createAccount(accountsData[currentIndex])
         .pipe(
           finalize(() => {
-            if (currentIndex >= walletsData.length - 1) {
+            if (currentIndex >= accountsData.length - 1) {
               this.state.update((s) => ({ ...s, loading: false }));
             }
           }),
         )
         .subscribe({
-          next: (newWallet) => {
-            createdWallets.push(newWallet);
+          next: (newAccount) => {
+            createdAccounts.push(newAccount);
             currentIndex++;
             createNext();
           },
@@ -413,18 +418,18 @@ export class WalletService {
   /**
    * Remove múltiplas contas do estado local
    * @description Remove várias contas da lista local pelo ID
-   * @param walletIds - Array com IDs das contas a serem removidas
+   * @param accountIds - Array com IDs das contas a serem removidas
    * @throws {Error} Quando array é inválido ou vazio
    * @example
-   * this.walletService.removeMultipleWalletsFromState(['wallet-1', 'wallet-2']);
+   * this.accountService.removeMultipleAccountsFromState(['account-1', 'account-2']);
    */
-  removeMultipleWalletsFromState(walletIds: string[]) {
-    if (!Array.isArray(walletIds) || walletIds.length === 0) {
+  removeMultipleAccountsFromState(accountIds: string[]) {
+    if (!Array.isArray(accountIds) || accountIds.length === 0) {
       throw new Error('Array de IDs é obrigatório');
     }
 
     // Validar todos os IDs
-    for (const id of walletIds) {
+    for (const id of accountIds) {
       if (!id || id.trim() === '') {
         throw new Error('ID da conta é obrigatório');
       }
@@ -432,23 +437,23 @@ export class WalletService {
 
     this.state.update((s) => ({
       ...s,
-      wallets: s.wallets.filter((w) => !walletIds.includes(w.id)),
+      accounts: s.accounts.filter((a) => !accountIds.includes(a.id)),
     }));
   }
 
   /**
    * Atualiza dados de uma conta no estado local
    * @description Atualiza conta existente na lista local
-   * @param updatedWallet - Dados atualizados da conta
-   * @throws {Error} Quando updatedWallet é inválido ou incompleto
+   * @param updatedAccount - Dados atualizados da conta
+   * @throws {Error} Quando updatedAccount é inválido ou incompleto
    * @throws {Error} Quando conta não foi encontrada no estado local
    * @example
-   * this.walletService.updateWalletInState(updatedWallet);
+   * this.accountService.updateAccountInState(updatedAccount);
    */
-  updateWalletInState(updatedWallet: WalletDTO) {
+  updateAccountInState(updatedAccount: AccountDTO) {
     this.state.update((s) => ({
       ...s,
-      wallets: s.wallets.map((w) => (w.id === updatedWallet.id ? updatedWallet : w)),
+      accounts: s.accounts.map((a) => (a.id === updatedAccount.id ? updatedAccount : a)),
     }));
   }
 

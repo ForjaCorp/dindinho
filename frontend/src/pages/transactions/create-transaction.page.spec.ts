@@ -1,13 +1,13 @@
 import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 import { describe, it, expect, vi } from 'vitest';
-import { provideRouter, Router } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { FormGroup } from '@angular/forms';
 import { of } from 'rxjs';
 import { CreateTransactionPage } from './create-transaction.page';
-import { WalletService } from '../../app/services/wallet.service';
+import { AccountService } from '../../app/services/account.service';
 import { ApiService } from '../../app/services/api.service';
-import { CategoryDTO, WalletDTO } from '@dindinho/shared';
+import { CategoryDTO, AccountDTO } from '@dindinho/shared';
 
 const testBed = getTestBed();
 if (!testBed.platform) {
@@ -17,7 +17,7 @@ if (!testBed.platform) {
 describe('CreateTransactionPage', () => {
   let fixture: ComponentFixture<CreateTransactionPage>;
 
-  const wallets: WalletDTO[] = [
+  const accounts: AccountDTO[] = [
     {
       id: '123e4567-e89b-12d3-a456-426614174000',
       name: 'Conta Principal',
@@ -41,15 +41,15 @@ describe('CreateTransactionPage', () => {
     },
   ];
 
-  const createWalletServiceMock = (opts: { wallets: WalletDTO[]; loading: boolean }) => ({
-    wallets: vi.fn(() => opts.wallets),
+  const createAccountServiceMock = (opts: { accounts: AccountDTO[]; loading: boolean }) => ({
+    accounts: vi.fn(() => opts.accounts),
     isLoading: vi.fn(() => opts.loading),
-    loadWallets: vi.fn(),
+    loadAccounts: vi.fn(),
   });
 
   it('deve renderizar a página', async () => {
     localStorage.clear();
-    const walletServiceMock = createWalletServiceMock({ wallets, loading: false });
+    const accountServiceMock = createAccountServiceMock({ accounts, loading: false });
     const apiServiceMock = {
       createTransaction: vi.fn(() => of({})),
       getCategories: vi.fn(() => of(categories)),
@@ -60,7 +60,7 @@ describe('CreateTransactionPage', () => {
       imports: [CreateTransactionPage],
       providers: [
         provideRouter([]),
-        { provide: WalletService, useValue: walletServiceMock },
+        { provide: AccountService, useValue: accountServiceMock },
         { provide: ApiService, useValue: apiServiceMock },
       ],
     }).compileComponents();
@@ -82,7 +82,7 @@ describe('CreateTransactionPage', () => {
     expect(description).toBeTruthy();
     expect(advanced.contains(description)).toBe(false);
 
-    expect(fixture.nativeElement.querySelector('[data-testid="transaction-wallet"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="transaction-account"]')).toBeTruthy();
     expect(
       fixture.nativeElement.querySelector('[data-testid="transaction-category"]'),
     ).toBeTruthy();
@@ -91,9 +91,10 @@ describe('CreateTransactionPage', () => {
     ).toBeTruthy();
   });
 
-  it('deve enviar transação válida', async () => {
+  it('deve inicializar a conta a partir do query param accountId', async () => {
     localStorage.clear();
-    const walletServiceMock = createWalletServiceMock({ wallets, loading: false });
+
+    const accountServiceMock = createAccountServiceMock({ accounts, loading: false });
     const apiServiceMock = {
       createTransaction: vi.fn(() => of({})),
       getCategories: vi.fn(() => of(categories)),
@@ -104,7 +105,38 @@ describe('CreateTransactionPage', () => {
       imports: [CreateTransactionPage],
       providers: [
         provideRouter([]),
-        { provide: WalletService, useValue: walletServiceMock },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: { queryParamMap: convertToParamMap({ accountId: accounts[0].id }) },
+          },
+        },
+        { provide: AccountService, useValue: accountServiceMock },
+        { provide: ApiService, useValue: apiServiceMock },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(CreateTransactionPage);
+    fixture.detectChanges();
+
+    const component = fixture.componentInstance as unknown as { form: FormGroup };
+    expect(component.form.controls['accountId']?.value).toBe(accounts[0].id);
+  });
+
+  it('deve enviar transação válida', async () => {
+    localStorage.clear();
+    const accountServiceMock = createAccountServiceMock({ accounts, loading: false });
+    const apiServiceMock = {
+      createTransaction: vi.fn(() => of({})),
+      getCategories: vi.fn(() => of(categories)),
+      createCategory: vi.fn(() => of(categories[0])),
+    };
+
+    await TestBed.configureTestingModule({
+      imports: [CreateTransactionPage],
+      providers: [
+        provideRouter([]),
+        { provide: AccountService, useValue: accountServiceMock },
         { provide: ApiService, useValue: apiServiceMock },
       ],
     }).compileComponents();
@@ -117,7 +149,7 @@ describe('CreateTransactionPage', () => {
 
     const component = fixture.componentInstance as unknown as { form: FormGroup };
     component.form.setValue({
-      walletId: wallets[0].id,
+      accountId: accounts[0].id,
       categoryId: categories[0].id,
       type: 'EXPENSE',
       date: '2026-01-01',
@@ -125,7 +157,7 @@ describe('CreateTransactionPage', () => {
       description: 'Café',
       isPaid: true,
       totalInstallments: 1,
-      destinationWalletId: '',
+      destinationAccountId: '',
       tagsText: 'mercado, casa',
       recurrenceEnabled: false,
       recurrenceFrequency: 'MONTHLY',
@@ -142,7 +174,7 @@ describe('CreateTransactionPage', () => {
 
     expect(apiServiceMock.createTransaction).toHaveBeenCalledTimes(1);
     expect(apiServiceMock.createTransaction).toHaveBeenCalledWith({
-      walletId: wallets[0].id,
+      accountId: accounts[0].id,
       categoryId: categories[0].id,
       amount: 15,
       description: 'Café',
@@ -157,7 +189,7 @@ describe('CreateTransactionPage', () => {
 
   it('deve concluir o sheet de valor ao pressionar Enter', async () => {
     localStorage.clear();
-    const walletServiceMock = createWalletServiceMock({ wallets, loading: false });
+    const accountServiceMock = createAccountServiceMock({ accounts, loading: false });
     const apiServiceMock = {
       createTransaction: vi.fn(() => of({})),
       getCategories: vi.fn(() => of(categories)),
@@ -168,7 +200,7 @@ describe('CreateTransactionPage', () => {
       imports: [CreateTransactionPage],
       providers: [
         provideRouter([]),
-        { provide: WalletService, useValue: walletServiceMock },
+        { provide: AccountService, useValue: accountServiceMock },
         { provide: ApiService, useValue: apiServiceMock },
       ],
     }).compileComponents();

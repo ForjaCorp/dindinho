@@ -22,11 +22,11 @@ import {
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { ApiService } from '../app/services/api.service';
-import { ApiResponseDTO, TransactionDTO, WalletDTO } from '@dindinho/shared';
-import { WalletService } from '../app/services/wallet.service';
+import { ApiResponseDTO, TransactionDTO, AccountDTO } from '@dindinho/shared';
+import { AccountService } from '../app/services/account.service';
 import { CurrencyPipe } from '@angular/common';
-import { CreateWalletDialogComponent } from '../app/components/wallets/create-wallet-dialog.component';
-import { WalletCardComponent } from '../app/components/wallets/wallet-card.component';
+import { CreateAccountDialogComponent } from '../app/components/accounts/create-account-dialog.component';
+import { AccountCardComponent } from '../app/components/accounts/account-card.component';
 import { Router } from '@angular/router';
 
 @Component({
@@ -37,8 +37,8 @@ import { Router } from '@angular/router';
     CommonModule,
     ButtonModule,
     CurrencyPipe,
-    CreateWalletDialogComponent,
-    WalletCardComponent,
+    CreateAccountDialogComponent,
+    AccountCardComponent,
   ],
   template: `
     <div class="flex flex-col gap-4 p-4 pb-24">
@@ -84,8 +84,8 @@ import { Router } from '@angular/router';
           <h2 class="text-lg font-bold text-slate-800">Minhas Contas</h2>
 
           <button
-            data-testid="dashboard-create-wallet-btn"
-            (click)="createWalletDialog.show()"
+            data-testid="dashboard-create-account-btn"
+            (click)="createAccountDialog.show()"
             class="flex items-center gap-1 text-emerald-600 text-sm font-semibold hover:text-emerald-700 transition-colors"
           >
             <i class="pi pi-plus text-xs"></i>
@@ -94,10 +94,10 @@ import { Router } from '@angular/router';
         </div>
 
         <!-- Lista de Contas -->
-        @if (walletService.wallets().length > 0) {
-          <div data-testid="dashboard-wallet-list" class="flex gap-2 overflow-x-auto pb-2 px-1">
-            @for (wallet of walletService.wallets(); track wallet.id) {
-              <app-wallet-card [wallet]="wallet" variant="compact" />
+        @if (accountService.accounts().length > 0) {
+          <div data-testid="dashboard-account-list" class="flex gap-2 overflow-x-auto pb-2 px-1">
+            @for (account of accountService.accounts(); track account.id) {
+              <app-account-card [account]="account" variant="compact" />
             } @empty {
               <div class="w-full py-8 text-center text-slate-400">
                 <i class="pi pi-wallet text-2xl mb-2"></i>
@@ -107,7 +107,7 @@ import { Router } from '@angular/router';
           </div>
         } @else {
           <div
-            data-testid="dashboard-wallet-empty"
+            data-testid="dashboard-account-empty"
             class="w-full py-8 text-center text-slate-400 bg-white rounded-xl border border-slate-100"
           >
             <i class="pi pi-wallet text-2xl mb-2"></i>
@@ -117,7 +117,7 @@ import { Router } from '@angular/router';
         }
       </div>
 
-      <app-create-wallet-dialog #createWalletDialog />
+      <app-create-account-dialog #createAccountDialog />
 
       <!-- Atalhos Rápidos -->
       <div data-testid="quick-links-section">
@@ -213,7 +213,7 @@ import { Router } from '@angular/router';
                   <div class="flex items-center gap-2 text-xs text-slate-500">
                     <span>{{ t.date | date: 'dd/MM/yyyy' }}</span>
                     <span aria-hidden="true">•</span>
-                    <span class="truncate">{{ walletName(t.walletId) }}</span>
+                    <span class="truncate">{{ accountName(t.accountId) }}</span>
                   </div>
                 </div>
 
@@ -284,7 +284,7 @@ import { Router } from '@angular/router';
  */
 export class DashboardComponent implements OnInit {
   private apiService = inject(ApiService);
-  protected walletService = inject(WalletService);
+  protected accountService = inject(AccountService);
   private router = inject(Router);
 
   apiData = signal<ApiResponseDTO | null>(null);
@@ -295,18 +295,18 @@ export class DashboardComponent implements OnInit {
   protected recentTransactionsLoading = signal(false);
   protected recentTransactionsError = signal(false);
 
-  protected walletMap = computed(() => {
-    const map = new Map<string, WalletDTO>();
-    for (const w of this.walletService.wallets()) map.set(w.id, w);
+  protected accountMap = computed(() => {
+    const map = new Map<string, AccountDTO>();
+    for (const a of this.accountService.accounts()) map.set(a.id, a);
     return map;
   });
 
   // Signal reativo para o saldo total
-  totalBalance = computed(() => this.walletService.totalBalance());
+  totalBalance = computed(() => this.accountService.totalBalance());
 
   ngOnInit() {
     this.checkBackendConnection();
-    this.loadWallets();
+    this.loadAccounts();
     this.loadRecentTransactions();
   }
 
@@ -321,8 +321,8 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  loadWallets() {
-    this.walletService.loadWallets();
+  loadAccounts() {
+    this.accountService.loadAccounts();
   }
 
   protected loadRecentTransactions() {
@@ -366,8 +366,8 @@ export class DashboardComponent implements OnInit {
     return this.transactionTypeLabel(t);
   }
 
-  protected walletName(walletId: string): string {
-    return this.walletMap().get(walletId)?.name ?? 'Conta';
+  protected accountName(accountId: string): string {
+    return this.accountMap().get(accountId)?.name ?? 'Conta';
   }
 
   protected onQuickAdd(type: 'INCOME' | 'EXPENSE') {

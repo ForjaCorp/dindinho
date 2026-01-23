@@ -13,9 +13,9 @@ import { Router } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ButtonModule } from 'primeng/button';
-import { TransactionDTO, WalletDTO } from '@dindinho/shared';
+import { TransactionDTO, AccountDTO } from '@dindinho/shared';
 import { ApiService } from '../../app/services/api.service';
-import { WalletService } from '../../app/services/wallet.service';
+import { AccountService } from '../../app/services/account.service';
 
 type TransactionTypeFilter = '' | TransactionDTO['type'];
 
@@ -89,18 +89,18 @@ type TransactionTypeFilter = '' | TransactionDTO['type'];
             </div>
 
             <div class="flex flex-col gap-1">
-              <label class="sr-only" for="walletId">Conta</label>
+              <label class="sr-only" for="accountId">Conta</label>
               <select
-                data-testid="transactions-wallet-select"
-                id="walletId"
+                data-testid="transactions-account-select"
+                id="accountId"
                 class="h-10 rounded-xl border border-slate-200 px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                [value]="walletFilterId()"
-                (change)="onWalletFilterChange($event)"
+                [value]="accountFilterId()"
+                (change)="onAccountFilterChange($event)"
                 aria-label="Conta"
               >
                 <option value="">Todas as contas</option>
-                @for (w of wallets(); track w.id) {
-                  <option [value]="w.id">{{ w.name }}</option>
+                @for (a of accounts(); track a.id) {
+                  <option [value]="a.id">{{ a.name }}</option>
                 }
               </select>
             </div>
@@ -137,7 +137,7 @@ type TransactionTypeFilter = '' | TransactionDTO['type'];
                   <div class="flex items-center gap-2 text-xs text-slate-500">
                     <span>{{ t.date | date: 'dd/MM/yyyy' }}</span>
                     <span aria-hidden="true">•</span>
-                    <span class="truncate">{{ walletName(t.walletId) }}</span>
+                    <span class="truncate">{{ accountName(t.accountId) }}</span>
                   </div>
                 </div>
 
@@ -169,16 +169,16 @@ type TransactionTypeFilter = '' | TransactionDTO['type'];
 })
 export class TransactionsPage {
   private api = inject(ApiService);
-  private walletService = inject(WalletService);
+  private accountService = inject(AccountService);
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
   private host = inject(ElementRef<HTMLElement>);
 
-  protected readonly wallets = this.walletService.wallets;
+  protected readonly accounts = this.accountService.accounts;
 
   protected readonly searchDraft = signal('');
   protected readonly searchQuery = signal('');
-  protected readonly walletFilterId = signal<string>('');
+  protected readonly accountFilterId = signal<string>('');
   protected readonly typeFilter = signal<TransactionTypeFilter>('');
 
   protected readonly items = signal<TransactionDTO[]>([]);
@@ -189,9 +189,9 @@ export class TransactionsPage {
 
   protected readonly hasMore = computed(() => this.nextCursorId() !== null);
 
-  protected readonly walletMap = computed(() => {
-    const map = new Map<string, WalletDTO>();
-    for (const w of this.wallets()) map.set(w.id, w);
+  protected readonly accountMap = computed(() => {
+    const map = new Map<string, AccountDTO>();
+    for (const a of this.accounts()) map.set(a.id, a);
     return map;
   });
 
@@ -203,7 +203,7 @@ export class TransactionsPage {
   protected readonly filtersOpen = signal(false);
 
   constructor() {
-    this.walletService.loadWallets();
+    this.accountService.loadAccounts();
 
     effect(() => {
       const draft = this.searchDraft();
@@ -221,14 +221,14 @@ export class TransactionsPage {
 
     effect(() => {
       const q = this.searchQuery();
-      const walletId = this.walletFilterId();
+      const accountId = this.accountFilterId();
       const type = this.typeFilter();
 
-      this.resetAndLoad({
-        q: q || undefined,
-        walletId: walletId || undefined,
-        type: type || undefined,
-      });
+      const filters: { q?: string; accountId?: string; type?: TransactionDTO['type'] } = {};
+      if (q) filters.q = q;
+      if (accountId) filters.accountId = accountId;
+      if (type) filters.type = type;
+      this.resetAndLoad(filters);
     });
 
     effect(() => {
@@ -253,9 +253,9 @@ export class TransactionsPage {
     this.searchDraft.set(value);
   }
 
-  protected onWalletFilterChange(event: Event) {
+  protected onAccountFilterChange(event: Event) {
     const value = (event.target as HTMLSelectElement | null)?.value ?? '';
-    this.walletFilterId.set(value);
+    this.accountFilterId.set(value);
   }
 
   protected onTypeFilterChange(event: Event) {
@@ -289,11 +289,11 @@ export class TransactionsPage {
     return this.transactionTypeLabel(t);
   }
 
-  protected walletName(walletId: string): string {
-    return this.walletMap().get(walletId)?.name ?? 'Conta';
+  protected accountName(accountId: string): string {
+    return this.accountMap().get(accountId)?.name ?? 'Conta';
   }
 
-  private resetAndLoad(filters: { q?: string; walletId?: string; type?: TransactionDTO['type'] }) {
+  private resetAndLoad(filters: { q?: string; accountId?: string; type?: TransactionDTO['type'] }) {
     const seq = ++this.initialLoadSeq;
     this.error.set(null);
     this.items.set([]);
@@ -328,18 +328,23 @@ export class TransactionsPage {
     const seq = this.initialLoadSeq;
 
     const q = this.searchQuery();
-    const walletId = this.walletFilterId();
+    const accountId = this.accountFilterId();
     const type = this.typeFilter();
+
+    const filters: {
+      cursorId: string;
+      limit: number;
+      q?: string;
+      accountId?: string;
+      type?: TransactionDTO['type'];
+    } = { cursorId, limit: 30 };
+    if (q) filters.q = q;
+    if (accountId) filters.accountId = accountId;
+    if (type) filters.type = type;
 
     this.loadingMore.set(true);
     this.api
-      .getTransactions({
-        cursorId,
-        limit: 30,
-        q: q || undefined,
-        walletId: walletId || undefined,
-        type: type || undefined,
-      })
+      .getTransactions(filters)
       .pipe(
         finalize(() => this.loadingMore.set(false)),
         takeUntilDestroyed(this.destroyRef),

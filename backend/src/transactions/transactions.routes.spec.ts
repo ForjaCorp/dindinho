@@ -20,7 +20,7 @@ describe("Rotas de Transações", () => {
   let token: string;
 
   const userId = "123e4567-e89b-12d3-a456-426614174000";
-  const walletId = "123e4567-e89b-12d3-a456-426614174001";
+  const accountId = "123e4567-e89b-12d3-a456-426614174001";
   const categoryId = "123e4567-e89b-12d3-a456-426614174099";
 
   beforeEach(async () => {
@@ -46,7 +46,7 @@ describe("Rotas de Transações", () => {
         method: "POST",
         url: "/api/transactions",
         payload: {
-          walletId,
+          accountId,
           categoryId,
           amount: 10,
           description: "Teste",
@@ -60,7 +60,7 @@ describe("Rotas de Transações", () => {
 
     it("deve criar uma transação simples", async () => {
       const payload = {
-        walletId,
+        accountId,
         categoryId,
         amount: 123.45,
         description: "Café",
@@ -69,9 +69,10 @@ describe("Rotas de Transações", () => {
         date: new Date("2026-01-01T00:00:00.000Z").toISOString(),
       };
 
-      prismaMock.wallet.findUnique.mockResolvedValue({
-        id: walletId,
+      prismaMock.account.findUnique.mockResolvedValue({
+        id: accountId,
         ownerId: userId,
+        creditCardInfo: null,
       } as any);
 
       prismaMock.category.findUnique.mockResolvedValue({
@@ -81,7 +82,7 @@ describe("Rotas de Transações", () => {
 
       prismaMock.transaction.create.mockResolvedValue({
         id: "123e4567-e89b-12d3-a456-426614174010",
-        walletId,
+        accountId,
         categoryId,
         amount: { toNumber: () => payload.amount },
         description: payload.description,
@@ -110,14 +111,14 @@ describe("Rotas de Transações", () => {
 
       expect(response.statusCode).toBe(201);
       const body = JSON.parse(response.body);
-      expect(body.walletId).toBe(walletId);
+      expect(body.accountId).toBe(accountId);
       expect(body.amount).toBe(payload.amount);
       expect(body.type).toBe("EXPENSE");
     });
 
     it("deve retornar 404 se o banco rejeitar categoryId inexistente", async () => {
       const payload = {
-        walletId,
+        accountId,
         categoryId,
         amount: 123.45,
         description: "Café",
@@ -126,9 +127,10 @@ describe("Rotas de Transações", () => {
         date: new Date("2026-01-01T00:00:00.000Z").toISOString(),
       };
 
-      prismaMock.wallet.findUnique.mockResolvedValue({
-        id: walletId,
+      prismaMock.account.findUnique.mockResolvedValue({
+        id: accountId,
         ownerId: userId,
+        creditCardInfo: null,
       } as any);
 
       prismaMock.category.findUnique.mockResolvedValue({
@@ -161,7 +163,7 @@ describe("Rotas de Transações", () => {
 
     it("deve criar transações parceladas", async () => {
       const payload = {
-        walletId,
+        accountId,
         categoryId,
         amount: 1000,
         description: "Notebook",
@@ -171,9 +173,10 @@ describe("Rotas de Transações", () => {
         date: new Date("2026-01-01T00:00:00.000Z").toISOString(),
       };
 
-      prismaMock.wallet.findUnique.mockResolvedValue({
-        id: walletId,
+      prismaMock.account.findUnique.mockResolvedValue({
+        id: accountId,
         ownerId: userId,
+        creditCardInfo: null,
       } as any);
 
       prismaMock.category.findUnique.mockResolvedValue({
@@ -184,7 +187,7 @@ describe("Rotas de Transações", () => {
       prismaMock.transaction.create
         .mockResolvedValueOnce({
           id: "123e4567-e89b-12d3-a456-426614174011",
-          walletId,
+          accountId,
           categoryId,
           amount: { toNumber: () => 333.33 },
           description: payload.description,
@@ -205,7 +208,7 @@ describe("Rotas de Transações", () => {
         } as any)
         .mockResolvedValueOnce({
           id: "123e4567-e89b-12d3-a456-426614174012",
-          walletId,
+          accountId,
           categoryId,
           amount: { toNumber: () => 333.33 },
           description: payload.description,
@@ -226,7 +229,7 @@ describe("Rotas de Transações", () => {
         } as any)
         .mockResolvedValueOnce({
           id: "123e4567-e89b-12d3-a456-426614174013",
-          walletId,
+          accountId,
           categoryId,
           amount: { toNumber: () => 333.34 },
           description: payload.description,
@@ -264,12 +267,12 @@ describe("Rotas de Transações", () => {
 
   describe("GET /api/transactions", () => {
     it("deve listar transações da conta", async () => {
-      prismaMock.wallet.findFirst.mockResolvedValue({ id: walletId } as any);
+      prismaMock.account.findFirst.mockResolvedValue({ id: accountId } as any);
 
       prismaMock.transaction.findMany.mockResolvedValue([
         {
           id: "123e4567-e89b-12d3-a456-426614174014",
-          walletId,
+          accountId,
           categoryId: null,
           amount: { toNumber: () => 10 },
           description: null,
@@ -292,14 +295,14 @@ describe("Rotas de Transações", () => {
 
       const response = await app.inject({
         method: "GET",
-        url: `/api/transactions?walletId=${walletId}`,
+        url: `/api/transactions?accountId=${accountId}`,
         headers: { authorization: `Bearer ${token}` },
       });
 
       expect(response.statusCode).toBe(200);
       const body = JSON.parse(response.body);
       expect(body.items).toHaveLength(1);
-      expect(body.items[0].walletId).toBe(walletId);
+      expect(body.items[0].accountId).toBe(accountId);
       expect(body.nextCursorId).toBeNull();
     });
 
@@ -308,7 +311,7 @@ describe("Rotas de Transações", () => {
         .mockResolvedValueOnce([
           {
             id: "123e4567-e89b-12d3-a456-426614174014",
-            walletId,
+            accountId,
             categoryId: null,
             amount: { toNumber: () => 10 },
             description: null,
@@ -331,7 +334,7 @@ describe("Rotas de Transações", () => {
         .mockResolvedValueOnce([
           {
             id: "123e4567-e89b-12d3-a456-426614174013",
-            walletId,
+            accountId,
             categoryId: null,
             amount: { toNumber: () => 5 },
             description: null,

@@ -3,9 +3,9 @@ import { z } from "zod";
 /**
  * Enum para tipos de conta disponíveis no sistema.
  * @example
- * const tipo = WalletTypeEnum.STANDARD;
+ * const tipo = AccountTypeEnum.STANDARD;
  */
-export const WalletTypeEnum = z.enum(["STANDARD", "CREDIT"]);
+export const AccountTypeEnum = z.enum(["STANDARD", "CREDIT"]);
 
 /**
  * Schema para criação de conta.
@@ -13,7 +13,7 @@ export const WalletTypeEnum = z.enum(["STANDARD", "CREDIT"]);
  * @param data - Dados da conta a ser criada
  * @returns Schema validado para criação de conta
  * @example
- * const walletData = {
+ * const accountData = {
  *   name: 'Cartão Nubank',
  *   color: '#8A2BE2',
  *   icon: 'pi-credit-card',
@@ -23,13 +23,13 @@ export const WalletTypeEnum = z.enum(["STANDARD", "CREDIT"]);
  *   limit: 5000,
  *   brand: 'Mastercard'
  * };
- * const result = createWalletSchema.parse(walletData);
+ * const result = createAccountSchema.parse(accountData);
  */
-export const createWalletSchema = z.object({
+export const createAccountSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   color: z.string().min(4, "Cor inválida"),
   icon: z.string().min(1, "Ícone é obrigatório"),
-  type: WalletTypeEnum.default("STANDARD"),
+  type: AccountTypeEnum.default("STANDARD"),
 
   initialBalance: z.coerce.number().optional().default(0),
 
@@ -43,14 +43,14 @@ export const createWalletSchema = z.object({
 /**
  * Tipo para criação de conta usado como payload (input).
  */
-export type CreateWalletDTO = z.input<typeof createWalletSchema>;
+export type CreateAccountDTO = z.input<typeof createAccountSchema>;
 
 /**
  * Schema de resposta para uma conta.
  * @param data - Dados completos da conta
  * @returns Schema validado para resposta de conta
  * @example
- * const walletResponse = {
+ * const accountResponse = {
  *   id: '123e4567-e89b-12d3-a456-426614174000',
  *   name: 'Cartão Nubank',
  *   color: '#8A2BE2',
@@ -65,14 +65,14 @@ export type CreateWalletDTO = z.input<typeof createWalletSchema>;
  *     brand: 'Mastercard'
  *   }
  * };
- * const result = walletSchema.parse(walletResponse);
+ * const result = accountSchema.parse(accountResponse);
  */
-export const walletSchema = z.object({
+export const accountSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   color: z.string(),
   icon: z.string(),
-  type: WalletTypeEnum,
+  type: AccountTypeEnum,
   ownerId: z.string(),
   balance: z.coerce.number().optional().default(0),
   creditCardInfo: z
@@ -92,4 +92,4 @@ export const walletSchema = z.object({
 /**
  * Tipo para conta inferido do schema de resposta.
  */
-export type WalletDTO = z.infer<typeof walletSchema>;
+export type AccountDTO = z.infer<typeof accountSchema>;

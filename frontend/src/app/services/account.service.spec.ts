@@ -1,27 +1,27 @@
 /**
  * Testes do serviço de contas
- * @description Testes unitários do WalletService responsável pelo gerenciamento de estado
+ * @description Testes unitários do AccountService responsável pelo gerenciamento de estado
  * @since 1.0.0
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
-import { WalletService } from './wallet.service';
+import { AccountService } from './account.service';
 import { ApiService } from './api.service';
-import { CreateWalletDTO, WalletDTO } from '@dindinho/shared';
+import { CreateAccountDTO, AccountDTO } from '@dindinho/shared';
 
-describe('WalletService', () => {
-  let service: WalletService;
+describe('AccountService', () => {
+  let service: AccountService;
   let apiService: {
-    getWallets: ReturnType<typeof vi.fn>;
-    createWallet: ReturnType<typeof vi.fn>;
+    getAccounts: ReturnType<typeof vi.fn>;
+    createAccount: ReturnType<typeof vi.fn>;
   };
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
   let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
 
-  const mockWallets: WalletDTO[] = [
+  const mockAccounts: AccountDTO[] = [
     {
-      id: 'wallet-1',
+      id: 'account-1',
       name: 'Conta Padrão',
       color: '#FF5722',
       icon: 'pi-wallet',
@@ -32,7 +32,7 @@ describe('WalletService', () => {
       updatedAt: '2024-01-01T00:00:00.000Z',
     },
     {
-      id: 'wallet-2',
+      id: 'account-2',
       name: 'Cartão Nubank',
       color: '#8A2BE2',
       icon: 'pi-credit-card',
@@ -50,7 +50,7 @@ describe('WalletService', () => {
     },
   ];
 
-  const mockCreateWalletData: CreateWalletDTO = {
+  const mockCreateAccountData: CreateAccountDTO = {
     name: 'Nova Conta',
     color: '#00FF00',
     icon: 'pi-money-bill',
@@ -62,21 +62,22 @@ describe('WalletService', () => {
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
     apiService = {
-      getWallets: vi.fn(),
-      createWallet: vi.fn(),
+      getAccounts: vi.fn(),
+      createAccount: vi.fn(),
     };
 
     TestBed.configureTestingModule({
-      providers: [WalletService, { provide: ApiService, useValue: apiService }],
+      providers: [AccountService, { provide: ApiService, useValue: apiService }],
     });
 
-    service = TestBed.inject(WalletService);
+    service = TestBed.inject(AccountService);
   });
 
   afterEach(() => {
     consoleErrorSpy.mockRestore();
     consoleWarnSpy.mockRestore();
     vi.clearAllMocks();
+    vi.useRealTimers();
   });
 
   describe('Inicialização', () => {
@@ -85,27 +86,26 @@ describe('WalletService', () => {
     });
 
     it('deve inicializar com estado vazio', () => {
-      expect(service.wallets()).toEqual([]);
+      expect(service.accounts()).toEqual([]);
       expect(service.isLoading()).toBe(false);
       expect(service.error()).toBeNull();
       expect(service.totalBalance()).toBe(0);
     });
 
-    it('deve calcular walletsByType corretamente', () => {
-      // Testa que o computed funciona corretamente quando há contas
-      const byType = service.walletsByType();
+    it('deve calcular accountsByType corretamente', () => {
+      const byType = service.accountsByType();
       expect(byType.standard).toEqual([]);
       expect(byType.credit).toEqual([]);
     });
 
-    it('deve calcular walletsByType corretamente com dados reais', () => {
-      apiService.getWallets.mockReturnValue(of(mockWallets));
-      service.loadWallets();
+    it('deve calcular accountsByType corretamente com dados reais', () => {
+      apiService.getAccounts.mockReturnValue(of(mockAccounts));
+      service.loadAccounts();
 
       vi.useFakeTimers();
       vi.runAllTimers();
 
-      const byType = service.walletsByType();
+      const byType = service.accountsByType();
       expect(byType.standard).toHaveLength(1);
       expect(byType.credit).toHaveLength(1);
       expect(byType.standard[0].type).toBe('STANDARD');
@@ -113,8 +113,8 @@ describe('WalletService', () => {
     });
 
     it('deve calcular totalBalance corretamente com dados reais', () => {
-      apiService.getWallets.mockReturnValue(of(mockWallets));
-      service.loadWallets();
+      apiService.getAccounts.mockReturnValue(of(mockAccounts));
+      service.loadAccounts();
 
       vi.useFakeTimers();
       vi.runAllTimers();
@@ -123,20 +123,20 @@ describe('WalletService', () => {
     });
   });
 
-  describe('loadWallets()', () => {
+  describe('loadAccounts()', () => {
     it('deve carregar contas com sucesso', () => {
-      apiService.getWallets.mockReturnValue(of(mockWallets));
+      apiService.getAccounts.mockReturnValue(of(mockAccounts));
 
-      service.loadWallets();
+      service.loadAccounts();
 
-      expect(apiService.getWallets).toHaveBeenCalled();
+      expect(apiService.getAccounts).toHaveBeenCalled();
 
       // Simular resposta assíncrona
       vi.useFakeTimers();
       vi.runAllTimers();
 
       // Verificar resultado final
-      expect(service.wallets()).toEqual(mockWallets);
+      expect(service.accounts()).toEqual(mockAccounts);
       expect(service.isLoading()).toBe(false);
       expect(service.error()).toBeNull();
       expect(service.totalBalance()).toBe(1500.5);
@@ -144,23 +144,23 @@ describe('WalletService', () => {
 
     it('deve tratar erro de rede', () => {
       const networkError = { status: 0 };
-      apiService.getWallets.mockReturnValue(throwError(() => networkError));
+      apiService.getAccounts.mockReturnValue(throwError(() => networkError));
 
-      service.loadWallets();
+      service.loadAccounts();
 
       vi.useFakeTimers();
       vi.runAllTimers();
 
-      expect(service.wallets()).toEqual([]);
+      expect(service.accounts()).toEqual([]);
       expect(service.isLoading()).toBe(false);
       expect(service.error()).toBe('Erro de conexão. Verifique sua internet.');
     });
 
     it('deve tratar erro de autenticação', () => {
       const authError = { status: 401 };
-      apiService.getWallets.mockReturnValue(throwError(() => authError));
+      apiService.getAccounts.mockReturnValue(throwError(() => authError));
 
-      service.loadWallets();
+      service.loadAccounts();
 
       vi.useFakeTimers();
       vi.runAllTimers();
@@ -173,9 +173,9 @@ describe('WalletService', () => {
         status: 400,
         error: { message: 'Dados inválidos' },
       };
-      apiService.getWallets.mockReturnValue(throwError(() => validationError));
+      apiService.getAccounts.mockReturnValue(throwError(() => validationError));
 
-      service.loadWallets();
+      service.loadAccounts();
 
       vi.useFakeTimers();
       vi.runAllTimers();
@@ -185,9 +185,9 @@ describe('WalletService', () => {
 
     it('deve tratar erro de servidor', () => {
       const serverError = { status: 500 };
-      apiService.getWallets.mockReturnValue(throwError(() => serverError));
+      apiService.getAccounts.mockReturnValue(throwError(() => serverError));
 
-      service.loadWallets();
+      service.loadAccounts();
 
       vi.useFakeTimers();
       vi.runAllTimers();
@@ -197,9 +197,9 @@ describe('WalletService', () => {
 
     it('deve tratar erro genérico', () => {
       const genericError = { status: 418 };
-      apiService.getWallets.mockReturnValue(throwError(() => genericError));
+      apiService.getAccounts.mockReturnValue(throwError(() => genericError));
 
-      service.loadWallets();
+      service.loadAccounts();
 
       vi.useFakeTimers();
       vi.runAllTimers();
@@ -208,9 +208,9 @@ describe('WalletService', () => {
     });
   });
 
-  describe('createWallet()', () => {
-    const newWallet: WalletDTO = {
-      id: 'wallet-3',
+  describe('createAccount()', () => {
+    const newAccount: AccountDTO = {
+      id: 'account-3',
       name: 'Nova Conta',
       color: '#00FF00',
       icon: 'pi-money-bill',
@@ -223,11 +223,11 @@ describe('WalletService', () => {
 
     it('deve criar conta com sucesso', () => {
       // Testa criação partindo do estado inicial vazio
-      apiService.createWallet.mockReturnValue(of(newWallet));
+      apiService.createAccount.mockReturnValue(of(newAccount));
 
-      const observable = service.createWallet(mockCreateWalletData);
+      const observable = service.createAccount(mockCreateAccountData);
 
-      expect(apiService.createWallet).toHaveBeenCalledWith(mockCreateWalletData);
+      expect(apiService.createAccount).toHaveBeenCalledWith(mockCreateAccountData);
 
       // Se inscreve para executar a operação (como o componente faz)
       observable.subscribe();
@@ -236,26 +236,28 @@ describe('WalletService', () => {
       vi.runAllTimers();
 
       // Verifica que a conta foi adicionada
-      expect(service.wallets()).toHaveLength(1);
-      expect(service.wallets()[0]).toEqual(newWallet);
+      expect(service.accounts()).toHaveLength(1);
+      expect(service.accounts()[0]).toEqual(newAccount);
       expect(service.isLoading()).toBe(false);
       expect(service.error()).toBeNull();
     });
 
     it('deve tratar erro de nome duplicado', () => {
       const duplicateError = { status: 409, error: { message: 'Nome já existe' } };
-      apiService.createWallet.mockReturnValue(throwError(() => duplicateError));
+      apiService.createAccount.mockReturnValue(throwError(() => duplicateError));
 
-      const observable = service.createWallet(mockCreateWalletData);
+      const observable = service.createAccount(mockCreateAccountData);
 
       // Se inscreve para executar a operação
-      observable.subscribe();
+      observable.subscribe({
+        error: () => undefined,
+      });
 
       vi.useFakeTimers();
       vi.runAllTimers();
 
       expect(service.error()).toBe('Nome já existe');
-      expect(service.wallets()).toEqual([]);
+      expect(service.accounts()).toEqual([]);
     });
 
     it('deve tratar erro de validação na criação', () => {
@@ -263,12 +265,14 @@ describe('WalletService', () => {
         status: 400,
         error: { message: 'Cor inválida' },
       };
-      apiService.createWallet.mockReturnValue(throwError(() => validationError));
+      apiService.createAccount.mockReturnValue(throwError(() => validationError));
 
-      const observable = service.createWallet(mockCreateWalletData);
+      const observable = service.createAccount(mockCreateAccountData);
 
       // Se inscreve para executar a operação
-      observable.subscribe();
+      observable.subscribe({
+        error: () => undefined,
+      });
 
       vi.useFakeTimers();
       vi.runAllTimers();
@@ -285,25 +289,29 @@ describe('WalletService', () => {
     });
   });
 
-  describe('removeWalletFromState()', () => {
+  describe('removeAccountFromState()', () => {
     it('deve remover conta do estado local', () => {
       // Testa remoção quando não há contas (estado inicial)
-      service.removeWalletFromState('wallet-1');
-      expect(service.wallets()).toEqual([]);
+      service.removeAccountFromState('account-1');
+      expect(service.accounts()).toEqual([]);
     });
 
-    it('não deve alterar estado se walletId não encontrado', () => {
+    it('não deve alterar estado se accountId não encontrado', () => {
       // Testa remoção quando não há contas (estado inicial)
-      service.removeWalletFromState('wallet-inexistente');
-      expect(service.wallets()).toEqual([]);
+      service.removeAccountFromState('account-inexistente');
+      expect(service.accounts()).toEqual([]);
+    });
+
+    it('deve lançar erro quando ID é vazio', () => {
+      expect(() => service.removeAccountFromState('')).toThrow('ID da conta é obrigatório');
     });
   });
 
-  describe('updateWalletInState()', () => {
+  describe('updateAccountInState()', () => {
     it('deve atualizar conta existente no estado local', () => {
       // Testa atualização quando não há contas (estado inicial)
-      const newWallet: WalletDTO = {
-        id: 'wallet-novo',
+      const updatedAccount: AccountDTO = {
+        id: 'account-novo',
         name: 'Nova Conta',
         color: '#FF0000',
         icon: 'pi-wallet',
@@ -314,14 +322,14 @@ describe('WalletService', () => {
         updatedAt: '2024-01-01T00:00:00.000Z',
       };
 
-      service.updateWalletInState(newWallet);
-      expect(service.wallets()).toEqual([]); // Estado não deve mudar
+      service.updateAccountInState(updatedAccount);
+      expect(service.accounts()).toEqual([]); // Estado não deve mudar
     });
 
-    it('não deve alterar estado se walletId não encontrado', () => {
+    it('não deve alterar estado se accountId não encontrado', () => {
       // Testa atualização quando não há contas (estado inicial)
-      const newWallet: WalletDTO = {
-        id: 'wallet-novo',
+      const updatedAccount: AccountDTO = {
+        id: 'account-novo',
         name: 'Nova Conta',
         color: '#FF0000',
         icon: 'pi-wallet',
@@ -332,219 +340,219 @@ describe('WalletService', () => {
         updatedAt: '2024-01-01T00:00:00.000Z',
       };
 
-      service.updateWalletInState(newWallet);
-      expect(service.wallets()).toEqual([]); // Estado não deve mudar
+      service.updateAccountInState(updatedAccount);
+      expect(service.accounts()).toEqual([]); // Estado não deve mudar
     });
   });
 
-  describe('getWalletById()', () => {
+  describe('getAccountById()', () => {
     it('deve retornar undefined quando não há contas', () => {
-      expect(service.getWalletById('wallet-1')).toBeUndefined();
+      expect(service.getAccountById('account-1')).toBeUndefined();
     });
 
     it('deve retornar undefined com ID vazio', () => {
-      expect(service.getWalletById('')).toBeUndefined();
-      expect(service.getWalletById('   ')).toBeUndefined();
-      expect(service.getWalletById(null as unknown as string)).toBeUndefined();
-      expect(service.getWalletById(undefined as unknown as string)).toBeUndefined();
+      expect(service.getAccountById('')).toBeUndefined();
+      expect(service.getAccountById('   ')).toBeUndefined();
+      expect(service.getAccountById(null as unknown as string)).toBeUndefined();
+      expect(service.getAccountById(undefined as unknown as string)).toBeUndefined();
     });
 
     it('deve encontrar conta por ID quando existente', () => {
       // Primeiro carregar contas mock
-      apiService.getWallets.mockReturnValue(of(mockWallets));
-      service.loadWallets();
+      apiService.getAccounts.mockReturnValue(of(mockAccounts));
+      service.loadAccounts();
 
       vi.useFakeTimers();
       vi.runAllTimers();
 
-      const wallet = service.getWalletById('wallet-1');
-      expect(wallet).toEqual(mockWallets[0]);
+      const account = service.getAccountById('account-1');
+      expect(account).toEqual(mockAccounts[0]);
     });
 
     it('deve retornar undefined quando ID não encontrado', () => {
-      apiService.getWallets.mockReturnValue(of(mockWallets));
-      service.loadWallets();
+      apiService.getAccounts.mockReturnValue(of(mockAccounts));
+      service.loadAccounts();
 
       vi.useFakeTimers();
       vi.runAllTimers();
 
-      const wallet = service.getWalletById('inexistente');
-      expect(wallet).toBeUndefined();
+      const account = service.getAccountById('inexistente');
+      expect(account).toBeUndefined();
     });
   });
 
-  describe('getWalletsByType()', () => {
+  describe('getAccountsByType()', () => {
     it('deve retornar array vazio quando não há contas', () => {
-      expect(service.getWalletsByType('STANDARD')).toEqual([]);
-      expect(service.getWalletsByType('CREDIT')).toEqual([]);
+      expect(service.getAccountsByType('STANDARD')).toEqual([]);
+      expect(service.getAccountsByType('CREDIT')).toEqual([]);
     });
 
     it('deve filtrar contas por tipo corretamente', () => {
-      apiService.getWallets.mockReturnValue(of(mockWallets));
-      service.loadWallets();
+      apiService.getAccounts.mockReturnValue(of(mockAccounts));
+      service.loadAccounts();
 
       vi.useFakeTimers();
       vi.runAllTimers();
 
-      const standardWallets = service.getWalletsByType('STANDARD');
-      const creditWallets = service.getWalletsByType('CREDIT');
+      const standardAccounts = service.getAccountsByType('STANDARD');
+      const creditAccounts = service.getAccountsByType('CREDIT');
 
-      expect(standardWallets).toHaveLength(1);
-      expect(standardWallets[0].id).toBe('wallet-1');
-      expect(standardWallets[0].type).toBe('STANDARD');
+      expect(standardAccounts).toHaveLength(1);
+      expect(standardAccounts[0].id).toBe('account-1');
+      expect(standardAccounts[0].type).toBe('STANDARD');
 
-      expect(creditWallets).toHaveLength(1);
-      expect(creditWallets[0].id).toBe('wallet-2');
-      expect(creditWallets[0].type).toBe('CREDIT');
+      expect(creditAccounts).toHaveLength(1);
+      expect(creditAccounts[0].id).toBe('account-2');
+      expect(creditAccounts[0].type).toBe('CREDIT');
     });
   });
 
-  describe('sortWallets()', () => {
+  describe('sortAccounts()', () => {
     beforeEach(() => {
       // Carregar contas para testes de ordenação
-      apiService.getWallets.mockReturnValue(of(mockWallets));
-      service.loadWallets();
+      apiService.getAccounts.mockReturnValue(of(mockAccounts));
+      service.loadAccounts();
       vi.useFakeTimers();
       vi.runAllTimers();
     });
 
     it('deve ordenar por nome ascendente', () => {
-      const sorted = service.sortWallets('name', 'asc');
+      const sorted = service.sortAccounts('name', 'asc');
       expect(sorted[0].name).toBe('Cartão Nubank');
       expect(sorted[1].name).toBe('Conta Padrão');
     });
 
     it('deve ordenar por nome descendente', () => {
-      const sorted = service.sortWallets('name', 'desc');
+      const sorted = service.sortAccounts('name', 'desc');
       expect(sorted[0].name).toBe('Conta Padrão');
       expect(sorted[1].name).toBe('Cartão Nubank');
     });
 
     it('deve ordenar por saldo ascendente', () => {
-      const sorted = service.sortWallets('balance', 'asc');
+      const sorted = service.sortAccounts('balance', 'asc');
       expect(sorted[0].balance).toBe(500.5);
       expect(sorted[1].balance).toBe(1000.0);
     });
 
     it('deve ordenar por saldo descendente', () => {
-      const sorted = service.sortWallets('balance', 'desc');
+      const sorted = service.sortAccounts('balance', 'desc');
       expect(sorted[0].balance).toBe(1000.0);
       expect(sorted[1].balance).toBe(500.5);
     });
 
     it('deve ordenar por tipo', () => {
-      const sorted = service.sortWallets('type', 'asc');
+      const sorted = service.sortAccounts('type', 'asc');
       expect(sorted[0].type).toBe('CREDIT');
       expect(sorted[1].type).toBe('STANDARD');
     });
 
     it('deve usar direção ascendente por padrão', () => {
-      const sorted = service.sortWallets('name');
+      const sorted = service.sortAccounts('name');
       expect(sorted[0].name).toBe('Cartão Nubank');
       expect(sorted[1].name).toBe('Conta Padrão');
     });
 
     it('não deve modificar estado original', () => {
-      const originalWallets = [...service.wallets()];
-      service.sortWallets('balance', 'desc');
-      expect(service.wallets()).toEqual(originalWallets);
+      const originalAccounts = [...service.accounts()];
+      service.sortAccounts('balance', 'desc');
+      expect(service.accounts()).toEqual(originalAccounts);
     });
   });
 
-  describe('filterWallets()', () => {
+  describe('filterAccounts()', () => {
     beforeEach(() => {
-      apiService.getWallets.mockReturnValue(of(mockWallets));
-      service.loadWallets();
+      apiService.getAccounts.mockReturnValue(of(mockAccounts));
+      service.loadAccounts();
       vi.useFakeTimers();
       vi.runAllTimers();
     });
 
     it('deve retornar todas contas com termo vazio', () => {
-      const filtered = service.filterWallets('');
+      const filtered = service.filterAccounts('');
       expect(filtered).toHaveLength(2);
     });
 
     it('deve retornar todas contas com espaço em branco', () => {
-      const filtered = service.filterWallets('   ');
+      const filtered = service.filterAccounts('   ');
       expect(filtered).toHaveLength(2);
     });
 
     it('deve filtrar por nome (case insensitive)', () => {
-      const filtered = service.filterWallets('padrão');
+      const filtered = service.filterAccounts('padrão');
       expect(filtered).toHaveLength(1);
       expect(filtered[0].name).toBe('Conta Padrão');
     });
 
     it('deve filtrar por tipo (case insensitive)', () => {
-      const filtered = service.filterWallets('credit');
+      const filtered = service.filterAccounts('credit');
       expect(filtered).toHaveLength(1);
       expect(filtered[0].type).toBe('CREDIT');
     });
 
     it('deve filtrar por parte do nome', () => {
-      const filtered = service.filterWallets('nubank');
+      const filtered = service.filterAccounts('nubank');
       expect(filtered).toHaveLength(1);
       expect(filtered[0].name).toBe('Cartão Nubank');
     });
 
     it('deve retornar vazio quando não encontrar correspondência', () => {
-      const filtered = service.filterWallets('inexistente');
+      const filtered = service.filterAccounts('inexistente');
       expect(filtered).toHaveLength(0);
     });
 
     it('não deve modificar estado original', () => {
-      const originalWallets = [...service.wallets()];
-      service.filterWallets('test');
-      expect(service.wallets()).toEqual(originalWallets);
+      const originalAccounts = [...service.accounts()];
+      service.filterAccounts('test');
+      expect(service.accounts()).toEqual(originalAccounts);
     });
   });
 
-  describe('removeMultipleWalletsFromState()', () => {
+  describe('removeMultipleAccountsFromState()', () => {
     beforeEach(() => {
-      apiService.getWallets.mockReturnValue(of(mockWallets));
-      service.loadWallets();
+      apiService.getAccounts.mockReturnValue(of(mockAccounts));
+      service.loadAccounts();
       vi.useFakeTimers();
       vi.runAllTimers();
     });
 
     it('deve remover múltiplas contas do estado', () => {
-      service.removeMultipleWalletsFromState(['wallet-1', 'wallet-2']);
-      expect(service.wallets()).toHaveLength(0);
+      service.removeMultipleAccountsFromState(['account-1', 'account-2']);
+      expect(service.accounts()).toHaveLength(0);
     });
 
     it('deve remover apenas contas especificadas', () => {
-      service.removeMultipleWalletsFromState(['wallet-1']);
-      expect(service.wallets()).toHaveLength(1);
-      expect(service.wallets()[0].id).toBe('wallet-2');
+      service.removeMultipleAccountsFromState(['account-1']);
+      expect(service.accounts()).toHaveLength(1);
+      expect(service.accounts()[0].id).toBe('account-2');
     });
 
     it('deve lançar erro com array vazio', () => {
-      expect(() => service.removeMultipleWalletsFromState([])).toThrow(
+      expect(() => service.removeMultipleAccountsFromState([])).toThrow(
         'Array de IDs é obrigatório',
       );
     });
 
     it('deve lançar erro com array inválido', () => {
-      expect(() => service.removeMultipleWalletsFromState(null as unknown as string[])).toThrow(
+      expect(() => service.removeMultipleAccountsFromState(null as unknown as string[])).toThrow(
         'Array de IDs é obrigatório',
       );
     });
 
     it('deve lançar erro com ID vazio no array', () => {
-      expect(() => service.removeMultipleWalletsFromState(['wallet-1', ''])).toThrow(
+      expect(() => service.removeMultipleAccountsFromState(['account-1', ''])).toThrow(
         'ID da conta é obrigatório',
       );
     });
   });
 
-  describe('createMultipleWallets()', () => {
+  describe('createMultipleAccounts()', () => {
     it('deve lançar erro com array vazio', () => {
-      service.createMultipleWallets([]);
+      service.createMultipleAccounts([]);
       expect(service.error()).toBe('Array de contas é obrigatório');
     });
 
     it('deve lançar erro com array inválido', () => {
-      service.createMultipleWallets(null as unknown as CreateWalletDTO[]);
+      service.createMultipleAccounts(null as unknown as CreateAccountDTO[]);
       expect(service.error()).toBe('Array de contas é obrigatório');
     });
 
@@ -552,18 +560,18 @@ describe('WalletService', () => {
       const invalidData = [
         { name: '', color: '#FF0000', icon: 'pi-wallet', type: 'STANDARD' as const },
       ];
-      service.createMultipleWallets(invalidData);
+      service.createMultipleAccounts(invalidData);
       expect(service.error()).toBe('Nome da conta é obrigatório');
     });
 
     it('deve criar múltiplas contas com sucesso', () => {
-      const walletsToCreate = [
+      const accountsToCreate = [
         { name: 'Conta 3', color: '#FF0000', icon: 'pi-wallet', type: 'STANDARD' as const },
         { name: 'Conta 4', color: '#00FF00', icon: 'pi-credit-card', type: 'CREDIT' as const },
       ];
 
-      const mockWallet3: WalletDTO = {
-        id: 'wallet-3',
+      const mockAccount3: AccountDTO = {
+        id: 'account-3',
         name: 'Conta 3',
         color: '#FF0000',
         icon: 'pi-wallet',
@@ -574,8 +582,8 @@ describe('WalletService', () => {
         updatedAt: '2024-01-01T00:00:00.000Z',
       };
 
-      const mockWallet4: WalletDTO = {
-        id: 'wallet-4',
+      const mockAccount4: AccountDTO = {
+        id: 'account-4',
         name: 'Conta 4',
         color: '#00FF00',
         icon: 'pi-credit-card',
@@ -586,26 +594,26 @@ describe('WalletService', () => {
         updatedAt: '2024-01-01T00:00:00.000Z',
       };
 
-      apiService.createWallet
-        .mockReturnValueOnce(of(mockWallet3))
-        .mockReturnValueOnce(of(mockWallet4));
+      apiService.createAccount
+        .mockReturnValueOnce(of(mockAccount3))
+        .mockReturnValueOnce(of(mockAccount4));
 
-      service.createMultipleWallets(walletsToCreate);
+      service.createMultipleAccounts(accountsToCreate);
 
       vi.useFakeTimers();
       vi.runAllTimers();
 
-      expect(service.wallets()).toHaveLength(2);
-      expect(service.wallets()[0].id).toBe('wallet-3');
-      expect(service.wallets()[1].id).toBe('wallet-4');
+      expect(service.accounts()).toHaveLength(2);
+      expect(service.accounts()[0].id).toBe('account-3');
+      expect(service.accounts()[1].id).toBe('account-4');
       expect(service.error()).toBeNull();
     });
   });
 
   describe('integração entre métodos', () => {
     it('deve criar conta e depois buscar por ID', () => {
-      const newWallet: WalletDTO = {
-        id: 'wallet-3',
+      const newAccount: AccountDTO = {
+        id: 'account-3',
         name: 'Nova Conta',
         color: '#00FF00',
         icon: 'pi-money-bill',
@@ -616,9 +624,9 @@ describe('WalletService', () => {
         updatedAt: '2024-01-01T00:00:00.000Z',
       };
 
-      apiService.createWallet.mockReturnValue(of(newWallet));
+      apiService.createAccount.mockReturnValue(of(newAccount));
 
-      const observable = service.createWallet(mockCreateWalletData);
+      const observable = service.createAccount(mockCreateAccountData);
 
       // Se inscreve para executar a operação
       observable.subscribe();
@@ -626,30 +634,30 @@ describe('WalletService', () => {
       vi.useFakeTimers();
       vi.runAllTimers();
 
-      const foundWallet = service.getWalletById('wallet-3');
-      expect(foundWallet).toEqual(newWallet);
+      const foundAccount = service.getAccountById('account-3');
+      expect(foundAccount).toEqual(newAccount);
     });
 
     it('deve carregar contas e depois filtrar', () => {
-      apiService.getWallets.mockReturnValue(of(mockWallets));
-      service.loadWallets();
+      apiService.getAccounts.mockReturnValue(of(mockAccounts));
+      service.loadAccounts();
 
       vi.useFakeTimers();
       vi.runAllTimers();
 
-      const filtered = service.filterWallets('nubank');
+      const filtered = service.filterAccounts('nubank');
       expect(filtered).toHaveLength(1);
-      expect(filtered[0].id).toBe('wallet-2');
+      expect(filtered[0].id).toBe('account-2');
     });
 
-    it('deve calcular walletsByType corretamente com dados reais', () => {
-      apiService.getWallets.mockReturnValue(of(mockWallets));
-      service.loadWallets();
+    it('deve calcular accountsByType corretamente com dados reais', () => {
+      apiService.getAccounts.mockReturnValue(of(mockAccounts));
+      service.loadAccounts();
 
       vi.useFakeTimers();
       vi.runAllTimers();
 
-      const byType = service.walletsByType();
+      const byType = service.accountsByType();
       expect(byType.standard).toHaveLength(1);
       expect(byType.credit).toHaveLength(1);
       expect(byType.standard[0].type).toBe('STANDARD');
@@ -659,75 +667,78 @@ describe('WalletService', () => {
 
   describe('validação local', () => {
     it('deve validar nome obrigatório na criação', () => {
-      const invalidData = { ...mockCreateWalletData, name: '' };
-      service.createWallet(invalidData);
+      const invalidData = { ...mockCreateAccountData, name: '' };
+      service.createAccount(invalidData);
 
       vi.useFakeTimers();
       vi.runAllTimers();
 
       expect(service.error()).toBe('Nome da conta é obrigatório');
-      expect(apiService.createWallet).not.toHaveBeenCalled();
+      expect(apiService.createAccount).not.toHaveBeenCalled();
     });
 
     it('deve validar tamanho máximo do nome', () => {
-      const invalidData = { ...mockCreateWalletData, name: 'a'.repeat(51) };
-      service.createWallet(invalidData);
+      const invalidData = { ...mockCreateAccountData, name: 'a'.repeat(51) };
+      service.createAccount(invalidData);
 
       vi.useFakeTimers();
       vi.runAllTimers();
 
       expect(service.error()).toBe('Nome da conta deve ter no máximo 50 caracteres');
-      expect(apiService.createWallet).not.toHaveBeenCalled();
+      expect(apiService.createAccount).not.toHaveBeenCalled();
     });
 
     it('deve validar cor obrigatória', () => {
-      const invalidData = { ...mockCreateWalletData, color: '' };
-      service.createWallet(invalidData);
+      const invalidData = { ...mockCreateAccountData, color: '' };
+      service.createAccount(invalidData);
 
       vi.useFakeTimers();
       vi.runAllTimers();
 
       expect(service.error()).toBe('Cor da conta é obrigatória');
-      expect(apiService.createWallet).not.toHaveBeenCalled();
+      expect(apiService.createAccount).not.toHaveBeenCalled();
     });
 
     it('deve validar ícone obrigatório', () => {
-      const invalidData = { ...mockCreateWalletData, icon: '' };
-      service.createWallet(invalidData);
+      const invalidData = { ...mockCreateAccountData, icon: '' };
+      service.createAccount(invalidData);
 
       vi.useFakeTimers();
       vi.runAllTimers();
 
       expect(service.error()).toBe('Ícone da conta é obrigatório');
-      expect(apiService.createWallet).not.toHaveBeenCalled();
+      expect(apiService.createAccount).not.toHaveBeenCalled();
     });
 
     it('deve validar tipo inválido', () => {
-      const invalidData = { ...mockCreateWalletData, type: 'INVALID' as CreateWalletDTO['type'] };
-      service.createWallet(invalidData);
+      const invalidData = {
+        ...mockCreateAccountData,
+        type: 'INVALID' as CreateAccountDTO['type'],
+      };
+      service.createAccount(invalidData);
 
       vi.useFakeTimers();
       vi.runAllTimers();
 
       expect(service.error()).toBe('Tipo da conta deve ser STANDARD ou CREDIT');
-      expect(apiService.createWallet).not.toHaveBeenCalled();
+      expect(apiService.createAccount).not.toHaveBeenCalled();
     });
 
     it('deve validar nome duplicado localmente', () => {
-      apiService.getWallets.mockReturnValue(of(mockWallets));
-      service.loadWallets();
+      apiService.getAccounts.mockReturnValue(of(mockAccounts));
+      service.loadAccounts();
 
       vi.useFakeTimers();
       vi.runAllTimers();
 
-      const duplicateData = { ...mockCreateWalletData, name: 'Conta Padrão' };
-      service.createWallet(duplicateData);
+      const duplicateData = { ...mockCreateAccountData, name: 'Conta Padrão' };
+      service.createAccount(duplicateData);
 
       vi.useFakeTimers();
       vi.runAllTimers();
 
       expect(service.error()).toBe('Já existe uma conta com este nome');
-      expect(apiService.createWallet).not.toHaveBeenCalled();
+      expect(apiService.createAccount).not.toHaveBeenCalled();
     });
   });
 });

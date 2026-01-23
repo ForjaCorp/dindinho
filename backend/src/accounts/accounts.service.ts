@@ -1,11 +1,11 @@
-import { PrismaClient, TransactionType, WalletType } from "@prisma/client";
-import { CreateWalletDTO, WalletDTO } from "@dindinho/shared";
+import { PrismaClient, TransactionType, AccountType } from "@prisma/client";
+import { AccountDTO, CreateAccountDTO } from "@dindinho/shared";
 
 /**
  * Erro base para operações de conta
  * @description Classe base para todos os erros relacionados a contas
  */
-abstract class WalletError extends Error {
+abstract class AccountError extends Error {
   abstract readonly statusCode: number;
   abstract readonly isOperational: boolean;
 
@@ -23,14 +23,14 @@ abstract class WalletError extends Error {
  * Erro quando conta com nome duplicado já existe
  * @description Lançado quando usuário tenta criar conta com nome já existente
  */
-class DuplicateWalletError extends WalletError {
+class DuplicateAccountError extends AccountError {
   readonly statusCode = 409;
   readonly isOperational = true;
 
-  constructor(walletName: string) {
-    super(`Já existe uma conta com nome "${walletName}" para este usuário`, {
-      walletName,
-      code: "DUPLICATE_WALLET_NAME",
+  constructor(accountName: string) {
+    super(`Já existe uma conta com nome "${accountName}" para este usuário`, {
+      accountName,
+      code: "DUPLICATE_ACCOUNT_NAME",
     });
   }
 }
@@ -39,7 +39,7 @@ class DuplicateWalletError extends WalletError {
  * Erro quando usuário não é encontrado
  * @description Lançado quando userId fornecido não existe no sistema
  */
-class UserNotFoundError extends WalletError {
+class UserNotFoundError extends AccountError {
   readonly statusCode = 404;
   readonly isOperational = true;
 
@@ -55,7 +55,7 @@ class UserNotFoundError extends WalletError {
  * Erro de validação de dados
  * @description Lançado quando dados fornecidos são inválidos
  */
-class WalletValidationError extends WalletError {
+class AccountValidationError extends AccountError {
   readonly statusCode = 400;
   readonly isOperational = true;
 
@@ -71,7 +71,7 @@ class WalletValidationError extends WalletError {
  * Erro de conexão com banco de dados
  * @description Lançado quando há problemas de conexão com o banco
  */
-class DatabaseConnectionError extends WalletError {
+class DatabaseConnectionError extends AccountError {
   readonly statusCode = 503;
   readonly isOperational = true;
 
@@ -87,7 +87,7 @@ class DatabaseConnectionError extends WalletError {
  * Erro de permissão
  * @description Lançado quando usuário não tem permissão para acessar recurso
  */
-class PermissionDeniedError extends WalletError {
+class PermissionDeniedError extends AccountError {
   readonly statusCode = 403;
   readonly isOperational = true;
 
@@ -103,7 +103,7 @@ class PermissionDeniedError extends WalletError {
  * Erro genérico de conta
  * @description Erro não esperado em operações de conta
  */
-class WalletOperationError extends WalletError {
+class AccountOperationError extends AccountError {
   readonly statusCode = 500;
   readonly isOperational = false;
 
@@ -111,7 +111,7 @@ class WalletOperationError extends WalletError {
     super(`Erro inesperado ao ${operation} conta`, {
       operation,
       originalError: originalError?.message,
-      code: "WALLET_OPERATION_ERROR",
+      code: "ACCOUNT_OPERATION_ERROR",
     });
   }
 }
@@ -124,8 +124,8 @@ class WalletOperationError extends WalletError {
  * e cartões de crédito com informações específicas.
  *
  * @example
- * const service = new WalletsService(prisma);
- * const wallet = await service.create('user-123', {
+ * const service = new AccountsService(prisma);
+ * const account = await service.create('user-123', {
  *   name: 'Cartão Nubank',
  *   color: '#8A2BE2',
  *   icon: 'pi-credit-card',
@@ -135,7 +135,7 @@ class WalletOperationError extends WalletError {
  *   limit: 5000
  * });
  */
-export class WalletsService {
+export class AccountsService {
   /**
    * Instância do PrismaClient para acesso ao banco de dados.
    */
@@ -162,20 +162,20 @@ export class WalletsService {
    * @param data - Dados da conta a ser criada
    * @returns Conta criada com informações do cartão de crédito (se aplicável)
    *
-   * @throws {DuplicateWalletError} Quando já existe conta com mesmo nome
+   * @throws {DuplicateAccountError} Quando já existe conta com mesmo nome
    * @throws {UserNotFoundError} Quando usuário não é encontrado
-   * @throws {WalletValidationError} Quando dados são inválidos
-   * @throws {WalletOperationError} Quando ocorre erro inesperado
+   * @throws {AccountValidationError} Quando dados são inválidos
+   * @throws {AccountOperationError} Quando ocorre erro inesperado
    *
    * @example
-   * const wallet = await service.create('user-123', {
+   * const account = await service.create('user-123', {
    *   name: 'Minha Conta',
    *   color: '#FF5722',
    *   icon: 'pi-wallet',
    *   type: 'STANDARD'
    * });
    */
-  async create(userId: string, data: CreateWalletDTO): Promise<WalletDTO> {
+  async create(userId: string, data: CreateAccountDTO): Promise<AccountDTO> {
     try {
       const creditCardData =
         data.type === "CREDIT" && data.closingDay && data.dueDay
@@ -192,12 +192,12 @@ export class WalletsService {
       const initialBalance =
         data.type === "STANDARD" ? this.toNumber(data.initialBalance) : 0;
 
-      const wallet = await this.prisma.wallet.create({
+      const account = await (this.prisma as any).account.create({
         data: {
           name: data.name,
           color: data.color,
           icon: data.icon,
-          type: data.type as WalletType,
+          type: data.type as AccountType,
           ownerId: userId,
           initialBalance,
           creditCardInfo: creditCardData,
@@ -207,30 +207,30 @@ export class WalletsService {
         },
       });
 
-      const limit = wallet.creditCardInfo?.limit
-        ? this.toNumber(wallet.creditCardInfo.limit)
+      const limit = account.creditCardInfo?.limit
+        ? this.toNumber(account.creditCardInfo.limit)
         : null;
 
       return {
-        id: wallet.id,
-        name: wallet.name,
-        color: wallet.color,
-        icon: wallet.icon,
-        type: wallet.type,
-        ownerId: wallet.ownerId,
-        creditCardInfo: wallet.creditCardInfo
+        id: account.id,
+        name: account.name,
+        color: account.color,
+        icon: account.icon,
+        type: account.type,
+        ownerId: account.ownerId,
+        creditCardInfo: account.creditCardInfo
           ? {
-              ...wallet.creditCardInfo,
+              ...account.creditCardInfo,
               limit,
               availableLimit: limit,
             }
           : null,
-        balance: wallet.type === WalletType.STANDARD ? initialBalance : 0,
-        createdAt: wallet.createdAt.toISOString(),
-        updatedAt: wallet.updatedAt.toISOString(),
+        balance: account.type === AccountType.STANDARD ? initialBalance : 0,
+        createdAt: account.createdAt.toISOString(),
+        updatedAt: account.updatedAt.toISOString(),
       };
     } catch (error) {
-      return this.handleCreateWalletError(error, data.name);
+      return this.handleCreateAccountError(error, data.name);
     }
   }
 
@@ -242,49 +242,49 @@ export class WalletsService {
    *
    * @throws {DatabaseConnectionError} Quando há problemas de conexão
    * @throws {PermissionDeniedError} Quando usuário não tem permissão
-   * @throws {WalletOperationError} Quando ocorre erro inesperado
+   * @throws {AccountOperationError} Quando ocorre erro inesperado
    *
    * @example
-   * const wallets = await service.findAllByUserId('user-123');
-   * console.log(wallets.length); // Número de contas do usuário
+   * const accounts = await service.findAllByUserId('user-123');
+   * console.log(accounts.length); // Número de contas do usuário
    */
-  async findAllByUserId(userId: string): Promise<WalletDTO[]> {
+  async findAllByUserId(userId: string): Promise<AccountDTO[]> {
     try {
-      const wallets = await this.prisma.wallet.findMany({
+      const accounts = (await (this.prisma as any).account.findMany({
         where: { ownerId: userId },
         include: { creditCardInfo: true },
         orderBy: { createdAt: "asc" },
-      });
+      })) as any[];
 
-      if (!wallets.length) return [];
+      if (!accounts.length) return [];
 
-      const walletIds = wallets.map((w) => w.id);
-      const creditWalletIds = wallets
-        .filter((w) => w.type === WalletType.CREDIT)
-        .map((w) => w.id);
+      const accountIds = accounts.map((a: any) => a.id);
+      const creditAccountIds = accounts
+        .filter((w: any) => w.type === AccountType.CREDIT)
+        .map((w: any) => w.id);
 
-      const paidSums = await this.prisma.transaction.groupBy({
-        by: ["walletId", "type"],
+      const paidSums = await (this.prisma as any).transaction.groupBy({
+        by: ["accountId", "type"],
         where: {
-          walletId: { in: walletIds },
+          accountId: { in: accountIds },
           isPaid: true,
         },
         _sum: {
           amount: true,
         },
-      });
+      } as any);
 
-      const paidByWallet = new Map<
+      const paidByAccount = new Map<
         string,
         { income: number; expense: number; transfer: number }
       >();
 
       for (const row of paidSums as any[]) {
-        const walletId = row.walletId as string;
+        const accountId = row.accountId as string;
         const type = row.type as TransactionType;
         const amount = this.toNumber(row._sum?.amount);
 
-        const current = paidByWallet.get(walletId) ?? {
+        const current = paidByAccount.get(accountId) ?? {
           income: 0,
           expense: 0,
           transfer: 0,
@@ -295,59 +295,59 @@ export class WalletsService {
           current.expense += Math.abs(amount);
         else if (type === TransactionType.TRANSFER) current.transfer += amount;
 
-        paidByWallet.set(walletId, current);
+        paidByAccount.set(accountId, current);
       }
 
-      const unpaidCreditExpenses = creditWalletIds.length
-        ? await this.prisma.transaction.groupBy({
-            by: ["walletId"],
+      const unpaidCreditExpenses = creditAccountIds.length
+        ? await (this.prisma as any).transaction.groupBy({
+            by: ["accountId"],
             where: {
-              walletId: { in: creditWalletIds },
+              accountId: { in: creditAccountIds },
               type: TransactionType.EXPENSE,
               isPaid: false,
             },
             _sum: { amount: true },
-          })
+          } as any)
         : [];
 
-      const unpaidByCreditWallet = new Map<string, number>();
+      const unpaidByCreditAccount = new Map<string, number>();
       for (const row of unpaidCreditExpenses as any[]) {
-        unpaidByCreditWallet.set(
-          row.walletId as string,
+        unpaidByCreditAccount.set(
+          row.accountId as string,
           Math.abs(this.toNumber(row._sum?.amount)),
         );
       }
 
-      return wallets.map((w) => ({
-        id: w.id,
-        name: w.name,
-        color: w.color,
-        icon: w.icon,
-        type: w.type,
-        ownerId: w.ownerId,
-        creditCardInfo: w.creditCardInfo
+      return accounts.map((a: any) => ({
+        id: a.id,
+        name: a.name,
+        color: a.color,
+        icon: a.icon,
+        type: a.type,
+        ownerId: a.ownerId,
+        creditCardInfo: a.creditCardInfo
           ? (() => {
-              const limit = w.creditCardInfo?.limit
-                ? this.toNumber(w.creditCardInfo.limit)
+              const limit = a.creditCardInfo?.limit
+                ? this.toNumber(a.creditCardInfo.limit)
                 : null;
-              const used = unpaidByCreditWallet.get(w.id) ?? 0;
+              const used = unpaidByCreditAccount.get(a.id) ?? 0;
               const availableLimit =
                 typeof limit === "number" && Number.isFinite(limit)
                   ? Math.max(0, limit - used)
                   : null;
 
               return {
-                ...w.creditCardInfo,
+                ...a.creditCardInfo,
                 limit,
                 availableLimit,
               };
             })()
           : null,
         balance:
-          w.type === WalletType.STANDARD
+          a.type === AccountType.STANDARD
             ? (() => {
-                const initialBalance = this.toNumber((w as any).initialBalance);
-                const sums = paidByWallet.get(w.id) ?? {
+                const initialBalance = this.toNumber((a as any).initialBalance);
+                const sums = paidByAccount.get(a.id) ?? {
                   income: 0,
                   expense: 0,
                   transfer: 0,
@@ -357,22 +357,22 @@ export class WalletsService {
                 );
               })()
             : 0,
-        createdAt: w.createdAt.toISOString(),
-        updatedAt: w.updatedAt.toISOString(),
+        createdAt: a.createdAt.toISOString(),
+        updatedAt: a.updatedAt.toISOString(),
       }));
     } catch (error) {
-      this.handleFindWalletsError(error);
+      this.handleFindAccountsError(error);
     }
   }
 
   /**
    * Trata erros de criação de conta
    * @param error - Erro capturado
-   * @param walletName - Nome da conta para contexto
+   * @param accountName - Nome da conta para contexto
    * @private
    */
-  private handleCreateWalletError(error: any, walletName: string): never {
-    if (error instanceof WalletError) {
+  private handleCreateAccountError(error: any, accountName: string): never {
+    if (error instanceof AccountError) {
       throw error;
     }
 
@@ -382,7 +382,7 @@ export class WalletsService {
         error.message.includes("Unique constraint") ||
         error.message.includes("duplicate key")
       ) {
-        throw new DuplicateWalletError(walletName);
+        throw new DuplicateAccountError(accountName);
       }
 
       // Erro de foreign key (usuário não existe)
@@ -398,7 +398,7 @@ export class WalletsService {
         error.message.includes("Argument") ||
         error.message.includes("Invalid")
       ) {
-        throw new WalletValidationError(
+        throw new AccountValidationError(
           "Dados inválidos fornecidos para criação da conta",
         );
       }
@@ -412,7 +412,7 @@ export class WalletsService {
       }
     }
 
-    throw new WalletOperationError(
+    throw new AccountOperationError(
       "criar",
       error instanceof Error ? error : undefined,
     );
@@ -423,8 +423,8 @@ export class WalletsService {
    * @param error - Erro capturado
    * @private
    */
-  private handleFindWalletsError(error: any): never {
-    if (error instanceof WalletError) {
+  private handleFindAccountsError(error: any): never {
+    if (error instanceof AccountError) {
       throw error;
     }
 
@@ -446,7 +446,7 @@ export class WalletsService {
       }
     }
 
-    throw new WalletOperationError(
+    throw new AccountOperationError(
       "buscar",
       error instanceof Error ? error : undefined,
     );

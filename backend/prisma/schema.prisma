@@ -7,7 +7,7 @@ datasource db {
   provider = "mysql"
 }
 
-enum WalletType {
+enum AccountType {
   STANDARD
   CREDIT
 }
@@ -40,25 +40,25 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  myWallets     Wallet[]       @relation("Owner")
-  sharedWallets WalletAccess[]
+  myAccounts     Account[]        @relation("Owner")
+  sharedAccounts AccountAccess[]
   categories    Category[]
   refreshTokens RefreshToken[]
 }
 
-model Wallet {
+model Account {
   id    String     @id @default(uuid())
   name  String
   color String
   icon  String
-  type  WalletType @default(STANDARD)
+  type  AccountType @default(STANDARD)
 
   initialBalance Decimal @default(0) @db.Decimal(10, 2)
 
   ownerId String
   owner   User   @relation("Owner", fields: [ownerId], references: [id])
 
-  accessList     WalletAccess[]
+  accessList     AccountAccess[]
   transactions   Transaction[]
   creditCardInfo CreditCardInfo?
 
@@ -68,8 +68,8 @@ model Wallet {
 
 model CreditCardInfo {
   id       String @id @default(uuid())
-  walletId String @unique
-  wallet   Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  accountId String  @unique
+  account   Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   closingDay Int
   dueDay     Int
@@ -77,16 +77,16 @@ model CreditCardInfo {
   brand      String?
 }
 
-model WalletAccess {
+model AccountAccess {
   id       String @id @default(uuid())
-  walletId String
+  accountId String
   userId   String
   role     Role   @default(VIEWER)
 
-  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id])
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
 
-  @@unique([walletId, userId])
+  @@unique([accountId, userId])
 }
 
 model Category {
@@ -105,7 +105,7 @@ model Category {
 
 model Transaction {
   id          String          @id @default(uuid())
-  walletId    String
+  accountId   String
   categoryId  String?
   amount      Decimal         @db.Decimal(10, 2)
   description String?
@@ -127,14 +127,14 @@ model Transaction {
   installmentNumber Int?
   totalInstallments Int?
 
-  wallet   Wallet    @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  account  Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
   category Category? @relation(fields: [categoryId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([date])
-  @@index([walletId])
+  @@index([accountId])
 }
 
 model RefreshToken {

@@ -7,12 +7,12 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { ColorPickerModule } from 'primeng/colorpicker';
-import { WalletService } from '../../services/wallet.service';
-import { CreateWalletDTO } from '@dindinho/shared';
+import { AccountService } from '../../services/account.service';
+import { CreateAccountDTO } from '@dindinho/shared';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
-  selector: 'app-create-wallet-dialog',
+  selector: 'app-create-account-dialog',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
@@ -150,7 +150,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
           <p-button
             label="Criar"
             type="submit"
-            [loading]="walletService.isLoading()"
+            [loading]="accountService.isLoading()"
             [disabled]="form.invalid"
             icon="pi pi-check"
             class="sm:flex-initial"
@@ -204,9 +204,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
     `,
   ],
 })
-export class CreateWalletDialogComponent {
+export class CreateAccountDialogComponent {
   private fb = inject(FormBuilder);
-  protected walletService = inject(WalletService);
+  protected accountService = inject(AccountService);
   private destroyRef = inject(DestroyRef); // Para limpar subscrições automaticamente
 
   // Controle de visibilidade
@@ -293,12 +293,12 @@ export class CreateWalletDialogComponent {
     const formValue = this.form.value;
 
     // Mapeamento para o DTO da API
-    const dto: CreateWalletDTO = {
+    const dto: CreateAccountDTO = {
       name: formValue.name!,
       color: formValue.color!,
       // Ícone baseado no tipo de conta
       icon: formValue.type === 'CREDIT' ? 'pi-credit-card' : 'pi-wallet',
-      type: formValue.type as CreateWalletDTO['type'],
+      type: formValue.type as CreateAccountDTO['type'],
       ...(formValue.type === 'CREDIT'
         ? {
             closingDay: formValue.closingDay!,
@@ -316,11 +316,11 @@ export class CreateWalletDialogComponent {
     };
 
     // Limpa erros anteriores
-    this.walletService.clearError();
+    this.accountService.clearError();
 
     // Abordagem reativa com Observable retornado pelo serviço
-    this.walletService
-      .createWallet(dto)
+    this.accountService
+      .createAccount(dto)
       .pipe(takeUntilDestroyed(this.destroyRef)) // Boa prática: evita memory leak
       .subscribe({
         next: () => {

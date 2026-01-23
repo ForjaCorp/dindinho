@@ -14,8 +14,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of } from 'rxjs';
 import { DashboardComponent } from './dashboard.page';
 import { ApiService } from '../app/services/api.service';
-import { WalletService } from '../app/services/wallet.service';
-import { ApiResponseDTO, TransactionDTO, WalletDTO } from '@dindinho/shared';
+import { AccountService } from '../app/services/account.service';
+import { ApiResponseDTO, TransactionDTO, AccountDTO } from '@dindinho/shared';
 import { Router } from '@angular/router';
 
 describe('DashboardComponent', () => {
@@ -25,19 +25,19 @@ describe('DashboardComponent', () => {
     getHello: ReturnType<typeof vi.fn>;
     getTransactions: ReturnType<typeof vi.fn>;
   };
-  let walletServiceMock: {
-    wallets: ReturnType<typeof vi.fn>;
+  let accountServiceMock: {
+    accounts: ReturnType<typeof vi.fn>;
     isLoading: ReturnType<typeof vi.fn>;
     totalBalance: ReturnType<typeof vi.fn>;
-    loadWallets: ReturnType<typeof vi.fn>;
+    loadAccounts: ReturnType<typeof vi.fn>;
   };
 
   /**
    * Configura o ambiente de teste antes de cada caso de teste.
    */
   beforeEach(async () => {
-    const wallet: WalletDTO = {
-      id: 'wallet-1',
+    const account: AccountDTO = {
+      id: 'account-1',
       name: 'Conta Padrão',
       color: '#10b981',
       icon: 'pi-wallet',
@@ -62,11 +62,11 @@ describe('DashboardComponent', () => {
       getTransactions: vi.fn(() => of({ items: [], nextCursorId: null })),
     };
 
-    walletServiceMock = {
-      wallets: vi.fn(() => [wallet]),
+    accountServiceMock = {
+      accounts: vi.fn(() => [account]),
       isLoading: vi.fn(() => false),
       totalBalance: vi.fn(() => 100),
-      loadWallets: vi.fn(),
+      loadAccounts: vi.fn(),
     };
 
     await TestBed.configureTestingModule({
@@ -74,7 +74,7 @@ describe('DashboardComponent', () => {
       providers: [
         provideRouter([]),
         { provide: ApiService, useValue: apiServiceMock },
-        { provide: WalletService, useValue: walletServiceMock },
+        { provide: AccountService, useValue: accountServiceMock },
       ],
     }).compileComponents();
 
@@ -148,7 +148,7 @@ describe('DashboardComponent', () => {
     const txs: TransactionDTO[] = [
       {
         id: 'tx-1',
-        walletId: 'wallet-1',
+        accountId: 'account-1',
         categoryId: null,
         amount: 10,
         description: 'Mercado',
@@ -176,7 +176,7 @@ describe('DashboardComponent', () => {
 
   it('deve exibir o botão "Nova Conta"', () => {
     const button = fixture.nativeElement.querySelector(
-      '[data-testid="dashboard-create-wallet-btn"]',
+      '[data-testid="dashboard-create-account-btn"]',
     );
 
     expect(button).toBeTruthy();
@@ -184,8 +184,8 @@ describe('DashboardComponent', () => {
   });
 
   it('deve renderizar lista de contas quando há dados', () => {
-    const list = fixture.nativeElement.querySelector('[data-testid="dashboard-wallet-list"]');
-    const card = fixture.nativeElement.querySelector('[data-testid="wallet-card-wallet-1"]');
+    const list = fixture.nativeElement.querySelector('[data-testid="dashboard-account-list"]');
+    const card = fixture.nativeElement.querySelector('[data-testid="account-card-account-1"]');
 
     expect(list).toBeTruthy();
     expect(card).toBeTruthy();

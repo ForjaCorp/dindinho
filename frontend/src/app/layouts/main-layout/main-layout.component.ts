@@ -63,8 +63,8 @@ import { filter } from 'rxjs/operators';
 
         <!-- Botão para acessar a página de contas -->
         <a
-          data-testid="nav-wallet"
-          routerLink="/wallets"
+          data-testid="nav-accounts"
+          routerLink="/accounts"
           routerLinkActive="text-emerald-600 !font-semibold"
           class="flex flex-col items-center gap-1 text-slate-400 w-16 py-1 transition-colors group"
         >

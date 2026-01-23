@@ -2,11 +2,11 @@ import { FastifyInstance } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
-import { WalletsService } from "./wallets.service";
+import { AccountsService } from "./accounts.service";
 import {
-  CreateWalletDTO,
-  createWalletSchema,
-  walletSchema,
+  CreateAccountDTO,
+  createAccountSchema,
+  accountSchema,
 } from "@dindinho/shared";
 
 /**
@@ -18,15 +18,15 @@ import {
  *
  * @example
  * // Registrar rotas no app Fastify
- * app.register(walletsRoutes, { prefix: '/api/wallets' });
+ * app.register(accountsRoutes, { prefix: '/api/accounts' });
  *
  * @param app - Instância do Fastify para registrar as rotas
  */
-export async function walletsRoutes(app: FastifyInstance) {
+export async function accountsRoutes(app: FastifyInstance) {
   /**
    * Instância do serviço de contas para operações de negócio.
    */
-  const service = new WalletsService(prisma);
+  const service = new AccountsService(prisma);
 
   /**
    * Hook global para este prefixo: verifica o token antes de qualquer handler.
@@ -51,7 +51,7 @@ export async function walletsRoutes(app: FastifyInstance) {
    * padrão e cartões de crédito com informações específicas.
    *
    * @example
-   * POST /api/wallets
+   * POST /api/accounts
    * {
    *   "name": "Cartão Nubank",
    *   "color": "#8A2BE2",
@@ -68,10 +68,10 @@ export async function walletsRoutes(app: FastifyInstance) {
     {
       schema: {
         summary: "Criar conta",
-        tags: ["wallets"],
-        body: createWalletSchema,
+        tags: ["accounts"],
+        body: createAccountSchema,
         response: {
-          201: walletSchema,
+          201: accountSchema,
           401: z.object({
             message: z.string(),
           }),
@@ -80,9 +80,9 @@ export async function walletsRoutes(app: FastifyInstance) {
     },
     async (request, reply) => {
       const { sub: userId } = request.user as { sub: string };
-      const payload: CreateWalletDTO = createWalletSchema.parse(request.body);
-      const wallet = await service.create(userId, payload);
-      return reply.status(201).send(wallet);
+      const payload: CreateAccountDTO = createAccountSchema.parse(request.body);
+      const account = await service.create(userId, payload);
+      return reply.status(201).send(account);
     },
   );
 
@@ -95,7 +95,7 @@ export async function walletsRoutes(app: FastifyInstance) {
    * de crédito quando aplicável.
    *
    * @example
-   * GET /api/wallets
+   * GET /api/accounts
    * Response: [
    *   {
    *     "id": "uuid",
@@ -116,9 +116,9 @@ export async function walletsRoutes(app: FastifyInstance) {
     {
       schema: {
         summary: "Listar contas",
-        tags: ["wallets"],
+        tags: ["accounts"],
         response: {
-          200: z.array(walletSchema),
+          200: z.array(accountSchema),
           401: z.object({
             message: z.string(),
           }),

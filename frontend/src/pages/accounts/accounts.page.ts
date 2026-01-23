@@ -1,23 +1,24 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { WalletService } from '../../app/services/wallet.service';
-import { CreateWalletDialogComponent } from '../../app/components/wallets/create-wallet-dialog.component';
-import { WalletCardComponent } from '../../app/components/wallets/wallet-card.component';
+import { AccountService } from '../../app/services/account.service';
+import { CreateAccountDialogComponent } from '../../app/components/accounts/create-account-dialog.component';
+import { AccountCardComponent } from '../../app/components/accounts/account-card.component';
 import { ButtonModule } from 'primeng/button';
 import { SkeletonModule } from 'primeng/skeleton';
 
 @Component({
-  selector: 'app-wallets-page',
+  selector: 'app-accounts-page',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
-    CreateWalletDialogComponent,
-    WalletCardComponent,
+    CreateAccountDialogComponent,
+    AccountCardComponent,
     ButtonModule,
     SkeletonModule,
   ],
   template: `
-    <div data-testid="wallets-page" class="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+    <div data-testid="accounts-page" class="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -25,7 +26,7 @@ import { SkeletonModule } from 'primeng/skeleton';
           <p class="text-slate-500 mt-1">Gerencie suas contas e cartões de crédito</p>
         </div>
         <p-button
-          data-testid="wallets-create-wallet-btn"
+          data-testid="accounts-create-account-btn"
           label="Nova Conta"
           icon="pi pi-plus"
           (onClick)="dialog.show()"
@@ -34,7 +35,7 @@ import { SkeletonModule } from 'primeng/skeleton';
       </div>
 
       <!-- Loading State -->
-      @if (walletService.isLoading() && !walletService.wallets().length) {
+      @if (accountService.isLoading() && !accountService.accounts().length) {
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           @for (i of [1, 2, 3]; track i) {
             <p-skeleton height="160px" styleClass="rounded-xl" />
@@ -43,9 +44,9 @@ import { SkeletonModule } from 'primeng/skeleton';
       }
 
       <!-- Empty State -->
-      @if (!walletService.isLoading() && !walletService.wallets().length) {
+      @if (!accountService.isLoading() && !accountService.accounts().length) {
         <div
-          data-testid="wallets-empty-state"
+          data-testid="accounts-empty-state"
           class="flex flex-col items-center justify-center py-12 px-4 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200"
         >
           <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
@@ -57,7 +58,7 @@ import { SkeletonModule } from 'primeng/skeleton';
             controlar suas finanças.
           </p>
           <p-button
-            data-testid="wallets-empty-create-btn"
+            data-testid="accounts-empty-create-btn"
             label="Criar Primeira Conta"
             icon="pi pi-plus"
             (onClick)="dialog.show()"
@@ -66,17 +67,17 @@ import { SkeletonModule } from 'primeng/skeleton';
         </div>
       }
 
-      <!-- Wallets Grid -->
+      <!-- Accounts Grid -->
       <div
-        data-testid="wallets-grid"
+        data-testid="accounts-grid"
         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
       >
-        @for (wallet of walletService.wallets(); track wallet.id) {
-          <app-wallet-card [wallet]="wallet" />
+        @for (account of accountService.accounts(); track account.id) {
+          <app-account-card [account]="account" />
         }
       </div>
 
-      <app-create-wallet-dialog #dialog />
+      <app-create-account-dialog #dialog />
     </div>
   `,
   styles: [
@@ -89,10 +90,10 @@ import { SkeletonModule } from 'primeng/skeleton';
     `,
   ],
 })
-export class WalletsPage implements OnInit {
-  walletService = inject(WalletService);
+export class AccountsPage implements OnInit {
+  accountService = inject(AccountService);
 
   ngOnInit() {
-    this.walletService.loadWallets();
+    this.accountService.loadAccounts();
   }
 }

@@ -17,7 +17,7 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
 import { ApiService } from '../../app/services/api.service';
-import { WalletService } from '../../app/services/wallet.service';
+import { AccountService } from '../../app/services/account.service';
 import {
   CategoryDTO,
   CreateCategoryDTO,
@@ -182,7 +182,7 @@ const parseAmountExpression = (raw: string): { value: number } | { error: string
   return { value: rounded };
 };
 
-const lastWalletStorageKey = 'dindinho:lastWalletId';
+const lastAccountStorageKey = 'dindinho:lastAccountId';
 
 type AmountKey =
   | { id: string; label: string; kind: 'digit'; token?: string }
@@ -314,16 +314,16 @@ const categoryIconOptions = [
             </div>
 
             <div class="flex flex-col gap-2">
-              <label class="text-sm font-medium text-slate-700" for="walletId">Conta</label>
+              <label class="text-sm font-medium text-slate-700" for="accountId">Conta</label>
               <select
-                data-testid="transaction-wallet"
-                id="walletId"
+                data-testid="transaction-account"
+                id="accountId"
                 class="h-11 rounded-xl border border-slate-200 px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                formControlName="walletId"
+                formControlName="accountId"
               >
                 <option value="" disabled>Selecione uma conta</option>
-                @for (w of wallets(); track w.id) {
-                  <option [value]="w.id">{{ w.name }}</option>
+                @for (a of accounts(); track a.id) {
+                  <option [value]="a.id">{{ a.name }}</option>
                 }
               </select>
             </div>
@@ -409,18 +409,18 @@ const categoryIconOptions = [
 
           @if (type() === 'TRANSFER') {
             <div class="flex flex-col gap-2">
-              <label class="text-sm font-medium text-slate-700" for="destinationWalletId"
+              <label class="text-sm font-medium text-slate-700" for="destinationAccountId"
                 >Conta de destino</label
               >
               <select
-                data-testid="transaction-destination-wallet"
-                id="destinationWalletId"
+                data-testid="transaction-destination-account"
+                id="destinationAccountId"
                 class="h-11 rounded-xl border border-slate-200 px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                formControlName="destinationWalletId"
+                formControlName="destinationAccountId"
               >
                 <option value="" disabled>Selecione a conta de destino</option>
-                @for (w of destinationWalletOptions(); track w.id) {
-                  <option [value]="w.id">{{ w.name }}</option>
+                @for (a of destinationAccountOptions(); track a.id) {
+                  <option [value]="a.id">{{ a.name }}</option>
                 }
               </select>
             </div>
@@ -606,7 +606,7 @@ const categoryIconOptions = [
               label="Salvar"
               icon="pi pi-check"
               [loading]="isLoading()"
-              [disabled]="isLoading() || walletsLoading()"
+              [disabled]="isLoading() || accountsLoading()"
               styleClass="w-full"
             />
           </div>
@@ -794,15 +794,15 @@ const categoryIconOptions = [
 export class CreateTransactionPage {
   private fb = inject(FormBuilder);
   private api = inject(ApiService);
-  private walletService = inject(WalletService);
+  private accountService = inject(AccountService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private destroyRef = inject(DestroyRef);
   private platformId = inject(PLATFORM_ID);
   private host = inject(ElementRef<HTMLElement>);
 
-  protected readonly wallets = this.walletService.wallets;
-  protected readonly walletsLoading = this.walletService.isLoading;
+  protected readonly accounts = this.accountService.accounts;
+  protected readonly accountsLoading = this.accountService.isLoading;
 
   protected readonly categories = signal<CategoryDTO[]>([]);
   protected readonly categoriesLoading = signal(false);
@@ -813,8 +813,8 @@ export class CreateTransactionPage {
   protected readonly isLoading = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly type = signal<'INCOME' | 'EXPENSE' | 'TRANSFER'>('EXPENSE');
-  protected readonly walletId = signal<string>('');
-  protected readonly destinationWalletId = signal<string>('');
+  protected readonly accountId = signal<string>('');
+  protected readonly destinationAccountId = signal<string>('');
   protected readonly categoryId = signal<string>('');
 
   protected readonly amountPreview = signal<number | null>(null);
@@ -895,42 +895,42 @@ export class CreateTransactionPage {
     [...this.categories()].sort((a, b) => a.name.localeCompare(b.name)),
   );
 
-  protected readonly selectedWallet = computed(
-    () => this.wallets().find((w) => w.id === this.walletId()) ?? null,
+  protected readonly selectedAccount = computed(
+    () => this.accounts().find((a) => a.id === this.accountId()) ?? null,
   );
-  protected readonly selectedDestinationWallet = computed(
-    () => this.wallets().find((w) => w.id === this.destinationWalletId()) ?? null,
+  protected readonly selectedDestinationAccount = computed(
+    () => this.accounts().find((a) => a.id === this.destinationAccountId()) ?? null,
   );
-  protected readonly destinationWalletOptions = computed(() => {
-    const originId = this.walletId();
-    return this.wallets().filter((w) => w.id !== originId);
+  protected readonly destinationAccountOptions = computed(() => {
+    const originId = this.accountId();
+    return this.accounts().filter((a) => a.id !== originId);
   });
 
   protected readonly recurrenceAvailable = computed(() => {
     if (this.type() === 'TRANSFER') return false;
-    const wallet = this.selectedWallet();
-    if (!wallet) return false;
-    return wallet.type !== 'CREDIT';
+    const account = this.selectedAccount();
+    if (!account) return false;
+    return account.type !== 'CREDIT';
   });
 
   protected readonly installmentsEnabled = computed(() => {
     if (this.type() !== 'EXPENSE') return false;
-    return this.selectedWallet()?.type === 'CREDIT';
+    return this.selectedAccount()?.type === 'CREDIT';
   });
 
   protected readonly invoiceMonthEnabled = computed(() => {
-    const origin = this.selectedWallet();
+    const origin = this.selectedAccount();
     if (origin?.type === 'CREDIT') return true;
-    if (this.type() === 'TRANSFER' && this.selectedDestinationWallet()?.type === 'CREDIT')
+    if (this.type() === 'TRANSFER' && this.selectedDestinationAccount()?.type === 'CREDIT')
       return true;
     return false;
   });
 
   protected readonly isPaidVisible = computed(() => {
-    if (this.type() === 'TRANSFER') return this.selectedDestinationWallet()?.type === 'CREDIT';
-    const wallet = this.selectedWallet();
-    if (!wallet) return false;
-    return wallet.type !== 'CREDIT';
+    if (this.type() === 'TRANSFER') return this.selectedDestinationAccount()?.type === 'CREDIT';
+    const account = this.selectedAccount();
+    if (!account) return false;
+    return account.type !== 'CREDIT';
   });
 
   protected readonly isPaidLabel = computed(() => {
@@ -939,7 +939,7 @@ export class CreateTransactionPage {
   });
 
   protected readonly form = this.fb.group({
-    walletId: this.fb.nonNullable.control('', [Validators.required]),
+    accountId: this.fb.nonNullable.control('', [Validators.required]),
     categoryId: this.fb.nonNullable.control('', [Validators.required]),
     type: this.fb.nonNullable.control<'INCOME' | 'EXPENSE' | 'TRANSFER'>('EXPENSE', [
       Validators.required,
@@ -949,7 +949,7 @@ export class CreateTransactionPage {
     description: this.fb.nonNullable.control<string>(''),
     isPaid: this.fb.nonNullable.control(true),
     totalInstallments: this.fb.nonNullable.control<number>(1, [Validators.min(1)]),
-    destinationWalletId: this.fb.nonNullable.control<string>(''),
+    destinationAccountId: this.fb.nonNullable.control<string>(''),
     tagsText: this.fb.nonNullable.control<string>(''),
     recurrenceEnabled: this.fb.nonNullable.control(false),
     recurrenceFrequency: this.fb.nonNullable.control<'MONTHLY' | 'WEEKLY' | 'YEARLY' | 'CUSTOM'>(
@@ -974,24 +974,24 @@ export class CreateTransactionPage {
       this.type.set(queryType);
     }
 
-    const queryWalletId = this.route.snapshot.queryParamMap.get('walletId');
-    if (typeof queryWalletId === 'string' && queryWalletId.length > 0) {
-      this.form.controls.walletId.setValue(queryWalletId, { emitEvent: false });
-      this.walletId.set(queryWalletId);
+    const queryAccountId = this.route.snapshot.queryParamMap.get('accountId');
+    if (typeof queryAccountId === 'string' && queryAccountId.length > 0) {
+      this.form.controls.accountId.setValue(queryAccountId, { emitEvent: false });
+      this.accountId.set(queryAccountId);
     } else {
       try {
-        const last = localStorage.getItem(lastWalletStorageKey);
+        const last = localStorage.getItem(lastAccountStorageKey);
         if (typeof last === 'string' && last.length > 0) {
-          this.form.controls.walletId.setValue(last, { emitEvent: false });
-          this.walletId.set(last);
+          this.form.controls.accountId.setValue(last, { emitEvent: false });
+          this.accountId.set(last);
         }
       } catch {
         void 0;
       }
     }
 
-    if (this.wallets().length === 0) {
-      this.walletService.loadWallets();
+    if (this.accounts().length === 0) {
+      this.accountService.loadAccounts();
     }
 
     this.loadCategories();
@@ -1013,13 +1013,13 @@ export class CreateTransactionPage {
         this.syncIsPaidControl();
       });
 
-    this.form.controls.walletId.valueChanges
+    this.form.controls.accountId.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((v) => {
-        this.walletId.set(v);
+        this.accountId.set(v);
         try {
           if (typeof v === 'string' && v.length > 0) {
-            localStorage.setItem(lastWalletStorageKey, v);
+            localStorage.setItem(lastAccountStorageKey, v);
           }
         } catch {
           void 0;
@@ -1036,10 +1036,10 @@ export class CreateTransactionPage {
         this.categoryId.set(v);
       });
 
-    this.form.controls.destinationWalletId.valueChanges
+    this.form.controls.destinationAccountId.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((v) => {
-        this.destinationWalletId.set(v);
+        this.destinationAccountId.set(v);
         this.syncIsPaidControl();
       });
 
@@ -1260,7 +1260,7 @@ export class CreateTransactionPage {
   }
 
   private syncTransferControl(type: 'INCOME' | 'EXPENSE' | 'TRANSFER') {
-    const dest = this.form.controls.destinationWalletId;
+    const dest = this.form.controls.destinationAccountId;
     if (type === 'TRANSFER') {
       dest.setValidators([Validators.required]);
       dest.updateValueAndValidity({ emitEvent: false });
@@ -1418,8 +1418,8 @@ export class CreateTransactionPage {
     }
 
     const raw = this.form.getRawValue();
-    const wallets = this.wallets();
-    if (wallets.length === 0) {
+    const accounts = this.accounts();
+    if (accounts.length === 0) {
       this.error.set('Crie uma conta antes de lançar uma transação');
       return;
     }
@@ -1459,7 +1459,7 @@ export class CreateTransactionPage {
         : this.getFallbackDescription(raw.type, raw.categoryId);
 
     const payload: CreateTransactionDTO = {
-      walletId: raw.walletId,
+      accountId: raw.accountId,
       categoryId: raw.categoryId,
       amount,
       description,
@@ -1467,7 +1467,7 @@ export class CreateTransactionPage {
       type: raw.type,
       isPaid: raw.isPaid,
       ...(totalInstallments > 1 ? { totalInstallments } : {}),
-      ...(raw.type === 'TRANSFER' ? { destinationWalletId: raw.destinationWalletId } : {}),
+      ...(raw.type === 'TRANSFER' ? { destinationAccountId: raw.destinationAccountId } : {}),
       ...(tags.length ? { tags } : {}),
       ...(recurrence ? { recurrence } : {}),
       ...(this.invoiceMonthEnabled() && raw.invoiceMonth.trim() !== ''

@@ -5,8 +5,8 @@ import { provideRouter, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { TransactionsPage } from './transactions.page';
 import { ApiService } from '../../app/services/api.service';
-import { WalletService } from '../../app/services/wallet.service';
-import { TransactionDTO, WalletDTO } from '@dindinho/shared';
+import { AccountService } from '../../app/services/account.service';
+import { TransactionDTO, AccountDTO } from '@dindinho/shared';
 
 const testBed = getTestBed();
 if (!testBed.platform) {
@@ -19,8 +19,8 @@ describe('TransactionsPage', () => {
   const observeSpy = vi.fn();
   const disconnectSpy = vi.fn();
 
-  const wallet: WalletDTO = {
-    id: 'wallet-1',
+  const account: AccountDTO = {
+    id: 'account-1',
     name: 'Conta Padrão',
     color: '#10b981',
     icon: 'pi-wallet',
@@ -34,7 +34,7 @@ describe('TransactionsPage', () => {
   const txs: TransactionDTO[] = [
     {
       id: 'tx-1',
-      walletId: wallet.id,
+      accountId: account.id,
       categoryId: null,
       amount: 10,
       description: 'Café',
@@ -78,9 +78,9 @@ describe('TransactionsPage', () => {
       getTransactions: vi.fn(() => of({ items: txs, nextCursorId: null })),
     };
 
-    const walletServiceMock = {
-      wallets: vi.fn(() => [wallet]),
-      loadWallets: vi.fn(),
+    const accountServiceMock = {
+      accounts: vi.fn(() => [account]),
+      loadAccounts: vi.fn(),
     };
 
     await TestBed.configureTestingModule({
@@ -88,7 +88,7 @@ describe('TransactionsPage', () => {
       providers: [
         provideRouter([]),
         { provide: ApiService, useValue: apiServiceMock },
-        { provide: WalletService, useValue: walletServiceMock },
+        { provide: AccountService, useValue: accountServiceMock },
       ],
     }).compileComponents();
 

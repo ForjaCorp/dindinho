@@ -8,8 +8,8 @@ import {
   LoginResponseDTO,
   CategoryDTO,
   CreateCategoryDTO,
-  CreateWalletDTO,
-  WalletDTO,
+  CreateAccountDTO,
+  AccountDTO,
   CreateTransactionDTO,
   TransactionDTO,
 } from '@dindinho/shared';
@@ -42,8 +42,8 @@ export interface RefreshResponse {
  *   .subscribe(response => console.log(response.token));
  *
  * // Criação de conta:
- * this.api.createWallet({ name: 'Minha Conta', type: 'savings' })
- *   .subscribe(wallet => console.log(wallet.id));
+ * this.api.createAccount({ name: 'Minha Conta', type: 'STANDARD' })
+ *   .subscribe((account) => console.log(account.id));
  *
  * @since 1.0.0
  */
@@ -101,8 +101,8 @@ export class ApiService {
   /**
    * Cria uma nova conta para o usuário autenticado.
    *
-   * @param {CreateWalletDTO} data - Dados da conta a ser criada
-   * @returns {Observable<WalletDTO>} Observable com a conta criada
+   * @param {CreateAccountDTO} data - Dados da conta a ser criada
+   * @returns {Observable<AccountDTO>} Observable com a conta criada
    *
    * @description
    * Envia os dados da nova conta para o backend. A autenticação é
@@ -110,20 +110,20 @@ export class ApiService {
    *
    * @example
    * // Exemplo de uso:
-   * this.api.createWallet({ name: 'Conta Principal', type: 'checking' })
+   * this.api.createAccount({ name: 'Conta Principal', type: 'STANDARD' })
    *   .subscribe({
-   *     next: (wallet) => console.log('Conta criada:', wallet.id),
+   *     next: (account) => console.log('Conta criada:', account.id),
    *     error: (error) => console.error('Erro ao criar conta', error)
    *   });
    */
-  createWallet(data: CreateWalletDTO): Observable<WalletDTO> {
-    return this.http.post<WalletDTO>(`${this.baseUrl}/wallets`, data);
+  createAccount(data: CreateAccountDTO): Observable<AccountDTO> {
+    return this.http.post<AccountDTO>(`${this.baseUrl}/accounts`, data);
   }
 
   /**
    * Lista todas as contas do usuário autenticado.
    *
-   * @returns {Observable<WalletDTO[]>} Observable com array de contas
+   * @returns {Observable<AccountDTO[]>} Observable com array de contas
    *
    * @description
    * Recupera todas as contas associadas ao usuário atual.
@@ -131,13 +131,13 @@ export class ApiService {
    *
    * @example
    * // Exemplo de uso:
-   * this.api.getWallets().subscribe({
-   *   next: (wallets) => console.log('Contas:', wallets),
+   * this.api.getAccounts().subscribe({
+   *   next: (accounts) => console.log('Contas:', accounts),
    *   error: (error) => console.error('Erro ao listar contas', error)
    * });
    */
-  getWallets(): Observable<WalletDTO[]> {
-    return this.http.get<WalletDTO[]>(`${this.baseUrl}/wallets`);
+  getAccounts(): Observable<AccountDTO[]> {
+    return this.http.get<AccountDTO[]>(`${this.baseUrl}/accounts`);
   }
 
   createTransaction(data: CreateTransactionDTO): Observable<TransactionDTO | TransactionDTO[]> {
@@ -145,7 +145,7 @@ export class ApiService {
   }
 
   getTransactions(params: {
-    walletId?: string;
+    accountId?: string;
     from?: string;
     to?: string;
     q?: string;
@@ -154,7 +154,7 @@ export class ApiService {
     cursorId?: string;
   }): Observable<{ items: TransactionDTO[]; nextCursorId: string | null }> {
     const queryParams: Record<string, string> = {
-      ...(params.walletId ? { walletId: params.walletId } : {}),
+      ...(params.accountId ? { accountId: params.accountId } : {}),
       ...(params.from ? { from: params.from } : {}),
       ...(params.to ? { to: params.to } : {}),
       ...(params.q ? { q: params.q } : {}),
