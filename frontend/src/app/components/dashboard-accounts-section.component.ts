@@ -17,15 +17,17 @@ import { EmptyStateComponent } from './empty-state.component';
       <div class="flex justify-between items-center px-1">
         <h2 class="text-lg font-bold text-slate-800">Contas</h2>
 
-        <button
-          data-testid="dashboard-create-account-btn"
-          type="button"
-          (click)="create.emit()"
-          class="flex items-center gap-1 text-emerald-600 text-sm font-semibold hover:text-emerald-700 transition-colors"
-        >
-          <i class="pi pi-plus text-xs"></i>
-          Nova Conta
-        </button>
+        @if (accounts().length === 0) {
+          <button
+            data-testid="dashboard-create-account-btn"
+            type="button"
+            (click)="create.emit()"
+            class="flex items-center gap-1 text-emerald-600 text-sm font-semibold hover:text-emerald-700 transition-colors"
+          >
+            <i class="pi pi-plus text-xs"></i>
+            Nova Conta
+          </button>
+        }
       </div>
 
       @if (accounts().length > 0) {

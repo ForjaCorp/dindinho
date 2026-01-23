@@ -70,6 +70,33 @@ describe('DashboardCreditCardsSectionComponent', () => {
     expect(fixture.nativeElement.querySelector('[data-testid="account-card-card-1"]')).toBeTruthy();
   });
 
+  it('não deve exibir "Novo Cartão" quando já há cartões', () => {
+    fixture.componentInstance.cards.set([
+      {
+        id: 'card-1',
+        name: 'Nubank',
+        color: '#8A2BE2',
+        icon: 'pi-credit-card',
+        type: 'CREDIT',
+        ownerId: 'user-1',
+        balance: 0,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        creditCardInfo: {
+          closingDay: 10,
+          dueDay: 15,
+          limit: 5000,
+          brand: 'Mastercard',
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="dashboard-create-credit-card-btn"]'),
+    ).toBeFalsy();
+  });
+
   it('deve emitir evento ao clicar em "Novo Cartão"', () => {
     fixture.detectChanges();
 

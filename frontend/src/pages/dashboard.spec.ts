@@ -139,15 +139,10 @@ describe('DashboardComponent', () => {
     const transactionsSection = fixture.nativeElement.querySelector(
       '[data-testid="transactions-section"]',
     );
-    const viewAllButton = fixture.nativeElement.querySelector(
-      '[data-testid="view-all-transactions"]',
-    );
 
     expect(transactionsSection).toBeTruthy();
-    expect(viewAllButton).toBeTruthy();
     expect(transactionsSection.textContent).toContain('Últimas Transações');
     expect(transactionsSection.textContent).toContain('Nenhuma transação recente');
-    expect(viewAllButton.textContent).toContain('Ver todas');
   });
 
   it('deve renderizar lista de últimas transações quando há dados', () => {
@@ -238,7 +233,21 @@ describe('DashboardComponent', () => {
     ).toBeFalsy();
   });
 
-  it('deve exibir o botão "Nova Conta"', () => {
+  it('não deve exibir o botão "Nova Conta" quando já há contas', () => {
+    const button = fixture.nativeElement.querySelector(
+      '[data-testid="dashboard-create-account-btn"]',
+    );
+
+    expect(button).toBeFalsy();
+  });
+
+  it('deve exibir o botão "Nova Conta" quando não há contas', () => {
+    accountServiceMock.accounts.mockReturnValue([]);
+
+    fixture = TestBed.createComponent(DashboardComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
     const button = fixture.nativeElement.querySelector(
       '[data-testid="dashboard-create-account-btn"]',
     );
@@ -254,6 +263,34 @@ describe('DashboardComponent', () => {
 
     expect(button).toBeTruthy();
     expect(button.textContent).toContain('Novo Cartão');
+  });
+
+  it('deve navegar para contas ao clicar em "Contas" nos atalhos', () => {
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    const button = fixture.nativeElement.querySelector(
+      '[data-testid="quick-link-accounts"]',
+    ) as HTMLButtonElement;
+
+    button.click();
+    fixture.detectChanges();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/accounts']);
+  });
+
+  it('deve navegar para contas ao clicar em "Cartões" nos atalhos', () => {
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    const button = fixture.nativeElement.querySelector(
+      '[data-testid="quick-link-cards"]',
+    ) as HTMLButtonElement;
+
+    button.click();
+    fixture.detectChanges();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/accounts']);
   });
 
   it('deve renderizar lista de contas quando há dados', () => {
@@ -276,20 +313,6 @@ describe('DashboardComponent', () => {
 
     expect(statusCard).toBeTruthy();
     expect(statusCard.textContent).toContain('Status do Backend');
-  });
-
-  it('deve navegar para lista de transações ao clicar em "Ver todas"', () => {
-    const router = TestBed.inject(Router);
-    vi.spyOn(router, 'navigate').mockResolvedValue(true);
-
-    const viewAllButton = fixture.nativeElement.querySelector(
-      '[data-testid="view-all-transactions"]',
-    ) as HTMLButtonElement;
-
-    viewAllButton.click();
-    fixture.detectChanges();
-
-    expect(router.navigate).toHaveBeenCalledWith(['/transactions']);
   });
 
   it('deve navegar para nova transação ao clicar em "Nova Transação"', () => {

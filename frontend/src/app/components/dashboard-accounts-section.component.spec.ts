@@ -66,6 +66,27 @@ describe('DashboardAccountsSectionComponent', () => {
     ).toBeTruthy();
   });
 
+  it('não deve exibir "Nova Conta" quando já há contas', () => {
+    fixture.componentInstance.accounts.set([
+      {
+        id: 'account-1',
+        name: 'Conta',
+        color: '#10b981',
+        icon: 'pi-wallet',
+        type: 'STANDARD',
+        ownerId: 'user-1',
+        balance: 10,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+    ]);
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="dashboard-create-account-btn"]'),
+    ).toBeFalsy();
+  });
+
   it('deve emitir evento ao clicar em "Nova Conta"', () => {
     fixture.detectChanges();
 

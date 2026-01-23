@@ -69,7 +69,10 @@ import { TransactionDrawerComponent } from '../app/components/transaction-drawer
         <h2 class="text-lg font-bold text-slate-800 mb-3 px-1">Atalhos</h2>
         <div class="grid grid-cols-4 gap-2">
           <button
+            data-testid="quick-link-accounts"
+            type="button"
             class="flex flex-col items-center gap-2 p-2 active:scale-95 transition-transform group"
+            (click)="onOpenAccounts()"
           >
             <div
               class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-100 transition-colors"
@@ -80,7 +83,10 @@ import { TransactionDrawerComponent } from '../app/components/transaction-drawer
           </button>
 
           <button
+            data-testid="quick-link-cards"
+            type="button"
             class="flex flex-col items-center gap-2 p-2 active:scale-95 transition-transform group"
+            (click)="onOpenAccounts()"
           >
             <div
               class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:bg-purple-100 transition-colors"
@@ -118,13 +124,6 @@ import { TransactionDrawerComponent } from '../app/components/transaction-drawer
       <div data-testid="transactions-section">
         <div class="flex items-center justify-between mb-3 px-1">
           <h2 class="text-lg font-bold text-slate-800">Últimas Transações</h2>
-          <button
-            data-testid="view-all-transactions"
-            class="text-sm text-emerald-600 font-medium hover:text-emerald-700"
-            (click)="onViewAllTransactions()"
-          >
-            Ver todas
-          </button>
         </div>
 
         @if (recentTransactionsLoading()) {
@@ -325,8 +324,8 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  protected onViewAllTransactions() {
-    this.router.navigate(['/transactions']);
+  protected onOpenAccounts() {
+    this.router.navigate(['/accounts']);
   }
 
   protected onNewTransaction() {
