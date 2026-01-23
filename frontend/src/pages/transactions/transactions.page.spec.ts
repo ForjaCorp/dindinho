@@ -142,6 +142,38 @@ describe('TransactionsPage', () => {
     expect(filtersAfter).toBeTruthy();
   });
 
+  it('deve exibir filtros de mês e ano ao abrir filtros avançados', () => {
+    const component = fixture.componentInstance as unknown as { toggleFilters: () => void };
+    component.toggleFilters();
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="transactions-month-year-picker"]'),
+    ).toBeTruthy();
+  });
+
+  it('deve aplicar filtro de mês e ano ao carregar transações', () => {
+    const api = TestBed.inject(ApiService) as unknown as {
+      getTransactions: ReturnType<typeof vi.fn>;
+    };
+
+    const component = fixture.componentInstance as unknown as { toggleFilters: () => void };
+    component.toggleFilters();
+    fixture.detectChanges();
+
+    (
+      fixture.componentInstance as unknown as { monthYearControl: { setValue: (v: Date) => void } }
+    ).monthYearControl.setValue(new Date(2026, 0, 1));
+    fixture.detectChanges();
+
+    const lastCall = api.getTransactions.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(lastCall).toMatchObject({
+      limit: 30,
+      from: '2026-01-01T00:00:00.000Z',
+      to: '2026-01-31T23:59:59.999Z',
+    });
+  });
+
   it('deve registrar observer para scroll infinito quando lista renderiza', async () => {
     await new Promise<void>((resolve) => queueMicrotask(() => resolve()));
     fixture.detectChanges();

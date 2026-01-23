@@ -9,10 +9,12 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ButtonModule } from 'primeng/button';
+import { DatePickerModule } from 'primeng/datepicker';
 import { TransactionDTO, AccountDTO } from '@dindinho/shared';
 import { ApiService } from '../../app/services/api.service';
 import { AccountService } from '../../app/services/account.service';
@@ -21,13 +23,21 @@ import { PageHeaderComponent } from '../../app/components/page-header.component'
 
 type TransactionTypeFilter = '' | TransactionDTO['type'];
 
+const utcStartOfMonthIso = (year: number, month: number) =>
+  new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0)).toISOString();
+
+const utcEndOfMonthIso = (year: number, month: number) =>
+  new Date(Date.UTC(year, month, 0, 23, 59, 59, 999)).toISOString();
+
 @Component({
   selector: 'app-transactions-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
+    ReactiveFormsModule,
     ButtonModule,
+    DatePickerModule,
     CurrencyPipe,
     DatePipe,
     EmptyStateComponent,
@@ -110,6 +120,26 @@ type TransactionTypeFilter = '' | TransactionDTO['type'];
                 }
               </select>
             </div>
+
+            <div
+              class="flex flex-col gap-1 col-span-2"
+              data-testid="transactions-month-year-filter"
+            >
+              <label class="sr-only" for="monthYear">Mês e ano</label>
+              <p-datepicker
+                data-testid="transactions-month-year-picker"
+                inputId="monthYear"
+                [formControl]="monthYearControl"
+                view="month"
+                dateFormat="mm/yy"
+                [showIcon]="true"
+                [showClear]="true"
+                [readonlyInput]="true"
+                [styleClass]="'w-full'"
+                inputStyleClass="h-10 w-full rounded-xl border border-slate-200 px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                aria-label="Mês e ano"
+              />
+            </div>
           </div>
         }
 
@@ -187,6 +217,9 @@ export class TransactionsPage {
   protected readonly accountFilterId = signal<string>('');
   protected readonly typeFilter = signal<TransactionTypeFilter>('');
 
+  protected readonly monthYearControl = new FormControl<Date | null>(null);
+  protected readonly monthYearFilter = signal<Date | null>(null);
+
   protected readonly items = signal<TransactionDTO[]>([]);
   protected readonly nextCursorId = signal<string | null>(null);
   protected readonly initialLoading = signal(false);
@@ -211,6 +244,10 @@ export class TransactionsPage {
   constructor() {
     this.accountService.loadAccounts();
 
+    this.monthYearControl.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((value) => this.monthYearFilter.set(value));
+
     effect(() => {
       const draft = this.searchDraft();
 
@@ -230,7 +267,15 @@ export class TransactionsPage {
       const accountId = this.accountFilterId();
       const type = this.typeFilter();
 
-      const filters: { q?: string; accountId?: string; type?: TransactionDTO['type'] } = {};
+      const range = this.dateRangeFilters(this.monthYearFilter());
+
+      const filters: {
+        q?: string;
+        accountId?: string;
+        type?: TransactionDTO['type'];
+        from?: string;
+        to?: string;
+      } = { ...range };
       if (q) filters.q = q;
       if (accountId) filters.accountId = accountId;
       if (type) filters.type = type;
@@ -299,7 +344,13 @@ export class TransactionsPage {
     return this.accountMap().get(accountId)?.name ?? 'Conta';
   }
 
-  private resetAndLoad(filters: { q?: string; accountId?: string; type?: TransactionDTO['type'] }) {
+  private resetAndLoad(filters: {
+    q?: string;
+    accountId?: string;
+    type?: TransactionDTO['type'];
+    from?: string;
+    to?: string;
+  }) {
     const seq = ++this.initialLoadSeq;
     this.error.set(null);
     this.items.set([]);
@@ -336,6 +387,7 @@ export class TransactionsPage {
     const q = this.searchQuery();
     const accountId = this.accountFilterId();
     const type = this.typeFilter();
+    const range = this.dateRangeFilters(this.monthYearFilter());
 
     const filters: {
       cursorId: string;
@@ -343,10 +395,14 @@ export class TransactionsPage {
       q?: string;
       accountId?: string;
       type?: TransactionDTO['type'];
+      from?: string;
+      to?: string;
     } = { cursorId, limit: 30 };
     if (q) filters.q = q;
     if (accountId) filters.accountId = accountId;
     if (type) filters.type = type;
+    if (range.from) filters.from = range.from;
+    if (range.to) filters.to = range.to;
 
     this.loadingMore.set(true);
     this.api
@@ -408,5 +464,17 @@ export class TransactionsPage {
         this.observedEl = null;
       }
     });
+  }
+
+  private dateRangeFilters(monthYear: Date | null): { from?: string; to?: string } {
+    if (!monthYear) return {};
+    const year = monthYear.getFullYear();
+    const month = monthYear.getMonth() + 1;
+    if (!Number.isFinite(year) || year < 1970 || year > 2100) return {};
+    if (!Number.isFinite(month) || month < 1 || month > 12) return {};
+    return {
+      from: utcStartOfMonthIso(year, month),
+      to: utcEndOfMonthIso(year, month),
+    };
   }
 }
