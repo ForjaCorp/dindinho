@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { DeepMockProxy, mockReset } from "vitest-mock-extended";
-import { PrismaClient, WalletType, Wallet } from "@prisma/client";
+import { PrismaClient, WalletType, Wallet, Prisma } from "@prisma/client";
 
 // Mock profundo do Prisma
 vi.mock("../lib/prisma", async () => {
@@ -46,7 +46,7 @@ describe("Wallets Routes", () => {
       brand: "Mastercard",
     };
 
-    it("deve criar carteira com autenticação válida", async () => {
+    it("deve criar conta com autenticação válida", async () => {
       prismaMock.wallet.create.mockResolvedValue({
         id: walletId,
         name: validWallet.name,
@@ -106,16 +106,18 @@ describe("Wallets Routes", () => {
   });
 
   describe("GET /api/wallets", () => {
-    it("deve listar carteiras", async () => {
+    it("deve listar contas", async () => {
+      (prismaMock.transaction.groupBy as any).mockResolvedValue([] as any);
+
       prismaMock.wallet.findMany.mockResolvedValue([
         {
           id: walletId,
-          name: "Carteira 1",
+          name: "Conta 1",
           color: "#FF5722",
           icon: "pi-wallet",
           type: "STANDARD",
           ownerId: userId,
-          balance: 0,
+          initialBalance: new Prisma.Decimal(0),
           creditCardInfo: null,
           createdAt: new Date(),
           updatedAt: new Date(),

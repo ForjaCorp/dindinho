@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { PrismaClient, WalletType } from "@prisma/client";
+import { PrismaClient, WalletType, Prisma } from "@prisma/client";
 import { WalletsService } from "./wallets.service";
 import { CreateWalletDTO } from "@dindinho/shared";
 
@@ -8,6 +8,9 @@ const mockPrisma = {
   wallet: {
     create: vi.fn(),
     findMany: vi.fn(),
+  },
+  transaction: {
+    groupBy: vi.fn(),
   },
 } as unknown as PrismaClient;
 
@@ -30,6 +33,7 @@ describe("WalletsService", () => {
       color: "#8A2BE2",
       icon: "pi-credit-card",
       type: "CREDIT",
+      initialBalance: 0,
       closingDay: 10,
       dueDay: 15,
       limit: 5000,
@@ -37,21 +41,25 @@ describe("WalletsService", () => {
     };
 
     /**
-     * Testa criação bem-sucedida de carteira padrão.
+     * Testa criação bem-sucedida de conta padrão.
      */
-    it("deve criar carteira padrão com sucesso", async () => {
+    it("deve criar conta padrão com sucesso", async () => {
       const standardWalletData = {
-        name: "Minha Carteira",
+        name: "Minha Conta",
         color: "#FF5722",
         icon: "pi-wallet",
         type: "STANDARD" as const,
+        initialBalance: 123.45,
       };
 
       const mockWallet = {
         id: "wallet-123",
-        ...standardWalletData,
+        name: standardWalletData.name,
+        color: standardWalletData.color,
+        icon: standardWalletData.icon,
         type: "STANDARD" as WalletType,
         ownerId: userId,
+        initialBalance: new Prisma.Decimal(standardWalletData.initialBalance),
         createdAt: new Date(),
         updatedAt: new Date(),
         creditCardInfo: null,
@@ -74,17 +82,23 @@ describe("WalletsService", () => {
       });
 
       expect(result).toEqual({
-        ...mockWallet,
-        balance: 0,
+        id: mockWallet.id,
+        name: mockWallet.name,
+        color: mockWallet.color,
+        icon: mockWallet.icon,
+        type: mockWallet.type,
+        ownerId: mockWallet.ownerId,
+        creditCardInfo: null,
+        balance: 123.45,
         createdAt: mockWallet.createdAt.toISOString(),
         updatedAt: mockWallet.updatedAt.toISOString(),
       });
     });
 
     /**
-     * Testa criação bem-sucedida de carteira de crédito.
+     * Testa criação bem-sucedida de conta de crédito.
      */
-    it("deve criar carteira de crédito com sucesso", async () => {
+    it("deve criar conta de crédito com sucesso", async () => {
       const mockWallet = {
         id: "wallet-123",
         name: validWalletData.name,
@@ -92,6 +106,7 @@ describe("WalletsService", () => {
         icon: validWalletData.icon,
         type: "CREDIT" as WalletType,
         ownerId: userId,
+        initialBalance: new Prisma.Decimal(0),
         createdAt: new Date(),
         updatedAt: new Date(),
         creditCardInfo: {
@@ -115,6 +130,7 @@ describe("WalletsService", () => {
           icon: validWalletData.icon,
           type: "CREDIT" as WalletType,
           ownerId: userId,
+          initialBalance: 0,
           creditCardInfo: {
             create: {
               closingDay: 10,
@@ -130,10 +146,16 @@ describe("WalletsService", () => {
       });
 
       expect(result).toEqual({
-        ...mockWallet,
+        id: mockWallet.id,
+        name: mockWallet.name,
+        color: mockWallet.color,
+        icon: mockWallet.icon,
+        type: mockWallet.type,
+        ownerId: mockWallet.ownerId,
         creditCardInfo: {
           ...mockWallet.creditCardInfo,
           limit: 5000,
+          availableLimit: 5000,
         },
         balance: 0,
         createdAt: mockWallet.createdAt.toISOString(),
@@ -149,7 +171,7 @@ describe("WalletsService", () => {
       vi.mocked(mockPrisma.wallet.create).mockRejectedValue(error);
 
       await expect(service.create(userId, validWalletData)).rejects.toThrow(
-        'Já existe uma carteira com nome "Cartão Nubank" para este usuário',
+        'Já existe uma conta com nome "Cartão Nubank" para este usuário',
       );
     });
 
@@ -173,7 +195,7 @@ describe("WalletsService", () => {
       vi.mocked(mockPrisma.wallet.create).mockRejectedValue(error);
 
       await expect(service.create(userId, validWalletData)).rejects.toThrow(
-        "Dados inválidos fornecidos para criação da carteira",
+        "Dados inválidos fornecidos para criação da conta",
       );
     });
 
@@ -185,7 +207,7 @@ describe("WalletsService", () => {
       vi.mocked(mockPrisma.wallet.create).mockRejectedValue(error);
 
       await expect(service.create(userId, validWalletData)).rejects.toThrow(
-        "Erro inesperado ao criar carteira",
+        "Erro inesperado ao criar conta",
       );
     });
   });
@@ -194,17 +216,18 @@ describe("WalletsService", () => {
     const userId = "user-123";
 
     /**
-     * Testa listagem bem-sucedida de carteiras.
+     * Testa listagem bem-sucedida de contas.
      */
-    it("deve listar carteiras do usuário com sucesso", async () => {
+    it("deve listar contas do usuário com sucesso", async () => {
       const mockWallets = [
         {
           id: "wallet-1",
-          name: "Carteira 1",
+          name: "Conta 1",
           color: "#FF5722",
           icon: "pi-wallet",
           type: "STANDARD" as WalletType,
           ownerId: userId,
+          initialBalance: new Prisma.Decimal(100),
           createdAt: new Date(),
           updatedAt: new Date(),
           creditCardInfo: null,
@@ -216,6 +239,7 @@ describe("WalletsService", () => {
           icon: "pi-credit-card",
           type: "CREDIT" as WalletType,
           ownerId: userId,
+          initialBalance: new Prisma.Decimal(0),
           createdAt: new Date(),
           updatedAt: new Date(),
           creditCardInfo: {
@@ -231,6 +255,23 @@ describe("WalletsService", () => {
 
       vi.mocked(mockPrisma.wallet.findMany).mockResolvedValue(mockWallets);
 
+      vi.mocked(mockPrisma.transaction.groupBy)
+        .mockResolvedValueOnce([
+          {
+            walletId: "wallet-1",
+            type: "INCOME",
+            _sum: { amount: { toNumber: () => 50 } },
+          },
+          {
+            walletId: "wallet-1",
+            type: "EXPENSE",
+            _sum: { amount: { toNumber: () => 20 } },
+          },
+        ] as any)
+        .mockResolvedValueOnce([
+          { walletId: "wallet-2", _sum: { amount: { toNumber: () => 200 } } },
+        ] as any);
+
       const result = await service.findAllByUserId(userId);
 
       expect(mockPrisma.wallet.findMany).toHaveBeenCalledWith({
@@ -241,16 +282,28 @@ describe("WalletsService", () => {
 
       expect(result).toHaveLength(2);
       expect(result[0]).toEqual({
-        ...mockWallets[0],
-        balance: 0,
+        id: mockWallets[0].id,
+        name: mockWallets[0].name,
+        color: mockWallets[0].color,
+        icon: mockWallets[0].icon,
+        type: mockWallets[0].type,
+        ownerId: mockWallets[0].ownerId,
+        creditCardInfo: null,
+        balance: 130,
         createdAt: mockWallets[0].createdAt.toISOString(),
         updatedAt: mockWallets[0].updatedAt.toISOString(),
       });
       expect(result[1]).toEqual({
-        ...mockWallets[1],
+        id: mockWallets[1].id,
+        name: mockWallets[1].name,
+        color: mockWallets[1].color,
+        icon: mockWallets[1].icon,
+        type: mockWallets[1].type,
+        ownerId: mockWallets[1].ownerId,
         creditCardInfo: {
           ...mockWallets[1].creditCardInfo,
           limit: 5000,
+          availableLimit: 4800,
         },
         balance: 0,
         createdAt: mockWallets[1].createdAt.toISOString(),
@@ -278,7 +331,7 @@ describe("WalletsService", () => {
       vi.mocked(mockPrisma.wallet.findMany).mockRejectedValue(error);
 
       await expect(service.findAllByUserId(userId)).rejects.toThrow(
-        "Sem permissão para acessar as carteiras",
+        "Sem permissão para acessar as contas",
       );
     });
 
@@ -290,7 +343,7 @@ describe("WalletsService", () => {
       vi.mocked(mockPrisma.wallet.findMany).mockRejectedValue(error);
 
       await expect(service.findAllByUserId(userId)).rejects.toThrow(
-        "Erro inesperado ao buscar carteira",
+        "Erro inesperado ao buscar conta",
       );
     });
   });

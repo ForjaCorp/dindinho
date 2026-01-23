@@ -10,10 +10,10 @@ import {
 } from "@dindinho/shared";
 
 /**
- * Rotas da API para gerenciamento de carteiras.
+ * Rotas da API para gerenciamento de contas.
  *
  * @description
- * Define os endpoints para criação e listagem de carteiras dos usuários.
+ * Define os endpoints para criação e listagem de contas dos usuários.
  * Todas as rotas requerem autenticação via JWT.
  *
  * @example
@@ -24,7 +24,7 @@ import {
  */
 export async function walletsRoutes(app: FastifyInstance) {
   /**
-   * Instância do serviço de carteiras para operações de negócio.
+   * Instância do serviço de contas para operações de negócio.
    */
   const service = new WalletsService(prisma);
 
@@ -44,10 +44,10 @@ export async function walletsRoutes(app: FastifyInstance) {
   });
 
   /**
-   * Endpoint para criar uma nova carteira.
+   * Endpoint para criar uma nova conta.
    *
    * @description
-   * Cria uma carteira para o usuário autenticado. Suporta carteiras
+   * Cria uma conta para o usuário autenticado. Suporta contas
    * padrão e cartões de crédito com informações específicas.
    *
    * @example
@@ -67,7 +67,7 @@ export async function walletsRoutes(app: FastifyInstance) {
     "/",
     {
       schema: {
-        summary: "Criar carteira",
+        summary: "Criar conta",
         tags: ["wallets"],
         body: createWalletSchema,
         response: {
@@ -87,10 +87,10 @@ export async function walletsRoutes(app: FastifyInstance) {
   );
 
   /**
-   * Endpoint para listar todas as carteiras do usuário.
+   * Endpoint para listar todas as contas do usuário.
    *
    * @description
-   * Retorna todas as carteiras pertencentes ao usuário autenticado,
+   * Retorna todas as contas pertencentes ao usuário autenticado,
    * ordenadas por data de criação. Inclui informações de cartão
    * de crédito quando aplicável.
    *
@@ -115,7 +115,7 @@ export async function walletsRoutes(app: FastifyInstance) {
     "/",
     {
       schema: {
-        summary: "Listar carteiras",
+        summary: "Listar contas",
         tags: ["wallets"],
         response: {
           200: z.array(walletSchema),
