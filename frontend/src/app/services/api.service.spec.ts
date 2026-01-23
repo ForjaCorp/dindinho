@@ -18,6 +18,8 @@ import {
   AccountDTO,
   CreateTransactionDTO,
   TransactionDTO,
+  UpdateTransactionDTO,
+  DeleteTransactionResponseDTO,
 } from '@dindinho/shared';
 
 /**
@@ -502,6 +504,90 @@ describe('ApiService', () => {
       );
       expect(req.request.method).toBe('GET');
       req.flush({ items: [], nextCursorId: null });
+    });
+  });
+
+  describe('getTransactionById()', () => {
+    it('deve fazer requisição GET para endpoint de transação por id', () => {
+      const id = '123e4567-e89b-12d3-a456-426614174111';
+
+      const responseBody: TransactionDTO = {
+        id,
+        accountId: '123e4567-e89b-12d3-a456-426614174000',
+        categoryId: null,
+        amount: 10.5,
+        description: 'Café',
+        date: '2026-01-01T00:00:00.000Z',
+        type: 'EXPENSE',
+        isPaid: true,
+        recurrenceId: null,
+        installmentNumber: null,
+        totalInstallments: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      };
+
+      service.getTransactionById(id).subscribe((response) => {
+        expect(response).toEqual(responseBody);
+      });
+
+      const req = httpMock.expectOne(`http://localhost:3333/api/transactions/${id}`);
+      expect(req.request.method).toBe('GET');
+      req.flush(responseBody);
+    });
+  });
+
+  describe('updateTransaction()', () => {
+    it('deve fazer requisição PATCH para endpoint de transação por id', () => {
+      const id = '123e4567-e89b-12d3-a456-426614174111';
+      const payload: UpdateTransactionDTO = {
+        description: 'Mercado',
+        isPaid: false,
+      };
+
+      const responseBody: TransactionDTO = {
+        id,
+        accountId: '123e4567-e89b-12d3-a456-426614174000',
+        categoryId: null,
+        amount: 10.5,
+        description: 'Mercado',
+        date: '2026-01-01T00:00:00.000Z',
+        type: 'EXPENSE',
+        isPaid: false,
+        recurrenceId: null,
+        installmentNumber: null,
+        totalInstallments: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      };
+
+      service.updateTransaction(id, payload).subscribe((response) => {
+        expect(response).toEqual(responseBody);
+      });
+
+      const req = httpMock.expectOne(`http://localhost:3333/api/transactions/${id}`);
+      expect(req.request.method).toBe('PATCH');
+      expect(req.request.body).toEqual(payload);
+      req.flush(responseBody);
+    });
+  });
+
+  describe('deleteTransaction()', () => {
+    it('deve fazer requisição DELETE para endpoint de transação por id com scope', () => {
+      const id = '123e4567-e89b-12d3-a456-426614174111';
+      const responseBody: DeleteTransactionResponseDTO = { deletedIds: [id] };
+
+      service.deleteTransaction(id, 'ONE').subscribe((response) => {
+        expect(response).toEqual(responseBody);
+      });
+
+      const req = httpMock.expectOne(
+        (r) =>
+          r.url === `http://localhost:3333/api/transactions/${id}` &&
+          r.params.get('scope') === 'ONE',
+      );
+      expect(req.request.method).toBe('DELETE');
+      req.flush(responseBody);
     });
   });
 

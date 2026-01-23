@@ -378,4 +378,132 @@ describe("Rotas de Transações", () => {
       expect(body2.items[0].id).toBe("123e4567-e89b-12d3-a456-426614174013");
     });
   });
+
+  describe("GET /api/transactions/:id", () => {
+    it("deve obter transação por id", async () => {
+      const id = "123e4567-e89b-12d3-a456-426614174099";
+
+      prismaMock.transaction.findFirst.mockResolvedValue({
+        id,
+        accountId,
+        categoryId: null,
+        amount: { toNumber: () => 10 },
+        description: "Café",
+        date: new Date("2026-01-01T00:00:00.000Z"),
+        type: TransactionType.EXPENSE,
+        isPaid: true,
+        transferId: null,
+        recurrenceId: null,
+        recurrenceFrequency: null,
+        recurrenceIntervalDays: null,
+        installmentNumber: null,
+        totalInstallments: null,
+        tags: null,
+        purchaseDate: null,
+        invoiceMonth: null,
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+      } as any);
+
+      const response = await app.inject({
+        method: "GET",
+        url: `/api/transactions/${id}`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.id).toBe(id);
+      expect(body.accountId).toBe(accountId);
+      expect(body.amount).toBe(10);
+    });
+  });
+
+  describe("PATCH /api/transactions/:id", () => {
+    it("deve atualizar transação", async () => {
+      const id = "123e4567-e89b-12d3-a456-426614174099";
+      const payload = {
+        description: "Mercado",
+        isPaid: false,
+      };
+
+      prismaMock.transaction.findUnique.mockResolvedValue({
+        id,
+        accountId,
+        type: TransactionType.EXPENSE,
+        transferId: null,
+      } as any);
+
+      prismaMock.account.findUnique.mockResolvedValue({
+        id: accountId,
+        ownerId: userId,
+      } as any);
+
+      prismaMock.transaction.update.mockResolvedValue({
+        id,
+        accountId,
+        categoryId: null,
+        amount: { toNumber: () => 10 },
+        description: payload.description,
+        date: new Date("2026-01-01T00:00:00.000Z"),
+        type: TransactionType.EXPENSE,
+        isPaid: payload.isPaid,
+        transferId: null,
+        recurrenceId: null,
+        recurrenceFrequency: null,
+        recurrenceIntervalDays: null,
+        installmentNumber: null,
+        totalInstallments: null,
+        tags: null,
+        purchaseDate: null,
+        invoiceMonth: null,
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-01-02T00:00:00.000Z"),
+      } as any);
+
+      const response = await app.inject({
+        method: "PATCH",
+        url: `/api/transactions/${id}`,
+        headers: { authorization: `Bearer ${token}` },
+        payload,
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.id).toBe(id);
+      expect(body.description).toBe(payload.description);
+      expect(body.isPaid).toBe(false);
+    });
+  });
+
+  describe("DELETE /api/transactions/:id", () => {
+    it("deve excluir transação", async () => {
+      const id = "123e4567-e89b-12d3-a456-426614174099";
+
+      prismaMock.transaction.findUnique.mockResolvedValue({
+        id,
+        accountId,
+        transferId: null,
+        recurrenceId: null,
+        installmentNumber: null,
+      } as any);
+
+      prismaMock.account.findUnique.mockResolvedValue({
+        id: accountId,
+        ownerId: userId,
+      } as any);
+
+      prismaMock.transaction.delete.mockResolvedValue({ id } as any);
+
+      const response = await app.inject({
+        method: "DELETE",
+        url: `/api/transactions/${id}?scope=ONE`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.deletedIds).toEqual([id]);
+    });
+  });
 });

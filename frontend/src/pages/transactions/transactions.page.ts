@@ -20,6 +20,7 @@ import { ApiService } from '../../app/services/api.service';
 import { AccountService } from '../../app/services/account.service';
 import { EmptyStateComponent } from '../../app/components/empty-state.component';
 import { PageHeaderComponent } from '../../app/components/page-header.component';
+import { TransactionDrawerComponent } from '../../app/components/transaction-drawer.component';
 
 type TransactionTypeFilter = '' | TransactionDTO['type'];
 
@@ -42,6 +43,7 @@ const utcEndOfMonthIso = (year: number, month: number) =>
     DatePipe,
     EmptyStateComponent,
     PageHeaderComponent,
+    TransactionDrawerComponent,
   ],
   template: `
     <div data-testid="transactions-page" class="p-4 pb-24 max-w-3xl mx-auto flex flex-col gap-4">
@@ -162,9 +164,11 @@ const utcEndOfMonthIso = (year: number, month: number) =>
         } @else {
           <div data-testid="transactions-list" class="flex flex-col">
             @for (t of items(); track t.id) {
-              <div
+              <button
+                type="button"
                 [attr.data-testid]="'transactions-item-' + t.id"
-                class="flex items-center justify-between py-3 border-b border-slate-100 last:border-b-0"
+                class="w-full flex items-center justify-between py-3 border-b border-slate-100 last:border-b-0 text-left hover:bg-slate-50 active:bg-slate-100 transition-colors"
+                (click)="transactionDrawer.show(t.id)"
               >
                 <div class="flex flex-col gap-0.5 min-w-0">
                   <span class="text-sm font-semibold text-slate-800 truncate">{{
@@ -183,7 +187,7 @@ const utcEndOfMonthIso = (year: number, month: number) =>
                   </span>
                   <span class="text-xs text-slate-500">{{ transactionTypeLabel(t) }}</span>
                 </div>
-              </div>
+              </button>
             }
           </div>
 
@@ -200,6 +204,12 @@ const utcEndOfMonthIso = (year: number, month: number) =>
           </div>
         }
       </div>
+
+      <app-transaction-drawer
+        #transactionDrawer
+        (updated)="onTransactionUpdated($event)"
+        (deleted)="onTransactionsDeleted($event)"
+      />
     </div>
   `,
 })
@@ -240,6 +250,15 @@ export class TransactionsPage {
   private initialLoadSeq = 0;
 
   protected readonly filtersOpen = signal(false);
+
+  protected onTransactionUpdated(updated: TransactionDTO) {
+    this.items.update((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+  }
+
+  protected onTransactionsDeleted(deletedIds: string[]) {
+    const toRemove = new Set(deletedIds);
+    this.items.update((prev) => prev.filter((t) => !toRemove.has(t.id)));
+  }
 
   constructor() {
     this.accountService.loadAccounts();

@@ -15,6 +15,11 @@ if (!testBed.platform) {
 
 describe('TransactionsPage', () => {
   let fixture: ComponentFixture<TransactionsPage>;
+
+  interface TransactionsPageHarness {
+    onTransactionUpdated: (t: TransactionDTO) => void;
+    onTransactionsDeleted: (ids: string[]) => void;
+  }
   const originalIntersectionObserver = globalThis.IntersectionObserver;
   const observeSpy = vi.fn();
   const disconnectSpy = vi.fn();
@@ -114,6 +119,28 @@ describe('TransactionsPage', () => {
     const list = fixture.nativeElement.querySelector('[data-testid="transactions-list"]');
     expect(list).toBeTruthy();
     expect(list.textContent).toContain('Café');
+  });
+
+  it('deve atualizar item na lista ao receber transação atualizada', () => {
+    const component = fixture.componentInstance as unknown as TransactionsPageHarness;
+
+    component.onTransactionUpdated({ ...txs[0], description: 'Mercado' });
+    fixture.detectChanges();
+
+    const list = fixture.nativeElement.querySelector('[data-testid="transactions-list"]');
+    expect(list).toBeTruthy();
+    expect(list.textContent).toContain('Mercado');
+  });
+
+  it('deve remover itens da lista ao receber ids excluídos', () => {
+    const component = fixture.componentInstance as unknown as TransactionsPageHarness;
+
+    component.onTransactionsDeleted([txs[0].id]);
+    fixture.detectChanges();
+
+    const list = fixture.nativeElement.querySelector('[data-testid="transactions-list"]');
+    expect(list).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('[data-testid="transactions-empty"]')).toBeTruthy();
   });
 
   it('deve navegar para nova transação ao acionar ação', () => {

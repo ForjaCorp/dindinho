@@ -12,6 +12,9 @@ import {
   AccountDTO,
   CreateTransactionDTO,
   TransactionDTO,
+  UpdateTransactionDTO,
+  DeleteTransactionScopeDTO,
+  DeleteTransactionResponseDTO,
 } from '@dindinho/shared';
 
 export interface RefreshResponse {
@@ -169,6 +172,23 @@ export class ApiService {
         params: queryParams,
       },
     );
+  }
+
+  getTransactionById(id: string): Observable<TransactionDTO> {
+    return this.http.get<TransactionDTO>(`${this.baseUrl}/transactions/${id}`);
+  }
+
+  updateTransaction(id: string, data: UpdateTransactionDTO): Observable<TransactionDTO> {
+    return this.http.patch<TransactionDTO>(`${this.baseUrl}/transactions/${id}`, data);
+  }
+
+  deleteTransaction(
+    id: string,
+    scope: DeleteTransactionScopeDTO,
+  ): Observable<DeleteTransactionResponseDTO> {
+    return this.http.delete<DeleteTransactionResponseDTO>(`${this.baseUrl}/transactions/${id}`, {
+      params: { scope },
+    });
   }
 
   getCategories(): Observable<CategoryDTO[]> {

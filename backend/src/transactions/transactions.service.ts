@@ -7,7 +7,12 @@ import {
   RecurrenceFrequency,
 } from "@prisma/client";
 import { randomUUID } from "node:crypto";
-import { CreateTransactionDTO, TransactionDTO } from "@dindinho/shared";
+import {
+  CreateTransactionDTO,
+  DeleteTransactionScopeDTO,
+  TransactionDTO,
+  UpdateTransactionDTO,
+} from "@dindinho/shared";
 
 class ForbiddenError extends Error {
   readonly statusCode = 403;
@@ -587,5 +592,210 @@ export class TransactionsService {
     const nextCursorId =
       items.length === limit ? items[items.length - 1]!.id : null;
     return { items, nextCursorId };
+  }
+
+  async getById(userId: string, id: string): Promise<TransactionDTO> {
+    const tx = await this.prisma.transaction.findFirst({
+      where: {
+        id,
+        account: {
+          OR: [
+            { ownerId: userId },
+            {
+              accessList: {
+                some: { userId },
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    if (!tx) throw new NotFoundError("Transação não encontrada");
+    return toTransactionDTO(tx);
+  }
+
+  async update(
+    userId: string,
+    id: string,
+    data: UpdateTransactionDTO,
+  ): Promise<TransactionDTO> {
+    const existing = await this.prisma.transaction.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        accountId: true,
+        type: true,
+        transferId: true,
+      },
+    });
+
+    if (!existing) throw new NotFoundError("Transação não encontrada");
+    await this.assertCanWriteAccount(userId, existing.accountId);
+
+    if (data.categoryId !== undefined && data.categoryId !== null) {
+      await this.assertCategoryAccess(userId, data.categoryId);
+    }
+
+    const nextDate = typeof data.date === "string" ? new Date(data.date) : null;
+
+    const baseUpdate: Prisma.TransactionUpdateInput = {
+      ...(data.categoryId !== undefined ? { categoryId: data.categoryId } : {}),
+      ...(data.description !== undefined
+        ? { description: data.description }
+        : {}),
+      ...(data.isPaid !== undefined ? { isPaid: data.isPaid } : {}),
+      ...(nextDate ? { date: nextDate } : {}),
+    };
+
+    if (existing.type === TransactionType.TRANSFER && existing.transferId) {
+      const pair = await this.prisma.transaction.findMany({
+        where: { transferId: existing.transferId },
+        select: {
+          id: true,
+          accountId: true,
+          type: true,
+        },
+      });
+
+      const byId = new Map<string, { accountId: string }>();
+      for (const t of pair) {
+        if (t.type === TransactionType.TRANSFER) {
+          byId.set(t.id, { accountId: t.accountId });
+        }
+      }
+
+      const accountIds = [...new Set(pair.map((t) => t.accountId))];
+      const accounts = await this.prisma.account.findMany({
+        where: { id: { in: accountIds } },
+        include: { creditCardInfo: true },
+      });
+
+      const accountById = new Map<string, (typeof accounts)[number]>();
+      for (const a of accounts) accountById.set(a.id, a);
+
+      await this.prisma.$transaction(async (tx) => {
+        for (const t of byId.keys()) {
+          const accountId = byId.get(t)!.accountId;
+          const account = accountById.get(accountId) ?? null;
+
+          const dateFields: Prisma.TransactionUpdateInput = {};
+          if (nextDate) {
+            if (account?.type === AccountType.CREDIT) {
+              this.ensureCreditCardInfo(account);
+              dateFields.date = nextDate;
+              dateFields.purchaseDate = nextDate;
+              dateFields.invoiceMonth = computeInvoiceMonth(
+                nextDate,
+                account.creditCardInfo!.closingDay,
+              );
+            } else {
+              dateFields.date = nextDate;
+            }
+          }
+
+          await tx.transaction.update({
+            where: { id: t },
+            data: {
+              ...baseUpdate,
+              ...dateFields,
+            },
+          });
+        }
+      });
+
+      return this.getById(userId, id);
+    }
+
+    if (nextDate) {
+      const account = await this.prisma.account.findUnique({
+        where: { id: existing.accountId },
+        include: { creditCardInfo: true },
+      });
+      if (account?.type === AccountType.CREDIT) {
+        this.ensureCreditCardInfo(account);
+        baseUpdate.purchaseDate = nextDate;
+        baseUpdate.invoiceMonth = computeInvoiceMonth(
+          nextDate,
+          account.creditCardInfo!.closingDay,
+        );
+      }
+    }
+
+    const updated = await this.prisma.transaction.update({
+      where: { id },
+      data: baseUpdate,
+    });
+
+    return toTransactionDTO(updated);
+  }
+
+  async delete(
+    userId: string,
+    id: string,
+    scope: DeleteTransactionScopeDTO,
+  ): Promise<{ deletedIds: string[] }> {
+    const tx = await this.prisma.transaction.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        accountId: true,
+        transferId: true,
+        recurrenceId: true,
+        installmentNumber: true,
+      },
+    });
+
+    if (!tx) throw new NotFoundError("Transação não encontrada");
+    await this.assertCanWriteAccount(userId, tx.accountId);
+
+    if (tx.transferId) {
+      const toDelete = await this.prisma.transaction.findMany({
+        where: { transferId: tx.transferId },
+        select: { id: true },
+      });
+      const deletedIds = toDelete.map((t) => t.id);
+      await this.prisma.transaction.deleteMany({
+        where: { transferId: tx.transferId },
+      });
+      return { deletedIds };
+    }
+
+    const hasSeries =
+      typeof tx.recurrenceId === "string" &&
+      typeof tx.installmentNumber === "number";
+
+    if (!hasSeries || scope === "ONE") {
+      await this.prisma.transaction.delete({ where: { id: tx.id } });
+      return { deletedIds: [tx.id] };
+    }
+
+    if (scope === "ALL") {
+      const toDelete = await this.prisma.transaction.findMany({
+        where: { recurrenceId: tx.recurrenceId as string },
+        select: { id: true },
+      });
+      const deletedIds = toDelete.map((t) => t.id);
+      await this.prisma.transaction.deleteMany({
+        where: { recurrenceId: tx.recurrenceId as string },
+      });
+      return { deletedIds };
+    }
+
+    const toDelete = await this.prisma.transaction.findMany({
+      where: {
+        recurrenceId: tx.recurrenceId as string,
+        installmentNumber: { gte: tx.installmentNumber as number },
+      },
+      select: { id: true },
+    });
+    const deletedIds = toDelete.map((t) => t.id);
+    await this.prisma.transaction.deleteMany({
+      where: {
+        recurrenceId: tx.recurrenceId as string,
+        installmentNumber: { gte: tx.installmentNumber as number },
+      },
+    });
+    return { deletedIds };
   }
 }

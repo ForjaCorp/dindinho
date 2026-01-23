@@ -31,6 +31,7 @@ import { BackendStatusCardComponent } from '../app/components/backend-status-car
 import { EmptyStateComponent } from '../app/components/empty-state.component';
 import { DashboardAccountsSectionComponent } from '../app/components/dashboard-accounts-section.component';
 import { DashboardCreditCardsSectionComponent } from '../app/components/dashboard-credit-cards-section.component';
+import { TransactionDrawerComponent } from '../app/components/transaction-drawer.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -45,6 +46,7 @@ import { DashboardCreditCardsSectionComponent } from '../app/components/dashboar
     EmptyStateComponent,
     DashboardAccountsSectionComponent,
     DashboardCreditCardsSectionComponent,
+    TransactionDrawerComponent,
   ],
   template: `
     <div class="flex flex-col gap-4 p-4 pb-24">
@@ -145,9 +147,11 @@ import { DashboardCreditCardsSectionComponent } from '../app/components/dashboar
             class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden"
           >
             @for (t of recentTransactions(); track t.id) {
-              <div
+              <button
+                type="button"
                 [attr.data-testid]="'dashboard-transaction-item-' + t.id"
-                class="flex items-center justify-between px-4 py-3 border-b border-slate-100 last:border-b-0"
+                class="w-full flex items-center justify-between px-4 py-3 border-b border-slate-100 last:border-b-0 text-left hover:bg-slate-50 active:bg-slate-100 transition-colors"
+                (click)="transactionDrawer.show(t.id)"
               >
                 <div class="flex flex-col gap-0.5 min-w-0">
                   <span class="text-sm font-semibold text-slate-800 truncate">{{
@@ -166,7 +170,7 @@ import { DashboardCreditCardsSectionComponent } from '../app/components/dashboar
                   </span>
                   <span class="text-xs text-slate-500">{{ transactionTypeLabel(t) }}</span>
                 </div>
-              </div>
+              </button>
             }
 
             <button
@@ -196,6 +200,12 @@ import { DashboardCreditCardsSectionComponent } from '../app/components/dashboar
       </div>
 
       <app-backend-status-card [apiData]="apiData()" [error]="error()" />
+
+      <app-transaction-drawer
+        #transactionDrawer
+        (updated)="onTransactionUpdated($event)"
+        (deleted)="onTransactionsDeleted($event)"
+      />
     </div>
   `,
 })
@@ -238,6 +248,15 @@ export class DashboardComponent implements OnInit {
     this.checkBackendConnection();
     this.loadAccounts();
     this.loadRecentTransactions();
+  }
+
+  protected onTransactionUpdated(updated: TransactionDTO) {
+    this.recentTransactions.update((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+  }
+
+  protected onTransactionsDeleted(deletedIds: string[]) {
+    const toRemove = new Set(deletedIds);
+    this.recentTransactions.update((prev) => prev.filter((t) => !toRemove.has(t.id)));
   }
 
   checkBackendConnection() {

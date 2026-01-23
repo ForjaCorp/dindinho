@@ -6,13 +6,23 @@ import { TransactionsService } from "./transactions.service";
 import {
   CreateTransactionDTO,
   createTransactionSchema,
+  deleteTransactionQuerySchema,
+  deleteTransactionResponseSchema,
+  DeleteTransactionQueryDTO,
+  DeleteTransactionScopeDTO,
   listTransactionsQuerySchema,
   paginatedTransactionsSchema,
   transactionSchema,
+  updateTransactionSchema,
+  UpdateTransactionDTO,
 } from "@dindinho/shared";
 
 export async function transactionsRoutes(app: FastifyInstance) {
   const service = new TransactionsService(prisma);
+
+  const paramsSchema = z.object({
+    id: z.string().uuid(),
+  });
 
   app.addHook("onRequest", async (request) => {
     try {
@@ -65,6 +75,81 @@ export async function transactionsRoutes(app: FastifyInstance) {
       const { sub: userId } = request.user as { sub: string };
       const parsed = listTransactionsQuerySchema.parse(request.query);
       return service.list(userId, parsed);
+    },
+  );
+
+  app.withTypeProvider<ZodTypeProvider>().get(
+    "/:id",
+    {
+      schema: {
+        summary: "Obter transação",
+        tags: ["transactions"],
+        params: paramsSchema,
+        response: {
+          200: transactionSchema,
+          401: z.object({ message: z.string() }),
+          403: z.object({ message: z.string() }),
+          404: z.object({ message: z.string() }),
+        },
+      },
+    },
+    async (request) => {
+      const { sub: userId } = request.user as { sub: string };
+      const { id } = paramsSchema.parse(request.params);
+      return service.getById(userId, id);
+    },
+  );
+
+  app.withTypeProvider<ZodTypeProvider>().patch(
+    "/:id",
+    {
+      schema: {
+        summary: "Atualizar transação",
+        tags: ["transactions"],
+        params: paramsSchema,
+        body: updateTransactionSchema,
+        response: {
+          200: transactionSchema,
+          400: z.object({ message: z.string() }).passthrough(),
+          401: z.object({ message: z.string() }),
+          403: z.object({ message: z.string() }),
+          404: z.object({ message: z.string() }),
+        },
+      },
+    },
+    async (request) => {
+      const { sub: userId } = request.user as { sub: string };
+      const { id } = paramsSchema.parse(request.params);
+      const payload: UpdateTransactionDTO = updateTransactionSchema.parse(
+        request.body,
+      );
+      return service.update(userId, id, payload);
+    },
+  );
+
+  app.withTypeProvider<ZodTypeProvider>().delete(
+    "/:id",
+    {
+      schema: {
+        summary: "Excluir transação",
+        tags: ["transactions"],
+        params: paramsSchema,
+        querystring: deleteTransactionQuerySchema,
+        response: {
+          200: deleteTransactionResponseSchema,
+          401: z.object({ message: z.string() }),
+          403: z.object({ message: z.string() }),
+          404: z.object({ message: z.string() }),
+        },
+      },
+    },
+    async (request) => {
+      const { sub: userId } = request.user as { sub: string };
+      const { id } = paramsSchema.parse(request.params);
+      const query: DeleteTransactionQueryDTO =
+        deleteTransactionQuerySchema.parse(request.query);
+      const scope: DeleteTransactionScopeDTO = query.scope ?? "ONE";
+      return service.delete(userId, id, scope);
     },
   );
 }

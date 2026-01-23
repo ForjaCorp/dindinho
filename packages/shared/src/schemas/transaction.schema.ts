@@ -104,6 +104,52 @@ export const transactionSchema = z.object({
 
 export type TransactionDTO = z.infer<typeof transactionSchema>;
 
+export const updateTransactionSchema = z
+  .object({
+    categoryId: z.string().uuid().nullable().optional(),
+    description: z.string().trim().min(1).nullable().optional(),
+    date: z.string().datetime().optional(),
+    isPaid: z.boolean().optional(),
+  })
+  .refine(
+    (data) =>
+      data.categoryId !== undefined ||
+      data.description !== undefined ||
+      data.date !== undefined ||
+      data.isPaid !== undefined,
+    {
+      message: "Informe ao menos um campo para atualização",
+    },
+  );
+
+export type UpdateTransactionDTO = z.infer<typeof updateTransactionSchema>;
+
+export const deleteTransactionScopeSchema = z.enum([
+  "ONE",
+  "THIS_AND_FOLLOWING",
+  "ALL",
+]);
+
+export type DeleteTransactionScopeDTO = z.infer<
+  typeof deleteTransactionScopeSchema
+>;
+
+export const deleteTransactionQuerySchema = z.object({
+  scope: deleteTransactionScopeSchema.optional(),
+});
+
+export type DeleteTransactionQueryDTO = z.infer<
+  typeof deleteTransactionQuerySchema
+>;
+
+export const deleteTransactionResponseSchema = z.object({
+  deletedIds: z.array(z.string().uuid()),
+});
+
+export type DeleteTransactionResponseDTO = z.infer<
+  typeof deleteTransactionResponseSchema
+>;
+
 export const listTransactionsQuerySchema = z.object({
   accountId: z.string().uuid().optional(),
   from: z.string().datetime().optional(),

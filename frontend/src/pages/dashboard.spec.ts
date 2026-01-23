@@ -21,6 +21,12 @@ import { Router } from '@angular/router';
 describe('DashboardComponent', () => {
   let component: DashboardComponent;
   let fixture: ComponentFixture<DashboardComponent>;
+
+  interface DashboardHarness {
+    recentTransactions: { set: (v: TransactionDTO[]) => void };
+    onTransactionUpdated: (t: TransactionDTO) => void;
+    onTransactionsDeleted: (ids: string[]) => void;
+  }
   let apiServiceMock: {
     getHello: ReturnType<typeof vi.fn>;
     getTransactions: ReturnType<typeof vi.fn>;
@@ -172,6 +178,64 @@ describe('DashboardComponent', () => {
     const list = fixture.nativeElement.querySelector('[data-testid="dashboard-transactions-list"]');
     expect(list).toBeTruthy();
     expect(list.textContent).toContain('Mercado');
+  });
+
+  it('deve atualizar transação na lista ao receber updated do drawer', () => {
+    const tx: TransactionDTO = {
+      id: 'tx-1',
+      accountId: 'account-1',
+      categoryId: null,
+      amount: 10,
+      description: 'Café',
+      date: '2026-01-02T00:00:00.000Z',
+      type: 'EXPENSE',
+      isPaid: true,
+      recurrenceId: null,
+      installmentNumber: null,
+      totalInstallments: null,
+      createdAt: '2026-01-02T00:00:00.000Z',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    };
+
+    const harness = component as unknown as DashboardHarness;
+    harness.recentTransactions.set([tx]);
+    fixture.detectChanges();
+
+    harness.onTransactionUpdated({ ...tx, description: 'Mercado' });
+    fixture.detectChanges();
+
+    const list = fixture.nativeElement.querySelector('[data-testid="dashboard-transactions-list"]');
+    expect(list).toBeTruthy();
+    expect(list.textContent).toContain('Mercado');
+  });
+
+  it('deve remover transações da lista ao receber deleted do drawer', () => {
+    const tx: TransactionDTO = {
+      id: 'tx-1',
+      accountId: 'account-1',
+      categoryId: null,
+      amount: 10,
+      description: 'Café',
+      date: '2026-01-02T00:00:00.000Z',
+      type: 'EXPENSE',
+      isPaid: true,
+      recurrenceId: null,
+      installmentNumber: null,
+      totalInstallments: null,
+      createdAt: '2026-01-02T00:00:00.000Z',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    };
+
+    const harness = component as unknown as DashboardHarness;
+    harness.recentTransactions.set([tx]);
+    fixture.detectChanges();
+
+    harness.onTransactionsDeleted([tx.id]);
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="dashboard-transactions-list"]'),
+    ).toBeFalsy();
   });
 
   it('deve exibir o botão "Nova Conta"', () => {
