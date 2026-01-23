@@ -29,7 +29,7 @@ export interface RefreshResponse {
  *
  * Funcionalidades:
  * - Autenticação de usuários (login)
- * - Gerenciamento de carteiras (criação, listagem)
+ * - Gerenciamento de contas (criação, listagem)
  * - Comunicação com backend via HttpClient
  * - Configuração automática via environment variables
  *
@@ -41,8 +41,8 @@ export interface RefreshResponse {
  * this.api.login({ email: 'user@dindinho.com', password: 'senha123' })
  *   .subscribe(response => console.log(response.token));
  *
- * // Criação de carteira:
- * this.api.createWallet({ name: 'Minha Carteira', type: 'savings' })
+ * // Criação de conta:
+ * this.api.createWallet({ name: 'Minha Conta', type: 'savings' })
  *   .subscribe(wallet => console.log(wallet.id));
  *
  * @since 1.0.0
@@ -99,21 +99,21 @@ export class ApiService {
   }
 
   /**
-   * Cria uma nova carteira para o usuário autenticado.
+   * Cria uma nova conta para o usuário autenticado.
    *
-   * @param {CreateWalletDTO} data - Dados da carteira a ser criada
-   * @returns {Observable<WalletDTO>} Observable com a carteira criada
+   * @param {CreateWalletDTO} data - Dados da conta a ser criada
+   * @returns {Observable<WalletDTO>} Observable com a conta criada
    *
    * @description
-   * Envia os dados da nova carteira para o backend. A autenticação é
+   * Envia os dados da nova conta para o backend. A autenticação é
    * realizada automaticamente pelo interceptor HTTP.
    *
    * @example
    * // Exemplo de uso:
-   * this.api.createWallet({ name: 'Carteira Principal', type: 'checking' })
+   * this.api.createWallet({ name: 'Conta Principal', type: 'checking' })
    *   .subscribe({
-   *     next: (wallet) => console.log('Carteira criada:', wallet.id),
-   *     error: (error) => console.error('Erro ao criar carteira', error)
+   *     next: (wallet) => console.log('Conta criada:', wallet.id),
+   *     error: (error) => console.error('Erro ao criar conta', error)
    *   });
    */
   createWallet(data: CreateWalletDTO): Observable<WalletDTO> {
@@ -121,19 +121,19 @@ export class ApiService {
   }
 
   /**
-   * Lista todas as carteiras do usuário autenticado.
+   * Lista todas as contas do usuário autenticado.
    *
-   * @returns {Observable<WalletDTO[]>} Observable com array de carteiras
+   * @returns {Observable<WalletDTO[]>} Observable com array de contas
    *
    * @description
-   * Recupera todas as carteiras associadas ao usuário atual.
+   * Recupera todas as contas associadas ao usuário atual.
    * A autenticação é realizada automaticamente pelo interceptor HTTP.
    *
    * @example
    * // Exemplo de uso:
    * this.api.getWallets().subscribe({
-   *   next: (wallets) => console.log('Carteiras:', wallets),
-   *   error: (error) => console.error('Erro ao listar carteiras', error)
+   *   next: (wallets) => console.log('Contas:', wallets),
+   *   error: (error) => console.error('Erro ao listar contas', error)
    * });
    */
   getWallets(): Observable<WalletDTO[]> {

@@ -1,5 +1,5 @@
 /**
- * Testes do serviço de carteiras
+ * Testes do serviço de contas
  * @description Testes unitários do WalletService responsável pelo gerenciamento de estado
  * @since 1.0.0
  */
@@ -22,7 +22,7 @@ describe('WalletService', () => {
   const mockWallets: WalletDTO[] = [
     {
       id: 'wallet-1',
-      name: 'Carteira Padrão',
+      name: 'Conta Padrão',
       color: '#FF5722',
       icon: 'pi-wallet',
       type: 'STANDARD',
@@ -51,7 +51,7 @@ describe('WalletService', () => {
   ];
 
   const mockCreateWalletData: CreateWalletDTO = {
-    name: 'Nova Carteira',
+    name: 'Nova Conta',
     color: '#00FF00',
     icon: 'pi-money-bill',
     type: 'STANDARD',
@@ -92,7 +92,7 @@ describe('WalletService', () => {
     });
 
     it('deve calcular walletsByType corretamente', () => {
-      // Testa que o computed funciona corretamente quando há carteiras
+      // Testa que o computed funciona corretamente quando há contas
       const byType = service.walletsByType();
       expect(byType.standard).toEqual([]);
       expect(byType.credit).toEqual([]);
@@ -124,7 +124,7 @@ describe('WalletService', () => {
   });
 
   describe('loadWallets()', () => {
-    it('deve carregar carteiras com sucesso', () => {
+    it('deve carregar contas com sucesso', () => {
       apiService.getWallets.mockReturnValue(of(mockWallets));
 
       service.loadWallets();
@@ -211,7 +211,7 @@ describe('WalletService', () => {
   describe('createWallet()', () => {
     const newWallet: WalletDTO = {
       id: 'wallet-3',
-      name: 'Nova Carteira',
+      name: 'Nova Conta',
       color: '#00FF00',
       icon: 'pi-money-bill',
       type: 'STANDARD',
@@ -221,7 +221,7 @@ describe('WalletService', () => {
       updatedAt: '2024-01-01T00:00:00.000Z',
     };
 
-    it('deve criar carteira com sucesso', () => {
+    it('deve criar conta com sucesso', () => {
       // Testa criação partindo do estado inicial vazio
       apiService.createWallet.mockReturnValue(of(newWallet));
 
@@ -235,7 +235,7 @@ describe('WalletService', () => {
       vi.useFakeTimers();
       vi.runAllTimers();
 
-      // Verifica que a carteira foi adicionada
+      // Verifica que a conta foi adicionada
       expect(service.wallets()).toHaveLength(1);
       expect(service.wallets()[0]).toEqual(newWallet);
       expect(service.isLoading()).toBe(false);
@@ -286,25 +286,25 @@ describe('WalletService', () => {
   });
 
   describe('removeWalletFromState()', () => {
-    it('deve remover carteira do estado local', () => {
-      // Testa remoção quando não há carteiras (estado inicial)
+    it('deve remover conta do estado local', () => {
+      // Testa remoção quando não há contas (estado inicial)
       service.removeWalletFromState('wallet-1');
       expect(service.wallets()).toEqual([]);
     });
 
     it('não deve alterar estado se walletId não encontrado', () => {
-      // Testa remoção quando não há carteiras (estado inicial)
+      // Testa remoção quando não há contas (estado inicial)
       service.removeWalletFromState('wallet-inexistente');
       expect(service.wallets()).toEqual([]);
     });
   });
 
   describe('updateWalletInState()', () => {
-    it('deve atualizar carteira existente no estado local', () => {
-      // Testa atualização quando não há carteiras (estado inicial)
+    it('deve atualizar conta existente no estado local', () => {
+      // Testa atualização quando não há contas (estado inicial)
       const newWallet: WalletDTO = {
         id: 'wallet-novo',
-        name: 'Nova Carteira',
+        name: 'Nova Conta',
         color: '#FF0000',
         icon: 'pi-wallet',
         type: 'STANDARD',
@@ -319,10 +319,10 @@ describe('WalletService', () => {
     });
 
     it('não deve alterar estado se walletId não encontrado', () => {
-      // Testa atualização quando não há carteiras (estado inicial)
+      // Testa atualização quando não há contas (estado inicial)
       const newWallet: WalletDTO = {
         id: 'wallet-novo',
-        name: 'Nova Carteira',
+        name: 'Nova Conta',
         color: '#FF0000',
         icon: 'pi-wallet',
         type: 'STANDARD',
@@ -338,7 +338,7 @@ describe('WalletService', () => {
   });
 
   describe('getWalletById()', () => {
-    it('deve retornar undefined quando não há carteiras', () => {
+    it('deve retornar undefined quando não há contas', () => {
       expect(service.getWalletById('wallet-1')).toBeUndefined();
     });
 
@@ -349,8 +349,8 @@ describe('WalletService', () => {
       expect(service.getWalletById(undefined as unknown as string)).toBeUndefined();
     });
 
-    it('deve encontrar carteira por ID quando existente', () => {
-      // Primeiro carregar carteiras mock
+    it('deve encontrar conta por ID quando existente', () => {
+      // Primeiro carregar contas mock
       apiService.getWallets.mockReturnValue(of(mockWallets));
       service.loadWallets();
 
@@ -374,12 +374,12 @@ describe('WalletService', () => {
   });
 
   describe('getWalletsByType()', () => {
-    it('deve retornar array vazio quando não há carteiras', () => {
+    it('deve retornar array vazio quando não há contas', () => {
       expect(service.getWalletsByType('STANDARD')).toEqual([]);
       expect(service.getWalletsByType('CREDIT')).toEqual([]);
     });
 
-    it('deve filtrar carteiras por tipo corretamente', () => {
+    it('deve filtrar contas por tipo corretamente', () => {
       apiService.getWallets.mockReturnValue(of(mockWallets));
       service.loadWallets();
 
@@ -401,7 +401,7 @@ describe('WalletService', () => {
 
   describe('sortWallets()', () => {
     beforeEach(() => {
-      // Carregar carteiras para testes de ordenação
+      // Carregar contas para testes de ordenação
       apiService.getWallets.mockReturnValue(of(mockWallets));
       service.loadWallets();
       vi.useFakeTimers();
@@ -411,12 +411,12 @@ describe('WalletService', () => {
     it('deve ordenar por nome ascendente', () => {
       const sorted = service.sortWallets('name', 'asc');
       expect(sorted[0].name).toBe('Cartão Nubank');
-      expect(sorted[1].name).toBe('Carteira Padrão');
+      expect(sorted[1].name).toBe('Conta Padrão');
     });
 
     it('deve ordenar por nome descendente', () => {
       const sorted = service.sortWallets('name', 'desc');
-      expect(sorted[0].name).toBe('Carteira Padrão');
+      expect(sorted[0].name).toBe('Conta Padrão');
       expect(sorted[1].name).toBe('Cartão Nubank');
     });
 
@@ -441,7 +441,7 @@ describe('WalletService', () => {
     it('deve usar direção ascendente por padrão', () => {
       const sorted = service.sortWallets('name');
       expect(sorted[0].name).toBe('Cartão Nubank');
-      expect(sorted[1].name).toBe('Carteira Padrão');
+      expect(sorted[1].name).toBe('Conta Padrão');
     });
 
     it('não deve modificar estado original', () => {
@@ -459,12 +459,12 @@ describe('WalletService', () => {
       vi.runAllTimers();
     });
 
-    it('deve retornar todas carteiras com termo vazio', () => {
+    it('deve retornar todas contas com termo vazio', () => {
       const filtered = service.filterWallets('');
       expect(filtered).toHaveLength(2);
     });
 
-    it('deve retornar todas carteiras com espaço em branco', () => {
+    it('deve retornar todas contas com espaço em branco', () => {
       const filtered = service.filterWallets('   ');
       expect(filtered).toHaveLength(2);
     });
@@ -472,7 +472,7 @@ describe('WalletService', () => {
     it('deve filtrar por nome (case insensitive)', () => {
       const filtered = service.filterWallets('padrão');
       expect(filtered).toHaveLength(1);
-      expect(filtered[0].name).toBe('Carteira Padrão');
+      expect(filtered[0].name).toBe('Conta Padrão');
     });
 
     it('deve filtrar por tipo (case insensitive)', () => {
@@ -507,12 +507,12 @@ describe('WalletService', () => {
       vi.runAllTimers();
     });
 
-    it('deve remover múltiplas carteiras do estado', () => {
+    it('deve remover múltiplas contas do estado', () => {
       service.removeMultipleWalletsFromState(['wallet-1', 'wallet-2']);
       expect(service.wallets()).toHaveLength(0);
     });
 
-    it('deve remover apenas carteiras especificadas', () => {
+    it('deve remover apenas contas especificadas', () => {
       service.removeMultipleWalletsFromState(['wallet-1']);
       expect(service.wallets()).toHaveLength(1);
       expect(service.wallets()[0].id).toBe('wallet-2');
@@ -532,7 +532,7 @@ describe('WalletService', () => {
 
     it('deve lançar erro com ID vazio no array', () => {
       expect(() => service.removeMultipleWalletsFromState(['wallet-1', ''])).toThrow(
-        'ID da carteira é obrigatório',
+        'ID da conta é obrigatório',
       );
     });
   });
@@ -540,12 +540,12 @@ describe('WalletService', () => {
   describe('createMultipleWallets()', () => {
     it('deve lançar erro com array vazio', () => {
       service.createMultipleWallets([]);
-      expect(service.error()).toBe('Array de carteiras é obrigatório');
+      expect(service.error()).toBe('Array de contas é obrigatório');
     });
 
     it('deve lançar erro com array inválido', () => {
       service.createMultipleWallets(null as unknown as CreateWalletDTO[]);
-      expect(service.error()).toBe('Array de carteiras é obrigatório');
+      expect(service.error()).toBe('Array de contas é obrigatório');
     });
 
     it('deve validar dados antes de criar', () => {
@@ -553,18 +553,18 @@ describe('WalletService', () => {
         { name: '', color: '#FF0000', icon: 'pi-wallet', type: 'STANDARD' as const },
       ];
       service.createMultipleWallets(invalidData);
-      expect(service.error()).toBe('Nome da carteira é obrigatório');
+      expect(service.error()).toBe('Nome da conta é obrigatório');
     });
 
-    it('deve criar múltiplas carteiras com sucesso', () => {
+    it('deve criar múltiplas contas com sucesso', () => {
       const walletsToCreate = [
-        { name: 'Carteira 3', color: '#FF0000', icon: 'pi-wallet', type: 'STANDARD' as const },
-        { name: 'Carteira 4', color: '#00FF00', icon: 'pi-credit-card', type: 'CREDIT' as const },
+        { name: 'Conta 3', color: '#FF0000', icon: 'pi-wallet', type: 'STANDARD' as const },
+        { name: 'Conta 4', color: '#00FF00', icon: 'pi-credit-card', type: 'CREDIT' as const },
       ];
 
       const mockWallet3: WalletDTO = {
         id: 'wallet-3',
-        name: 'Carteira 3',
+        name: 'Conta 3',
         color: '#FF0000',
         icon: 'pi-wallet',
         type: 'STANDARD',
@@ -576,7 +576,7 @@ describe('WalletService', () => {
 
       const mockWallet4: WalletDTO = {
         id: 'wallet-4',
-        name: 'Carteira 4',
+        name: 'Conta 4',
         color: '#00FF00',
         icon: 'pi-credit-card',
         type: 'CREDIT',
@@ -603,10 +603,10 @@ describe('WalletService', () => {
   });
 
   describe('integração entre métodos', () => {
-    it('deve criar carteira e depois buscar por ID', () => {
+    it('deve criar conta e depois buscar por ID', () => {
       const newWallet: WalletDTO = {
         id: 'wallet-3',
-        name: 'Nova Carteira',
+        name: 'Nova Conta',
         color: '#00FF00',
         icon: 'pi-money-bill',
         type: 'STANDARD',
@@ -630,7 +630,7 @@ describe('WalletService', () => {
       expect(foundWallet).toEqual(newWallet);
     });
 
-    it('deve carregar carteiras e depois filtrar', () => {
+    it('deve carregar contas e depois filtrar', () => {
       apiService.getWallets.mockReturnValue(of(mockWallets));
       service.loadWallets();
 
@@ -665,7 +665,7 @@ describe('WalletService', () => {
       vi.useFakeTimers();
       vi.runAllTimers();
 
-      expect(service.error()).toBe('Nome da carteira é obrigatório');
+      expect(service.error()).toBe('Nome da conta é obrigatório');
       expect(apiService.createWallet).not.toHaveBeenCalled();
     });
 
@@ -676,7 +676,7 @@ describe('WalletService', () => {
       vi.useFakeTimers();
       vi.runAllTimers();
 
-      expect(service.error()).toBe('Nome da carteira deve ter no máximo 50 caracteres');
+      expect(service.error()).toBe('Nome da conta deve ter no máximo 50 caracteres');
       expect(apiService.createWallet).not.toHaveBeenCalled();
     });
 
@@ -687,7 +687,7 @@ describe('WalletService', () => {
       vi.useFakeTimers();
       vi.runAllTimers();
 
-      expect(service.error()).toBe('Cor da carteira é obrigatória');
+      expect(service.error()).toBe('Cor da conta é obrigatória');
       expect(apiService.createWallet).not.toHaveBeenCalled();
     });
 
@@ -698,7 +698,7 @@ describe('WalletService', () => {
       vi.useFakeTimers();
       vi.runAllTimers();
 
-      expect(service.error()).toBe('Ícone da carteira é obrigatório');
+      expect(service.error()).toBe('Ícone da conta é obrigatório');
       expect(apiService.createWallet).not.toHaveBeenCalled();
     });
 
@@ -709,7 +709,7 @@ describe('WalletService', () => {
       vi.useFakeTimers();
       vi.runAllTimers();
 
-      expect(service.error()).toBe('Tipo da carteira deve ser STANDARD ou CREDIT');
+      expect(service.error()).toBe('Tipo da conta deve ser STANDARD ou CREDIT');
       expect(apiService.createWallet).not.toHaveBeenCalled();
     });
 
@@ -720,13 +720,13 @@ describe('WalletService', () => {
       vi.useFakeTimers();
       vi.runAllTimers();
 
-      const duplicateData = { ...mockCreateWalletData, name: 'Carteira Padrão' };
+      const duplicateData = { ...mockCreateWalletData, name: 'Conta Padrão' };
       service.createWallet(duplicateData);
 
       vi.useFakeTimers();
       vi.runAllTimers();
 
-      expect(service.error()).toBe('Já existe uma carteira com este nome');
+      expect(service.error()).toBe('Já existe uma conta com este nome');
       expect(apiService.createWallet).not.toHaveBeenCalled();
     });
   });

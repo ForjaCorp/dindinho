@@ -45,7 +45,7 @@ import { WalletDTO } from '@dindinho/shared';
               class="text-lg font-semibold text-slate-700"
               [attr.data-testid]="walletValueTestId()"
             >
-              {{ wallet().creditCardInfo!.limit | currency: 'BRL' }}
+              {{ creditAvailableLimit() ?? 0 | currency: 'BRL' }}
             </p>
           </div>
         } @else {
@@ -60,12 +60,12 @@ import { WalletDTO } from '@dindinho/shared';
           </div>
         }
       } @else {
-        @if (wallet().type === 'CREDIT' && wallet().creditCardInfo?.limit) {
+        @if (wallet().type === 'CREDIT' && wallet().creditCardInfo) {
           <p
             class="mt-2 text-base font-bold text-slate-900"
             [attr.data-testid]="walletValueTestId()"
           >
-            {{ wallet().creditCardInfo!.limit | currency: 'BRL' }}
+            {{ creditAvailableLimit() ?? 0 | currency: 'BRL' }}
           </p>
           <p class="text-xs text-slate-500" [attr.data-testid]="walletCaptionTestId()">
             Limite disponível
@@ -90,6 +90,19 @@ export class WalletCardComponent {
   variant = input<'compact' | 'full'>('full');
 
   typeLabel = computed(() => (this.wallet().type === 'CREDIT' ? 'Crédito' : 'Conta'));
+
+  creditAvailableLimit = computed(() => {
+    const credit = this.wallet().creditCardInfo;
+    if (!credit) return null;
+    const value =
+      typeof credit.availableLimit === 'number'
+        ? credit.availableLimit
+        : typeof credit.limit === 'number'
+          ? credit.limit
+          : null;
+
+    return typeof value === 'number' && Number.isFinite(value) ? value : null;
+  });
 
   walletCardTestId = computed(() => `wallet-card-${this.wallet().id}`);
   walletIconTestId = computed(() => `wallet-icon-${this.wallet().id}`);

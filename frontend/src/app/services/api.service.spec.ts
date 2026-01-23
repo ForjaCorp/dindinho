@@ -214,10 +214,10 @@ describe('ApiService', () => {
 
   /**
    * Testes do método createWallet
-   * @description Verifica funcionamento da criação de carteiras via API
+   * @description Verifica funcionamento da criação de contas via API
    */
   describe('createWallet()', () => {
-    it('deve fazer requisição POST para endpoint de carteiras', () => {
+    it('deve fazer requisição POST para endpoint de contas', () => {
       service.createWallet(mockCreateWalletData).subscribe((response) => {
         expect(response).toEqual(mockWallet);
       });
@@ -228,7 +228,7 @@ describe('ApiService', () => {
       req.flush(mockWallet);
     });
 
-    it('deve tratar erro de criação de carteira (401)', () => {
+    it('deve tratar erro de criação de conta (401)', () => {
       service.createWallet(mockCreateWalletData).subscribe({
         next: () => expect.unreachable('deve falhar com erro 401'),
         error: (error) => {
@@ -242,7 +242,7 @@ describe('ApiService', () => {
       req.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
     });
 
-    it('deve tratar erro de criação de carteira (409 - nome duplicado)', () => {
+    it('deve tratar erro de criação de conta (409 - nome duplicado)', () => {
       service.createWallet(mockCreateWalletData).subscribe({
         next: () => expect.unreachable('deve falhar com erro 409'),
         error: (error) => {
@@ -256,7 +256,7 @@ describe('ApiService', () => {
       req.flush('Wallet name already exists', { status: 409, statusText: 'Conflict' });
     });
 
-    it('deve tratar erro de criação de carteira (400 - validação)', () => {
+    it('deve tratar erro de criação de conta (400 - validação)', () => {
       service.createWallet(mockCreateWalletData).subscribe({
         next: () => expect.unreachable('deve falhar com erro 400'),
         error: (error) => {
@@ -270,7 +270,7 @@ describe('ApiService', () => {
       req.flush('Validation error', { status: 400, statusText: 'Bad Request' });
     });
 
-    it('deve tratar erro de rede na criação de carteira', () => {
+    it('deve tratar erro de rede na criação de conta', () => {
       service.createWallet(mockCreateWalletData).subscribe({
         next: () => expect.unreachable('deve falhar com erro de rede'),
         error: (error) => {
@@ -283,9 +283,9 @@ describe('ApiService', () => {
       req.error(new ErrorEvent('Network error'));
     });
 
-    it('deve criar carteira padrão sem informações de cartão de crédito', () => {
+    it('deve criar conta padrão sem informações de cartão de crédito', () => {
       const standardWalletData: CreateWalletDTO = {
-        name: 'Carteira Padrão',
+        name: 'Conta Padrão',
         color: '#FF5733',
         icon: 'pi-wallet',
         type: 'STANDARD',
@@ -293,7 +293,7 @@ describe('ApiService', () => {
 
       const standardWallet: WalletDTO = {
         id: '456e7890-e89b-12d3-a456-426614174111',
-        name: 'Carteira Padrão',
+        name: 'Conta Padrão',
         color: '#FF5733',
         icon: 'pi-wallet',
         type: 'STANDARD',
@@ -316,10 +316,10 @@ describe('ApiService', () => {
 
   /**
    * Testes do método getWallets
-   * @description Verifica funcionamento da listagem de carteiras via API
+   * @description Verifica funcionamento da listagem de contas via API
    */
   describe('getWallets()', () => {
-    it('deve fazer requisição GET para endpoint de carteiras', () => {
+    it('deve fazer requisição GET para endpoint de contas', () => {
       service.getWallets().subscribe((response) => {
         expect(response).toEqual(mockWallets);
       });
@@ -329,7 +329,7 @@ describe('ApiService', () => {
       req.flush(mockWallets);
     });
 
-    it('deve tratar erro de obtenção de carteiras (401)', () => {
+    it('deve tratar erro de obtenção de contas (401)', () => {
       service.getWallets().subscribe({
         next: () => expect.unreachable('deve falhar com erro 401'),
         error: (error) => {
@@ -343,7 +343,7 @@ describe('ApiService', () => {
       req.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
     });
 
-    it('deve tratar erro de obtenção de carteiras (500)', () => {
+    it('deve tratar erro de obtenção de contas (500)', () => {
       service.getWallets().subscribe({
         next: () => expect.unreachable('deve falhar com erro 500'),
         error: (error) => {
@@ -357,7 +357,7 @@ describe('ApiService', () => {
       req.flush('Internal server error', { status: 500, statusText: 'Internal Server Error' });
     });
 
-    it('deve tratar erro de rede na obtenção de carteiras', () => {
+    it('deve tratar erro de rede na obtenção de contas', () => {
       service.getWallets().subscribe({
         next: () => expect.unreachable('deve falhar com erro de rede'),
         error: (error) => {
@@ -370,7 +370,7 @@ describe('ApiService', () => {
       req.error(new ErrorEvent('Network error'));
     });
 
-    it('deve retornar array vazio quando usuário não possui carteiras', () => {
+    it('deve retornar array vazio quando usuário não possui contas', () => {
       service.getWallets().subscribe((response) => {
         expect(response).toEqual([]);
       });
@@ -380,12 +380,12 @@ describe('ApiService', () => {
       req.flush([]);
     });
 
-    it('deve retornar múltiplas carteiras', () => {
+    it('deve retornar múltiplas contas', () => {
       const multipleWallets: WalletDTO[] = [
         mockWallet,
         {
           id: '789e0123-e89b-12d3-a456-426614174222',
-          name: 'Carteira de Emergência',
+          name: 'Conta de Emergência',
           color: '#00FF00',
           icon: 'pi-money-bill',
           type: 'STANDARD',

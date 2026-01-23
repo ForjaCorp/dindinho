@@ -14,7 +14,7 @@ describe('WalletCardComponent', () => {
 
   const standardWallet: WalletDTO = {
     id: 'wallet-1',
-    name: 'Carteira Padrão',
+    name: 'Conta Padrão',
     color: '#10b981',
     icon: 'pi-wallet',
     type: 'STANDARD',
@@ -50,7 +50,7 @@ describe('WalletCardComponent', () => {
     fixture = TestBed.createComponent(WalletCardComponent);
   });
 
-  it('deve renderizar carteira padrão no modo full', () => {
+  it('deve renderizar conta padrão no modo full', () => {
     fixture.componentRef.setInput('wallet', standardWallet);
     fixture.componentRef.setInput('variant', 'full');
     fixture.detectChanges();
@@ -64,7 +64,7 @@ describe('WalletCardComponent', () => {
     expect(type).toBeTruthy();
     expect(type.textContent).toContain('Conta');
     expect(name).toBeTruthy();
-    expect(name.textContent).toContain('Carteira Padrão');
+    expect(name.textContent).toContain('Conta Padrão');
     expect(value).toBeTruthy();
     expect(value.textContent).toContain('R$');
   });
