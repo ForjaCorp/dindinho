@@ -12,6 +12,7 @@ import {
   DeleteTransactionScopeDTO,
   TransactionDTO,
   UpdateTransactionDTO,
+  UpdateTransactionScopeDTO,
 } from "@dindinho/shared";
 
 class ForbiddenError extends Error {
@@ -619,6 +620,7 @@ export class TransactionsService {
     userId: string,
     id: string,
     data: UpdateTransactionDTO,
+    scope: UpdateTransactionScopeDTO = "ONE",
   ): Promise<TransactionDTO> {
     const existing = await this.prisma.transaction.findUnique({
       where: { id },
@@ -627,6 +629,9 @@ export class TransactionsService {
         accountId: true,
         type: true,
         transferId: true,
+        recurrenceId: true,
+        installmentNumber: true,
+        date: true,
       },
     });
 
@@ -645,7 +650,6 @@ export class TransactionsService {
         ? { description: data.description }
         : {}),
       ...(data.isPaid !== undefined ? { isPaid: data.isPaid } : {}),
-      ...(nextDate ? { date: nextDate } : {}),
     };
 
     if (existing.type === TransactionType.TRANSFER && existing.transferId) {
@@ -707,6 +711,71 @@ export class TransactionsService {
       return this.getById(userId, id);
     }
 
+    const hasSeries =
+      typeof existing.recurrenceId === "string" &&
+      typeof existing.installmentNumber === "number";
+
+    if (hasSeries && scope !== "ONE") {
+      const recurrenceId = existing.recurrenceId as string;
+      const installmentNumber = existing.installmentNumber as number;
+
+      const seriesWhere: Prisma.TransactionWhereInput =
+        scope === "ALL"
+          ? { recurrenceId }
+          : {
+              recurrenceId,
+              installmentNumber: { gte: installmentNumber },
+            };
+
+      if (!nextDate) {
+        await this.prisma.transaction.updateMany({
+          where: seriesWhere,
+          data: baseUpdate,
+        });
+        return this.getById(userId, id);
+      }
+
+      const deltaMs = nextDate.getTime() - new Date(existing.date).getTime();
+      const affected = await this.prisma.transaction.findMany({
+        where: seriesWhere,
+        select: { id: true, date: true },
+      });
+
+      const account = await this.prisma.account.findUnique({
+        where: { id: existing.accountId },
+        include: { creditCardInfo: true },
+      });
+
+      const isCredit = account?.type === AccountType.CREDIT;
+      if (isCredit) this.ensureCreditCardInfo(account!);
+
+      await this.prisma.$transaction(async (tx) => {
+        for (const item of affected) {
+          const shiftedDate = new Date(item.date.getTime() + deltaMs);
+          const dateFields: Prisma.TransactionUpdateInput = isCredit
+            ? {
+                date: shiftedDate,
+                purchaseDate: shiftedDate,
+                invoiceMonth: computeInvoiceMonth(
+                  shiftedDate,
+                  account!.creditCardInfo!.closingDay,
+                ),
+              }
+            : { date: shiftedDate };
+
+          await tx.transaction.update({
+            where: { id: item.id },
+            data: {
+              ...baseUpdate,
+              ...dateFields,
+            },
+          });
+        }
+      });
+
+      return this.getById(userId, id);
+    }
+
     if (nextDate) {
       const account = await this.prisma.account.findUnique({
         where: { id: existing.accountId },
@@ -720,6 +789,8 @@ export class TransactionsService {
           account.creditCardInfo!.closingDay,
         );
       }
+
+      baseUpdate.date = nextDate;
     }
 
     const updated = await this.prisma.transaction.update({

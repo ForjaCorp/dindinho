@@ -570,6 +570,42 @@ describe('ApiService', () => {
       expect(req.request.body).toEqual(payload);
       req.flush(responseBody);
     });
+
+    it('deve enviar scope quando informado', () => {
+      const id = '123e4567-e89b-12d3-a456-426614174111';
+      const payload: UpdateTransactionDTO = {
+        description: 'Mercado',
+      };
+
+      const responseBody: TransactionDTO = {
+        id,
+        accountId: '123e4567-e89b-12d3-a456-426614174000',
+        categoryId: null,
+        amount: 10.5,
+        description: 'Mercado',
+        date: '2026-01-01T00:00:00.000Z',
+        type: 'EXPENSE',
+        isPaid: false,
+        recurrenceId: 'rec-1',
+        installmentNumber: 2,
+        totalInstallments: 3,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      };
+
+      service.updateTransaction(id, payload, 'ALL').subscribe((response) => {
+        expect(response).toEqual(responseBody);
+      });
+
+      const req = httpMock.expectOne(
+        (r) =>
+          r.url === `http://localhost:3333/api/transactions/${id}` &&
+          r.params.get('scope') === 'ALL',
+      );
+      expect(req.request.method).toBe('PATCH');
+      expect(req.request.body).toEqual(payload);
+      req.flush(responseBody);
+    });
   });
 
   describe('deleteTransaction()', () => {

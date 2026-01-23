@@ -124,6 +124,24 @@ export const updateTransactionSchema = z
 
 export type UpdateTransactionDTO = z.infer<typeof updateTransactionSchema>;
 
+export const updateTransactionScopeSchema = z.enum([
+  "ONE",
+  "THIS_AND_FOLLOWING",
+  "ALL",
+]);
+
+export type UpdateTransactionScopeDTO = z.infer<
+  typeof updateTransactionScopeSchema
+>;
+
+export const updateTransactionQuerySchema = z.object({
+  scope: updateTransactionScopeSchema.optional(),
+});
+
+export type UpdateTransactionQueryDTO = z.infer<
+  typeof updateTransactionQuerySchema
+>;
+
 export const deleteTransactionScopeSchema = z.enum([
   "ONE",
   "THIS_AND_FOLLOWING",

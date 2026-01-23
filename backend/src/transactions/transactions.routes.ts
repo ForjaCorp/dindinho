@@ -6,6 +6,9 @@ import { TransactionsService } from "./transactions.service";
 import {
   CreateTransactionDTO,
   createTransactionSchema,
+  updateTransactionQuerySchema,
+  UpdateTransactionQueryDTO,
+  UpdateTransactionScopeDTO,
   deleteTransactionQuerySchema,
   deleteTransactionResponseSchema,
   DeleteTransactionQueryDTO,
@@ -107,6 +110,7 @@ export async function transactionsRoutes(app: FastifyInstance) {
         summary: "Atualizar transação",
         tags: ["transactions"],
         params: paramsSchema,
+        querystring: updateTransactionQuerySchema,
         body: updateTransactionSchema,
         response: {
           200: transactionSchema,
@@ -120,10 +124,13 @@ export async function transactionsRoutes(app: FastifyInstance) {
     async (request) => {
       const { sub: userId } = request.user as { sub: string };
       const { id } = paramsSchema.parse(request.params);
+      const query: UpdateTransactionQueryDTO =
+        updateTransactionQuerySchema.parse(request.query);
+      const scope: UpdateTransactionScopeDTO = query.scope ?? "ONE";
       const payload: UpdateTransactionDTO = updateTransactionSchema.parse(
         request.body,
       );
-      return service.update(userId, id, payload);
+      return service.update(userId, id, payload, scope);
     },
   );
 

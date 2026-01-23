@@ -13,6 +13,7 @@ import {
   CreateTransactionDTO,
   TransactionDTO,
   UpdateTransactionDTO,
+  UpdateTransactionScopeDTO,
   DeleteTransactionScopeDTO,
   DeleteTransactionResponseDTO,
 } from '@dindinho/shared';
@@ -178,8 +179,14 @@ export class ApiService {
     return this.http.get<TransactionDTO>(`${this.baseUrl}/transactions/${id}`);
   }
 
-  updateTransaction(id: string, data: UpdateTransactionDTO): Observable<TransactionDTO> {
-    return this.http.patch<TransactionDTO>(`${this.baseUrl}/transactions/${id}`, data);
+  updateTransaction(
+    id: string,
+    data: UpdateTransactionDTO,
+    scope?: UpdateTransactionScopeDTO,
+  ): Observable<TransactionDTO> {
+    return this.http.patch<TransactionDTO>(`${this.baseUrl}/transactions/${id}`, data, {
+      params: scope ? { scope } : {},
+    });
   }
 
   deleteTransaction(

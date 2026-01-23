@@ -474,6 +474,69 @@ describe("Rotas de Transações", () => {
       expect(body.description).toBe(payload.description);
       expect(body.isPaid).toBe(false);
     });
+
+    it("deve atualizar série quando scope=ALL", async () => {
+      const id = "123e4567-e89b-12d3-a456-426614174099";
+      const payload = {
+        description: "Mercado",
+      };
+
+      prismaMock.transaction.findUnique.mockResolvedValue({
+        id,
+        accountId,
+        type: TransactionType.EXPENSE,
+        transferId: null,
+        recurrenceId: "rec-1",
+        installmentNumber: 2,
+        date: new Date("2026-01-02T00:00:00.000Z"),
+      } as any);
+
+      prismaMock.account.findUnique.mockResolvedValue({
+        id: accountId,
+        ownerId: userId,
+      } as any);
+
+      prismaMock.transaction.updateMany.mockResolvedValue({ count: 3 } as any);
+
+      prismaMock.transaction.findFirst.mockResolvedValue({
+        id,
+        accountId,
+        categoryId: null,
+        amount: { toNumber: () => 10 },
+        description: payload.description,
+        date: new Date("2026-01-02T00:00:00.000Z"),
+        type: TransactionType.EXPENSE,
+        isPaid: true,
+        transferId: null,
+        recurrenceId: "rec-1",
+        recurrenceFrequency: null,
+        recurrenceIntervalDays: null,
+        installmentNumber: 2,
+        totalInstallments: 3,
+        tags: null,
+        purchaseDate: null,
+        invoiceMonth: null,
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-01-03T00:00:00.000Z"),
+      } as any);
+
+      const response = await app.inject({
+        method: "PATCH",
+        url: `/api/transactions/${id}?scope=ALL`,
+        headers: { authorization: `Bearer ${token}` },
+        payload,
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.id).toBe(id);
+      expect(body.description).toBe(payload.description);
+
+      expect(prismaMock.transaction.updateMany).toHaveBeenCalledWith({
+        where: { recurrenceId: "rec-1" },
+        data: { description: payload.description },
+      });
+    });
   });
 
   describe("DELETE /api/transactions/:id", () => {

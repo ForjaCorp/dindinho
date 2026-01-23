@@ -20,6 +20,7 @@ import {
   DeleteTransactionScopeDTO,
   TransactionDTO,
   UpdateTransactionDTO,
+  UpdateTransactionScopeDTO,
   updateTransactionSchema,
 } from '@dindinho/shared';
 import { ApiService } from '../services/api.service';
@@ -41,6 +42,12 @@ const dateInputToIso = (value: string) => {
 interface DeleteScopeOption {
   label: string;
   value: DeleteTransactionScopeDTO;
+  testId: string;
+}
+
+interface UpdateScopeOption {
+  label: string;
+  value: UpdateTransactionScopeDTO;
   testId: string;
 }
 
@@ -190,6 +197,32 @@ interface DeleteScopeOption {
               <span class="text-sm text-slate-700">Pago</span>
             </label>
 
+            @if (shouldShowUpdateScopeOptions()) {
+              <div class="flex flex-col gap-2">
+                <div class="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                  Aplicar alterações
+                </div>
+                <div class="flex flex-col gap-2">
+                  @for (opt of updateScopeOptions; track opt.value) {
+                    <label
+                      class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2"
+                      [attr.data-testid]="opt.testId"
+                    >
+                      <input
+                        type="radio"
+                        name="updateScope"
+                        class="w-4 h-4"
+                        [value]="opt.value"
+                        [checked]="updateScope() === opt.value"
+                        (change)="onUpdateScopeChange(opt.value)"
+                      />
+                      <span class="text-sm text-slate-800">{{ opt.label }}</span>
+                    </label>
+                  }
+                </div>
+              </div>
+            }
+
             @if (saveError()) {
               <div
                 data-testid="transaction-edit-error"
@@ -315,6 +348,18 @@ export class TransactionDrawerComponent {
   protected readonly saving = signal(false);
   protected readonly saveError = signal<string | null>(null);
 
+  protected readonly updateScope = signal<UpdateTransactionScopeDTO>('ONE');
+
+  protected readonly updateScopeOptions: UpdateScopeOption[] = [
+    { label: 'Apenas esta', value: 'ONE', testId: 'update-scope-one' },
+    {
+      label: 'Esta e as próximas',
+      value: 'THIS_AND_FOLLOWING',
+      testId: 'update-scope-this-and-following',
+    },
+    { label: 'Todas', value: 'ALL', testId: 'update-scope-all' },
+  ];
+
   protected readonly deleteDialogVisible = signal(false);
   protected readonly deleteScope = signal<DeleteTransactionScopeDTO>('ONE');
   protected readonly deleting = signal(false);
@@ -385,6 +430,7 @@ export class TransactionDrawerComponent {
     this.saveError.set(null);
     this.deleteError.set(null);
     this.deleteDialogVisible.set(false);
+    this.updateScope.set('ONE');
 
     this.loadCategories();
     this.loadTransaction(normalized);
@@ -397,6 +443,7 @@ export class TransactionDrawerComponent {
     this.saveError.set(null);
     this.deleteError.set(null);
     this.deleteDialogVisible.set(false);
+    this.updateScope.set('ONE');
     this.form.reset({ date: '', categoryId: '', description: '', isPaid: true });
     this.form.markAsPristine();
     this.formSeq.update((v) => v + 1);
@@ -482,8 +529,9 @@ export class TransactionDrawerComponent {
 
     this.saving.set(true);
     this.saveError.set(null);
+    const scope = this.shouldShowUpdateScopeOptions() ? this.updateScope() : undefined;
     this.api
-      .updateTransaction(this.transactionId()!, payload)
+      .updateTransaction(this.transactionId()!, payload, scope)
       .pipe(
         finalize(() => this.saving.set(false)),
         takeUntilDestroyed(this.destroyRef),
@@ -511,6 +559,16 @@ export class TransactionDrawerComponent {
       });
   }
 
+  protected shouldShowUpdateScopeOptions() {
+    const t = this.tx();
+    if (!t) return false;
+    return typeof t.recurrenceId === 'string' && typeof t.installmentNumber === 'number';
+  }
+
+  protected onUpdateScopeChange(scope: UpdateTransactionScopeDTO) {
+    this.updateScope.set(scope);
+  }
+
   protected openDeleteDialog() {
     this.deleteError.set(null);
     this.deleteScope.set('ONE');
@@ -520,7 +578,7 @@ export class TransactionDrawerComponent {
   protected shouldShowScopeOptions() {
     const t = this.tx();
     if (!t) return false;
-    return typeof t.recurrenceId === 'string' && t.recurrenceId.length > 0;
+    return typeof t.recurrenceId === 'string' && typeof t.installmentNumber === 'number';
   }
 
   protected onDeleteScopeChange(scope: DeleteTransactionScopeDTO) {

@@ -173,4 +173,52 @@ describe('TransactionDrawerComponent', () => {
     expect(api.deleteTransaction).toHaveBeenCalledWith(recurringTx.id, 'ALL');
     expect(host.lastDeletedIds()).toEqual([recurringTx.id]);
   });
+
+  it('deve salvar com escopo selecionado quando transação tem série', async () => {
+    const host = fixture.componentInstance;
+
+    const recurringTx: TransactionDTO = {
+      ...tx,
+      id: 'tx-rec-1',
+      recurrenceId: 'rec-1',
+      installmentNumber: 2,
+      totalInstallments: 3,
+    };
+
+    const api = TestBed.inject(ApiService) as unknown as {
+      getTransactionById: ReturnType<typeof vi.fn>;
+      updateTransaction: ReturnType<typeof vi.fn>;
+    };
+    api.getTransactionById.mockReturnValueOnce(of(recurringTx));
+    api.updateTransaction.mockReturnValueOnce(of({ ...recurringTx, description: 'Mercado' }));
+
+    host.drawer.show(recurringTx.id);
+    fixture.detectChanges();
+
+    await new Promise<void>((resolve) => queueMicrotask(() => resolve()));
+    fixture.detectChanges();
+
+    const drawer = host.drawer as unknown as DrawerHarness;
+    drawer.form.controls.description.setValue('Mercado');
+    drawer.form.controls.description.markAsDirty();
+    fixture.detectChanges();
+
+    const scopeAll = fixture.nativeElement.querySelector(
+      '[data-testid="update-scope-all"] input',
+    ) as HTMLInputElement;
+    scopeAll.click();
+    fixture.detectChanges();
+
+    drawer.onSave();
+    fixture.detectChanges();
+
+    await new Promise<void>((resolve) => queueMicrotask(() => resolve()));
+    fixture.detectChanges();
+
+    expect(api.updateTransaction).toHaveBeenCalledWith(
+      recurringTx.id,
+      expect.objectContaining({ description: 'Mercado' }),
+      'ALL',
+    );
+  });
 });
