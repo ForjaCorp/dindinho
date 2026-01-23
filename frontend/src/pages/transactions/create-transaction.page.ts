@@ -314,14 +314,14 @@ const categoryIconOptions = [
             </div>
 
             <div class="flex flex-col gap-2">
-              <label class="text-sm font-medium text-slate-700" for="walletId">Carteira</label>
+              <label class="text-sm font-medium text-slate-700" for="walletId">Conta</label>
               <select
                 data-testid="transaction-wallet"
                 id="walletId"
                 class="h-11 rounded-xl border border-slate-200 px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-200"
                 formControlName="walletId"
               >
-                <option value="" disabled>Selecione uma carteira</option>
+                <option value="" disabled>Selecione uma conta</option>
                 @for (w of wallets(); track w.id) {
                   <option [value]="w.id">{{ w.name }}</option>
                 }
@@ -410,7 +410,7 @@ const categoryIconOptions = [
           @if (type() === 'TRANSFER') {
             <div class="flex flex-col gap-2">
               <label class="text-sm font-medium text-slate-700" for="destinationWalletId"
-                >Carteira de destino</label
+                >Conta de destino</label
               >
               <select
                 data-testid="transaction-destination-wallet"
@@ -418,7 +418,7 @@ const categoryIconOptions = [
                 class="h-11 rounded-xl border border-slate-200 px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-200"
                 formControlName="destinationWalletId"
               >
-                <option value="" disabled>Selecione a carteira de destino</option>
+                <option value="" disabled>Selecione a conta de destino</option>
                 @for (w of destinationWalletOptions(); track w.id) {
                   <option [value]="w.id">{{ w.name }}</option>
                 }
@@ -1420,7 +1420,7 @@ export class CreateTransactionPage {
     const raw = this.form.getRawValue();
     const wallets = this.wallets();
     if (wallets.length === 0) {
-      this.error.set('Crie uma carteira antes de lançar uma transação');
+      this.error.set('Crie uma conta antes de lançar uma transação');
       return;
     }
 

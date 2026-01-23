@@ -89,16 +89,16 @@ type TransactionTypeFilter = '' | TransactionDTO['type'];
             </div>
 
             <div class="flex flex-col gap-1">
-              <label class="sr-only" for="walletId">Carteira</label>
+              <label class="sr-only" for="walletId">Conta</label>
               <select
                 data-testid="transactions-wallet-select"
                 id="walletId"
                 class="h-10 rounded-xl border border-slate-200 px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-200"
                 [value]="walletFilterId()"
                 (change)="onWalletFilterChange($event)"
-                aria-label="Carteira"
+                aria-label="Conta"
               >
-                <option value="">Todas as carteiras</option>
+                <option value="">Todas as contas</option>
                 @for (w of wallets(); track w.id) {
                   <option [value]="w.id">{{ w.name }}</option>
                 }
@@ -290,7 +290,7 @@ export class TransactionsPage {
   }
 
   protected walletName(walletId: string): string {
-    return this.walletMap().get(walletId)?.name ?? 'Carteira';
+    return this.walletMap().get(walletId)?.name ?? 'Conta';
   }
 
   private resetAndLoad(filters: { q?: string; walletId?: string; type?: TransactionDTO['type'] }) {

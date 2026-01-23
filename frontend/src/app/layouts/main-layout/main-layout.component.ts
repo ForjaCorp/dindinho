@@ -61,7 +61,7 @@ import { filter } from 'rxjs/operators';
           <span class="text-[10px] font-medium">Início</span>
         </a>
 
-        <!-- Botão para acessar a página de carteira -->
+        <!-- Botão para acessar a página de contas -->
         <a
           data-testid="nav-wallet"
           routerLink="/wallets"
@@ -69,7 +69,7 @@ import { filter } from 'rxjs/operators';
           class="flex flex-col items-center gap-1 text-slate-400 w-16 py-1 transition-colors group"
         >
           <i class="pi pi-wallet text-xl group-hover:text-emerald-500 transition-colors"></i>
-          <span class="text-[10px] font-medium">Carteiras</span>
+          <span class="text-[10px] font-medium">Contas</span>
         </a>
 
         <!-- Botão central de ação rápida -->

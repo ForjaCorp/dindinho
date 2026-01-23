@@ -21,12 +21,12 @@ import { SkeletonModule } from 'primeng/skeleton';
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 class="text-2xl md:text-3xl font-bold text-slate-800">Minhas Carteiras</h1>
+          <h1 class="text-2xl md:text-3xl font-bold text-slate-800">Minhas Contas</h1>
           <p class="text-slate-500 mt-1">Gerencie suas contas e cartões de crédito</p>
         </div>
         <p-button
           data-testid="wallets-create-wallet-btn"
-          label="Nova Carteira"
+          label="Nova Conta"
           icon="pi pi-plus"
           (onClick)="dialog.show()"
           styleClass="w-full sm:w-auto shadow-sm"
@@ -51,14 +51,14 @@ import { SkeletonModule } from 'primeng/skeleton';
           <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
             <i class="pi pi-wallet text-2xl text-slate-400"></i>
           </div>
-          <h3 class="text-lg font-semibold text-slate-700">Nenhuma carteira encontrada</h3>
+          <h3 class="text-lg font-semibold text-slate-700">Nenhuma conta encontrada</h3>
           <p class="text-slate-500 max-w-md mt-2 mb-6">
-            Você ainda não possui carteiras cadastradas. Crie sua primeira carteira para começar a
+            Você ainda não possui contas cadastradas. Crie sua primeira conta para começar a
             controlar suas finanças.
           </p>
           <p-button
             data-testid="wallets-empty-create-btn"
-            label="Criar Primeira Carteira"
+            label="Criar Primeira Conta"
             icon="pi pi-plus"
             (onClick)="dialog.show()"
             outlined="true"

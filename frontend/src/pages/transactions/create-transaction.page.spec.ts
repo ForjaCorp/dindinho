@@ -20,7 +20,7 @@ describe('CreateTransactionPage', () => {
   const wallets: WalletDTO[] = [
     {
       id: '123e4567-e89b-12d3-a456-426614174000',
-      name: 'Carteira Principal',
+      name: 'Conta Principal',
       color: '#10b981',
       icon: 'pi-wallet',
       type: 'STANDARD',

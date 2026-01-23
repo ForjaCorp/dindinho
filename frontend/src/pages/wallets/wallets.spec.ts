@@ -16,7 +16,7 @@ describe('WalletsPage', () => {
   const wallets: WalletDTO[] = [
     {
       id: 'wallet-1',
-      name: 'Carteira Padrão',
+      name: 'Conta Padrão',
       color: '#10b981',
       icon: 'pi-wallet',
       type: 'STANDARD',
@@ -33,7 +33,7 @@ describe('WalletsPage', () => {
     loadWallets: vi.fn(),
   });
 
-  it('deve exibir estado vazio quando não há carteiras', async () => {
+  it('deve exibir estado vazio quando não há contas', async () => {
     const walletServiceMock = createWalletServiceMock({ wallets: [], loading: false });
 
     await TestBed.configureTestingModule({
@@ -54,7 +54,7 @@ describe('WalletsPage', () => {
     ).toBeTruthy();
   });
 
-  it('deve renderizar cards quando há carteiras', async () => {
+  it('deve renderizar cards quando há contas', async () => {
     const walletServiceMock = createWalletServiceMock({ wallets, loading: false });
 
     await TestBed.configureTestingModule({

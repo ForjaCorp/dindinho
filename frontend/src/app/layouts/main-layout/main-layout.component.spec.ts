@@ -40,7 +40,7 @@ describe('MainLayoutComponent', () => {
     const navElement = fixture.nativeElement.querySelector('[data-testid="bottom-navigation"]');
     const navItems = [
       { testId: 'nav-home', text: 'Início' },
-      { testId: 'nav-wallet', text: 'Carteiras' },
+      { testId: 'nav-wallet', text: 'Contas' },
       { testId: 'add-button' },
       { testId: 'nav-reports', text: 'Relatórios' },
       { testId: 'nav-profile', text: 'Perfil' },

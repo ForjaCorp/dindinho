@@ -81,7 +81,7 @@ import { Router } from '@angular/router';
 
       <div class="flex flex-col gap-2">
         <div class="flex justify-between items-center px-1">
-          <h2 class="text-lg font-bold text-slate-800">Minhas Carteiras</h2>
+          <h2 class="text-lg font-bold text-slate-800">Minhas Contas</h2>
 
           <button
             data-testid="dashboard-create-wallet-btn"
@@ -89,11 +89,11 @@ import { Router } from '@angular/router';
             class="flex items-center gap-1 text-emerald-600 text-sm font-semibold hover:text-emerald-700 transition-colors"
           >
             <i class="pi pi-plus text-xs"></i>
-            Nova Carteira
+            Nova Conta
           </button>
         </div>
 
-        <!-- Lista de Carteiras -->
+        <!-- Lista de Contas -->
         @if (walletService.wallets().length > 0) {
           <div data-testid="dashboard-wallet-list" class="flex gap-2 overflow-x-auto pb-2 px-1">
             @for (wallet of walletService.wallets(); track wallet.id) {
@@ -101,7 +101,7 @@ import { Router } from '@angular/router';
             } @empty {
               <div class="w-full py-8 text-center text-slate-400">
                 <i class="pi pi-wallet text-2xl mb-2"></i>
-                <p class="text-sm">Nenhuma carteira encontrada</p>
+                <p class="text-sm">Nenhuma conta encontrada</p>
               </div>
             }
           </div>
@@ -111,8 +111,8 @@ import { Router } from '@angular/router';
             class="w-full py-8 text-center text-slate-400 bg-white rounded-xl border border-slate-100"
           >
             <i class="pi pi-wallet text-2xl mb-2"></i>
-            <p class="text-sm">Nenhuma carteira encontrada</p>
-            <p class="text-xs mt-1">Clique em "Nova Carteira" para criar sua primeira carteira</p>
+            <p class="text-sm">Nenhuma conta encontrada</p>
+            <p class="text-xs mt-1">Clique em "Nova Conta" para criar sua primeira conta</p>
           </div>
         }
       </div>
@@ -367,7 +367,7 @@ export class DashboardComponent implements OnInit {
   }
 
   protected walletName(walletId: string): string {
-    return this.walletMap().get(walletId)?.name ?? 'Carteira';
+    return this.walletMap().get(walletId)?.name ?? 'Conta';
   }
 
   protected onQuickAdd(type: 'INCOME' | 'EXPENSE') {

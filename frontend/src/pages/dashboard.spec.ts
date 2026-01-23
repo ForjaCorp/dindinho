@@ -38,7 +38,7 @@ describe('DashboardComponent', () => {
   beforeEach(async () => {
     const wallet: WalletDTO = {
       id: 'wallet-1',
-      name: 'Carteira Padrão',
+      name: 'Conta Padrão',
       color: '#10b981',
       icon: 'pi-wallet',
       type: 'STANDARD',
@@ -174,16 +174,16 @@ describe('DashboardComponent', () => {
     expect(list.textContent).toContain('Mercado');
   });
 
-  it('deve exibir o botão "Nova Carteira"', () => {
+  it('deve exibir o botão "Nova Conta"', () => {
     const button = fixture.nativeElement.querySelector(
       '[data-testid="dashboard-create-wallet-btn"]',
     );
 
     expect(button).toBeTruthy();
-    expect(button.textContent).toContain('Nova Carteira');
+    expect(button.textContent).toContain('Nova Conta');
   });
 
-  it('deve renderizar lista de carteiras quando há dados', () => {
+  it('deve renderizar lista de contas quando há dados', () => {
     const list = fixture.nativeElement.querySelector('[data-testid="dashboard-wallet-list"]');
     const card = fixture.nativeElement.querySelector('[data-testid="wallet-card-wallet-1"]');
 

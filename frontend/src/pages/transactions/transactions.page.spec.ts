@@ -21,7 +21,7 @@ describe('TransactionsPage', () => {
 
   const wallet: WalletDTO = {
     id: 'wallet-1',
-    name: 'Carteira Padrão',
+    name: 'Conta Padrão',
     color: '#10b981',
     icon: 'pi-wallet',
     type: 'STANDARD',
