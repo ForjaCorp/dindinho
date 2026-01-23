@@ -62,7 +62,7 @@ export const createTransactionSchema = z
       data.type !== "TRANSFER" || data.destinationWalletId !== undefined,
     {
       path: ["destinationWalletId"],
-      message: "Carteira de destino é obrigatória para transferência",
+      message: "Conta de destino é obrigatória para transferência",
     },
   )
   .refine(
@@ -70,7 +70,7 @@ export const createTransactionSchema = z
       data.type === "TRANSFER" || data.destinationWalletId === undefined,
     {
       path: ["destinationWalletId"],
-      message: "Carteira de destino só é usada em transferências",
+      message: "Conta de destino só é usada em transferências",
     },
   )
   .refine((data) => data.type !== "TRANSFER" || data.recurrence === undefined, {

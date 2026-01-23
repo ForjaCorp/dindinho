@@ -1,17 +1,17 @@
 import { z } from "zod";
 
 /**
- * Enum para tipos de carteira disponíveis no sistema.
+ * Enum para tipos de conta disponíveis no sistema.
  * @example
  * const tipo = WalletTypeEnum.STANDARD;
  */
 export const WalletTypeEnum = z.enum(["STANDARD", "CREDIT"]);
 
 /**
- * Schema para criação de carteira.
+ * Schema para criação de conta.
  * Usa 'refine' para exigir dados de cartão apenas se o tipo for CREDIT.
- * @param data - Dados da carteira a ser criada
- * @returns Schema validado para criação de carteira
+ * @param data - Dados da conta a ser criada
+ * @returns Schema validado para criação de conta
  * @example
  * const walletData = {
  *   name: 'Cartão Nubank',
@@ -31,6 +31,8 @@ export const createWalletSchema = z.object({
   icon: z.string().min(1, "Ícone é obrigatório"),
   type: WalletTypeEnum.default("STANDARD"),
 
+  initialBalance: z.coerce.number().optional().default(0),
+
   // Campos específicos para Cartão de Crédito
   closingDay: z.number().min(1).max(31).optional(),
   dueDay: z.number().min(1).max(31).optional(),
@@ -39,14 +41,14 @@ export const createWalletSchema = z.object({
 });
 
 /**
- * Tipo para criação de carteira inferido do schema.
+ * Tipo para criação de conta usado como payload (input).
  */
-export type CreateWalletDTO = z.infer<typeof createWalletSchema>;
+export type CreateWalletDTO = z.input<typeof createWalletSchema>;
 
 /**
- * Schema de resposta para uma carteira.
- * @param data - Dados completos da carteira
- * @returns Schema validado para resposta de carteira
+ * Schema de resposta para uma conta.
+ * @param data - Dados completos da conta
+ * @returns Schema validado para resposta de conta
  * @example
  * const walletResponse = {
  *   id: '123e4567-e89b-12d3-a456-426614174000',
@@ -78,6 +80,7 @@ export const walletSchema = z.object({
       closingDay: z.number(),
       dueDay: z.number(),
       limit: z.number().nullable().optional(),
+      availableLimit: z.number().nullable().optional(),
       brand: z.string().nullable().optional(),
     })
     .nullable()
@@ -87,6 +90,6 @@ export const walletSchema = z.object({
 });
 
 /**
- * Tipo para carteira inferido do schema de resposta.
+ * Tipo para conta inferido do schema de resposta.
  */
 export type WalletDTO = z.infer<typeof walletSchema>;
