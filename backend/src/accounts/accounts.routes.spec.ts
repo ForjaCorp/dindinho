@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { DeepMockProxy, mockReset } from "vitest-mock-extended";
-import { PrismaClient, WalletType, Wallet } from "@prisma/client";
+import { PrismaClient, AccountType, Account, Prisma } from "@prisma/client";
 
 // Mock profundo do Prisma
 vi.mock("../lib/prisma", async () => {
@@ -16,14 +16,15 @@ import { prisma } from "../lib/prisma";
 
 const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>;
 
-describe("Wallets Routes", () => {
+describe("Rotas de Contas", () => {
   let app: ReturnType<typeof buildApp>;
   let token: string;
 
   const userId = "123e4567-e89b-12d3-a456-426614174000";
-  const walletId = "123e4567-e89b-12d3-a456-426614174001";
+  const accountId = "123e4567-e89b-12d3-a456-426614174001";
 
   beforeEach(async () => {
+    vi.stubEnv("JWT_SECRET", "test-secret");
     mockReset(prismaMock);
     app = buildApp();
     await app.ready();
@@ -34,8 +35,8 @@ describe("Wallets Routes", () => {
     vi.restoreAllMocks();
   });
 
-  describe("POST /api/wallets", () => {
-    const validWallet = {
+  describe("POST /api/accounts", () => {
+    const validAccount = {
       name: "Cartão Nubank",
       color: "#8A2BE2",
       icon: "pi-credit-card",
@@ -46,44 +47,45 @@ describe("Wallets Routes", () => {
       brand: "Mastercard",
     };
 
-    it("deve criar carteira com autenticação válida", async () => {
-      prismaMock.wallet.create.mockResolvedValue({
-        id: walletId,
-        name: validWallet.name,
-        color: validWallet.color,
-        icon: validWallet.icon,
-        type: "CREDIT" as WalletType,
+    it("deve criar conta com autenticação válida", async () => {
+      prismaMock.account.create.mockResolvedValue({
+        id: accountId,
+        name: validAccount.name,
+        color: validAccount.color,
+        icon: validAccount.icon,
+        type: "CREDIT" as AccountType,
         ownerId: userId,
+        initialBalance: new Prisma.Decimal(0),
         createdAt: new Date(),
         updatedAt: new Date(),
         creditCardInfo: {
           id: "123e4567-e89b-12d3-a456-426614174002",
-          closingDay: validWallet.closingDay,
-          dueDay: validWallet.dueDay,
-          limit: { toNumber: () => validWallet.limit }, // Mock do Decimal
-          brand: validWallet.brand,
-          walletId,
+          closingDay: validAccount.closingDay,
+          dueDay: validAccount.dueDay,
+          limit: { toNumber: () => validAccount.limit },
+          brand: validAccount.brand,
+          accountId,
         },
-      } as unknown as Wallet);
+      } as unknown as Account);
 
       const response = await app.inject({
         method: "POST",
-        url: "/api/wallets",
+        url: "/api/accounts",
         headers: { authorization: `Bearer ${token}` },
-        payload: validWallet,
+        payload: validAccount,
       });
 
       expect(response.statusCode).toBe(201);
       const body = JSON.parse(response.body);
-      expect(body.name).toBe(validWallet.name);
+      expect(body.name).toBe(validAccount.name);
       expect(body.creditCardInfo.limit).toBe(5000);
     });
 
     it("deve retornar 401 sem token", async () => {
       const response = await app.inject({
         method: "POST",
-        url: "/api/wallets",
-        payload: validWallet,
+        url: "/api/accounts",
+        payload: validAccount,
       });
       expect(response.statusCode).toBe(401);
     });
@@ -91,40 +93,42 @@ describe("Wallets Routes", () => {
     it("deve retornar 409 para nome duplicado", async () => {
       // Simula erro de constraint do Prisma
       const error = new Error("Unique constraint failed");
-      prismaMock.wallet.create.mockRejectedValue(error);
+      prismaMock.account.create.mockRejectedValue(error);
 
       const response = await app.inject({
         method: "POST",
-        url: "/api/wallets",
+        url: "/api/accounts",
         headers: { authorization: `Bearer ${token}` },
-        payload: validWallet,
+        payload: validAccount,
       });
 
-      // Nota: O WalletsService traduz "Unique constraint" para a mensagem que o Router captura
+      // Nota: O AccountsService traduz "Unique constraint" para a mensagem que o Router captura
       expect(response.statusCode).toBe(409);
     });
   });
 
-  describe("GET /api/wallets", () => {
-    it("deve listar carteiras", async () => {
-      prismaMock.wallet.findMany.mockResolvedValue([
+  describe("GET /api/accounts", () => {
+    it("deve listar contas", async () => {
+      (prismaMock.transaction.groupBy as any).mockResolvedValue([] as any);
+
+      prismaMock.account.findMany.mockResolvedValue([
         {
-          id: walletId,
-          name: "Carteira 1",
+          id: accountId,
+          name: "Conta 1",
           color: "#FF5722",
           icon: "pi-wallet",
           type: "STANDARD",
           ownerId: userId,
-          balance: 0,
+          initialBalance: new Prisma.Decimal(0),
           creditCardInfo: null,
           createdAt: new Date(),
           updatedAt: new Date(),
-        } as unknown as Wallet,
+        } as unknown as Account,
       ]);
 
       const response = await app.inject({
         method: "GET",
-        url: "/api/wallets",
+        url: "/api/accounts",
         headers: { authorization: `Bearer ${token}` },
       });
 

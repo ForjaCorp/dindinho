@@ -7,12 +7,12 @@ import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { ColorPickerModule } from 'primeng/colorpicker';
-import { WalletService } from '../../services/wallet.service';
-import { CreateWalletDTO } from '@dindinho/shared';
+import { AccountService } from '../../services/account.service';
+import { CreateAccountDTO } from '@dindinho/shared';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
-  selector: 'app-create-wallet-dialog',
+  selector: 'app-create-account-dialog',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
@@ -27,7 +27,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
   ],
   template: `
     <p-dialog
-      header="Nova Carteira"
+      header="Nova Conta"
       [modal]="true"
       [(visible)]="visible"
       [style]="{ width: '95vw', maxWidth: '500px', maxHeight: '90vh' }"
@@ -47,7 +47,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
             optionLabel="label"
             optionValue="value"
             styleClass="w-full"
-            aria-label="Tipo de carteira"
+            aria-label="Tipo de conta"
             [allowEmpty]="false"
             [unselectable]="true"
           />
@@ -69,6 +69,23 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
             <p-colorPicker formControlName="color" appendTo="body" />
           </div>
         </div>
+
+        @if (!isCredit()) {
+          <div class="flex flex-col gap-2">
+            <label for="initialBalance" class="text-sm font-medium text-slate-600">
+              Saldo inicial (R$)
+            </label>
+            <p-inputNumber
+              id="initialBalance"
+              formControlName="initialBalance"
+              mode="currency"
+              currency="BRL"
+              locale="pt-BR"
+              placeholder="R$ 0,00"
+              class="w-full"
+            />
+          </div>
+        }
 
         @if (isCredit()) {
           <div
@@ -133,7 +150,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
           <p-button
             label="Criar"
             type="submit"
-            [loading]="walletService.isLoading()"
+            [loading]="accountService.isLoading()"
             [disabled]="form.invalid"
             icon="pi pi-check"
             class="sm:flex-initial"
@@ -187,9 +204,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
     `,
   ],
 })
-export class CreateWalletDialogComponent {
+export class CreateAccountDialogComponent {
   private fb = inject(FormBuilder);
-  protected walletService = inject(WalletService);
+  protected accountService = inject(AccountService);
   private destroyRef = inject(DestroyRef); // Para limpar subscrições automaticamente
 
   // Controle de visibilidade
@@ -206,6 +223,7 @@ export class CreateWalletDialogComponent {
     name: ['', [Validators.required, Validators.minLength(2)]],
     color: ['#10b981', Validators.required],
     type: ['STANDARD', Validators.required],
+    initialBalance: [0 as number],
     // Campos opcionais inicialmente
     closingDay: [null as number | null],
     dueDay: [null as number | null],
@@ -228,6 +246,10 @@ export class CreateWalletDialogComponent {
         }
         control?.updateValueAndValidity();
       });
+
+      if (isCredit) {
+        this.form.controls.initialBalance.setValue(0);
+      }
     });
   }
 
@@ -241,11 +263,17 @@ export class CreateWalletDialogComponent {
     this.visible.set(true);
   }
 
+  showForType(type: 'STANDARD' | 'CREDIT') {
+    this.visible.set(true);
+    this.form.controls.type.setValue(type);
+  }
+
   resetForm() {
     this.form.reset({
       name: '',
       color: '#10b981',
       type: 'STANDARD',
+      initialBalance: 0,
       closingDay: null,
       dueDay: null,
       limit: null,
@@ -253,11 +281,11 @@ export class CreateWalletDialogComponent {
   }
 
   /**
-   * Envia o formulário para criar uma nova carteira.
+   * Envia o formulário para criar uma nova conta.
    *
    * @description
    * Valida o formulário, mapeia os dados para o DTO esperado pela API,
-   * e utiliza o serviço para criar a carteira. O diálogo só fecha em caso
+   * e utiliza o serviço para criar a conta. O diálogo só fecha em caso
    * de sucesso, permanecendo aberto para correção em caso de erro.
    *
    * @example
@@ -270,12 +298,12 @@ export class CreateWalletDialogComponent {
     const formValue = this.form.value;
 
     // Mapeamento para o DTO da API
-    const dto: CreateWalletDTO = {
+    const dto: CreateAccountDTO = {
       name: formValue.name!,
       color: formValue.color!,
-      // Ícone baseado no tipo de carteira
+      // Ícone baseado no tipo de conta
       icon: formValue.type === 'CREDIT' ? 'pi-credit-card' : 'pi-wallet',
-      type: formValue.type as CreateWalletDTO['type'],
+      type: formValue.type as CreateAccountDTO['type'],
       ...(formValue.type === 'CREDIT'
         ? {
             closingDay: formValue.closingDay!,
@@ -283,15 +311,21 @@ export class CreateWalletDialogComponent {
             limit: formValue.limit!,
             brand: 'Mastercard', // TODO: Permitir seleção pelo usuário
           }
-        : {}),
+        : {
+            initialBalance:
+              typeof formValue.initialBalance === 'number' &&
+              Number.isFinite(formValue.initialBalance)
+                ? formValue.initialBalance
+                : 0,
+          }),
     };
 
     // Limpa erros anteriores
-    this.walletService.clearError();
+    this.accountService.clearError();
 
     // Abordagem reativa com Observable retornado pelo serviço
-    this.walletService
-      .createWallet(dto)
+    this.accountService
+      .createAccount(dto)
       .pipe(takeUntilDestroyed(this.destroyRef)) // Boa prática: evita memory leak
       .subscribe({
         next: () => {

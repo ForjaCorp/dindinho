@@ -2,31 +2,31 @@ import { FastifyInstance } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
-import { WalletsService } from "./wallets.service";
+import { AccountsService } from "./accounts.service";
 import {
-  CreateWalletDTO,
-  createWalletSchema,
-  walletSchema,
+  CreateAccountDTO,
+  createAccountSchema,
+  accountSchema,
 } from "@dindinho/shared";
 
 /**
- * Rotas da API para gerenciamento de carteiras.
+ * Rotas da API para gerenciamento de contas.
  *
  * @description
- * Define os endpoints para criação e listagem de carteiras dos usuários.
+ * Define os endpoints para criação e listagem de contas dos usuários.
  * Todas as rotas requerem autenticação via JWT.
  *
  * @example
  * // Registrar rotas no app Fastify
- * app.register(walletsRoutes, { prefix: '/api/wallets' });
+ * app.register(accountsRoutes, { prefix: '/api/accounts' });
  *
  * @param app - Instância do Fastify para registrar as rotas
  */
-export async function walletsRoutes(app: FastifyInstance) {
+export async function accountsRoutes(app: FastifyInstance) {
   /**
-   * Instância do serviço de carteiras para operações de negócio.
+   * Instância do serviço de contas para operações de negócio.
    */
-  const service = new WalletsService(prisma);
+  const service = new AccountsService(prisma);
 
   /**
    * Hook global para este prefixo: verifica o token antes de qualquer handler.
@@ -44,14 +44,14 @@ export async function walletsRoutes(app: FastifyInstance) {
   });
 
   /**
-   * Endpoint para criar uma nova carteira.
+   * Endpoint para criar uma nova conta.
    *
    * @description
-   * Cria uma carteira para o usuário autenticado. Suporta carteiras
+   * Cria uma conta para o usuário autenticado. Suporta contas
    * padrão e cartões de crédito com informações específicas.
    *
    * @example
-   * POST /api/wallets
+   * POST /api/accounts
    * {
    *   "name": "Cartão Nubank",
    *   "color": "#8A2BE2",
@@ -67,11 +67,11 @@ export async function walletsRoutes(app: FastifyInstance) {
     "/",
     {
       schema: {
-        summary: "Criar carteira",
-        tags: ["wallets"],
-        body: createWalletSchema,
+        summary: "Criar conta",
+        tags: ["accounts"],
+        body: createAccountSchema,
         response: {
-          201: walletSchema,
+          201: accountSchema,
           401: z.object({
             message: z.string(),
           }),
@@ -80,22 +80,22 @@ export async function walletsRoutes(app: FastifyInstance) {
     },
     async (request, reply) => {
       const { sub: userId } = request.user as { sub: string };
-      const payload: CreateWalletDTO = createWalletSchema.parse(request.body);
-      const wallet = await service.create(userId, payload);
-      return reply.status(201).send(wallet);
+      const payload: CreateAccountDTO = createAccountSchema.parse(request.body);
+      const account = await service.create(userId, payload);
+      return reply.status(201).send(account);
     },
   );
 
   /**
-   * Endpoint para listar todas as carteiras do usuário.
+   * Endpoint para listar todas as contas do usuário.
    *
    * @description
-   * Retorna todas as carteiras pertencentes ao usuário autenticado,
+   * Retorna todas as contas pertencentes ao usuário autenticado,
    * ordenadas por data de criação. Inclui informações de cartão
    * de crédito quando aplicável.
    *
    * @example
-   * GET /api/wallets
+   * GET /api/accounts
    * Response: [
    *   {
    *     "id": "uuid",
@@ -115,10 +115,10 @@ export async function walletsRoutes(app: FastifyInstance) {
     "/",
     {
       schema: {
-        summary: "Listar carteiras",
-        tags: ["wallets"],
+        summary: "Listar contas",
+        tags: ["accounts"],
         response: {
-          200: z.array(walletSchema),
+          200: z.array(accountSchema),
           401: z.object({
             message: z.string(),
           }),

@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { WalletDTO } from '@dindinho/shared';
+import { AccountDTO } from '@dindinho/shared';
 
 @Component({
-  selector: 'app-wallet-card',
+  selector: 'app-account-card',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, CurrencyPipe],
@@ -11,31 +11,31 @@ import { WalletDTO } from '@dindinho/shared';
     class: 'block',
   },
   template: `
-    <div [class]="containerClass()" [attr.data-testid]="walletCardTestId()">
+    <div [class]="containerClass()" [attr.data-testid]="accountCardTestId()">
       <div [class]="headerClass()">
         <div
           [class]="iconClass()"
-          [style]="{ backgroundColor: wallet().color + '20', color: wallet().color }"
-          [attr.data-testid]="walletIconTestId()"
+          [style]="{ backgroundColor: account().color + '20', color: account().color }"
+          [attr.data-testid]="accountIconTestId()"
         >
-          <i [class]="'pi ' + wallet().icon"></i>
+          <i [class]="'pi ' + account().icon"></i>
         </div>
 
-        <span [class]="tagClass()" [attr.data-testid]="walletTypeTestId()">{{ typeLabel() }}</span>
+        <span [class]="tagClass()" [attr.data-testid]="accountTypeTestId()">{{ typeLabel() }}</span>
       </div>
 
       <div class="min-w-0">
-        <p [class]="nameClass()" [title]="wallet().name" [attr.data-testid]="walletNameTestId()">
-          {{ wallet().name }}
+        <p [class]="nameClass()" [title]="account().name" [attr.data-testid]="accountNameTestId()">
+          {{ account().name }}
         </p>
       </div>
 
       @if (variant() === 'full') {
-        @if (wallet().type === 'CREDIT' && wallet().creditCardInfo) {
+        @if (account().type === 'CREDIT' && account().creditCardInfo) {
           <div class="flex items-center gap-2 text-xs text-slate-500 mt-1">
-            <span>Fecha dia {{ wallet().creditCardInfo!.closingDay }}</span>
+            <span>Fecha dia {{ account().creditCardInfo!.closingDay }}</span>
             <span class="w-1 h-1 bg-slate-300 rounded-full"></span>
-            <span>Vence dia {{ wallet().creditCardInfo!.dueDay }}</span>
+            <span>Vence dia {{ account().creditCardInfo!.dueDay }}</span>
           </div>
           <div class="mt-3 pt-3 border-t border-slate-50">
             <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">
@@ -43,9 +43,9 @@ import { WalletDTO } from '@dindinho/shared';
             </p>
             <p
               class="text-lg font-semibold text-slate-700"
-              [attr.data-testid]="walletValueTestId()"
+              [attr.data-testid]="accountValueTestId()"
             >
-              {{ wallet().creditCardInfo!.limit | currency: 'BRL' }}
+              {{ creditAvailableLimit() ?? 0 | currency: 'BRL' }}
             </p>
           </div>
         } @else {
@@ -53,31 +53,31 @@ import { WalletDTO } from '@dindinho/shared';
             <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Saldo Atual</p>
             <p
               class="text-lg font-semibold text-emerald-600"
-              [attr.data-testid]="walletValueTestId()"
+              [attr.data-testid]="accountValueTestId()"
             >
-              {{ wallet().balance || 0 | currency: 'BRL' }}
+              {{ account().balance || 0 | currency: 'BRL' }}
             </p>
           </div>
         }
       } @else {
-        @if (wallet().type === 'CREDIT' && wallet().creditCardInfo?.limit) {
+        @if (account().type === 'CREDIT' && account().creditCardInfo) {
           <p
             class="mt-2 text-base font-bold text-slate-900"
-            [attr.data-testid]="walletValueTestId()"
+            [attr.data-testid]="accountValueTestId()"
           >
-            {{ wallet().creditCardInfo!.limit | currency: 'BRL' }}
+            {{ creditAvailableLimit() ?? 0 | currency: 'BRL' }}
           </p>
-          <p class="text-xs text-slate-500" [attr.data-testid]="walletCaptionTestId()">
+          <p class="text-xs text-slate-500" [attr.data-testid]="accountCaptionTestId()">
             Limite disponível
           </p>
         } @else {
           <p
             class="mt-2 text-base font-bold text-slate-900"
-            [attr.data-testid]="walletValueTestId()"
+            [attr.data-testid]="accountValueTestId()"
           >
-            {{ wallet().balance || 0 | currency: 'BRL' }}
+            {{ account().balance || 0 | currency: 'BRL' }}
           </p>
-          <p class="text-xs text-slate-500" [attr.data-testid]="walletCaptionTestId()">
+          <p class="text-xs text-slate-500" [attr.data-testid]="accountCaptionTestId()">
             Saldo atual
           </p>
         }
@@ -85,18 +85,31 @@ import { WalletDTO } from '@dindinho/shared';
     </div>
   `,
 })
-export class WalletCardComponent {
-  wallet = input.required<WalletDTO>();
+export class AccountCardComponent {
+  account = input.required<AccountDTO>();
   variant = input<'compact' | 'full'>('full');
 
-  typeLabel = computed(() => (this.wallet().type === 'CREDIT' ? 'Crédito' : 'Conta'));
+  typeLabel = computed(() => (this.account().type === 'CREDIT' ? 'Crédito' : 'Conta'));
 
-  walletCardTestId = computed(() => `wallet-card-${this.wallet().id}`);
-  walletIconTestId = computed(() => `wallet-icon-${this.wallet().id}`);
-  walletTypeTestId = computed(() => `wallet-type-${this.wallet().id}`);
-  walletNameTestId = computed(() => `wallet-name-${this.wallet().id}`);
-  walletValueTestId = computed(() => `wallet-value-${this.wallet().id}`);
-  walletCaptionTestId = computed(() => `wallet-caption-${this.wallet().id}`);
+  creditAvailableLimit = computed(() => {
+    const credit = this.account().creditCardInfo;
+    if (!credit) return null;
+    const value =
+      typeof credit.availableLimit === 'number'
+        ? credit.availableLimit
+        : typeof credit.limit === 'number'
+          ? credit.limit
+          : null;
+
+    return typeof value === 'number' && Number.isFinite(value) ? value : null;
+  });
+
+  accountCardTestId = computed(() => `account-card-${this.account().id}`);
+  accountIconTestId = computed(() => `account-icon-${this.account().id}`);
+  accountTypeTestId = computed(() => `account-type-${this.account().id}`);
+  accountNameTestId = computed(() => `account-name-${this.account().id}`);
+  accountValueTestId = computed(() => `account-value-${this.account().id}`);
+  accountCaptionTestId = computed(() => `account-caption-${this.account().id}`);
 
   containerClass = computed(() => {
     if (this.variant() === 'compact') {
@@ -133,7 +146,7 @@ export class WalletCardComponent {
   tagClass = computed(() => {
     const base = 'text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full';
 
-    if (this.wallet().type === 'CREDIT') {
+    if (this.account().type === 'CREDIT') {
       return `${base} bg-sky-50 text-sky-700`;
     }
 

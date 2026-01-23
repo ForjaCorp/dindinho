@@ -45,10 +45,25 @@ export const routes: Routes = [
         loadComponent: () => import('../pages/dashboard.page').then((m) => m.DashboardComponent),
       },
       {
-        path: 'wallets',
-        loadComponent: () => import('../pages/wallets/wallets.page').then((m) => m.WalletsPage),
+        path: 'accounts',
+        loadComponent: () => import('../pages/accounts/accounts.page').then((m) => m.AccountsPage),
+        data: { title: 'Contas' },
       },
-      // Outras rotas autenticadas virão aqui (wallet, reports, profile)
+      {
+        path: 'transactions',
+        loadComponent: () =>
+          import('../pages/transactions/transactions.page').then((m) => m.TransactionsPage),
+        data: { title: 'Transações' },
+      },
+      {
+        path: 'transactions/new',
+        loadComponent: () =>
+          import('../pages/transactions/create-transaction.page').then(
+            (m) => m.CreateTransactionPage,
+          ),
+        data: { title: 'Nova transação' },
+      },
+      // Outras rotas autenticadas virão aqui (accounts, reports, profile)
     ],
   },
 

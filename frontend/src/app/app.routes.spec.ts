@@ -17,26 +17,26 @@ if (!testBed.platform) {
   testBed.initTestEnvironment(BrowserTestingModule, platformBrowserTesting());
 }
 
-describe('app.routes', () => {
+describe('Rotas da aplicação', () => {
   let routesList: Route[];
 
   beforeEach(() => {
     routesList = routes;
   });
 
-  it('should be defined', () => {
+  it('deve estar definido', () => {
     expect(routesList).toBeDefined();
     expect(Array.isArray(routesList)).toBe(true);
   });
 
-  it('should have initial redirect to login', () => {
+  it('deve redirecionar rota inicial para login', () => {
     const initialRoute = routesList.find((route) => route.path === '' && route.redirectTo);
     expect(initialRoute).toBeDefined();
     expect(initialRoute?.redirectTo).toBe('login');
     expect(initialRoute?.pathMatch).toBe('full');
   });
 
-  it('should have auth layout route with guest guard', () => {
+  it('deve ter rota de layout de auth com guest guard', () => {
     const authRoute = routesList.find((route) => route.component === AuthLayoutComponent);
     expect(authRoute).toBeDefined();
     expect(authRoute?.children).toBeDefined();
@@ -47,7 +47,7 @@ describe('app.routes', () => {
     expect(loginChild?.canActivate).toContain(guestGuard);
   });
 
-  it('should have main layout route with auth guard', () => {
+  it('deve ter rota de layout principal com auth guard', () => {
     const mainRoute = routesList.find((route) => route.component === MainLayoutComponent);
     expect(mainRoute).toBeDefined();
     expect(mainRoute?.canActivate).toContain(authGuard);
@@ -56,9 +56,17 @@ describe('app.routes', () => {
     const dashboardChild = mainRoute?.children?.find((child) => child.path === 'dashboard');
     expect(dashboardChild).toBeDefined();
     expect(dashboardChild?.loadComponent).toBeDefined();
+
+    const transactionsChild = mainRoute?.children?.find((child) => child.path === 'transactions');
+    expect(transactionsChild).toBeDefined();
+    expect(transactionsChild?.loadComponent).toBeDefined();
+
+    const createTxChild = mainRoute?.children?.find((child) => child.path === 'transactions/new');
+    expect(createTxChild).toBeDefined();
+    expect(createTxChild?.loadComponent).toBeDefined();
   });
 
-  it('should have wildcard route redirecting to login', () => {
+  it('deve ter rota curinga redirecionando para login', () => {
     const wildcardRoute = routesList.find((route) => route.path === '**');
     expect(wildcardRoute).toBeDefined();
     expect(wildcardRoute?.redirectTo).toBe('login');

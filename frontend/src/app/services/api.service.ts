@@ -6,8 +6,16 @@ import {
   ApiResponseDTO,
   LoginDTO,
   LoginResponseDTO,
-  CreateWalletDTO,
-  WalletDTO,
+  CategoryDTO,
+  CreateCategoryDTO,
+  CreateAccountDTO,
+  AccountDTO,
+  CreateTransactionDTO,
+  TransactionDTO,
+  UpdateTransactionDTO,
+  UpdateTransactionScopeDTO,
+  DeleteTransactionScopeDTO,
+  DeleteTransactionResponseDTO,
 } from '@dindinho/shared';
 
 export interface RefreshResponse {
@@ -25,7 +33,7 @@ export interface RefreshResponse {
  *
  * Funcionalidades:
  * - Autenticação de usuários (login)
- * - Gerenciamento de carteiras (criação, listagem)
+ * - Gerenciamento de contas (criação, listagem)
  * - Comunicação com backend via HttpClient
  * - Configuração automática via environment variables
  *
@@ -37,9 +45,9 @@ export interface RefreshResponse {
  * this.api.login({ email: 'user@dindinho.com', password: 'senha123' })
  *   .subscribe(response => console.log(response.token));
  *
- * // Criação de carteira:
- * this.api.createWallet({ name: 'Minha Carteira', type: 'savings' })
- *   .subscribe(wallet => console.log(wallet.id));
+ * // Criação de conta:
+ * this.api.createAccount({ name: 'Minha Conta', type: 'STANDARD' })
+ *   .subscribe((account) => console.log(account.id));
  *
  * @since 1.0.0
  */
@@ -95,44 +103,106 @@ export class ApiService {
   }
 
   /**
-   * Cria uma nova carteira para o usuário autenticado.
+   * Cria uma nova conta para o usuário autenticado.
    *
-   * @param {CreateWalletDTO} data - Dados da carteira a ser criada
-   * @returns {Observable<WalletDTO>} Observable com a carteira criada
+   * @param {CreateAccountDTO} data - Dados da conta a ser criada
+   * @returns {Observable<AccountDTO>} Observable com a conta criada
    *
    * @description
-   * Envia os dados da nova carteira para o backend. A autenticação é
+   * Envia os dados da nova conta para o backend. A autenticação é
    * realizada automaticamente pelo interceptor HTTP.
    *
    * @example
    * // Exemplo de uso:
-   * this.api.createWallet({ name: 'Carteira Principal', type: 'checking' })
+   * this.api.createAccount({ name: 'Conta Principal', type: 'STANDARD' })
    *   .subscribe({
-   *     next: (wallet) => console.log('Carteira criada:', wallet.id),
-   *     error: (error) => console.error('Erro ao criar carteira', error)
+   *     next: (account) => console.log('Conta criada:', account.id),
+   *     error: (error) => console.error('Erro ao criar conta', error)
    *   });
    */
-  createWallet(data: CreateWalletDTO): Observable<WalletDTO> {
-    return this.http.post<WalletDTO>(`${this.baseUrl}/wallets`, data);
+  createAccount(data: CreateAccountDTO): Observable<AccountDTO> {
+    return this.http.post<AccountDTO>(`${this.baseUrl}/accounts`, data);
   }
 
   /**
-   * Lista todas as carteiras do usuário autenticado.
+   * Lista todas as contas do usuário autenticado.
    *
-   * @returns {Observable<WalletDTO[]>} Observable com array de carteiras
+   * @returns {Observable<AccountDTO[]>} Observable com array de contas
    *
    * @description
-   * Recupera todas as carteiras associadas ao usuário atual.
+   * Recupera todas as contas associadas ao usuário atual.
    * A autenticação é realizada automaticamente pelo interceptor HTTP.
    *
    * @example
    * // Exemplo de uso:
-   * this.api.getWallets().subscribe({
-   *   next: (wallets) => console.log('Carteiras:', wallets),
-   *   error: (error) => console.error('Erro ao listar carteiras', error)
+   * this.api.getAccounts().subscribe({
+   *   next: (accounts) => console.log('Contas:', accounts),
+   *   error: (error) => console.error('Erro ao listar contas', error)
    * });
    */
-  getWallets(): Observable<WalletDTO[]> {
-    return this.http.get<WalletDTO[]>(`${this.baseUrl}/wallets`);
+  getAccounts(): Observable<AccountDTO[]> {
+    return this.http.get<AccountDTO[]>(`${this.baseUrl}/accounts`);
+  }
+
+  createTransaction(data: CreateTransactionDTO): Observable<TransactionDTO | TransactionDTO[]> {
+    return this.http.post<TransactionDTO | TransactionDTO[]>(`${this.baseUrl}/transactions`, data);
+  }
+
+  getTransactions(params: {
+    accountId?: string;
+    from?: string;
+    to?: string;
+    q?: string;
+    type?: TransactionDTO['type'];
+    limit?: number;
+    cursorId?: string;
+  }): Observable<{ items: TransactionDTO[]; nextCursorId: string | null }> {
+    const queryParams: Record<string, string> = {
+      ...(params.accountId ? { accountId: params.accountId } : {}),
+      ...(params.from ? { from: params.from } : {}),
+      ...(params.to ? { to: params.to } : {}),
+      ...(params.q ? { q: params.q } : {}),
+      ...(params.type ? { type: params.type } : {}),
+      ...(typeof params.limit === 'number' ? { limit: String(params.limit) } : {}),
+      ...(params.cursorId ? { cursorId: params.cursorId } : {}),
+    };
+
+    return this.http.get<{ items: TransactionDTO[]; nextCursorId: string | null }>(
+      `${this.baseUrl}/transactions`,
+      {
+        params: queryParams,
+      },
+    );
+  }
+
+  getTransactionById(id: string): Observable<TransactionDTO> {
+    return this.http.get<TransactionDTO>(`${this.baseUrl}/transactions/${id}`);
+  }
+
+  updateTransaction(
+    id: string,
+    data: UpdateTransactionDTO,
+    scope?: UpdateTransactionScopeDTO,
+  ): Observable<TransactionDTO> {
+    return this.http.patch<TransactionDTO>(`${this.baseUrl}/transactions/${id}`, data, {
+      params: scope ? { scope } : {},
+    });
+  }
+
+  deleteTransaction(
+    id: string,
+    scope: DeleteTransactionScopeDTO,
+  ): Observable<DeleteTransactionResponseDTO> {
+    return this.http.delete<DeleteTransactionResponseDTO>(`${this.baseUrl}/transactions/${id}`, {
+      params: { scope },
+    });
+  }
+
+  getCategories(): Observable<CategoryDTO[]> {
+    return this.http.get<CategoryDTO[]>(`${this.baseUrl}/categories`);
+  }
+
+  createCategory(data: CreateCategoryDTO): Observable<CategoryDTO> {
+    return this.http.post<CategoryDTO>(`${this.baseUrl}/categories`, data);
   }
 }

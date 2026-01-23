@@ -12,8 +12,14 @@ import {
   ApiResponseDTO,
   LoginDTO,
   LoginResponseDTO,
-  CreateWalletDTO,
-  WalletDTO,
+  CategoryDTO,
+  CreateCategoryDTO,
+  CreateAccountDTO,
+  AccountDTO,
+  CreateTransactionDTO,
+  TransactionDTO,
+  UpdateTransactionDTO,
+  DeleteTransactionResponseDTO,
 } from '@dindinho/shared';
 
 /**
@@ -48,7 +54,7 @@ describe('ApiService', () => {
     refreshToken: 'mock-refresh-token',
   };
 
-  const mockCreateWalletData: CreateWalletDTO = {
+  const mockCreateAccountData: CreateAccountDTO = {
     name: 'Cartão Nubank',
     color: '#8A2BE2',
     icon: 'pi-credit-card',
@@ -59,7 +65,7 @@ describe('ApiService', () => {
     brand: 'Mastercard',
   };
 
-  const mockWallet: WalletDTO = {
+  const mockAccount: AccountDTO = {
     id: '123e4567-e89b-12d3-a456-426614174000',
     name: 'Cartão Nubank',
     color: '#8A2BE2',
@@ -77,7 +83,7 @@ describe('ApiService', () => {
     },
   };
 
-  const mockWallets: WalletDTO[] = [mockWallet];
+  const mockAccounts: AccountDTO[] = [mockAccount];
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -209,23 +215,23 @@ describe('ApiService', () => {
   });
 
   /**
-   * Testes do método createWallet
-   * @description Verifica funcionamento da criação de carteiras via API
+   * Testes do método createAccount
+   * @description Verifica funcionamento da criação de contas via API
    */
-  describe('createWallet()', () => {
-    it('deve fazer requisição POST para endpoint de carteiras', () => {
-      service.createWallet(mockCreateWalletData).subscribe((response) => {
-        expect(response).toEqual(mockWallet);
+  describe('createAccount()', () => {
+    it('deve fazer requisição POST para endpoint de contas', () => {
+      service.createAccount(mockCreateAccountData).subscribe((response) => {
+        expect(response).toEqual(mockAccount);
       });
 
-      const req = httpMock.expectOne('http://localhost:3333/api/wallets');
+      const req = httpMock.expectOne('http://localhost:3333/api/accounts');
       expect(req.request.method).toBe('POST');
-      expect(req.request.body).toEqual(mockCreateWalletData);
-      req.flush(mockWallet);
+      expect(req.request.body).toEqual(mockCreateAccountData);
+      req.flush(mockAccount);
     });
 
-    it('deve tratar erro de criação de carteira (401)', () => {
-      service.createWallet(mockCreateWalletData).subscribe({
+    it('deve tratar erro de criação de conta (401)', () => {
+      service.createAccount(mockCreateAccountData).subscribe({
         next: () => expect.unreachable('deve falhar com erro 401'),
         error: (error) => {
           expect(error.status).toBe(401);
@@ -233,27 +239,27 @@ describe('ApiService', () => {
         },
       });
 
-      const req = httpMock.expectOne('http://localhost:3333/api/wallets');
+      const req = httpMock.expectOne('http://localhost:3333/api/accounts');
       expect(req.request.method).toBe('POST');
       req.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
     });
 
-    it('deve tratar erro de criação de carteira (409 - nome duplicado)', () => {
-      service.createWallet(mockCreateWalletData).subscribe({
+    it('deve tratar erro de criação de conta (409 - nome duplicado)', () => {
+      service.createAccount(mockCreateAccountData).subscribe({
         next: () => expect.unreachable('deve falhar com erro 409'),
         error: (error) => {
           expect(error.status).toBe(409);
-          expect(error.error).toBe('Wallet name already exists');
+          expect(error.error).toBe('Account name already exists');
         },
       });
 
-      const req = httpMock.expectOne('http://localhost:3333/api/wallets');
+      const req = httpMock.expectOne('http://localhost:3333/api/accounts');
       expect(req.request.method).toBe('POST');
-      req.flush('Wallet name already exists', { status: 409, statusText: 'Conflict' });
+      req.flush('Account name already exists', { status: 409, statusText: 'Conflict' });
     });
 
-    it('deve tratar erro de criação de carteira (400 - validação)', () => {
-      service.createWallet(mockCreateWalletData).subscribe({
+    it('deve tratar erro de criação de conta (400 - validação)', () => {
+      service.createAccount(mockCreateAccountData).subscribe({
         next: () => expect.unreachable('deve falhar com erro 400'),
         error: (error) => {
           expect(error.status).toBe(400);
@@ -261,35 +267,35 @@ describe('ApiService', () => {
         },
       });
 
-      const req = httpMock.expectOne('http://localhost:3333/api/wallets');
+      const req = httpMock.expectOne('http://localhost:3333/api/accounts');
       expect(req.request.method).toBe('POST');
       req.flush('Validation error', { status: 400, statusText: 'Bad Request' });
     });
 
-    it('deve tratar erro de rede na criação de carteira', () => {
-      service.createWallet(mockCreateWalletData).subscribe({
+    it('deve tratar erro de rede na criação de conta', () => {
+      service.createAccount(mockCreateAccountData).subscribe({
         next: () => expect.unreachable('deve falhar com erro de rede'),
         error: (error) => {
           expect(error.status).toBe(0);
         },
       });
 
-      const req = httpMock.expectOne('http://localhost:3333/api/wallets');
+      const req = httpMock.expectOne('http://localhost:3333/api/accounts');
       expect(req.request.method).toBe('POST');
       req.error(new ErrorEvent('Network error'));
     });
 
-    it('deve criar carteira padrão sem informações de cartão de crédito', () => {
-      const standardWalletData: CreateWalletDTO = {
-        name: 'Carteira Padrão',
+    it('deve criar conta padrão sem informações de cartão de crédito', () => {
+      const standardAccountData: CreateAccountDTO = {
+        name: 'Conta Padrão',
         color: '#FF5733',
         icon: 'pi-wallet',
         type: 'STANDARD',
       };
 
-      const standardWallet: WalletDTO = {
+      const standardAccount: AccountDTO = {
         id: '456e7890-e89b-12d3-a456-426614174111',
-        name: 'Carteira Padrão',
+        name: 'Conta Padrão',
         color: '#FF5733',
         icon: 'pi-wallet',
         type: 'STANDARD',
@@ -299,34 +305,34 @@ describe('ApiService', () => {
         updatedAt: '2024-01-01T00:00:00.000Z',
       };
 
-      service.createWallet(standardWalletData).subscribe((response) => {
-        expect(response).toEqual(standardWallet);
+      service.createAccount(standardAccountData).subscribe((response) => {
+        expect(response).toEqual(standardAccount);
       });
 
-      const req = httpMock.expectOne('http://localhost:3333/api/wallets');
+      const req = httpMock.expectOne('http://localhost:3333/api/accounts');
       expect(req.request.method).toBe('POST');
-      expect(req.request.body).toEqual(standardWalletData);
-      req.flush(standardWallet);
+      expect(req.request.body).toEqual(standardAccountData);
+      req.flush(standardAccount);
     });
   });
 
   /**
-   * Testes do método getWallets
-   * @description Verifica funcionamento da listagem de carteiras via API
+   * Testes do método getAccounts
+   * @description Verifica funcionamento da listagem de contas via API
    */
-  describe('getWallets()', () => {
-    it('deve fazer requisição GET para endpoint de carteiras', () => {
-      service.getWallets().subscribe((response) => {
-        expect(response).toEqual(mockWallets);
+  describe('getAccounts()', () => {
+    it('deve fazer requisição GET para endpoint de contas', () => {
+      service.getAccounts().subscribe((response) => {
+        expect(response).toEqual(mockAccounts);
       });
 
-      const req = httpMock.expectOne('http://localhost:3333/api/wallets');
+      const req = httpMock.expectOne('http://localhost:3333/api/accounts');
       expect(req.request.method).toBe('GET');
-      req.flush(mockWallets);
+      req.flush(mockAccounts);
     });
 
-    it('deve tratar erro de obtenção de carteiras (401)', () => {
-      service.getWallets().subscribe({
+    it('deve tratar erro de obtenção de contas (401)', () => {
+      service.getAccounts().subscribe({
         next: () => expect.unreachable('deve falhar com erro 401'),
         error: (error) => {
           expect(error.status).toBe(401);
@@ -334,13 +340,13 @@ describe('ApiService', () => {
         },
       });
 
-      const req = httpMock.expectOne('http://localhost:3333/api/wallets');
+      const req = httpMock.expectOne('http://localhost:3333/api/accounts');
       expect(req.request.method).toBe('GET');
       req.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
     });
 
-    it('deve tratar erro de obtenção de carteiras (500)', () => {
-      service.getWallets().subscribe({
+    it('deve tratar erro de obtenção de contas (500)', () => {
+      service.getAccounts().subscribe({
         next: () => expect.unreachable('deve falhar com erro 500'),
         error: (error) => {
           expect(error.status).toBe(500);
@@ -348,40 +354,40 @@ describe('ApiService', () => {
         },
       });
 
-      const req = httpMock.expectOne('http://localhost:3333/api/wallets');
+      const req = httpMock.expectOne('http://localhost:3333/api/accounts');
       expect(req.request.method).toBe('GET');
       req.flush('Internal server error', { status: 500, statusText: 'Internal Server Error' });
     });
 
-    it('deve tratar erro de rede na obtenção de carteiras', () => {
-      service.getWallets().subscribe({
+    it('deve tratar erro de rede na obtenção de contas', () => {
+      service.getAccounts().subscribe({
         next: () => expect.unreachable('deve falhar com erro de rede'),
         error: (error) => {
           expect(error.status).toBe(0);
         },
       });
 
-      const req = httpMock.expectOne('http://localhost:3333/api/wallets');
+      const req = httpMock.expectOne('http://localhost:3333/api/accounts');
       expect(req.request.method).toBe('GET');
       req.error(new ErrorEvent('Network error'));
     });
 
-    it('deve retornar array vazio quando usuário não possui carteiras', () => {
-      service.getWallets().subscribe((response) => {
+    it('deve retornar array vazio quando usuário não possui contas', () => {
+      service.getAccounts().subscribe((response) => {
         expect(response).toEqual([]);
       });
 
-      const req = httpMock.expectOne('http://localhost:3333/api/wallets');
+      const req = httpMock.expectOne('http://localhost:3333/api/accounts');
       expect(req.request.method).toBe('GET');
       req.flush([]);
     });
 
-    it('deve retornar múltiplas carteiras', () => {
-      const multipleWallets: WalletDTO[] = [
-        mockWallet,
+    it('deve retornar múltiplas contas', () => {
+      const multipleAccounts: AccountDTO[] = [
+        mockAccount,
         {
           id: '789e0123-e89b-12d3-a456-426614174222',
-          name: 'Carteira de Emergência',
+          name: 'Conta de Emergência',
           color: '#00FF00',
           icon: 'pi-money-bill',
           type: 'STANDARD',
@@ -392,14 +398,281 @@ describe('ApiService', () => {
         },
       ];
 
-      service.getWallets().subscribe((response) => {
-        expect(response).toEqual(multipleWallets);
+      service.getAccounts().subscribe((response) => {
+        expect(response).toEqual(multipleAccounts);
         expect(response).toHaveLength(2);
       });
 
-      const req = httpMock.expectOne('http://localhost:3333/api/wallets');
+      const req = httpMock.expectOne('http://localhost:3333/api/accounts');
       expect(req.request.method).toBe('GET');
-      req.flush(multipleWallets);
+      req.flush(multipleAccounts);
+    });
+  });
+
+  describe('createTransaction()', () => {
+    it('deve fazer requisição POST para endpoint de transações', () => {
+      const payload: CreateTransactionDTO = {
+        accountId: '123e4567-e89b-12d3-a456-426614174000',
+        categoryId: '123e4567-e89b-12d3-a456-426614174099',
+        amount: 10.5,
+        type: 'EXPENSE',
+        date: '2026-01-01T00:00:00.000Z',
+        isPaid: true,
+        description: 'Café',
+        totalInstallments: 1,
+      };
+
+      const responseBody: TransactionDTO = {
+        id: '123e4567-e89b-12d3-a456-426614174111',
+        accountId: payload.accountId,
+        categoryId: payload.categoryId,
+        amount: payload.amount,
+        description: payload.description ?? null,
+        date: payload.date!,
+        type: payload.type,
+        isPaid: true,
+        recurrenceId: null,
+        installmentNumber: null,
+        totalInstallments: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      };
+
+      service.createTransaction(payload).subscribe((response) => {
+        expect(response).toEqual(responseBody);
+      });
+
+      const req = httpMock.expectOne('http://localhost:3333/api/transactions');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(payload);
+      req.flush(responseBody);
+    });
+  });
+
+  describe('getTransactions()', () => {
+    it('deve fazer requisição GET para endpoint de transações com accountId', () => {
+      const accountId = '123e4567-e89b-12d3-a456-426614174000';
+
+      const responseBody: { items: TransactionDTO[]; nextCursorId: string | null } = {
+        items: [
+          {
+            id: '123e4567-e89b-12d3-a456-426614174111',
+            accountId,
+            categoryId: null,
+            amount: 10.5,
+            description: null,
+            date: '2026-01-01T00:00:00.000Z',
+            type: 'INCOME',
+            isPaid: true,
+            recurrenceId: null,
+            installmentNumber: null,
+            totalInstallments: null,
+            createdAt: '2026-01-01T00:00:00.000Z',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+          },
+        ],
+        nextCursorId: null,
+      };
+
+      service.getTransactions({ accountId }).subscribe((response) => {
+        expect(response).toEqual(responseBody);
+      });
+
+      const req = httpMock.expectOne(
+        (r) =>
+          r.url === 'http://localhost:3333/api/transactions' &&
+          r.params.get('accountId') === accountId,
+      );
+      expect(req.request.method).toBe('GET');
+      req.flush(responseBody);
+    });
+
+    it('deve enviar parâmetros de data quando informados', () => {
+      const from = '2026-01-01T00:00:00.000Z';
+      const to = '2026-01-31T23:59:59.000Z';
+
+      service.getTransactions({ from, to, limit: 30 }).subscribe((response) => {
+        expect(response).toEqual({ items: [], nextCursorId: null });
+      });
+
+      const req = httpMock.expectOne(
+        (r) =>
+          r.url === 'http://localhost:3333/api/transactions' &&
+          r.params.get('from') === from &&
+          r.params.get('to') === to &&
+          r.params.get('limit') === '30',
+      );
+      expect(req.request.method).toBe('GET');
+      req.flush({ items: [], nextCursorId: null });
+    });
+  });
+
+  describe('getTransactionById()', () => {
+    it('deve fazer requisição GET para endpoint de transação por id', () => {
+      const id = '123e4567-e89b-12d3-a456-426614174111';
+
+      const responseBody: TransactionDTO = {
+        id,
+        accountId: '123e4567-e89b-12d3-a456-426614174000',
+        categoryId: null,
+        amount: 10.5,
+        description: 'Café',
+        date: '2026-01-01T00:00:00.000Z',
+        type: 'EXPENSE',
+        isPaid: true,
+        recurrenceId: null,
+        installmentNumber: null,
+        totalInstallments: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      };
+
+      service.getTransactionById(id).subscribe((response) => {
+        expect(response).toEqual(responseBody);
+      });
+
+      const req = httpMock.expectOne(`http://localhost:3333/api/transactions/${id}`);
+      expect(req.request.method).toBe('GET');
+      req.flush(responseBody);
+    });
+  });
+
+  describe('updateTransaction()', () => {
+    it('deve fazer requisição PATCH para endpoint de transação por id', () => {
+      const id = '123e4567-e89b-12d3-a456-426614174111';
+      const payload: UpdateTransactionDTO = {
+        description: 'Mercado',
+        isPaid: false,
+      };
+
+      const responseBody: TransactionDTO = {
+        id,
+        accountId: '123e4567-e89b-12d3-a456-426614174000',
+        categoryId: null,
+        amount: 10.5,
+        description: 'Mercado',
+        date: '2026-01-01T00:00:00.000Z',
+        type: 'EXPENSE',
+        isPaid: false,
+        recurrenceId: null,
+        installmentNumber: null,
+        totalInstallments: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      };
+
+      service.updateTransaction(id, payload).subscribe((response) => {
+        expect(response).toEqual(responseBody);
+      });
+
+      const req = httpMock.expectOne(`http://localhost:3333/api/transactions/${id}`);
+      expect(req.request.method).toBe('PATCH');
+      expect(req.request.body).toEqual(payload);
+      req.flush(responseBody);
+    });
+
+    it('deve enviar scope quando informado', () => {
+      const id = '123e4567-e89b-12d3-a456-426614174111';
+      const payload: UpdateTransactionDTO = {
+        description: 'Mercado',
+      };
+
+      const responseBody: TransactionDTO = {
+        id,
+        accountId: '123e4567-e89b-12d3-a456-426614174000',
+        categoryId: null,
+        amount: 10.5,
+        description: 'Mercado',
+        date: '2026-01-01T00:00:00.000Z',
+        type: 'EXPENSE',
+        isPaid: false,
+        recurrenceId: 'rec-1',
+        installmentNumber: 2,
+        totalInstallments: 3,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      };
+
+      service.updateTransaction(id, payload, 'ALL').subscribe((response) => {
+        expect(response).toEqual(responseBody);
+      });
+
+      const req = httpMock.expectOne(
+        (r) =>
+          r.url === `http://localhost:3333/api/transactions/${id}` &&
+          r.params.get('scope') === 'ALL',
+      );
+      expect(req.request.method).toBe('PATCH');
+      expect(req.request.body).toEqual(payload);
+      req.flush(responseBody);
+    });
+  });
+
+  describe('deleteTransaction()', () => {
+    it('deve fazer requisição DELETE para endpoint de transação por id com scope', () => {
+      const id = '123e4567-e89b-12d3-a456-426614174111';
+      const responseBody: DeleteTransactionResponseDTO = { deletedIds: [id] };
+
+      service.deleteTransaction(id, 'ONE').subscribe((response) => {
+        expect(response).toEqual(responseBody);
+      });
+
+      const req = httpMock.expectOne(
+        (r) =>
+          r.url === `http://localhost:3333/api/transactions/${id}` &&
+          r.params.get('scope') === 'ONE',
+      );
+      expect(req.request.method).toBe('DELETE');
+      req.flush(responseBody);
+    });
+  });
+
+  describe('getCategories()', () => {
+    it('deve fazer requisição GET para endpoint de categorias', () => {
+      const responseBody: CategoryDTO[] = [
+        {
+          id: '123e4567-e89b-12d3-a456-426614174099',
+          name: 'Mercado',
+          icon: 'pi-shopping-cart',
+          parentId: null,
+          userId: 'user-1',
+        },
+      ];
+
+      service.getCategories().subscribe((response) => {
+        expect(response).toEqual(responseBody);
+      });
+
+      const req = httpMock.expectOne('http://localhost:3333/api/categories');
+      expect(req.request.method).toBe('GET');
+      req.flush(responseBody);
+    });
+  });
+
+  describe('createCategory()', () => {
+    it('deve fazer requisição POST para endpoint de categorias', () => {
+      const payload: CreateCategoryDTO = {
+        name: 'Mercado',
+        icon: 'pi-shopping-cart',
+        parentId: null,
+      };
+
+      const responseBody: CategoryDTO = {
+        id: '123e4567-e89b-12d3-a456-426614174099',
+        name: payload.name,
+        icon: payload.icon,
+        parentId: null,
+        userId: 'user-1',
+      };
+
+      service.createCategory(payload).subscribe((response) => {
+        expect(response).toEqual(responseBody);
+      });
+
+      const req = httpMock.expectOne('http://localhost:3333/api/categories');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(payload);
+      req.flush(responseBody);
     });
   });
 

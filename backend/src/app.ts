@@ -8,7 +8,9 @@ import {
 } from "fastify-type-provider-zod";
 import { usersRoutes } from "./users/users.routes";
 import { authRoutes } from "./auth/auth.routes";
-import { walletsRoutes } from "./wallets/wallets.routes";
+import { accountsRoutes } from "./accounts/accounts.routes";
+import { transactionsRoutes } from "./transactions/transactions.routes";
+import { categoriesRoutes } from "./categories/categories.routes";
 import { RefreshTokenService } from "./auth/refresh-token.service";
 import { ApiResponseDTO, HealthCheckDTO, DbTestDTO } from "@dindinho/shared";
 import { prisma } from "./lib/prisma";
@@ -127,7 +129,9 @@ export function buildApp(): FastifyInstance {
   }
 
   app.register(authRoutes, { prefix: "/api", refreshTokenService });
-  app.register(walletsRoutes, { prefix: "/api/wallets" });
+  app.register(accountsRoutes, { prefix: "/api/accounts" });
+  app.register(transactionsRoutes, { prefix: "/api/transactions" });
+  app.register(categoriesRoutes, { prefix: "/api/categories" });
   // Rota raiz
   app.get<{ Reply: ApiResponseDTO }>("/", async () => {
     return {

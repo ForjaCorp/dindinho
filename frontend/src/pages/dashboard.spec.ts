@@ -14,27 +14,37 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of } from 'rxjs';
 import { DashboardComponent } from './dashboard.page';
 import { ApiService } from '../app/services/api.service';
-import { WalletService } from '../app/services/wallet.service';
-import { ApiResponseDTO, WalletDTO } from '@dindinho/shared';
+import { AccountService } from '../app/services/account.service';
+import { ApiResponseDTO, TransactionDTO, AccountDTO } from '@dindinho/shared';
+import { Router } from '@angular/router';
 
 describe('DashboardComponent', () => {
   let component: DashboardComponent;
   let fixture: ComponentFixture<DashboardComponent>;
-  let apiServiceMock: { getHello: ReturnType<typeof vi.fn> };
-  let walletServiceMock: {
-    wallets: ReturnType<typeof vi.fn>;
+
+  interface DashboardHarness {
+    recentTransactions: { set: (v: TransactionDTO[]) => void };
+    onTransactionUpdated: (t: TransactionDTO) => void;
+    onTransactionsDeleted: (ids: string[]) => void;
+  }
+  let apiServiceMock: {
+    getHello: ReturnType<typeof vi.fn>;
+    getTransactions: ReturnType<typeof vi.fn>;
+  };
+  let accountServiceMock: {
+    accounts: ReturnType<typeof vi.fn>;
     isLoading: ReturnType<typeof vi.fn>;
     totalBalance: ReturnType<typeof vi.fn>;
-    loadWallets: ReturnType<typeof vi.fn>;
+    loadAccounts: ReturnType<typeof vi.fn>;
   };
 
   /**
    * Configura o ambiente de teste antes de cada caso de teste.
    */
   beforeEach(async () => {
-    const wallet: WalletDTO = {
-      id: 'wallet-1',
-      name: 'Carteira Padrão',
+    const account: AccountDTO = {
+      id: 'account-1',
+      name: 'Conta Padrão',
       color: '#10b981',
       icon: 'pi-wallet',
       type: 'STANDARD',
@@ -55,13 +65,14 @@ describe('DashboardComponent', () => {
 
     apiServiceMock = {
       getHello: vi.fn(() => of(apiResponse)),
+      getTransactions: vi.fn(() => of({ items: [], nextCursorId: null })),
     };
 
-    walletServiceMock = {
-      wallets: vi.fn(() => [wallet]),
+    accountServiceMock = {
+      accounts: vi.fn(() => [account]),
       isLoading: vi.fn(() => false),
       totalBalance: vi.fn(() => 100),
-      loadWallets: vi.fn(),
+      loadAccounts: vi.fn(),
     };
 
     await TestBed.configureTestingModule({
@@ -69,7 +80,7 @@ describe('DashboardComponent', () => {
       providers: [
         provideRouter([]),
         { provide: ApiService, useValue: apiServiceMock },
-        { provide: WalletService, useValue: walletServiceMock },
+        { provide: AccountService, useValue: accountServiceMock },
       ],
     }).compileComponents();
 
@@ -139,21 +150,125 @@ describe('DashboardComponent', () => {
     expect(viewAllButton.textContent).toContain('Ver todas');
   });
 
-  it('deve exibir o botão "Nova Carteira"', () => {
+  it('deve renderizar lista de últimas transações quando há dados', () => {
+    const txs: TransactionDTO[] = [
+      {
+        id: 'tx-1',
+        accountId: 'account-1',
+        categoryId: null,
+        amount: 10,
+        description: 'Mercado',
+        date: '2026-01-02T00:00:00.000Z',
+        type: 'EXPENSE',
+        isPaid: true,
+        recurrenceId: null,
+        installmentNumber: null,
+        totalInstallments: null,
+        createdAt: '2026-01-02T00:00:00.000Z',
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      },
+    ];
+
+    apiServiceMock.getTransactions.mockReturnValueOnce(of({ items: txs, nextCursorId: null }));
+
+    fixture = TestBed.createComponent(DashboardComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    const list = fixture.nativeElement.querySelector('[data-testid="dashboard-transactions-list"]');
+    expect(list).toBeTruthy();
+    expect(list.textContent).toContain('Mercado');
+  });
+
+  it('deve atualizar transação na lista ao receber updated do drawer', () => {
+    const tx: TransactionDTO = {
+      id: 'tx-1',
+      accountId: 'account-1',
+      categoryId: null,
+      amount: 10,
+      description: 'Café',
+      date: '2026-01-02T00:00:00.000Z',
+      type: 'EXPENSE',
+      isPaid: true,
+      recurrenceId: null,
+      installmentNumber: null,
+      totalInstallments: null,
+      createdAt: '2026-01-02T00:00:00.000Z',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    };
+
+    const harness = component as unknown as DashboardHarness;
+    harness.recentTransactions.set([tx]);
+    fixture.detectChanges();
+
+    harness.onTransactionUpdated({ ...tx, description: 'Mercado' });
+    fixture.detectChanges();
+
+    const list = fixture.nativeElement.querySelector('[data-testid="dashboard-transactions-list"]');
+    expect(list).toBeTruthy();
+    expect(list.textContent).toContain('Mercado');
+  });
+
+  it('deve remover transações da lista ao receber deleted do drawer', () => {
+    const tx: TransactionDTO = {
+      id: 'tx-1',
+      accountId: 'account-1',
+      categoryId: null,
+      amount: 10,
+      description: 'Café',
+      date: '2026-01-02T00:00:00.000Z',
+      type: 'EXPENSE',
+      isPaid: true,
+      recurrenceId: null,
+      installmentNumber: null,
+      totalInstallments: null,
+      createdAt: '2026-01-02T00:00:00.000Z',
+      updatedAt: '2026-01-02T00:00:00.000Z',
+    };
+
+    const harness = component as unknown as DashboardHarness;
+    harness.recentTransactions.set([tx]);
+    fixture.detectChanges();
+
+    harness.onTransactionsDeleted([tx.id]);
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="dashboard-transactions-list"]'),
+    ).toBeFalsy();
+  });
+
+  it('deve exibir o botão "Nova Conta"', () => {
     const button = fixture.nativeElement.querySelector(
-      '[data-testid="dashboard-create-wallet-btn"]',
+      '[data-testid="dashboard-create-account-btn"]',
     );
 
     expect(button).toBeTruthy();
-    expect(button.textContent).toContain('Nova Carteira');
+    expect(button.textContent).toContain('Nova Conta');
   });
 
-  it('deve renderizar lista de carteiras quando há dados', () => {
-    const list = fixture.nativeElement.querySelector('[data-testid="dashboard-wallet-list"]');
-    const card = fixture.nativeElement.querySelector('[data-testid="wallet-card-wallet-1"]');
+  it('deve exibir o botão "Novo Cartão"', () => {
+    const button = fixture.nativeElement.querySelector(
+      '[data-testid="dashboard-create-credit-card-btn"]',
+    );
+
+    expect(button).toBeTruthy();
+    expect(button.textContent).toContain('Novo Cartão');
+  });
+
+  it('deve renderizar lista de contas quando há dados', () => {
+    const list = fixture.nativeElement.querySelector('[data-testid="dashboard-account-list"]');
+    const card = fixture.nativeElement.querySelector('[data-testid="account-card-account-1"]');
 
     expect(list).toBeTruthy();
     expect(card).toBeTruthy();
+  });
+
+  it('deve exibir estado vazio para cartões quando não há cartões', () => {
+    const empty = fixture.nativeElement.querySelector(
+      '[data-testid="dashboard-credit-card-empty"]',
+    );
+    expect(empty).toBeTruthy();
   });
 
   it('deve exibir o card de status do backend', () => {
@@ -161,5 +276,35 @@ describe('DashboardComponent', () => {
 
     expect(statusCard).toBeTruthy();
     expect(statusCard.textContent).toContain('Status do Backend');
+  });
+
+  it('deve navegar para lista de transações ao clicar em "Ver todas"', () => {
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    const viewAllButton = fixture.nativeElement.querySelector(
+      '[data-testid="view-all-transactions"]',
+    ) as HTMLButtonElement;
+
+    viewAllButton.click();
+    fixture.detectChanges();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/transactions']);
+  });
+
+  it('deve navegar para nova transação ao clicar em "Nova Transação"', () => {
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    const button = fixture.nativeElement.querySelector(
+      '[data-testid="dashboard-new-transaction"]',
+    ) as HTMLButtonElement;
+
+    button.click();
+    fixture.detectChanges();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/transactions/new'], {
+      queryParams: { openAmount: 1 },
+    });
   });
 });
