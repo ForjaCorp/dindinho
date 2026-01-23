@@ -16,6 +16,8 @@ import { ButtonModule } from 'primeng/button';
 import { TransactionDTO, AccountDTO } from '@dindinho/shared';
 import { ApiService } from '../../app/services/api.service';
 import { AccountService } from '../../app/services/account.service';
+import { EmptyStateComponent } from '../../app/components/empty-state.component';
+import { PageHeaderComponent } from '../../app/components/page-header.component';
 
 type TransactionTypeFilter = '' | TransactionDTO['type'];
 
@@ -23,25 +25,29 @@ type TransactionTypeFilter = '' | TransactionDTO['type'];
   selector: 'app-transactions-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ButtonModule, CurrencyPipe, DatePipe],
+  imports: [
+    CommonModule,
+    ButtonModule,
+    CurrencyPipe,
+    DatePipe,
+    EmptyStateComponent,
+    PageHeaderComponent,
+  ],
   template: `
     <div data-testid="transactions-page" class="p-4 pb-24 max-w-3xl mx-auto flex flex-col gap-4">
-      <div class="flex items-center justify-between">
-        <div class="flex flex-col">
-          <h1 class="text-xl font-bold text-slate-900">Transações</h1>
-          <span class="text-sm text-slate-500"
-            >Todas as transações, da mais nova pra mais velha</span
-          >
-        </div>
-
+      <app-page-header
+        title="Transações"
+        subtitle="Todas as transações, da mais nova pra mais velha"
+      >
         <p-button
+          page-header-actions
           data-testid="transactions-create-btn"
           label="Nova"
           icon="pi pi-plus"
           size="small"
           (onClick)="onNewTransaction()"
         />
-      </div>
+      </app-page-header>
 
       <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex flex-col gap-4">
         <div class="flex gap-2 items-center">
@@ -117,12 +123,12 @@ type TransactionTypeFilter = '' | TransactionDTO['type'];
             {{ error() }}
           </div>
         } @else if (!items().length) {
-          <div
-            data-testid="transactions-empty"
-            class="rounded-xl bg-slate-50 border border-dashed border-slate-200 px-4 py-6 text-center text-slate-500"
-          >
-            Nenhuma transação encontrada.
-          </div>
+          <app-empty-state
+            testId="transactions-empty"
+            icon="pi-inbox"
+            title="Nenhuma transação encontrada"
+            description="Tente ajustar os filtros ou crie uma nova transação."
+          />
         } @else {
           <div data-testid="transactions-list" class="flex flex-col">
             @for (t of items(); track t.id) {

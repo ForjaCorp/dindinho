@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { AccountService } from '../../app/services/account.service';
 import { CreateAccountDialogComponent } from '../../app/components/accounts/create-account-dialog.component';
 import { AccountCardComponent } from '../../app/components/accounts/account-card.component';
+import { EmptyStateComponent } from '../../app/components/empty-state.component';
+import { PageHeaderComponent } from '../../app/components/page-header.component';
 import { ButtonModule } from 'primeng/button';
 import { SkeletonModule } from 'primeng/skeleton';
 
@@ -14,25 +16,24 @@ import { SkeletonModule } from 'primeng/skeleton';
     CommonModule,
     CreateAccountDialogComponent,
     AccountCardComponent,
+    EmptyStateComponent,
+    PageHeaderComponent,
     ButtonModule,
     SkeletonModule,
   ],
   template: `
     <div data-testid="accounts-page" class="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
       <!-- Header -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 class="text-2xl md:text-3xl font-bold text-slate-800">Minhas Contas</h1>
-          <p class="text-slate-500 mt-1">Gerencie suas contas e cartões de crédito</p>
-        </div>
+      <app-page-header title="Minhas Contas" subtitle="Gerencie suas contas e cartões de crédito">
         <p-button
+          page-header-actions
           data-testid="accounts-create-account-btn"
           label="Nova Conta"
           icon="pi pi-plus"
           (onClick)="dialog.show()"
           styleClass="w-full sm:w-auto shadow-sm"
         />
-      </div>
+      </app-page-header>
 
       <!-- Loading State -->
       @if (accountService.isLoading() && !accountService.accounts().length) {
@@ -45,26 +46,21 @@ import { SkeletonModule } from 'primeng/skeleton';
 
       <!-- Empty State -->
       @if (!accountService.isLoading() && !accountService.accounts().length) {
-        <div
-          data-testid="accounts-empty-state"
-          class="flex flex-col items-center justify-center py-12 px-4 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200"
+        <app-empty-state
+          testId="accounts-empty-state"
+          icon="pi-wallet"
+          title="Nenhuma conta encontrada"
+          description="Você ainda não possui contas cadastradas. Crie sua primeira conta para começar a controlar suas finanças."
         >
-          <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-            <i class="pi pi-wallet text-2xl text-slate-400"></i>
-          </div>
-          <h3 class="text-lg font-semibold text-slate-700">Nenhuma conta encontrada</h3>
-          <p class="text-slate-500 max-w-md mt-2 mb-6">
-            Você ainda não possui contas cadastradas. Crie sua primeira conta para começar a
-            controlar suas finanças.
-          </p>
           <p-button
+            empty-state-actions
             data-testid="accounts-empty-create-btn"
             label="Criar Primeira Conta"
             icon="pi pi-plus"
             (onClick)="dialog.show()"
             outlined="true"
           />
-        </div>
+        </app-empty-state>
       }
 
       <!-- Accounts Grid -->
