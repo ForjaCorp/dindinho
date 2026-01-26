@@ -9,6 +9,7 @@
  */
 
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of } from 'rxjs';
@@ -18,6 +19,7 @@ import { AccountService } from '../app/services/account.service';
 import { ApiResponseDTO, TransactionDTO, AccountDTO } from '@dindinho/shared';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import { CreateAccountDialogComponent } from '../app/components/accounts/create-account-dialog.component';
 
 describe('DashboardComponent', () => {
   let component: DashboardComponent;
@@ -335,6 +337,36 @@ describe('DashboardComponent', () => {
     });
   });
 
+  it('deve abrir o diálogo em modo edição ao clicar em editar na conta', () => {
+    const cardEl: HTMLElement | null = fixture.nativeElement.querySelector(
+      '[data-testid="account-card-account-1"]',
+    );
+    expect(cardEl).toBeTruthy();
+
+    cardEl!.dispatchEvent(
+      new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 120,
+        clientY: 120,
+      }),
+    );
+    fixture.detectChanges();
+
+    const editButton: HTMLButtonElement | null = fixture.nativeElement.querySelector(
+      '[data-testid="account-edit-account-1"]',
+    );
+    expect(editButton).toBeTruthy();
+
+    editButton!.click();
+    fixture.detectChanges();
+
+    const dialogDe = fixture.debugElement.query(By.directive(CreateAccountDialogComponent));
+    const dialogInstance = dialogDe.componentInstance as CreateAccountDialogComponent;
+    expect(dialogInstance.visible()).toBe(true);
+    expect(dialogInstance.form.controls.name.value).toBe('Conta Padrão');
+  });
+
   it('deve navegar para transações filtradas ao clicar em transações no cartão', () => {
     const router = TestBed.inject(Router);
     vi.spyOn(router, 'navigate').mockResolvedValue(true);
@@ -400,6 +432,71 @@ describe('DashboardComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/transactions'], {
       queryParams: { accountId: 'card-1', openFilters: 1 },
     });
+  });
+
+  it('deve abrir o diálogo em modo edição ao clicar em editar no cartão', () => {
+    accountServiceMock.accounts.mockReturnValue([
+      {
+        id: 'account-1',
+        name: 'Conta Padrão',
+        color: '#10b981',
+        icon: 'pi-wallet',
+        type: 'STANDARD',
+        ownerId: 'user-1',
+        balance: 100,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+      {
+        id: 'card-1',
+        name: 'Cartão',
+        color: '#8A2BE2',
+        icon: 'pi-credit-card',
+        type: 'CREDIT',
+        ownerId: 'user-1',
+        balance: 0,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        creditCardInfo: {
+          closingDay: 10,
+          dueDay: 15,
+          limit: 5000,
+          brand: 'Mastercard',
+        },
+      },
+    ]);
+
+    fixture = TestBed.createComponent(DashboardComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    const cardEl: HTMLElement | null = fixture.nativeElement.querySelector(
+      '[data-testid="account-card-card-1"]',
+    );
+    expect(cardEl).toBeTruthy();
+
+    cardEl!.dispatchEvent(
+      new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 120,
+        clientY: 120,
+      }),
+    );
+    fixture.detectChanges();
+
+    const editButton: HTMLButtonElement | null = fixture.nativeElement.querySelector(
+      '[data-testid="account-edit-card-1"]',
+    );
+    expect(editButton).toBeTruthy();
+
+    editButton!.click();
+    fixture.detectChanges();
+
+    const dialogDe = fixture.debugElement.query(By.directive(CreateAccountDialogComponent));
+    const dialogInstance = dialogDe.componentInstance as CreateAccountDialogComponent;
+    expect(dialogInstance.visible()).toBe(true);
+    expect(dialogInstance.form.controls.name.value).toBe('Cartão');
   });
 
   it('deve exibir estado vazio para cartões quando não há cartões', () => {

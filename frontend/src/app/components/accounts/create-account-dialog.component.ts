@@ -31,6 +31,7 @@ import { MessageService } from 'primeng/api';
       [header]="dialogTitle()"
       [modal]="true"
       [(visible)]="visible"
+      [dismissableMask]="true"
       [style]="{ width: '95vw', maxWidth: '500px', maxHeight: '90vh' }"
       [draggable]="false"
       [resizable]="false"

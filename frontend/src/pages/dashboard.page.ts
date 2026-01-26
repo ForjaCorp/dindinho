@@ -56,12 +56,14 @@ import { TransactionDrawerComponent } from '../app/components/transaction-drawer
         [accounts]="standardAccounts()"
         (create)="createAccountDialog.showForType('STANDARD')"
         (openTransactions)="onOpenTransactions($event)"
+        (edit)="createAccountDialog.showForEdit($event)"
       />
 
       <app-dashboard-credit-cards-section
         [cards]="creditAccounts()"
         (create)="createAccountDialog.showForType('CREDIT')"
         (openTransactions)="onOpenTransactions($event)"
+        (edit)="createAccountDialog.showForEdit($event)"
       />
 
       <app-create-account-dialog #createAccountDialog />

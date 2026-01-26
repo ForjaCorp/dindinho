@@ -1,10 +1,12 @@
 import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
+import { By } from '@angular/platform-browser';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { of, throwError } from 'rxjs';
 import { CreateAccountDialogComponent } from './create-account-dialog.component';
 import { AccountService } from '../../services/account.service';
 import { MessageService } from 'primeng/api';
+import { Dialog } from 'primeng/dialog';
 
 const testBed = getTestBed();
 if (!testBed.platform) {
@@ -56,6 +58,15 @@ describe('CreateAccountDialogComponent', () => {
 
     expect(fixture.componentInstance.visible()).toBe(true);
     expect(fixture.componentInstance.form.controls.type.value).toBe('STANDARD');
+  });
+
+  it('deve permitir fechar ao clicar fora do diálogo', () => {
+    fixture.detectChanges();
+
+    const dialogDe = fixture.debugElement.query(By.directive(Dialog));
+    const dialogInstance = dialogDe.componentInstance as Dialog;
+
+    expect(dialogInstance.dismissableMask).toBe(true);
   });
 
   it('deve abrir o diálogo com tipo de cartão ao chamar showForType', () => {

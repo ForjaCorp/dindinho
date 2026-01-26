@@ -37,6 +37,7 @@ import { EmptyStateComponent } from './empty-state.component';
               [account]="account"
               variant="compact"
               (openTransactions)="openTransactions.emit($event)"
+              (edit)="edit.emit($event)"
             />
           }
         </div>
@@ -54,6 +55,7 @@ import { EmptyStateComponent } from './empty-state.component';
 export class DashboardAccountsSectionComponent {
   readonly accounts = input.required<AccountDTO[]>();
   readonly create = output<void>();
+  readonly edit = output<AccountDTO>();
   readonly openTransactions = output<AccountDTO>();
 
   readonly emptyDescription = computed(
