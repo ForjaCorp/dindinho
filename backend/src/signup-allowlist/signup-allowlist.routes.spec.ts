@@ -21,6 +21,7 @@ describe("Rotas de allowlist de cadastro", () => {
   beforeEach(async () => {
     mockReset(prismaMock);
     vi.stubEnv("ALLOWLIST_ADMIN_KEY", "admin-key");
+    vi.stubEnv("JWT_SECRET", "test-secret");
     app = buildApp();
     await app.ready();
   });
