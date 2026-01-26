@@ -333,6 +333,73 @@ describe('DashboardComponent', () => {
     });
   });
 
+  it('deve navegar para transações filtradas ao clicar em transações no cartão', () => {
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    accountServiceMock.accounts.mockReturnValue([
+      {
+        id: 'account-1',
+        name: 'Conta Padrão',
+        color: '#10b981',
+        icon: 'pi-wallet',
+        type: 'STANDARD',
+        ownerId: 'user-1',
+        balance: 100,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+      {
+        id: 'card-1',
+        name: 'Cartão',
+        color: '#8A2BE2',
+        icon: 'pi-credit-card',
+        type: 'CREDIT',
+        ownerId: 'user-1',
+        balance: 0,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        creditCardInfo: {
+          closingDay: 10,
+          dueDay: 15,
+          limit: 5000,
+          brand: 'Mastercard',
+        },
+      },
+    ]);
+
+    fixture = TestBed.createComponent(DashboardComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    const cardEl: HTMLElement | null = fixture.nativeElement.querySelector(
+      '[data-testid="account-card-card-1"]',
+    );
+    expect(cardEl).toBeTruthy();
+
+    cardEl!.dispatchEvent(
+      new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 120,
+        clientY: 120,
+      }),
+    );
+    fixture.detectChanges();
+
+    const transactionsBtn: HTMLButtonElement | null = fixture.nativeElement.querySelector(
+      '[data-testid="account-transactions-card-1"]',
+    );
+    expect(transactionsBtn).toBeTruthy();
+
+    transactionsBtn!.click();
+    fixture.detectChanges();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/transactions'], {
+      queryParams: { accountId: 'card-1', openFilters: 1 },
+    });
+  });
+
   it('deve exibir estado vazio para cartões quando não há cartões', () => {
     const empty = fixture.nativeElement.querySelector(
       '[data-testid="dashboard-credit-card-empty"]',
