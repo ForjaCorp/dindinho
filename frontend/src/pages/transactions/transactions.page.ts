@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ButtonModule } from 'primeng/button';
@@ -116,9 +116,11 @@ const utcEndOfMonthIso = (year: number, month: number) =>
                 (change)="onAccountFilterChange($event)"
                 aria-label="Conta"
               >
-                <option value="">Todas as contas</option>
+                <option value="" [selected]="!accountFilterId()">Todas as contas</option>
                 @for (a of accounts(); track a.id) {
-                  <option [value]="a.id">{{ a.name }}</option>
+                  <option [value]="a.id" [selected]="a.id === accountFilterId()">
+                    {{ a.name }}
+                  </option>
                 }
               </select>
             </div>
@@ -217,6 +219,7 @@ export class TransactionsPage {
   private api = inject(ApiService);
   private accountService = inject(AccountService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private destroyRef = inject(DestroyRef);
   private host = inject(ElementRef<HTMLElement>);
 
@@ -262,6 +265,20 @@ export class TransactionsPage {
 
   constructor() {
     this.accountService.loadAccounts();
+
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const accountId = params.get('accountId') ?? '';
+      if (this.accountFilterId() !== accountId) {
+        this.accountFilterId.set(accountId);
+      }
+
+      const openFiltersRaw = params.get('openFilters');
+      const shouldOpenFilters = openFiltersRaw === '1' || openFiltersRaw === 'true' || !!accountId;
+
+      if (shouldOpenFilters && !this.filtersOpen()) {
+        this.filtersOpen.set(true);
+      }
+    });
 
     this.monthYearControl.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))

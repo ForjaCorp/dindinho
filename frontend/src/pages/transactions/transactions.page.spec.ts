@@ -1,8 +1,14 @@
 import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { provideRouter, Router } from '@angular/router';
-import { of } from 'rxjs';
+import {
+  ActivatedRoute,
+  ParamMap,
+  convertToParamMap,
+  provideRouter,
+  Router,
+} from '@angular/router';
+import { BehaviorSubject, of } from 'rxjs';
 import { TransactionsPage } from './transactions.page';
 import { ApiService } from '../../app/services/api.service';
 import { AccountService } from '../../app/services/account.service';
@@ -15,6 +21,7 @@ if (!testBed.platform) {
 
 describe('TransactionsPage', () => {
   let fixture: ComponentFixture<TransactionsPage>;
+  let queryParamMap$: BehaviorSubject<ParamMap>;
 
   interface TransactionsPageHarness {
     onTransactionUpdated: (t: TransactionDTO) => void;
@@ -58,6 +65,8 @@ describe('TransactionsPage', () => {
     observeSpy.mockReset();
     disconnectSpy.mockReset();
 
+    queryParamMap$ = new BehaviorSubject<ParamMap>(convertToParamMap({}));
+
     class MockIntersectionObserver {
       constructor(
         private callback: IntersectionObserverCallback,
@@ -92,6 +101,12 @@ describe('TransactionsPage', () => {
       imports: [TransactionsPage],
       providers: [
         provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            queryParamMap: queryParamMap$.asObservable(),
+          },
+        },
         { provide: ApiService, useValue: apiServiceMock },
         { provide: AccountService, useValue: accountServiceMock },
       ],
@@ -199,6 +214,27 @@ describe('TransactionsPage', () => {
       from: '2026-01-01T00:00:00.000Z',
       to: '2026-01-31T23:59:59.999Z',
     });
+  });
+
+  it('deve aplicar filtro de conta via query param', () => {
+    const api = TestBed.inject(ApiService) as unknown as {
+      getTransactions: ReturnType<typeof vi.fn>;
+    };
+
+    queryParamMap$.next(convertToParamMap({ accountId: 'account-1', openFilters: '1' }));
+    fixture.detectChanges();
+
+    const lastCall = api.getTransactions.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(lastCall).toMatchObject({ limit: 30, accountId: 'account-1' });
+
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="transactions-filters"]'),
+    ).toBeTruthy();
+    const select = fixture.nativeElement.querySelector(
+      '[data-testid="transactions-account-select"]',
+    ) as HTMLSelectElement;
+    expect(select).toBeTruthy();
+    expect(select.value).toBe('account-1');
   });
 
   it('deve registrar observer para scroll infinito quando lista renderiza', async () => {
