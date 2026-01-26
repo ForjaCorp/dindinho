@@ -10,6 +10,7 @@ import { ColorPickerModule } from 'primeng/colorpicker';
 import { AccountService } from '../../services/account.service';
 import { AccountDTO, CreateAccountDTO, UpdateAccountDTO } from '@dindinho/shared';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-create-account-dialog',
@@ -210,6 +211,7 @@ export class CreateAccountDialogComponent {
   private fb = inject(FormBuilder);
   protected accountService = inject(AccountService);
   private destroyRef = inject(DestroyRef); // Para limpar subscrições automaticamente
+  private messageService = inject(MessageService);
 
   protected readonly mode = signal<'create' | 'edit'>('create');
   private readonly editingAccountId = signal<string | null>(null);
@@ -368,10 +370,22 @@ export class CreateAccountDialogComponent {
         .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: this.isCredit() ? 'Cartão criado' : 'Conta criada',
+              detail: 'Salvo com sucesso',
+            });
             this.visible.set(false);
             this.resetForm();
           },
-          error: () => undefined,
+          error: () => {
+            const detail = this.accountService.error() ?? 'Erro ao salvar';
+            this.messageService.add({
+              severity: 'error',
+              summary: this.isCredit() ? 'Erro ao criar cartão' : 'Erro ao criar conta',
+              detail,
+            });
+          },
         });
       return;
     }
@@ -396,10 +410,22 @@ export class CreateAccountDialogComponent {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: this.isCredit() ? 'Cartão atualizado' : 'Conta atualizada',
+            detail: 'Salvo com sucesso',
+          });
           this.visible.set(false);
           this.resetForm();
         },
-        error: () => undefined,
+        error: () => {
+          const detail = this.accountService.error() ?? 'Erro ao salvar';
+          this.messageService.add({
+            severity: 'error',
+            summary: this.isCredit() ? 'Erro ao atualizar cartão' : 'Erro ao atualizar conta',
+            detail,
+          });
+        },
       });
   }
 }
