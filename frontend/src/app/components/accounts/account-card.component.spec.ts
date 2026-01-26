@@ -342,6 +342,48 @@ describe('AccountCardComponent (outputs)', () => {
     expect(hostFixture.componentInstance.opened()).toBeNull();
   });
 
+  it('deve focar primeira ação ao abrir menu via teclado', async () => {
+    const card = hostFixture.nativeElement.querySelector(
+      '[data-testid="account-card-account-1"]',
+    ) as HTMLElement;
+    expect(card).toBeTruthy();
+
+    card.focus();
+    expect(document.activeElement).toBe(card);
+
+    card.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    hostFixture.detectChanges();
+
+    await new Promise<void>((resolve) => queueMicrotask(() => resolve()));
+    hostFixture.detectChanges();
+
+    const firstAction = hostFixture.nativeElement.querySelector(
+      '[data-testid="account-transactions-account-1"]',
+    ) as HTMLButtonElement | null;
+    expect(firstAction).toBeTruthy();
+    expect(document.activeElement).toBe(firstAction);
+
+    firstAction!.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+        cancelable: true,
+      }),
+    );
+    hostFixture.detectChanges();
+
+    expect(
+      hostFixture.nativeElement.querySelector('[data-testid="account-transactions-account-1"]'),
+    ).toBeFalsy();
+    expect(document.activeElement).toBe(card);
+  });
+
   it('deve fechar o menu ao clicar fora', () => {
     const card = hostFixture.nativeElement.querySelector(
       '[data-testid="account-card-account-1"]',

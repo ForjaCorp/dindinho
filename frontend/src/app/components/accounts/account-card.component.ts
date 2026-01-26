@@ -4,6 +4,7 @@ import {
   computed,
   DestroyRef,
   ElementRef,
+  effect,
   inject,
   input,
   output,
@@ -29,6 +30,7 @@ import { AccountDTO } from '@dindinho/shared';
       tabindex="0"
       aria-haspopup="menu"
       [attr.aria-expanded]="actionsOpen()"
+      [attr.aria-controls]="actionsOpen() ? menuId() : null"
       (contextmenu)="onContextMenu($event)"
       (pointerdown)="onPointerDown($event)"
       (pointermove)="onPointerMove($event)"
@@ -37,7 +39,7 @@ import { AccountDTO } from '@dindinho/shared';
       (pointerleave)="onPointerLeave()"
       (keydown.enter)="onKeyboardOpenMenu($event)"
       (keydown.space)="$event.preventDefault(); onKeyboardOpenMenu($event)"
-      (keydown.escape)="actionsOpen.set(false)"
+      (keydown.escape)="onKeyboardCloseMenu($event)"
     >
       <div [class]="headerClass()">
         <div
@@ -56,6 +58,7 @@ import { AccountDTO } from '@dindinho/shared';
           @if (actionsOpen()) {
             <div
               #menu
+              [attr.id]="menuId()"
               [attr.data-testid]="accountMenuTestId()"
               class="fixed z-50 w-44 rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden"
               [style.left.px]="menuLeft()"
@@ -63,6 +66,7 @@ import { AccountDTO } from '@dindinho/shared';
               role="menu"
               tabindex="-1"
               (click)="$event.stopPropagation()"
+              (keydown.escape)="onKeyboardCloseMenu($event)"
               (keydown)="$event.stopPropagation()"
               (pointerdown)="$event.stopPropagation()"
               (contextmenu)="$event.stopPropagation()"
@@ -157,6 +161,8 @@ export class AccountCardComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly instanceId = AccountCardComponent.nextInstanceId++;
 
+  private restoreFocusEl: HTMLElement | null = null;
+
   account = input.required<AccountDTO>();
   variant = input<'compact' | 'full'>('full');
 
@@ -217,6 +223,7 @@ export class AccountCardComponent {
   accountTransactionsTestId = computed(() => `account-transactions-${this.account().id}`);
   accountEditTestId = computed(() => `account-edit-${this.account().id}`);
   accountMenuTestId = computed(() => `account-menu-${this.account().id}`);
+  menuId = computed(() => `account-menu-${this.instanceId}`);
 
   containerClass = computed(() => {
     if (this.variant() === 'compact') {
@@ -255,6 +262,17 @@ export class AccountCardComponent {
   });
 
   constructor() {
+    effect(() => {
+      if (!this.actionsOpen()) return;
+
+      queueMicrotask(() => {
+        const first = this.menuEl?.nativeElement.querySelector(
+          'button',
+        ) as HTMLButtonElement | null;
+        first?.focus();
+      });
+    });
+
     const onOpen = (event: Event) => {
       const detail = (event as CustomEvent<number>).detail;
       if (detail !== this.instanceId) {
@@ -333,6 +351,11 @@ export class AccountCardComponent {
   protected onKeyboardOpenMenu(event: Event) {
     event.stopPropagation();
 
+    this.restoreFocusEl =
+      typeof document !== 'undefined' && document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+
     const target = (event as KeyboardEvent).currentTarget as HTMLElement | null;
     if (!target) return;
 
@@ -340,9 +363,24 @@ export class AccountCardComponent {
     this.openMenuAt(rect.left + rect.width / 2, rect.top + rect.height / 2);
   }
 
+  protected onKeyboardCloseMenu(event: Event) {
+    event.stopPropagation();
+    this.actionsOpen.set(false);
+
+    const el = this.restoreFocusEl;
+    this.restoreFocusEl = null;
+    el?.focus();
+  }
+
   private openMenuAt(x: number, y: number) {
     this.menuAnchorX.set(x);
     this.menuAnchorY.set(y);
+
+    this.restoreFocusEl =
+      typeof document !== 'undefined' && document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+
     this.actionsOpen.set(true);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(
