@@ -1,13 +1,19 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { PrismaClient, AccountType, Prisma } from "@prisma/client";
 import { AccountsService } from "./accounts.service";
-import { CreateAccountDTO } from "@dindinho/shared";
+import { CreateAccountDTO, UpdateAccountDTO } from "@dindinho/shared";
 
 // Mock do PrismaClient
 const mockPrisma = {
   account: {
     create: vi.fn(),
     findMany: vi.fn(),
+    findUnique: vi.fn(),
+    findFirst: vi.fn(),
+    update: vi.fn(),
+  },
+  accountAccess: {
+    findUnique: vi.fn(),
   },
   transaction: {
     groupBy: vi.fn(),
@@ -350,6 +356,158 @@ describe("AccountsService", () => {
 
       await expect(service.findAllByUserId(userId)).rejects.toThrow(
         "Erro inesperado ao buscar conta",
+      );
+    });
+  });
+
+  describe("update", () => {
+    const userId = "user-123";
+    const accountId = "account-123";
+
+    it("deve atualizar conta padrão com sucesso", async () => {
+      const payload: UpdateAccountDTO = {
+        name: "Conta Atualizada",
+        color: "#111111",
+      };
+
+      vi.mocked((mockPrisma as any).account.findUnique)
+        .mockResolvedValueOnce({ id: accountId, ownerId: userId } as any)
+        .mockResolvedValueOnce({
+          id: accountId,
+          type: "STANDARD" as AccountType,
+          creditCardInfo: null,
+        } as any);
+
+      vi.mocked((mockPrisma as any).account.update).mockResolvedValue({
+        id: accountId,
+      } as any);
+
+      vi.mocked((mockPrisma as any).account.findFirst).mockResolvedValue({
+        id: accountId,
+        name: payload.name,
+        color: payload.color,
+        icon: "pi-wallet",
+        type: "STANDARD" as AccountType,
+        ownerId: userId,
+        initialBalance: new Prisma.Decimal(100),
+        creditCardInfo: null,
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-01-02T00:00:00.000Z"),
+      } as any);
+
+      vi.mocked((mockPrisma as any).transaction.groupBy).mockResolvedValue([
+        { type: "INCOME", _sum: { amount: { toNumber: () => 50 } } },
+        { type: "EXPENSE", _sum: { amount: { toNumber: () => 20 } } },
+      ] as any);
+
+      const result = await service.update(userId, accountId, payload);
+
+      expect((mockPrisma as any).account.update).toHaveBeenCalledWith({
+        where: { id: accountId },
+        data: {
+          name: payload.name,
+          color: payload.color,
+        },
+      });
+
+      expect(result).toEqual({
+        id: accountId,
+        name: payload.name,
+        color: payload.color,
+        icon: "pi-wallet",
+        type: "STANDARD",
+        ownerId: userId,
+        creditCardInfo: null,
+        balance: 130,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-02T00:00:00.000Z",
+      });
+    });
+
+    it("deve atualizar cartão de crédito e recalcular limite disponível", async () => {
+      const payload: UpdateAccountDTO = {
+        limit: 5000,
+      };
+
+      vi.mocked((mockPrisma as any).account.findUnique)
+        .mockResolvedValueOnce({ id: accountId, ownerId: userId } as any)
+        .mockResolvedValueOnce({
+          id: accountId,
+          type: "CREDIT" as AccountType,
+          creditCardInfo: { closingDay: 10, dueDay: 15 },
+        } as any);
+
+      vi.mocked((mockPrisma as any).account.update).mockResolvedValue({
+        id: accountId,
+      } as any);
+
+      vi.mocked((mockPrisma as any).account.findFirst).mockResolvedValue({
+        id: accountId,
+        name: "Cartão",
+        color: "#222222",
+        icon: "pi-credit-card",
+        type: "CREDIT" as AccountType,
+        ownerId: userId,
+        initialBalance: new Prisma.Decimal(0),
+        creditCardInfo: {
+          id: "cc-1",
+          closingDay: 10,
+          dueDay: 15,
+          limit: { toNumber: () => 5000 },
+          brand: "Mastercard",
+          accountId,
+        },
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-01-02T00:00:00.000Z"),
+      } as any);
+
+      vi.mocked((mockPrisma as any).transaction.groupBy)
+        .mockResolvedValueOnce([] as any)
+        .mockResolvedValueOnce([
+          { accountId, _sum: { amount: { toNumber: () => 200 } } },
+        ] as any);
+
+      const result = await service.update(userId, accountId, payload);
+
+      expect((mockPrisma as any).account.update).toHaveBeenCalledWith({
+        where: { id: accountId },
+        data: {
+          creditCardInfo: {
+            upsert: {
+              create: { closingDay: 10, dueDay: 15, limit: 5000 },
+              update: { limit: 5000 },
+            },
+          },
+        },
+      });
+
+      expect(result.creditCardInfo?.availableLimit).toBe(4800);
+    });
+
+    it("deve falhar ao atualizar campos de cartão em conta padrão", async () => {
+      const payload: UpdateAccountDTO = { limit: 1000 };
+
+      vi.mocked((mockPrisma as any).account.findUnique)
+        .mockResolvedValueOnce({ id: accountId, ownerId: userId } as any)
+        .mockResolvedValueOnce({
+          id: accountId,
+          type: "STANDARD" as AccountType,
+          creditCardInfo: null,
+        } as any);
+
+      await expect(service.update(userId, accountId, payload)).rejects.toThrow(
+        "Campos de cartão só podem ser atualizados em contas do tipo crédito",
+      );
+    });
+
+    it("deve retornar 404 quando conta não existe", async () => {
+      const payload: UpdateAccountDTO = { name: "X" };
+      vi.mocked((mockPrisma as any).account.findUnique).mockResolvedValueOnce(
+        null,
+      );
+
+      await expect(service.update(userId, accountId, payload)).rejects.toThrow(
+        "Conta não encontrada",
       );
     });
   });

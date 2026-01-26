@@ -41,13 +41,24 @@ export function buildApp(): FastifyInstance {
     "http://localhost:4201", // Angular dev alternative
     "http://127.0.0.1:4200", // Angular dev IP default
     "http://127.0.0.1:4201", // Angular dev IP alternative
+    "http://localhost:5173", // Vite dev default
+    "http://localhost:5174", // Vite dev alternative
+    "http://127.0.0.1:5173", // Vite dev IP default
+    "http://127.0.0.1:5174", // Vite dev IP alternative
     "http://localhost:3333", // Backend local
     process.env.FRONTEND_URL, // Produção
   ].filter((origin): origin is string => Boolean(origin));
 
   app.register(cors, {
-    origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (allowedOrigins.includes(origin)) return cb(null, true);
+      if (/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) {
+        return cb(null, true);
+      }
+      return cb(new Error("Origin não permitido"), false);
+    },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   });
