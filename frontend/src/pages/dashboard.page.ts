@@ -55,11 +55,13 @@ import { TransactionDrawerComponent } from '../app/components/transaction-drawer
       <app-dashboard-accounts-section
         [accounts]="standardAccounts()"
         (create)="createAccountDialog.showForType('STANDARD')"
+        (openTransactions)="onOpenTransactions($event)"
       />
 
       <app-dashboard-credit-cards-section
         [cards]="creditAccounts()"
         (create)="createAccountDialog.showForType('CREDIT')"
+        (openTransactions)="onOpenTransactions($event)"
       />
 
       <app-create-account-dialog #createAccountDialog />
@@ -316,6 +318,12 @@ export class DashboardComponent implements OnInit {
 
   protected accountName(accountId: string): string {
     return this.accountMap().get(accountId)?.name ?? 'Conta';
+  }
+
+  protected onOpenTransactions(account: AccountDTO) {
+    this.router.navigate(['/transactions'], {
+      queryParams: { accountId: account.id, openFilters: 1 },
+    });
   }
 
   protected onQuickAdd(type: 'INCOME' | 'EXPENSE') {

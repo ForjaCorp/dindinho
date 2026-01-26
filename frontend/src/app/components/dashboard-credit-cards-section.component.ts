@@ -33,7 +33,11 @@ import { EmptyStateComponent } from './empty-state.component';
       @if (cards().length > 0) {
         <div data-testid="dashboard-credit-card-list" class="flex gap-2 overflow-x-auto pb-2 px-1">
           @for (card of cards(); track card.id) {
-            <app-account-card [account]="card" variant="compact" />
+            <app-account-card
+              [account]="card"
+              variant="compact"
+              (openTransactions)="openTransactions.emit($event)"
+            />
           }
         </div>
       } @else {
@@ -50,6 +54,7 @@ import { EmptyStateComponent } from './empty-state.component';
 export class DashboardCreditCardsSectionComponent {
   readonly cards = input.required<AccountDTO[]>();
   readonly create = output<void>();
+  readonly openTransactions = output<AccountDTO>();
 
   readonly emptyDescription = computed(
     () => 'Clique em "Novo Cartão" para adicionar seu primeiro cartão de crédito',

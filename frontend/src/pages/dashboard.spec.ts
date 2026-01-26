@@ -301,6 +301,38 @@ describe('DashboardComponent', () => {
     expect(card).toBeTruthy();
   });
 
+  it('deve navegar para transações filtradas ao clicar em transações no card', () => {
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    const cardEl: HTMLElement | null = fixture.nativeElement.querySelector(
+      '[data-testid="account-card-account-1"]',
+    );
+    expect(cardEl).toBeTruthy();
+
+    cardEl!.dispatchEvent(
+      new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 120,
+        clientY: 120,
+      }),
+    );
+    fixture.detectChanges();
+
+    const transactionsBtn: HTMLButtonElement | null = fixture.nativeElement.querySelector(
+      '[data-testid="account-transactions-account-1"]',
+    );
+    expect(transactionsBtn).toBeTruthy();
+
+    transactionsBtn!.click();
+    fixture.detectChanges();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/transactions'], {
+      queryParams: { accountId: 'account-1', openFilters: 1 },
+    });
+  });
+
   it('deve exibir estado vazio para cartões quando não há cartões', () => {
     const empty = fixture.nativeElement.querySelector(
       '[data-testid="dashboard-credit-card-empty"]',

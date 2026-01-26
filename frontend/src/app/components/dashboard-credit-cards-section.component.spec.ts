@@ -13,14 +13,25 @@ if (!testBed.platform) {
 @Component({
   standalone: true,
   imports: [DashboardCreditCardsSectionComponent],
-  template: ` <app-dashboard-credit-cards-section [cards]="cards()" (create)="onCreate()" /> `,
+  template: `
+    <app-dashboard-credit-cards-section
+      [cards]="cards()"
+      (create)="onCreate()"
+      (openTransactions)="onOpenTransactions($event)"
+    />
+  `,
 })
 class DashboardCreditCardsSectionHostComponent {
   readonly cards = signal<AccountDTO[]>([]);
   readonly created = signal(false);
+  readonly openedCardId = signal<string | null>(null);
 
   onCreate() {
     this.created.set(true);
+  }
+
+  onOpenTransactions(card: AccountDTO) {
+    this.openedCardId.set(card.id);
   }
 }
 
@@ -107,5 +118,53 @@ describe('DashboardCreditCardsSectionComponent', () => {
     fixture.detectChanges();
 
     expect(fixture.componentInstance.created()).toBe(true);
+  });
+
+  it('deve emitir evento ao clicar em "Transações" no card', () => {
+    fixture.componentInstance.cards.set([
+      {
+        id: 'card-1',
+        name: 'Nubank',
+        color: '#8A2BE2',
+        icon: 'pi-credit-card',
+        type: 'CREDIT',
+        ownerId: 'user-1',
+        balance: 0,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+        creditCardInfo: {
+          closingDay: 10,
+          dueDay: 15,
+          limit: 5000,
+          brand: 'Mastercard',
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const cardEl: HTMLElement | null = fixture.nativeElement.querySelector(
+      '[data-testid="account-card-card-1"]',
+    );
+    expect(cardEl).toBeTruthy();
+
+    cardEl!.dispatchEvent(
+      new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 120,
+        clientY: 120,
+      }),
+    );
+    fixture.detectChanges();
+
+    const transactionsBtn: HTMLButtonElement | null = fixture.nativeElement.querySelector(
+      '[data-testid="account-transactions-card-1"]',
+    );
+    expect(transactionsBtn).toBeTruthy();
+
+    transactionsBtn!.click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.openedCardId()).toBe('card-1');
   });
 });

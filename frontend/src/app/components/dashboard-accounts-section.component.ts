@@ -33,7 +33,11 @@ import { EmptyStateComponent } from './empty-state.component';
       @if (accounts().length > 0) {
         <div data-testid="dashboard-account-list" class="flex gap-2 overflow-x-auto pb-2 px-1">
           @for (account of accounts(); track account.id) {
-            <app-account-card [account]="account" variant="compact" />
+            <app-account-card
+              [account]="account"
+              variant="compact"
+              (openTransactions)="openTransactions.emit($event)"
+            />
           }
         </div>
       } @else {
@@ -50,6 +54,7 @@ import { EmptyStateComponent } from './empty-state.component';
 export class DashboardAccountsSectionComponent {
   readonly accounts = input.required<AccountDTO[]>();
   readonly create = output<void>();
+  readonly openTransactions = output<AccountDTO>();
 
   readonly emptyDescription = computed(
     () => 'Clique em "Nova Conta" para criar sua primeira conta',
