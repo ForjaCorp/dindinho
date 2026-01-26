@@ -22,6 +22,7 @@ if (!testBed.platform) {
 describe('TransactionsPage', () => {
   let fixture: ComponentFixture<TransactionsPage>;
   let queryParamMap$: BehaviorSubject<ParamMap>;
+  let router: Router;
 
   interface TransactionsPageHarness {
     onTransactionUpdated: (t: TransactionDTO) => void;
@@ -113,6 +114,8 @@ describe('TransactionsPage', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(TransactionsPage);
+    router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
     fixture.detectChanges();
   });
 
@@ -159,9 +162,6 @@ describe('TransactionsPage', () => {
   });
 
   it('deve navegar para nova transação ao acionar ação', () => {
-    const router = TestBed.inject(Router);
-    vi.spyOn(router, 'navigate').mockResolvedValue(true);
-
     const component = fixture.componentInstance as unknown as { onNewTransaction: () => void };
     component.onNewTransaction();
 
@@ -182,6 +182,14 @@ describe('TransactionsPage', () => {
       '[data-testid="transactions-filters"]',
     );
     expect(filtersAfter).toBeTruthy();
+  });
+
+  it('deve expor aria-label no botão de filtros', () => {
+    const btn = fixture.nativeElement.querySelector(
+      '[data-testid="transactions-filters-toggle"]',
+    ) as HTMLElement | null;
+    expect(btn).toBeTruthy();
+    expect(btn?.getAttribute('aria-label')).toBeTruthy();
   });
 
   it('deve exibir filtros de mês e ano ao abrir filtros avançados', () => {
@@ -235,6 +243,81 @@ describe('TransactionsPage', () => {
     ) as HTMLSelectElement;
     expect(select).toBeTruthy();
     expect(select.value).toBe('account-1');
+  });
+
+  it('deve aplicar filtro de tipo via query param', () => {
+    const api = TestBed.inject(ApiService) as unknown as {
+      getTransactions: ReturnType<typeof vi.fn>;
+    };
+
+    queryParamMap$.next(convertToParamMap({ type: 'INCOME', openFilters: '1' }));
+    fixture.detectChanges();
+
+    const lastCall = api.getTransactions.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(lastCall).toMatchObject({ limit: 30, type: 'INCOME' });
+
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="transactions-filters"]'),
+    ).toBeTruthy();
+  });
+
+  it('deve sincronizar query params ao mudar filtro de conta', () => {
+    const component = fixture.componentInstance as unknown as {
+      toggleFilters: () => void;
+      onAccountFilterChange: (e: Event) => void;
+    };
+
+    component.toggleFilters();
+    fixture.detectChanges();
+
+    component.onAccountFilterChange({
+      target: { value: 'account-1' },
+    } as unknown as Event);
+
+    expect(router.navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({
+        queryParamsHandling: 'merge',
+        queryParams: expect.objectContaining({ accountId: 'account-1', openFilters: 1 }),
+      }),
+    );
+  });
+
+  it('deve sincronizar query params ao mudar filtro de tipo', () => {
+    const component = fixture.componentInstance as unknown as {
+      toggleFilters: () => void;
+      onTypeFilterChange: (e: Event) => void;
+    };
+
+    component.toggleFilters();
+    fixture.detectChanges();
+
+    component.onTypeFilterChange({
+      target: { value: 'EXPENSE' },
+    } as unknown as Event);
+
+    expect(router.navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({
+        queryParamsHandling: 'merge',
+        queryParams: expect.objectContaining({ type: 'EXPENSE', openFilters: 1 }),
+      }),
+    );
+  });
+
+  it('deve sincronizar openFilters=0 ao fechar filtros', () => {
+    const component = fixture.componentInstance as unknown as { toggleFilters: () => void };
+    component.toggleFilters();
+    fixture.detectChanges();
+    component.toggleFilters();
+
+    expect(router.navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({
+        queryParamsHandling: 'merge',
+        queryParams: expect.objectContaining({ openFilters: 0 }),
+      }),
+    );
   });
 
   it('deve registrar observer para scroll infinito quando lista renderiza', async () => {
