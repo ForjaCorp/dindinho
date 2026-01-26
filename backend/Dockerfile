@@ -1,8 +1,8 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-COPY backend/package.json backend/package-lock.json ./backend/
-COPY frontend/package.json frontend/package-lock.json ./frontend/
+COPY backend/package.json ./backend/
+COPY frontend/package.json ./frontend/
 COPY packages/shared/package.json ./packages/shared/
 RUN npm ci
 
