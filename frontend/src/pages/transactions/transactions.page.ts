@@ -112,7 +112,6 @@ const utcEndOfMonthIso = (year: number, month: number) =>
                 data-testid="transactions-account-select"
                 id="accountId"
                 class="h-10 rounded-xl border border-slate-200 px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                [value]="accountFilterId()"
                 (change)="onAccountFilterChange($event)"
                 aria-label="Conta"
               >
