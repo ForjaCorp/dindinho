@@ -17,6 +17,7 @@ import { ApiService } from '../app/services/api.service';
 import { AccountService } from '../app/services/account.service';
 import { ApiResponseDTO, TransactionDTO, AccountDTO } from '@dindinho/shared';
 import { Router } from '@angular/router';
+import { MessageService } from 'primeng/api';
 
 describe('DashboardComponent', () => {
   let component: DashboardComponent;
@@ -81,6 +82,7 @@ describe('DashboardComponent', () => {
         provideRouter([]),
         { provide: ApiService, useValue: apiServiceMock },
         { provide: AccountService, useValue: accountServiceMock },
+        { provide: MessageService, useValue: { add: vi.fn() } },
       ],
     }).compileComponents();
 

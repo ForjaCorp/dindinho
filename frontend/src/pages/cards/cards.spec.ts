@@ -7,6 +7,7 @@ import { AccountDTO } from '@dindinho/shared';
 import { provideRouter, Router } from '@angular/router';
 import { By } from '@angular/platform-browser';
 import { CreateAccountDialogComponent } from '../../app/components/accounts/create-account-dialog.component';
+import { MessageService } from 'primeng/api';
 
 const testBed = getTestBed();
 if (!testBed.platform) {
@@ -50,7 +51,11 @@ describe('CardsPage', () => {
 
     await TestBed.configureTestingModule({
       imports: [CardsPage],
-      providers: [{ provide: AccountService, useValue: accountServiceMock }, provideRouter([])],
+      providers: [
+        { provide: AccountService, useValue: accountServiceMock },
+        { provide: MessageService, useValue: { add: vi.fn() } },
+        provideRouter([]),
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(CardsPage);
@@ -69,7 +74,11 @@ describe('CardsPage', () => {
 
     await TestBed.configureTestingModule({
       imports: [CardsPage],
-      providers: [{ provide: AccountService, useValue: accountServiceMock }, provideRouter([])],
+      providers: [
+        { provide: AccountService, useValue: accountServiceMock },
+        { provide: MessageService, useValue: { add: vi.fn() } },
+        provideRouter([]),
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(CardsPage);
@@ -84,7 +93,11 @@ describe('CardsPage', () => {
 
     await TestBed.configureTestingModule({
       imports: [CardsPage],
-      providers: [{ provide: AccountService, useValue: accountServiceMock }, provideRouter([])],
+      providers: [
+        { provide: AccountService, useValue: accountServiceMock },
+        { provide: MessageService, useValue: { add: vi.fn() } },
+        provideRouter([]),
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(CardsPage);
@@ -124,7 +137,11 @@ describe('CardsPage', () => {
 
     await TestBed.configureTestingModule({
       imports: [CardsPage],
-      providers: [{ provide: AccountService, useValue: accountServiceMock }, provideRouter([])],
+      providers: [
+        { provide: AccountService, useValue: accountServiceMock },
+        { provide: MessageService, useValue: { add: vi.fn() } },
+        provideRouter([]),
+      ],
     }).compileComponents();
 
     const router = TestBed.inject(Router);
@@ -179,7 +196,11 @@ describe('CardsPage', () => {
 
     await TestBed.configureTestingModule({
       imports: [CardsPage],
-      providers: [{ provide: AccountService, useValue: accountServiceMock }, provideRouter([])],
+      providers: [
+        { provide: AccountService, useValue: accountServiceMock },
+        { provide: MessageService, useValue: { add: vi.fn() } },
+        provideRouter([]),
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(CardsPage);
