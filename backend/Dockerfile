@@ -24,4 +24,4 @@ COPY --from=builder /app/backend/package.json ./backend/package.json
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/packages/shared/package.json ./packages/shared/package.json
 EXPOSE 3333
-CMD ["sh", "-c", "echo 'Verificando DATABASE_URL...' && if [ -z \"$DATABASE_URL\" ]; then echo 'ERRO CRÍTICO: DATABASE_URL está vazia no container!'; exit 1; fi; cd backend && npx prisma migrate deploy && node dist/server.js"]
+CMD ["sh", "-c", "echo 'Limpando possíveis arquivos .env residuais...' && rm -f .env backend/.env && echo 'DATABASE_URL detectada com tamanho:' ${#DATABASE_URL} && cd backend && npx prisma migrate deploy && node dist/server.js"]
