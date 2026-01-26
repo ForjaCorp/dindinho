@@ -23,6 +23,8 @@ services:
       interval: 30s
       timeout: 5s
       retries: 5
+    networks:
+      - coolify
   frontend:
     build:
       context: .
@@ -33,3 +35,10 @@ services:
       FRONTEND_URL: ${FRONTEND_URL}
     expose:
       - "80"
+    networks:
+      - coolify
+
+networks:
+  coolify:
+    external: true
+    name: coolify
