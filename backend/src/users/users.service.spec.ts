@@ -13,7 +13,7 @@ import { DeepMockProxy, mockReset } from "vitest-mock-extended";
 import { PrismaClient, User } from "@prisma/client";
 import { hash } from "bcryptjs";
 
-import { UsersService } from "./users.service";
+import { SignupNotAllowedError, UsersService } from "./users.service";
 
 vi.mock("../lib/prisma", async () => {
   const { mockDeep } = await import("vitest-mock-extended");
@@ -37,6 +37,7 @@ describe("UsersService", () => {
   beforeEach(() => {
     mockReset(prismaMock);
     usersService = new UsersService(prismaMock);
+    process.env.SIGNUP_ALLOWLIST_ENABLED = "false";
   });
 
   /**
@@ -144,6 +145,47 @@ describe("UsersService", () => {
 
     expect(hashedPassword).not.toBe(password);
     expect(hashedPassword).toHaveLength(60); // bcrypt hash length
+  });
+
+  it("deve bloquear criação quando email não está na allowlist", async () => {
+    process.env.SIGNUP_ALLOWLIST_ENABLED = "true";
+    prismaMock.signupAllowlist.findUnique.mockResolvedValue(null);
+
+    await expect(
+      usersService.create({
+        name: "Test User",
+        email: "NOT_ALLOWED@EXAMPLE.COM",
+        password: "senha123",
+      }),
+    ).rejects.toBeInstanceOf(SignupNotAllowedError);
+
+    expect(prismaMock.signupAllowlist.findUnique).toHaveBeenCalledWith({
+      where: { email: "not_allowed@example.com" },
+      select: { id: true },
+    });
+  });
+
+  it("deve permitir criação quando email está na allowlist", async () => {
+    process.env.SIGNUP_ALLOWLIST_ENABLED = "true";
+    prismaMock.signupAllowlist.findUnique.mockResolvedValue({ id: "1" } as any);
+    prismaMock.user.findUnique.mockResolvedValue(null);
+    prismaMock.user.create.mockResolvedValue({
+      id: "uuid",
+      name: "Test",
+      email: "allowed@example.com",
+      passwordHash: "hash",
+      avatarUrl: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as User);
+
+    const result = await usersService.create({
+      name: "Test",
+      email: "allowed@example.com",
+      password: "senha123",
+    });
+
+    expect(result.email).toBe("allowed@example.com");
   });
 
   /**

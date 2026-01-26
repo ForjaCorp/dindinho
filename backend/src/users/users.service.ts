@@ -2,6 +2,14 @@ import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { CreateUserDTO } from "@dindinho/shared";
 
+export class SignupNotAllowedError extends Error {
+  readonly statusCode = 403;
+
+  constructor() {
+    super("Cadastro não permitido");
+  }
+}
+
 /**
  * Serviço responsável por operações relacionadas a usuários
  * @class UsersService
@@ -29,9 +37,12 @@ export class UsersService {
    * });
    */
   async create(data: CreateUserDTO) {
+    const emailNormalized = data.email.trim().toLowerCase();
+    await this.assertSignupAllowed(emailNormalized);
+
     // 1. Verificar se o email já existe
     const userExists = await this.prisma.user.findUnique({
-      where: { email: data.email },
+      where: { email: emailNormalized },
     });
 
     if (userExists) {
@@ -45,7 +56,7 @@ export class UsersService {
     const user = await this.prisma.user.create({
       data: {
         name: data.name,
-        email: data.email,
+        email: emailNormalized,
         passwordHash,
       },
     });
@@ -57,5 +68,18 @@ export class UsersService {
       email: user.email,
       createdAt: user.createdAt,
     };
+  }
+
+  private async assertSignupAllowed(email: string) {
+    if (process.env.SIGNUP_ALLOWLIST_ENABLED === "false") return;
+
+    const allowlistEntry = await this.prisma.signupAllowlist.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    if (!allowlistEntry) {
+      throw new SignupNotAllowedError();
+    }
   }
 }

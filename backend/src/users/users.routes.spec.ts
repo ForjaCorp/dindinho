@@ -33,6 +33,7 @@ describe("Users Routes", () => {
 
   beforeEach(() => {
     mockReset(prismaMock);
+    process.env.SIGNUP_ALLOWLIST_ENABLED = "false";
   });
 
   /**
@@ -67,6 +68,24 @@ describe("Users Routes", () => {
     const body = JSON.parse(response.body);
     expect(body.id).toBe(validUuid);
     expect(body.password).toBeUndefined();
+  });
+
+  it("deve bloquear criação quando email não está na allowlist", async () => {
+    process.env.SIGNUP_ALLOWLIST_ENABLED = "true";
+    prismaMock.signupAllowlist.findUnique.mockResolvedValue(null);
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/users",
+      payload: {
+        name: "Vini Teste",
+        email: "vini@teste.com",
+        password: "SenhaForte123@",
+      },
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(JSON.parse(response.body).message).toBe("Cadastro não permitido");
   });
 
   /**
