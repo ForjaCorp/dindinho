@@ -1,5 +1,15 @@
-import { PrismaClient, TransactionType, AccountType } from "@prisma/client";
-import { AccountDTO, CreateAccountDTO } from "@dindinho/shared";
+import {
+  PrismaClient,
+  TransactionType,
+  AccountType,
+  Role,
+  Prisma,
+} from "@prisma/client";
+import {
+  AccountDTO,
+  CreateAccountDTO,
+  UpdateAccountDTO,
+} from "@dindinho/shared";
 
 /**
  * Erro base para operações de conta
@@ -99,6 +109,18 @@ class PermissionDeniedError extends AccountError {
   }
 }
 
+class AccountNotFoundError extends AccountError {
+  readonly statusCode = 404;
+  readonly isOperational = true;
+
+  constructor(accountId: string) {
+    super("Conta não encontrada", {
+      accountId,
+      code: "ACCOUNT_NOT_FOUND",
+    });
+  }
+}
+
 /**
  * Erro genérico de conta
  * @description Erro não esperado em operações de conta
@@ -153,6 +175,137 @@ export class AccountsService {
       return typeof n === "number" && Number.isFinite(n) ? n : 0;
     }
     return 0;
+  }
+
+  private async assertCanWriteAccount(userId: string, accountId: string) {
+    const account = await (this.prisma as any).account.findUnique({
+      where: { id: accountId },
+      select: { id: true, ownerId: true },
+    });
+
+    if (!account) {
+      throw new AccountNotFoundError(accountId);
+    }
+
+    if (account.ownerId === userId) return;
+
+    const access = await (this.prisma as any).accountAccess.findUnique({
+      where: {
+        accountId_userId: {
+          accountId,
+          userId,
+        },
+      },
+      select: { role: true },
+    });
+
+    if (
+      !access ||
+      (access.role !== Role.EDITOR && access.role !== Role.ADMIN)
+    ) {
+      throw new PermissionDeniedError("editar");
+    }
+  }
+
+  private async getAccountDTO(
+    userId: string,
+    accountId: string,
+  ): Promise<AccountDTO> {
+    const account = (await (this.prisma as any).account.findFirst({
+      where: {
+        id: accountId,
+        OR: [
+          { ownerId: userId },
+          {
+            accessList: {
+              some: { userId },
+            },
+          },
+        ],
+      },
+      include: { creditCardInfo: true },
+    })) as any;
+
+    if (!account) {
+      throw new PermissionDeniedError("acessar");
+    }
+
+    const paidSums = (await (this.prisma as any).transaction.groupBy({
+      by: ["type"],
+      where: {
+        accountId,
+        isPaid: true,
+      },
+      _sum: {
+        amount: true,
+      },
+    } as any)) as any[];
+
+    const sums = { income: 0, expense: 0, transfer: 0 };
+    for (const row of paidSums) {
+      const type = row.type as TransactionType;
+      const amount = this.toNumber(row._sum?.amount);
+      if (type === TransactionType.INCOME) sums.income += Math.abs(amount);
+      else if (type === TransactionType.EXPENSE)
+        sums.expense += Math.abs(amount);
+      else if (type === TransactionType.TRANSFER) sums.transfer += amount;
+    }
+
+    const limit = account.creditCardInfo?.limit
+      ? this.toNumber(account.creditCardInfo.limit)
+      : null;
+
+    const used =
+      account.type === AccountType.CREDIT
+        ? (() => {
+            const rows = (this.prisma as any).transaction.groupBy({
+              by: ["accountId"],
+              where: {
+                accountId,
+                type: TransactionType.EXPENSE,
+                isPaid: false,
+              },
+              _sum: { amount: true },
+            } as any) as Promise<any[]>;
+            return rows.then((r) =>
+              r.length ? Math.abs(this.toNumber(r[0]?._sum?.amount)) : 0,
+            );
+          })()
+        : Promise.resolve(0);
+
+    const usedAmount = await used;
+
+    const availableLimit =
+      account.type === AccountType.CREDIT &&
+      typeof limit === "number" &&
+      Number.isFinite(limit)
+        ? Math.max(0, limit - usedAmount)
+        : null;
+
+    const initialBalance = this.toNumber((account as any).initialBalance);
+    const balance =
+      account.type === AccountType.STANDARD
+        ? initialBalance + sums.income - sums.expense + sums.transfer
+        : 0;
+
+    return {
+      id: account.id,
+      name: account.name,
+      color: account.color,
+      icon: account.icon,
+      type: account.type,
+      ownerId: account.ownerId,
+      creditCardInfo: account.creditCardInfo
+        ? {
+            ...account.creditCardInfo,
+            limit,
+            availableLimit,
+          }
+        : null,
+      balance,
+      createdAt: account.createdAt.toISOString(),
+      updatedAt: account.updatedAt.toISOString(),
+    };
   }
 
   /**
@@ -363,6 +516,122 @@ export class AccountsService {
     } catch (error) {
       this.handleFindAccountsError(error);
     }
+  }
+
+  async update(
+    userId: string,
+    accountId: string,
+    data: UpdateAccountDTO,
+  ): Promise<AccountDTO> {
+    try {
+      await this.assertCanWriteAccount(userId, accountId);
+
+      const existing = (await (this.prisma as any).account.findUnique({
+        where: { id: accountId },
+        include: { creditCardInfo: true },
+      })) as any;
+
+      if (!existing) throw new AccountNotFoundError(accountId);
+
+      const hasCreditFields =
+        data.closingDay !== undefined ||
+        data.dueDay !== undefined ||
+        data.limit !== undefined ||
+        data.brand !== undefined;
+
+      if (existing.type !== AccountType.CREDIT && hasCreditFields) {
+        throw new AccountValidationError(
+          "Campos de cartão só podem ser atualizados em contas do tipo crédito",
+        );
+      }
+
+      const updateData: Prisma.AccountUpdateInput = {
+        ...(data.name !== undefined ? { name: data.name } : {}),
+        ...(data.color !== undefined ? { color: data.color } : {}),
+        ...(data.icon !== undefined ? { icon: data.icon } : {}),
+      };
+
+      if (existing.type === AccountType.CREDIT && hasCreditFields) {
+        const closingDay =
+          typeof data.closingDay === "number"
+            ? data.closingDay
+            : existing.creditCardInfo?.closingDay;
+        const dueDay =
+          typeof data.dueDay === "number"
+            ? data.dueDay
+            : existing.creditCardInfo?.dueDay;
+
+        if (typeof closingDay !== "number" || typeof dueDay !== "number") {
+          throw new AccountValidationError(
+            "Dia de fechamento e vencimento são obrigatórios para cartões de crédito",
+          );
+        }
+
+        (updateData as any).creditCardInfo = {
+          upsert: {
+            create: {
+              closingDay,
+              dueDay,
+              ...(data.limit !== undefined ? { limit: data.limit } : {}),
+              ...(data.brand !== undefined ? { brand: data.brand } : {}),
+            },
+            update: {
+              ...(data.closingDay !== undefined
+                ? { closingDay: data.closingDay }
+                : {}),
+              ...(data.dueDay !== undefined ? { dueDay: data.dueDay } : {}),
+              ...(data.limit !== undefined ? { limit: data.limit } : {}),
+              ...(data.brand !== undefined ? { brand: data.brand } : {}),
+            },
+          },
+        };
+      }
+
+      await (this.prisma as any).account.update({
+        where: { id: accountId },
+        data: updateData,
+      });
+
+      return this.getAccountDTO(userId, accountId);
+    } catch (error) {
+      return this.handleUpdateAccountError(error, data.name);
+    }
+  }
+
+  private handleUpdateAccountError(error: any, accountName?: string): never {
+    if (error instanceof AccountError) {
+      throw error;
+    }
+
+    if (error instanceof Error) {
+      if (
+        error.message.includes("Unique constraint") ||
+        error.message.includes("duplicate key")
+      ) {
+        throw new DuplicateAccountError(accountName ?? "");
+      }
+
+      if (
+        error.message.includes("Argument") ||
+        error.message.includes("Invalid")
+      ) {
+        throw new AccountValidationError(
+          "Dados inválidos fornecidos para atualização da conta",
+        );
+      }
+
+      if (
+        error.message.includes("connection") ||
+        error.message.includes("timeout")
+      ) {
+        throw new DatabaseConnectionError(error);
+      }
+    }
+
+    throw new AccountOperationError(
+      "atualizar",
+      error instanceof Error ? error : undefined,
+    );
   }
 
   /**

@@ -136,4 +136,80 @@ describe("Rotas de Contas", () => {
       expect(JSON.parse(response.body)).toHaveLength(1);
     });
   });
+
+  describe("PATCH /api/accounts/:id", () => {
+    it("deve responder preflight CORS permitindo PATCH", async () => {
+      const origin = "http://localhost:5173";
+
+      const response = await app.inject({
+        method: "OPTIONS",
+        url: `/api/accounts/${accountId}`,
+        headers: {
+          origin,
+          "access-control-request-method": "PATCH",
+          "access-control-request-headers": "content-type,authorization",
+        },
+      });
+
+      expect(response.statusCode).toBe(204);
+      expect(response.headers["access-control-allow-origin"]).toBe(origin);
+      expect(response.headers["access-control-allow-credentials"]).toBe("true");
+      expect(response.headers["access-control-allow-methods"]).toContain(
+        "PATCH",
+      );
+    });
+
+    it("deve atualizar conta padrão", async () => {
+      const payload = {
+        name: "Conta Atualizada",
+        color: "#111111",
+      };
+
+      prismaMock.account.findUnique
+        .mockResolvedValueOnce({ id: accountId, ownerId: userId } as any)
+        .mockResolvedValueOnce({
+          id: accountId,
+          type: "STANDARD",
+          creditCardInfo: null,
+        } as any);
+
+      prismaMock.account.update.mockResolvedValue({ id: accountId } as any);
+
+      prismaMock.account.findFirst.mockResolvedValue({
+        id: accountId,
+        name: payload.name,
+        color: payload.color,
+        icon: "pi-wallet",
+        type: "STANDARD",
+        ownerId: userId,
+        initialBalance: new Prisma.Decimal(0),
+        creditCardInfo: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
+
+      (prismaMock.transaction.groupBy as any).mockResolvedValue([] as any);
+
+      const response = await app.inject({
+        method: "PATCH",
+        url: `/api/accounts/${accountId}`,
+        headers: { authorization: `Bearer ${token}` },
+        payload,
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.id).toBe(accountId);
+      expect(body.name).toBe(payload.name);
+    });
+
+    it("deve retornar 401 sem token", async () => {
+      const response = await app.inject({
+        method: "PATCH",
+        url: `/api/accounts/${accountId}`,
+        payload: { name: "X" },
+      });
+      expect(response.statusCode).toBe(401);
+    });
+  });
 });

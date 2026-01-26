@@ -1,7 +1,7 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { finalize, tap } from 'rxjs/operators';
 import { Observable, throwError } from 'rxjs';
-import { CreateAccountDTO, AccountDTO } from '@dindinho/shared';
+import { CreateAccountDTO, AccountDTO, UpdateAccountDTO } from '@dindinho/shared';
 import { ApiService } from './api.service';
 
 /**
@@ -233,6 +233,34 @@ export class AccountService {
           this.updateState({
             error: this.mapHttpError(err, {
               defaultMessage: 'Erro ao criar conta',
+              validationFallback: 'Dados inválidos',
+            }),
+          }),
+      }),
+    );
+  }
+
+  updateAccount(accountId: string, payload: UpdateAccountDTO): Observable<AccountDTO> {
+    if (!accountId || accountId.trim() === '') {
+      const err = new Error('ID da conta é obrigatório');
+      this.updateState({ loading: false, error: err.message });
+      return throwError(() => err);
+    }
+
+    this.updateState({ loading: true, error: null });
+
+    return this.api.updateAccount(accountId, payload).pipe(
+      finalize(() => this.updateState({ loading: false })),
+      tap({
+        next: (updated) => {
+          this.updateState({
+            accounts: this.state().accounts.map((a) => (a.id === updated.id ? updated : a)),
+          });
+        },
+        error: (err) =>
+          this.updateState({
+            error: this.mapHttpError(err, {
+              defaultMessage: 'Erro ao atualizar conta',
               validationFallback: 'Dados inválidos',
             }),
           }),

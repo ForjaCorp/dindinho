@@ -10,6 +10,7 @@ import {
   CreateCategoryDTO,
   CreateAccountDTO,
   AccountDTO,
+  UpdateAccountDTO,
   CreateTransactionDTO,
   TransactionDTO,
   UpdateTransactionDTO,
@@ -142,6 +143,10 @@ export class ApiService {
    */
   getAccounts(): Observable<AccountDTO[]> {
     return this.http.get<AccountDTO[]>(`${this.baseUrl}/accounts`);
+  }
+
+  updateAccount(id: string, data: UpdateAccountDTO): Observable<AccountDTO> {
+    return this.http.patch<AccountDTO>(`${this.baseUrl}/accounts/${id}`, data);
   }
 
   createTransaction(data: CreateTransactionDTO): Observable<TransactionDTO | TransactionDTO[]> {

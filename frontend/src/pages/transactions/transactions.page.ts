@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ButtonModule } from 'primeng/button';
@@ -83,12 +83,19 @@ const utcEndOfMonthIso = (year: number, month: number) =>
             [rounded]="true"
             [text]="true"
             size="small"
+            [attr.aria-label]="filtersOpen() ? 'Fechar filtros' : 'Abrir filtros'"
+            [attr.aria-expanded]="filtersOpen()"
+            [attr.aria-controls]="'transactions-filters-panel'"
             (onClick)="toggleFilters()"
           />
         </div>
 
         @if (filtersOpen()) {
-          <div data-testid="transactions-filters" class="grid grid-cols-2 gap-2">
+          <div
+            id="transactions-filters-panel"
+            data-testid="transactions-filters"
+            class="grid grid-cols-2 gap-2"
+          >
             <div class="flex flex-col gap-1">
               <label class="sr-only" for="type">Tipo</label>
               <select
@@ -112,13 +119,14 @@ const utcEndOfMonthIso = (year: number, month: number) =>
                 data-testid="transactions-account-select"
                 id="accountId"
                 class="h-10 rounded-xl border border-slate-200 px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                [value]="accountFilterId()"
                 (change)="onAccountFilterChange($event)"
                 aria-label="Conta"
               >
-                <option value="">Todas as contas</option>
+                <option value="" [selected]="!accountFilterId()">Todas as contas</option>
                 @for (a of accounts(); track a.id) {
-                  <option [value]="a.id">{{ a.name }}</option>
+                  <option [value]="a.id" [selected]="a.id === accountFilterId()">
+                    {{ a.name }}
+                  </option>
                 }
               </select>
             </div>
@@ -217,6 +225,7 @@ export class TransactionsPage {
   private api = inject(ApiService);
   private accountService = inject(AccountService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private destroyRef = inject(DestroyRef);
   private host = inject(ElementRef<HTMLElement>);
 
@@ -251,6 +260,44 @@ export class TransactionsPage {
 
   protected readonly filtersOpen = signal(false);
 
+  private toMonthParam(value: Date | null): string | null {
+    if (!value) return null;
+    const year = value.getFullYear();
+    const month = value.getMonth() + 1;
+    if (!Number.isFinite(year) || year < 1970 || year > 2100) return null;
+    if (!Number.isFinite(month) || month < 1 || month > 12) return null;
+    return `${year}-${String(month).padStart(2, '0')}`;
+  }
+
+  private parseMonthParam(value: string | null): Date | null {
+    if (!value) return null;
+    const normalized = value.trim();
+    if (!/^\d{4}-\d{2}$/.test(normalized)) return null;
+    const year = Number(normalized.slice(0, 4));
+    const month = Number(normalized.slice(5, 7));
+    if (!Number.isFinite(year) || year < 1970 || year > 2100) return null;
+    if (!Number.isFinite(month) || month < 1 || month > 12) return null;
+    return new Date(year, month - 1, 1);
+  }
+
+  private syncQueryParams(partial: {
+    accountId?: string | null;
+    type?: TransactionTypeFilter | null;
+    month?: string | null;
+    openFilters?: 0 | 1;
+  }) {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        accountId: partial.accountId,
+        type: partial.type,
+        month: partial.month,
+        openFilters: partial.openFilters,
+      },
+      queryParamsHandling: 'merge',
+    });
+  }
+
   protected onTransactionUpdated(updated: TransactionDTO) {
     this.items.update((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
   }
@@ -263,9 +310,50 @@ export class TransactionsPage {
   constructor() {
     this.accountService.loadAccounts();
 
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const accountId = params.get('accountId') ?? '';
+      if (this.accountFilterId() !== accountId) {
+        this.accountFilterId.set(accountId);
+      }
+
+      const typeRaw = params.get('type') ?? '';
+      const type: TransactionTypeFilter =
+        typeRaw === 'INCOME' || typeRaw === 'EXPENSE' || typeRaw === 'TRANSFER' ? typeRaw : '';
+      if (this.typeFilter() !== type) {
+        this.typeFilter.set(type);
+      }
+
+      const month = this.parseMonthParam(params.get('month'));
+      const currentMonth = this.monthYearFilter();
+      const nextMonthParam = this.toMonthParam(month);
+      const currentMonthParam = this.toMonthParam(currentMonth);
+      if (nextMonthParam !== currentMonthParam) {
+        this.monthYearControl.setValue(month, { emitEvent: false });
+        this.monthYearFilter.set(month);
+      }
+
+      const openFiltersRaw = params.get('openFilters');
+      const explicitOpenFilters =
+        openFiltersRaw === '1' || openFiltersRaw === 'true'
+          ? true
+          : openFiltersRaw === '0' || openFiltersRaw === 'false'
+            ? false
+            : null;
+
+      const hasAnyFilter = !!accountId || !!type || !!nextMonthParam;
+      const shouldOpenFilters = explicitOpenFilters ?? hasAnyFilter;
+
+      if (shouldOpenFilters !== this.filtersOpen()) {
+        this.filtersOpen.set(shouldOpenFilters);
+      }
+    });
+
     this.monthYearControl.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((value) => this.monthYearFilter.set(value));
+      .subscribe((value) => {
+        this.monthYearFilter.set(value);
+        this.syncQueryParams({ month: this.toMonthParam(value), openFilters: 1 });
+      });
 
     effect(() => {
       const draft = this.searchDraft();
@@ -315,7 +403,9 @@ export class TransactionsPage {
   }
 
   protected toggleFilters() {
-    this.filtersOpen.update((v) => !v);
+    const next = !this.filtersOpen();
+    this.filtersOpen.set(next);
+    this.syncQueryParams({ openFilters: next ? 1 : 0 });
   }
 
   protected onSearchDraftInput(event: Event) {
@@ -326,11 +416,13 @@ export class TransactionsPage {
   protected onAccountFilterChange(event: Event) {
     const value = (event.target as HTMLSelectElement | null)?.value ?? '';
     this.accountFilterId.set(value);
+    this.syncQueryParams({ accountId: value ? value : null, openFilters: 1 });
   }
 
   protected onTypeFilterChange(event: Event) {
     const value = (event.target as HTMLSelectElement | null)?.value ?? '';
     this.typeFilter.set(value as TransactionTypeFilter);
+    this.syncQueryParams({ type: value ? (value as TransactionTypeFilter) : null, openFilters: 1 });
   }
 
   protected signedAmount(t: TransactionDTO): number {

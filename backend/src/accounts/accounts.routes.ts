@@ -7,6 +7,8 @@ import {
   CreateAccountDTO,
   createAccountSchema,
   accountSchema,
+  UpdateAccountDTO,
+  updateAccountSchema,
 } from "@dindinho/shared";
 
 /**
@@ -128,6 +130,36 @@ export async function accountsRoutes(app: FastifyInstance) {
     async (request) => {
       const { sub: userId } = request.user as { sub: string };
       return service.findAllByUserId(userId);
+    },
+  );
+
+  const paramsSchema = z.object({
+    id: z.string().uuid(),
+  });
+
+  app.withTypeProvider<ZodTypeProvider>().patch(
+    "/:id",
+    {
+      schema: {
+        summary: "Atualizar conta",
+        tags: ["accounts"],
+        params: paramsSchema,
+        body: updateAccountSchema,
+        response: {
+          200: accountSchema,
+          400: z.object({ message: z.string() }).passthrough(),
+          401: z.object({ message: z.string() }),
+          403: z.object({ message: z.string() }),
+          404: z.object({ message: z.string() }),
+          409: z.object({ message: z.string() }),
+        },
+      },
+    },
+    async (request) => {
+      const { sub: userId } = request.user as { sub: string };
+      const { id } = paramsSchema.parse(request.params);
+      const payload: UpdateAccountDTO = updateAccountSchema.parse(request.body);
+      return service.update(userId, id, payload);
     },
   );
 }

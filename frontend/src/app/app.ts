@@ -1,6 +1,8 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
 
 /**
  * @description
@@ -17,7 +19,11 @@ import { RouterOutlet } from '@angular/router';
   selector: 'app-root',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterOutlet],
-  template: `<router-outlet></router-outlet>`,
+  imports: [CommonModule, RouterOutlet, ToastModule],
+  providers: [MessageService],
+  template: `
+    <p-toast />
+    <router-outlet></router-outlet>
+  `,
 })
 export class App {}
