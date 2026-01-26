@@ -19,9 +19,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/backend/dist ./backend/dist
-COPY --from=builder /app/backend/prisma ./backend/prisma
 COPY --from=builder /app/backend/package.json ./backend/package.json
+COPY --from=builder /app/backend/prisma.config.ts ./backend/prisma.config.ts
+COPY --from=builder /app/backend/prisma ./backend/prisma
+COPY --from=builder /app/backend/node_modules ./backend/node_modules
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/packages/shared/package.json ./packages/shared/package.json
 EXPOSE 3333
-CMD ["sh", "-c", "echo 'Iniciando container...' && rm -f .env backend/.env && export DATABASE_URL=$DATABASE_URL && cd backend && npx prisma migrate deploy && node dist/server.js"]
+CMD ["sh", "-c", "echo 'Iniciando container...' && rm -f .env backend/.env && cd backend && npx prisma migrate deploy && node dist/server.js"]
