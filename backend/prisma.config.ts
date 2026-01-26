@@ -11,16 +11,14 @@ import "dotenv/config";
 
 const databaseUrl = process.env.DATABASE_URL;
 
-// Permitir execução no CI/Build onde DATABASE_URL pode não ser necessária para generate
-// ou será injetada via environment variables do CI
-if (!databaseUrl && process.env.NODE_ENV !== "production" && !process.env.CI) {
-  throw new Error("DATABASE_URL não definida. Verifique o arquivo .env");
+if (!databaseUrl && process.env.NODE_ENV === "production") {
+  console.error("ERRO: DATABASE_URL não encontrada no ambiente de produção!");
 }
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
 
   datasource: {
-    url: databaseUrl || "postgresql://dummy:dummy@localhost:5432/dummy", // Fallback para generate
+    url: databaseUrl || "",
   },
 });
