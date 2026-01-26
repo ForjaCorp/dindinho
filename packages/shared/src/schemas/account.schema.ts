@@ -45,6 +45,64 @@ export const createAccountSchema = z.object({
  */
 export type CreateAccountDTO = z.input<typeof createAccountSchema>;
 
+const optionalCoercedInt = (schema: z.ZodNumber) =>
+  z
+    .preprocess((value) => {
+      if (value === undefined || value === null || value === "")
+        return undefined;
+      if (typeof value === "string") return Number(value);
+      return value;
+    }, schema)
+    .optional();
+
+const optionalCoercedNullableNumber = (schema: z.ZodNullable<z.ZodNumber>) =>
+  z
+    .preprocess((value) => {
+      if (value === undefined) return undefined;
+      if (value === "") return null;
+      if (typeof value === "string") return Number(value);
+      return value;
+    }, schema)
+    .optional();
+
+const optionalTrimmedNullableString = (schema: z.ZodNullable<z.ZodString>) =>
+  z
+    .preprocess((value) => {
+      if (value === undefined) return undefined;
+      if (value === null) return null;
+      if (typeof value === "string" && value.trim() === "") return null;
+      return value;
+    }, schema)
+    .optional();
+
+export const updateAccountSchema = z
+  .object({
+    name: z.string().trim().min(1, "Nome é obrigatório").optional(),
+    color: z.string().trim().min(4, "Cor inválida").optional(),
+    icon: z.string().trim().min(1, "Ícone é obrigatório").optional(),
+    closingDay: optionalCoercedInt(z.number().int().min(1).max(31)),
+    dueDay: optionalCoercedInt(z.number().int().min(1).max(31)),
+    limit: optionalCoercedNullableNumber(
+      z.number().positive("Limite deve ser positivo").nullable(),
+    ),
+    brand: optionalTrimmedNullableString(z.string().trim().nullable()),
+  })
+  .refine(
+    (data) =>
+      data.name !== undefined ||
+      data.color !== undefined ||
+      data.icon !== undefined ||
+      data.closingDay !== undefined ||
+      data.dueDay !== undefined ||
+      data.limit !== undefined ||
+      data.brand !== undefined,
+    {
+      message: "Informe ao menos um campo para atualização",
+    },
+  );
+
+export type UpdateAccountDTO = z.infer<typeof updateAccountSchema>;
+
 /**
  * Schema de resposta para uma conta.
  * @param data - Dados completos da conta
