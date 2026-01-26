@@ -8,7 +8,7 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { ColorPickerModule } from 'primeng/colorpicker';
 import { AccountService } from '../../services/account.service';
-import { CreateAccountDTO } from '@dindinho/shared';
+import { AccountDTO, CreateAccountDTO, UpdateAccountDTO } from '@dindinho/shared';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
@@ -27,7 +27,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
   ],
   template: `
     <p-dialog
-      [header]="isCredit() ? 'Novo Cartão' : 'Nova Conta'"
+      [header]="dialogTitle()"
       [modal]="true"
       [(visible)]="visible"
       [style]="{ width: '95vw', maxWidth: '500px', maxHeight: '90vh' }"
@@ -41,16 +41,18 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
         class="flex flex-col gap-4 mt-2 max-h-[70vh] overflow-y-auto overflow-x-hidden px-1"
       >
         <div class="flex flex-col gap-2">
-          <p-selectButton
-            [options]="typeOptions"
-            formControlName="type"
-            optionLabel="label"
-            optionValue="value"
-            styleClass="w-full"
-            aria-label="Tipo de conta"
-            [allowEmpty]="false"
-            [unselectable]="true"
-          />
+          @if (mode() === 'create') {
+            <p-selectButton
+              [options]="typeOptions"
+              formControlName="type"
+              optionLabel="label"
+              optionValue="value"
+              styleClass="w-full"
+              aria-label="Tipo de conta"
+              [allowEmpty]="false"
+              [unselectable]="true"
+            />
+          }
         </div>
 
         <div class="flex flex-row gap-3 items-end">
@@ -70,7 +72,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
           </div>
         </div>
 
-        @if (!isCredit()) {
+        @if (!isCredit() && mode() === 'create') {
           <div class="flex flex-col gap-2">
             <label for="initialBalance" class="text-sm font-medium text-slate-600">
               Saldo inicial (R$)
@@ -148,7 +150,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
             class="sm:flex-initial"
           />
           <p-button
-            label="Criar"
+            [label]="mode() === 'create' ? 'Criar' : 'Salvar'"
             type="submit"
             [loading]="accountService.isLoading()"
             [disabled]="form.invalid"
@@ -209,6 +211,9 @@ export class CreateAccountDialogComponent {
   protected accountService = inject(AccountService);
   private destroyRef = inject(DestroyRef); // Para limpar subscrições automaticamente
 
+  protected readonly mode = signal<'create' | 'edit'>('create');
+  private readonly editingAccountId = signal<string | null>(null);
+
   // Controle de visibilidade
   visible = signal(false);
 
@@ -232,30 +237,39 @@ export class CreateAccountDialogComponent {
 
   constructor() {
     // Efeito para monitorar mudanças no tipo e ajustar validadores
-    this.form.controls.type.valueChanges.subscribe((type) => {
-      const isCredit = type === 'CREDIT';
-      const creditControls = ['closingDay', 'dueDay', 'limit'];
+    this.form.controls.type.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((type) => {
+        const isCredit = type === 'CREDIT';
+        const creditControls = ['closingDay', 'dueDay', 'limit'];
 
-      creditControls.forEach((key) => {
-        const control = this.form.get(key);
+        creditControls.forEach((key) => {
+          const control = this.form.get(key);
+          if (isCredit) {
+            control?.setValidators([Validators.required, Validators.min(1)]);
+          } else {
+            control?.clearValidators();
+            control?.setValue(null);
+          }
+          control?.updateValueAndValidity();
+        });
+
         if (isCredit) {
-          control?.setValidators([Validators.required, Validators.min(1)]);
-        } else {
-          control?.clearValidators();
-          control?.setValue(null);
+          this.form.controls.initialBalance.setValue(0);
         }
-        control?.updateValueAndValidity();
       });
-
-      if (isCredit) {
-        this.form.controls.initialBalance.setValue(0);
-      }
-    });
   }
 
   // Helper para verificar se é crédito no template
   isCredit() {
     return this.form.controls.type.value === 'CREDIT';
+  }
+
+  dialogTitle() {
+    if (this.mode() === 'edit') {
+      return this.isCredit() ? 'Editar Cartão' : 'Editar Conta';
+    }
+    return this.isCredit() ? 'Novo Cartão' : 'Nova Conta';
   }
 
   // Método público para abrir o diálogo
@@ -264,11 +278,38 @@ export class CreateAccountDialogComponent {
   }
 
   showForType(type: 'STANDARD' | 'CREDIT') {
+    this.mode.set('create');
+    this.editingAccountId.set(null);
+    this.form.controls.type.enable();
     this.visible.set(true);
     this.form.controls.type.setValue(type);
   }
 
+  showForEdit(account: AccountDTO) {
+    this.mode.set('edit');
+    this.editingAccountId.set(account.id);
+    this.form.controls.type.disable();
+    this.visible.set(true);
+
+    this.form.patchValue({
+      name: account.name,
+      color: account.color,
+      type: account.type,
+      initialBalance: 0,
+      closingDay: account.creditCardInfo?.closingDay ?? null,
+      dueDay: account.creditCardInfo?.dueDay ?? null,
+      limit:
+        typeof account.creditCardInfo?.limit === 'number' &&
+        Number.isFinite(account.creditCardInfo.limit)
+          ? account.creditCardInfo.limit
+          : null,
+    });
+  }
+
   resetForm() {
+    this.mode.set('create');
+    this.editingAccountId.set(null);
+    this.form.controls.type.enable();
     this.form.reset({
       name: '',
       color: '#10b981',
@@ -297,48 +338,68 @@ export class CreateAccountDialogComponent {
 
     const formValue = this.form.value;
 
-    // Mapeamento para o DTO da API
-    const dto: CreateAccountDTO = {
+    // Limpa erros anteriores
+    this.accountService.clearError();
+
+    if (this.mode() === 'create') {
+      const dto: CreateAccountDTO = {
+        name: formValue.name!,
+        color: formValue.color!,
+        icon: formValue.type === 'CREDIT' ? 'pi-credit-card' : 'pi-wallet',
+        type: formValue.type as CreateAccountDTO['type'],
+        ...(formValue.type === 'CREDIT'
+          ? {
+              closingDay: formValue.closingDay!,
+              dueDay: formValue.dueDay!,
+              limit: formValue.limit!,
+              brand: 'Mastercard',
+            }
+          : {
+              initialBalance:
+                typeof formValue.initialBalance === 'number' &&
+                Number.isFinite(formValue.initialBalance)
+                  ? formValue.initialBalance
+                  : 0,
+            }),
+      };
+
+      this.accountService
+        .createAccount(dto)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: () => {
+            this.visible.set(false);
+            this.resetForm();
+          },
+          error: () => undefined,
+        });
+      return;
+    }
+
+    const editingId = this.editingAccountId();
+    if (!editingId) return;
+
+    const dto: UpdateAccountDTO = {
       name: formValue.name!,
       color: formValue.color!,
-      // Ícone baseado no tipo de conta
-      icon: formValue.type === 'CREDIT' ? 'pi-credit-card' : 'pi-wallet',
-      type: formValue.type as CreateAccountDTO['type'],
       ...(formValue.type === 'CREDIT'
         ? {
             closingDay: formValue.closingDay!,
             dueDay: formValue.dueDay!,
-            limit: formValue.limit!,
-            brand: 'Mastercard', // TODO: Permitir seleção pelo usuário
+            limit: formValue.limit ?? null,
           }
-        : {
-            initialBalance:
-              typeof formValue.initialBalance === 'number' &&
-              Number.isFinite(formValue.initialBalance)
-                ? formValue.initialBalance
-                : 0,
-          }),
+        : {}),
     };
 
-    // Limpa erros anteriores
-    this.accountService.clearError();
-
-    // Abordagem reativa com Observable retornado pelo serviço
     this.accountService
-      .createAccount(dto)
-      .pipe(takeUntilDestroyed(this.destroyRef)) // Boa prática: evita memory leak
+      .updateAccount(editingId, dto)
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => {
-          // Sucesso: backend retornou 201 Created
           this.visible.set(false);
           this.resetForm();
-          // TODO: Adicionar toast de sucesso
         },
-        error: (err) => {
-          // Erro: modal permanece aberto para correção
-          // O serviço já atualizou o signal 'error' com mensagem detalhada
-          console.error('Falha na criação capturada pelo componente:', err);
-        },
+        error: () => undefined,
       });
   }
 }

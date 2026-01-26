@@ -8,13 +8,14 @@ import { TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { AccountService } from './account.service';
 import { ApiService } from './api.service';
-import { CreateAccountDTO, AccountDTO } from '@dindinho/shared';
+import { CreateAccountDTO, AccountDTO, UpdateAccountDTO } from '@dindinho/shared';
 
 describe('AccountService', () => {
   let service: AccountService;
   let apiService: {
     getAccounts: ReturnType<typeof vi.fn>;
     createAccount: ReturnType<typeof vi.fn>;
+    updateAccount: ReturnType<typeof vi.fn>;
   };
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
   let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
@@ -64,6 +65,7 @@ describe('AccountService', () => {
     apiService = {
       getAccounts: vi.fn(),
       createAccount: vi.fn(),
+      updateAccount: vi.fn(),
     };
 
     TestBed.configureTestingModule({
@@ -278,6 +280,57 @@ describe('AccountService', () => {
       vi.runAllTimers();
 
       expect(service.error()).toBe('Cor inválida');
+    });
+  });
+
+  describe('updateAccount()', () => {
+    it('deve atualizar conta com sucesso', () => {
+      const initial = mockAccounts[0]!;
+      apiService.getAccounts.mockReturnValue(of([initial]));
+      service.loadAccounts();
+
+      const updated: AccountDTO = {
+        ...initial,
+        name: 'Conta Editada',
+        updatedAt: '2024-01-02T00:00:00.000Z',
+      };
+
+      const payload: UpdateAccountDTO = { name: 'Conta Editada' };
+      apiService.updateAccount.mockReturnValue(of(updated));
+
+      const observable = service.updateAccount(initial.id, payload);
+      observable.subscribe();
+
+      vi.useFakeTimers();
+      vi.runAllTimers();
+
+      expect(apiService.updateAccount).toHaveBeenCalledWith(initial.id, payload);
+      expect(service.accounts()).toEqual([updated]);
+      expect(service.isLoading()).toBe(false);
+      expect(service.error()).toBeNull();
+    });
+
+    it('deve tratar erro de validação ao atualizar', () => {
+      const initial = mockAccounts[0]!;
+      apiService.getAccounts.mockReturnValue(of([initial]));
+      service.loadAccounts();
+
+      const payload: UpdateAccountDTO = { name: '' };
+      apiService.updateAccount.mockReturnValue(
+        throwError(() => ({ status: 400, error: { message: 'Dados inválidos' } })),
+      );
+
+      service.updateAccount(initial.id, payload).subscribe({ error: () => undefined });
+
+      vi.useFakeTimers();
+      vi.runAllTimers();
+
+      expect(service.error()).toBe('Dados inválidos');
+    });
+
+    it('deve falhar quando ID é vazio', () => {
+      service.updateAccount('', { name: 'X' }).subscribe({ error: () => undefined });
+      expect(service.error()).toBe('ID da conta é obrigatório');
     });
   });
 

@@ -4,6 +4,9 @@ import { describe, it, expect, vi } from 'vitest';
 import { CardsPage } from './cards.page';
 import { AccountService } from '../../app/services/account.service';
 import { AccountDTO } from '@dindinho/shared';
+import { provideRouter, Router } from '@angular/router';
+import { By } from '@angular/platform-browser';
+import { CreateAccountDialogComponent } from '../../app/components/accounts/create-account-dialog.component';
 
 const testBed = getTestBed();
 if (!testBed.platform) {
@@ -37,6 +40,9 @@ describe('CardsPage', () => {
     accounts: vi.fn(() => opts.accounts),
     isLoading: vi.fn(() => opts.loading),
     loadAccounts: vi.fn(),
+    clearError: vi.fn(),
+    createAccount: vi.fn(),
+    updateAccount: vi.fn(),
   });
 
   it('deve exibir estado vazio quando não há cartões', async () => {
@@ -44,7 +50,7 @@ describe('CardsPage', () => {
 
     await TestBed.configureTestingModule({
       imports: [CardsPage],
-      providers: [{ provide: AccountService, useValue: accountServiceMock }],
+      providers: [{ provide: AccountService, useValue: accountServiceMock }, provideRouter([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(CardsPage);
@@ -63,7 +69,7 @@ describe('CardsPage', () => {
 
     await TestBed.configureTestingModule({
       imports: [CardsPage],
-      providers: [{ provide: AccountService, useValue: accountServiceMock }],
+      providers: [{ provide: AccountService, useValue: accountServiceMock }, provideRouter([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(CardsPage);
@@ -71,6 +77,86 @@ describe('CardsPage', () => {
 
     expect(fixture.nativeElement.querySelector('[data-testid="cards-grid"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[data-testid="account-card-card-1"]')).toBeTruthy();
+  });
+
+  it('deve abrir o diálogo em modo edição ao clicar em editar', async () => {
+    const accountServiceMock = createAccountServiceMock({ accounts: cards, loading: false });
+
+    await TestBed.configureTestingModule({
+      imports: [CardsPage],
+      providers: [{ provide: AccountService, useValue: accountServiceMock }, provideRouter([])],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(CardsPage);
+    fixture.detectChanges();
+
+    const cardEl: HTMLElement | null = fixture.nativeElement.querySelector(
+      '[data-testid="account-card-card-1"]',
+    );
+    expect(cardEl).toBeTruthy();
+
+    cardEl!.dispatchEvent(
+      new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 120,
+        clientY: 120,
+      }),
+    );
+    fixture.detectChanges();
+
+    const editButton: HTMLButtonElement | null = fixture.nativeElement.querySelector(
+      '[data-testid="account-edit-card-1"]',
+    );
+    expect(editButton).toBeTruthy();
+
+    editButton!.click();
+    fixture.detectChanges();
+
+    const dialogDe = fixture.debugElement.query(By.directive(CreateAccountDialogComponent));
+    const dialog = dialogDe.componentInstance as CreateAccountDialogComponent;
+    expect(dialog.visible()).toBe(true);
+    expect(dialog.form.controls.name.value).toBe('Nubank');
+  });
+
+  it('deve navegar para transações filtradas ao clicar em transações', async () => {
+    const accountServiceMock = createAccountServiceMock({ accounts: cards, loading: false });
+
+    await TestBed.configureTestingModule({
+      imports: [CardsPage],
+      providers: [{ provide: AccountService, useValue: accountServiceMock }, provideRouter([])],
+    }).compileComponents();
+
+    const router = TestBed.inject(Router);
+    const navigateSpy = vi.spyOn(router, 'navigate');
+
+    fixture = TestBed.createComponent(CardsPage);
+    fixture.detectChanges();
+
+    const cardEl: HTMLElement | null = fixture.nativeElement.querySelector(
+      '[data-testid="account-card-card-1"]',
+    );
+    expect(cardEl).toBeTruthy();
+
+    cardEl!.dispatchEvent(
+      new MouseEvent('contextmenu', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 120,
+        clientY: 120,
+      }),
+    );
+    fixture.detectChanges();
+
+    const transactionsBtn: HTMLButtonElement | null = fixture.nativeElement.querySelector(
+      '[data-testid="account-transactions-card-1"]',
+    );
+    expect(transactionsBtn).toBeTruthy();
+
+    transactionsBtn!.click();
+    expect(navigateSpy).toHaveBeenCalledWith(['/transactions'], {
+      queryParams: { accountId: 'card-1', openFilters: 1 },
+    });
   });
 
   it('não deve renderizar cartões quando há apenas contas', async () => {
@@ -93,7 +179,7 @@ describe('CardsPage', () => {
 
     await TestBed.configureTestingModule({
       imports: [CardsPage],
-      providers: [{ provide: AccountService, useValue: accountServiceMock }],
+      providers: [{ provide: AccountService, useValue: accountServiceMock }, provideRouter([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(CardsPage);

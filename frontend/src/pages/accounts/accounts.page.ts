@@ -7,6 +7,8 @@ import { EmptyStateComponent } from '../../app/components/empty-state.component'
 import { PageHeaderComponent } from '../../app/components/page-header.component';
 import { ButtonModule } from 'primeng/button';
 import { SkeletonModule } from 'primeng/skeleton';
+import { Router } from '@angular/router';
+import { AccountDTO } from '@dindinho/shared';
 
 @Component({
   selector: 'app-accounts-page',
@@ -69,7 +71,11 @@ import { SkeletonModule } from 'primeng/skeleton';
         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
       >
         @for (account of standardAccounts(); track account.id) {
-          <app-account-card [account]="account" />
+          <app-account-card
+            [account]="account"
+            (edit)="onEditAccount(dialog, $event)"
+            (openTransactions)="onOpenTransactions($event)"
+          />
         }
       </div>
 
@@ -88,6 +94,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 })
 export class AccountsPage implements OnInit {
   accountService = inject(AccountService);
+  private router = inject(Router);
 
   protected readonly standardAccounts = computed(() =>
     this.accountService.accounts().filter((a) => a.type === 'STANDARD'),
@@ -95,5 +102,15 @@ export class AccountsPage implements OnInit {
 
   ngOnInit() {
     this.accountService.loadAccounts();
+  }
+
+  protected onEditAccount(dialog: CreateAccountDialogComponent, account: AccountDTO) {
+    dialog.showForEdit(account);
+  }
+
+  protected onOpenTransactions(account: AccountDTO) {
+    this.router.navigate(['/transactions'], {
+      queryParams: { accountId: account.id, openFilters: 1 },
+    });
   }
 }

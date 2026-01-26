@@ -1,4 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  ElementRef,
+  inject,
+  input,
+  output,
+  signal,
+  ViewChild,
+} from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { AccountDTO } from '@dindinho/shared';
 
@@ -11,7 +22,23 @@ import { AccountDTO } from '@dindinho/shared';
     class: 'block',
   },
   template: `
-    <div [class]="containerClass()" [attr.data-testid]="accountCardTestId()">
+    <div
+      [class]="containerClass()"
+      [attr.data-testid]="accountCardTestId()"
+      role="button"
+      tabindex="0"
+      aria-haspopup="menu"
+      [attr.aria-expanded]="actionsOpen()"
+      (contextmenu)="onContextMenu($event)"
+      (pointerdown)="onPointerDown($event)"
+      (pointermove)="onPointerMove($event)"
+      (pointerup)="onPointerUp($event)"
+      (pointercancel)="onPointerCancel($event)"
+      (pointerleave)="onPointerLeave()"
+      (keydown.enter)="onKeyboardOpenMenu($event)"
+      (keydown.space)="$event.preventDefault(); onKeyboardOpenMenu($event)"
+      (keydown.escape)="actionsOpen.set(false)"
+    >
       <div [class]="headerClass()">
         <div
           [class]="iconClass()"
@@ -21,7 +48,49 @@ import { AccountDTO } from '@dindinho/shared';
           <i [class]="'pi ' + account().icon"></i>
         </div>
 
-        <span [class]="tagClass()" [attr.data-testid]="accountTypeTestId()">{{ typeLabel() }}</span>
+        <div class="flex items-start gap-2 relative">
+          <span [class]="tagClass()" [attr.data-testid]="accountTypeTestId()">{{
+            typeLabel()
+          }}</span>
+
+          @if (actionsOpen()) {
+            <div
+              #menu
+              [attr.data-testid]="accountMenuTestId()"
+              class="fixed z-50 w-44 rounded-xl border border-slate-200 bg-white shadow-lg overflow-hidden"
+              [style.left.px]="menuLeft()"
+              [style.top.px]="menuTop()"
+              role="menu"
+              tabindex="-1"
+              (click)="$event.stopPropagation()"
+              (keydown)="$event.stopPropagation()"
+              (pointerdown)="$event.stopPropagation()"
+              (contextmenu)="$event.stopPropagation()"
+            >
+              <button
+                type="button"
+                [attr.data-testid]="accountTransactionsTestId()"
+                class="w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors flex items-center gap-2"
+                aria-label="Transações"
+                (click)="onOpenTransactionsClick($event)"
+              >
+                <i class="pi pi-list text-sm"></i>
+                Transações
+              </button>
+
+              <button
+                type="button"
+                [attr.data-testid]="accountEditTestId()"
+                class="w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors flex items-center gap-2"
+                aria-label="Editar"
+                (click)="onEditClick($event)"
+              >
+                <i class="pi pi-pencil text-sm"></i>
+                Editar
+              </button>
+            </div>
+          }
+        </div>
       </div>
 
       <div class="min-w-0">
@@ -80,8 +149,30 @@ import { AccountDTO } from '@dindinho/shared';
   `,
 })
 export class AccountCardComponent {
+  private static nextInstanceId = 1;
+
+  @ViewChild('menu')
+  private menuEl?: ElementRef<HTMLElement>;
+
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly instanceId = AccountCardComponent.nextInstanceId++;
+
   account = input.required<AccountDTO>();
   variant = input<'compact' | 'full'>('full');
+
+  readonly edit = output<AccountDTO>();
+  readonly openTransactions = output<AccountDTO>();
+
+  protected readonly actionsOpen = signal(false);
+  protected readonly suppressNextClick = signal(false);
+
+  private readonly menuAnchorX = signal(0);
+  private readonly menuAnchorY = signal(0);
+
+  private longPressTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private longPressPointerId: number | null = null;
+  private longPressStartX = 0;
+  private longPressStartY = 0;
 
   typeLabel = computed(() => (this.account().type === 'CREDIT' ? 'Crédito' : 'Conta'));
 
@@ -123,14 +214,87 @@ export class AccountCardComponent {
   accountNameTestId = computed(() => `account-name-${this.account().id}`);
   accountValueTestId = computed(() => `account-value-${this.account().id}`);
   accountCaptionTestId = computed(() => `account-caption-${this.account().id}`);
+  accountTransactionsTestId = computed(() => `account-transactions-${this.account().id}`);
+  accountEditTestId = computed(() => `account-edit-${this.account().id}`);
+  accountMenuTestId = computed(() => `account-menu-${this.account().id}`);
 
   containerClass = computed(() => {
     if (this.variant() === 'compact') {
-      return 'shrink-0 bg-white rounded-xl p-3 border border-slate-100 shadow-sm min-w-[160px]';
+      return 'shrink-0 bg-white rounded-xl p-3 border border-slate-100 shadow-sm min-w-[160px] cursor-pointer focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-200';
     }
 
-    return 'group relative bg-white rounded-xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-all duration-300 hover:-translate-y-1';
+    return 'bg-white rounded-xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-shadow duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-200';
   });
+
+  menuLeft = computed(() => {
+    const menuWidth = 176;
+    const padding = 8;
+    const viewportWidth =
+      typeof window !== 'undefined'
+        ? window.innerWidth
+        : typeof document !== 'undefined'
+          ? document.documentElement.clientWidth
+          : menuWidth;
+
+    const maxLeft = Math.max(padding, viewportWidth - menuWidth - padding);
+    return Math.min(Math.max(this.menuAnchorX(), padding), maxLeft);
+  });
+
+  menuTop = computed(() => {
+    const menuHeight = 88;
+    const padding = 8;
+    const viewportHeight =
+      typeof window !== 'undefined'
+        ? window.innerHeight
+        : typeof document !== 'undefined'
+          ? document.documentElement.clientHeight
+          : menuHeight;
+
+    const maxTop = Math.max(padding, viewportHeight - menuHeight - padding);
+    return Math.min(Math.max(this.menuAnchorY(), padding), maxTop);
+  });
+
+  constructor() {
+    const onOpen = (event: Event) => {
+      const detail = (event as CustomEvent<number>).detail;
+      if (detail !== this.instanceId) {
+        this.actionsOpen.set(false);
+      }
+    };
+
+    const onDocumentPointerDown = (event: PointerEvent) => {
+      if (!this.actionsOpen()) return;
+
+      const menu = this.menuEl?.nativeElement;
+      if (!menu) {
+        this.suppressNextClick.set(true);
+        this.actionsOpen.set(false);
+        return;
+      }
+
+      const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
+      if (path.includes(menu)) return;
+
+      this.suppressNextClick.set(true);
+      this.actionsOpen.set(false);
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('dindinho:context-menu-open', onOpen);
+    }
+    if (typeof document !== 'undefined') {
+      document.addEventListener('pointerdown', onDocumentPointerDown, true);
+    }
+
+    this.destroyRef.onDestroy(() => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('dindinho:context-menu-open', onOpen);
+      }
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('pointerdown', onDocumentPointerDown, true);
+      }
+    });
+  }
 
   headerClass = computed(() => {
     if (this.variant() === 'compact') {
@@ -165,4 +329,88 @@ export class AccountCardComponent {
 
     return `${base} bg-emerald-50 text-emerald-700`;
   });
+
+  protected onKeyboardOpenMenu(event: Event) {
+    event.stopPropagation();
+
+    const target = (event as KeyboardEvent).currentTarget as HTMLElement | null;
+    if (!target) return;
+
+    const rect = target.getBoundingClientRect();
+    this.openMenuAt(rect.left + rect.width / 2, rect.top + rect.height / 2);
+  }
+
+  private openMenuAt(x: number, y: number) {
+    this.menuAnchorX.set(x);
+    this.menuAnchorY.set(y);
+    this.actionsOpen.set(true);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent<number>('dindinho:context-menu-open', { detail: this.instanceId }),
+      );
+    }
+  }
+
+  protected onContextMenu(event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.openMenuAt(event.clientX, event.clientY);
+  }
+
+  protected onPointerDown(event: PointerEvent) {
+    if (event.pointerType !== 'touch') return;
+    this.clearLongPress();
+    this.longPressPointerId = event.pointerId;
+    this.longPressStartX = event.clientX;
+    this.longPressStartY = event.clientY;
+    this.longPressTimeoutId = setTimeout(() => {
+      this.suppressNextClick.set(true);
+      this.openMenuAt(this.longPressStartX, this.longPressStartY);
+    }, 500);
+  }
+
+  protected onPointerMove(event: PointerEvent) {
+    if (this.longPressTimeoutId === null) return;
+    if (this.longPressPointerId !== event.pointerId) return;
+
+    const dx = event.clientX - this.longPressStartX;
+    const dy = event.clientY - this.longPressStartY;
+    if (Math.hypot(dx, dy) > 10) {
+      this.clearLongPress();
+    }
+  }
+
+  protected onPointerUp(event: PointerEvent) {
+    if (this.longPressPointerId !== event.pointerId) return;
+    this.clearLongPress();
+  }
+
+  protected onPointerCancel(event: PointerEvent) {
+    if (this.longPressPointerId !== event.pointerId) return;
+    this.clearLongPress();
+  }
+
+  protected onPointerLeave() {
+    this.clearLongPress();
+  }
+
+  private clearLongPress() {
+    if (this.longPressTimeoutId !== null) {
+      clearTimeout(this.longPressTimeoutId);
+    }
+    this.longPressTimeoutId = null;
+    this.longPressPointerId = null;
+  }
+
+  protected onEditClick(event: Event) {
+    event.stopPropagation();
+    this.actionsOpen.set(false);
+    this.edit.emit(this.account());
+  }
+
+  protected onOpenTransactionsClick(event: Event) {
+    event.stopPropagation();
+    this.actionsOpen.set(false);
+    this.openTransactions.emit(this.account());
+  }
 }
