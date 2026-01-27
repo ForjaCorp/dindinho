@@ -28,3 +28,17 @@ const start = async (): Promise<void> => {
 };
 
 start();
+
+const shutdown = async (signal: NodeJS.Signals): Promise<void> => {
+  try {
+    app.log.info({ signal }, "Encerrando servidor");
+    await app.close();
+    process.exit(0);
+  } catch (err) {
+    app.log.error({ err, signal }, "Erro ao encerrar servidor");
+    process.exit(1);
+  }
+};
+
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
