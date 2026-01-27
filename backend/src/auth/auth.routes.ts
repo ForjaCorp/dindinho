@@ -123,7 +123,11 @@ export async function authRoutes(
 
         // Gera o Access Token JWT (expira em 15 minutos)
         const token = app.jwt.sign(
-          { name: authResult.name, email: authResult.email },
+          {
+            name: authResult.name,
+            email: authResult.email,
+            role: authResult.role,
+          },
           { sub: authResult.id, expiresIn: "15m" },
         );
 
@@ -134,6 +138,7 @@ export async function authRoutes(
             id: authResult.id,
             name: authResult.name,
             email: authResult.email,
+            role: authResult.role,
           },
         };
 
@@ -196,7 +201,7 @@ export async function authRoutes(
         // Busca dados do usuário
         const user = await prisma.user.findUnique({
           where: { id: userId },
-          select: { id: true, name: true, email: true },
+          select: { id: true, name: true, email: true, role: true },
         });
 
         if (!user) {
@@ -207,7 +212,7 @@ export async function authRoutes(
 
         // Gera novo access token (15min)
         const newToken = app.jwt.sign(
-          { name: user.name, email: user.email },
+          { name: user.name, email: user.email, role: user.role },
           { sub: user.id, expiresIn: "15m" },
         );
 

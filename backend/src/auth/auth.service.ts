@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 import { compare } from "bcryptjs";
 import { LoginDTO } from "@dindinho/shared";
 import { RefreshTokenService } from "./refresh-token.service";
@@ -12,6 +12,7 @@ export interface AuthResult {
   id: string;
   name: string;
   email: string;
+  role: Role;
   refreshToken: string;
 }
 
@@ -64,6 +65,7 @@ export class AuthService {
       id: user.id,
       name: user.name,
       email: user.email,
+      role: user.role,
       refreshToken,
     };
   }
