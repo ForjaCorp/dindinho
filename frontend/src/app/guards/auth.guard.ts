@@ -7,15 +7,29 @@ import { AuthService } from '../services/auth.service';
  * Verifica se o usuário está logado através do AuthService.
  * Se não estiver, redireciona para a página de login.
  */
-export const authGuard: CanActivateFn = () => {
+export const authGuard: CanActivateFn = (route) => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  // Se o usuário estiver autenticado, permite o acesso
-  if (authService.isAuthenticated()) {
-    return true;
+  if (!authService.isAuthenticated()) {
+    return router.createUrlTree(['/login']);
   }
 
-  // Caso contrário, redireciona para o login
-  return router.createUrlTree(['/login']);
+  const user = authService.currentUser();
+  if (!user) {
+    return router.createUrlTree(['/login']);
+  }
+
+  const requiredRole = route.data?.['requiredRole'] as typeof user.role | undefined;
+  const allowedRoles = route.data?.['roles'] as (typeof user.role)[] | undefined;
+
+  if (requiredRole && user.role !== requiredRole) {
+    return router.createUrlTree(['/dashboard']);
+  }
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return router.createUrlTree(['/dashboard']);
+  }
+
+  return true;
 };
