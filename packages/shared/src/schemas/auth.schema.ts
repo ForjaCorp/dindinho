@@ -54,6 +54,7 @@ export const loginResponseSchema = z.object({
     id: z.string(),
     name: z.string(),
     email: z.string(),
+    role: z.enum(["VIEWER", "EDITOR", "ADMIN"]),
   }),
 });
 
