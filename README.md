@@ -11,52 +11,61 @@ O Dindinho é um PWA (Progressive Web App) focado em organização financeira pe
 ## 🚀 Stack Tecnológica
 
 ### Frontend
+
 - **Framework**: Angular 21 (Standalone Components, Signals, Zoneless)
 - **UI Components**: PrimeNG
 - **Estilização**: Tailwind CSS
 - **Tipo**: Progressive Web App (PWA)
 
 ### Backend
+
 - **Runtime**: Node.js
 - **Framework**: Express/Fastify
 - **ORM**: Prisma
 - **Banco de Dados**: MySQL
 
 ### Infraestrutura
+
 - **Containerização**: Docker
 - **Orquestração**: Kubernetes
-- **Hospedagem**: VPS
+- **Orquestração**: Coolify (Apps Docker)
 
 ## 🌟 Funcionalidades Principais (MVP)
 
 ### 1. Gestão de Carteiras e Contas
+
 O sistema utiliza uma abordagem simplificada para ativos:
 
 - **STANDARD**: Para contas correntes, dinheiro em espécie, vale-refeição ou poupança. O saldo é atualizado imediatamente.
 - **CREDIT**: Para cartões de crédito. Possui lógica específica de dia de fechamento e vencimento.
 
 ### 2. Cartão de Crédito Inteligente
+
 - Controle de Dia de Fechamento (Melhor dia de compra) e Dia de Vencimento
 - Gestão de faturas baseada na data da transação vs. dia de fechamento
 
 ### 3. Colaboração (Família e Grupos)
+
 - Usuários possuem contas individuais
 - Sistema de Convites para compartilhar carteiras específicas
 - Controle de permissões (Visualização ou Edição) por carteira
 
 ### 4. Categorização
+
 - Categorias padrão do sistema
 - Possibilidade de o usuário criar categorias e subcategorias personalizadas
 
 ## 🏗️ Arquitetura e Decisões de Design
 
 ### Modelagem de Dados: Tabela de Extensão
+
 Para garantir organização e performance, utilizamos uma estratégia de composição no banco de dados:
 
 - A tabela `Wallet` contém dados comuns (Nome, Cor, Ícone, Dono)
 - A tabela `CreditCardInfo` é uma extensão (1:1) vinculada apenas às carteiras do tipo CREDIT, armazenando dados específicos como dias de corte e vencimento
 
 ### Estratégia de Parcelamento: "Explosão de Parcelas"
+
 Para otimizar a geração de relatórios mensais e evitar cálculos complexos em tempo de execução:
 
 - Ao registrar uma despesa parcelada (ex: R$ 1000 em 10x), o sistema gera imediatamente 10 registros no banco de dados
@@ -67,11 +76,13 @@ Para otimizar a geração de relatórios mensais e evitar cálculos complexos em
 ## 🛠️ Configuração do Ambiente
 
 ### Pré-requisitos
+
 - Node.js (LTS v20+)
 - Docker & Docker Compose
 - npm ou yarn
 
 ### Variáveis de Ambiente
+
 Crie um arquivo `.env` na raiz do backend:
 
 ```env
@@ -88,13 +99,16 @@ PORT=3000
 ## 🚀 Iniciando o Projeto
 
 ### Instalação
+
 1. Clone o repositório:
+
    ```bash
    git clone [URL_DO_REPOSITÓRIO]
    cd dindinho
    ```
 
 2. Instale as dependências do backend:
+
    ```bash
    cd backend
    npm install
@@ -109,22 +123,26 @@ PORT=3000
 ### Executando Localmente
 
 1. Inicie o banco de dados com Docker:
+
    ```bash
    docker-compose up -d
    ```
 
 2. Execute as migrações do Prisma:
+
    ```bash
    cd ../backend
    npx prisma migrate dev
    ```
 
 3. Inicie o servidor de desenvolvimento do backend:
+
    ```bash
    npm run start:dev
    ```
 
 4. Em outro terminal, inicie o frontend:
+
    ```bash
    cd ../frontend
    ng serve
@@ -134,10 +152,13 @@ PORT=3000
 
 ## 📦 Deploy e Infraestrutura
 
-O projeto está preparado para ser containerizado. O deploy é gerenciado via Kubernetes, separando a aplicação em:
-- Pods de Backend
+O projeto é entregue via aplicações Docker organizadas pelo Coolify, separando a aplicação em:
+
+- Backend (Node/Fastify)
 - Frontend (Nginx)
-- Serviço de banco de dados MySQL persistente
+- Banco de dados MySQL persistente (serviço gerenciado ou container dedicado)
+
+Referência de orquestração: `docker-compose.coolify.yml` demonstra a configuração de serviços e healthchecks para ambientes gerenciados pelo Coolify.
 
 ## 🤝 Contribuição
 
