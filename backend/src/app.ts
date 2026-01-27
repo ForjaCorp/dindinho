@@ -28,14 +28,35 @@ import { prisma } from "./lib/prisma";
  * app.listen({ port: 3000 });
  */
 export function buildApp(): FastifyInstance {
+  const level =
+    process.env.LOG_LEVEL ??
+    (process.env.NODE_ENV === "production" ? "info" : "debug");
   const app = Fastify({
     logger: {
-      level: "info",
+      level,
+      base: {
+        app: "dindinho-backend",
+        env: process.env.NODE_ENV ?? "development",
+      },
       redact: [
         "req.headers.authorization",
         "request.headers.authorization",
         "headers.authorization",
+        "req.headers.cookie",
+        "request.headers.cookie",
+        "response.headers.set-cookie",
+        "req.body.password",
+        "request.body.password",
+        "req.body.refreshToken",
+        "request.body.refreshToken",
       ],
+    },
+    genReqId: (request) => {
+      const hdr = request.headers["x-request-id"];
+      if (typeof hdr === "string" && hdr.length > 0) return hdr;
+      return `req-${Date.now().toString(36)}-${Math.random()
+        .toString(36)
+        .slice(2, 8)}`;
     },
     trustProxy: process.env.TRUST_PROXY === "true",
   });
@@ -168,7 +189,7 @@ export function buildApp(): FastifyInstance {
     }
 
     // Erros não tratados
-    app.log.error(error);
+    app.log.error({ err: error, reqId: request.id });
     return reply.status(500).send({
       statusCode: 500,
       error: "Internal Server Error",
@@ -266,6 +287,10 @@ export function buildApp(): FastifyInstance {
     },
   );
 
+  app.addHook("onSend", async (request, reply) => {
+    reply.header("x-request-id", request.id);
+  });
+
   app.get<{ Reply: DbTestDTO }>("/test-db", async () => {
     try {
       const usersCount = await prisma.user.count();
@@ -275,7 +300,7 @@ export function buildApp(): FastifyInstance {
         usersCount,
       };
     } catch (error) {
-      app.log.error(error);
+      app.log.error({ err: error });
       return {
         success: false,
         error: "Erro na conexão via Prisma",
