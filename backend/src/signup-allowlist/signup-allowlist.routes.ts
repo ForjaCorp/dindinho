@@ -27,17 +27,38 @@ export async function signupAllowlistRoutes(app: FastifyInstance) {
   });
   app.addHook("onRequest", async (request, reply) => {
     const adminKey = process.env.ALLOWLIST_ADMIN_KEY;
-
-    if (!adminKey) {
-      return reply.status(503).send({ message: "Chave admin não configurada" });
-    }
-
     const providedKey = request.headers["x-admin-key"];
     const normalizedKey = Array.isArray(providedKey)
       ? providedKey[0]
       : providedKey;
-    if (!normalizedKey || normalizedKey !== adminKey) {
-      return reply.status(401).send({ message: "Chave admin inválida" });
+
+    if (normalizedKey && !adminKey) {
+      return reply.status(503).send({ message: "Chave admin não configurada" });
+    }
+
+    if (adminKey && normalizedKey === adminKey) {
+      return;
+    }
+
+    try {
+      await request.jwtVerify();
+    } catch {
+      if (normalizedKey) {
+        return reply.status(401).send({ message: "Chave admin inválida" });
+      }
+      return reply.status(401).send({ message: "Token inválido ou expirado" });
+    }
+
+    const userId = (request.user as { sub: string }).sub;
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    if (!user || user.role !== "ADMIN") {
+      return reply
+        .status(403)
+        .send({ message: "Acesso restrito a administradores" });
     }
   });
 
@@ -50,6 +71,7 @@ export async function signupAllowlistRoutes(app: FastifyInstance) {
         response: {
           200: z.array(allowlistItemSchema),
           401: z.object({ message: z.string() }),
+          403: z.object({ message: z.string() }),
           503: z.object({ message: z.string() }),
         },
       },
@@ -77,6 +99,7 @@ export async function signupAllowlistRoutes(app: FastifyInstance) {
         response: {
           201: allowlistItemSchema,
           401: z.object({ message: z.string() }),
+          403: z.object({ message: z.string() }),
           503: z.object({ message: z.string() }),
         },
       },
@@ -109,6 +132,7 @@ export async function signupAllowlistRoutes(app: FastifyInstance) {
         response: {
           200: z.object({ deleted: z.boolean() }),
           401: z.object({ message: z.string() }),
+          403: z.object({ message: z.string() }),
           503: z.object({ message: z.string() }),
         },
       },
