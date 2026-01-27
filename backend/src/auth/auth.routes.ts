@@ -22,6 +22,7 @@ import {
   loginSchema,
   loginResponseSchema,
 } from "@dindinho/shared";
+import fastifyRateLimit from "@fastify/rate-limit";
 
 /**
  * Configura as rotas de autenticação da aplicação
@@ -47,6 +48,17 @@ export async function authRoutes(
   const refreshTokenService =
     opts.refreshTokenService ?? new RefreshTokenService(prisma, app.log);
   const service = new AuthService(prisma, refreshTokenService);
+
+  await app.register(fastifyRateLimit, {
+    global: true,
+    hook: "onRequest",
+    max: Number(process.env.LOGIN_RATE_LIMIT_MAX ?? "10"),
+    timeWindow: /^[0-9]+$/.test(process.env.LOGIN_RATE_LIMIT_TIME_WINDOW || "")
+      ? Number(process.env.LOGIN_RATE_LIMIT_TIME_WINDOW)
+      : (process.env.LOGIN_RATE_LIMIT_TIME_WINDOW ?? "1 minute"),
+    keyGenerator: (request) =>
+      (request.headers["x-real-ip"] as string | undefined) || request.ip,
+  });
 
   /**
    * Rota de autenticação de usuário via login

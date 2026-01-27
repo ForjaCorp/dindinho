@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
+import fastifyRateLimit from "@fastify/rate-limit";
 
 const emailSchema = z.string().email();
 
@@ -12,6 +13,18 @@ const allowlistItemSchema = z.object({
 });
 
 export async function signupAllowlistRoutes(app: FastifyInstance) {
+  await app.register(fastifyRateLimit, {
+    global: true,
+    hook: "onRequest",
+    max: Number(process.env.ALLOWLIST_RATE_LIMIT_MAX ?? "30"),
+    timeWindow: /^[0-9]+$/.test(
+      process.env.ALLOWLIST_RATE_LIMIT_TIME_WINDOW || "",
+    )
+      ? Number(process.env.ALLOWLIST_RATE_LIMIT_TIME_WINDOW)
+      : (process.env.ALLOWLIST_RATE_LIMIT_TIME_WINDOW ?? "1 minute"),
+    keyGenerator: (request) =>
+      (request.headers["x-real-ip"] as string | undefined) || request.ip,
+  });
   app.addHook("onRequest", async (request, reply) => {
     const adminKey = process.env.ALLOWLIST_ADMIN_KEY;
 
