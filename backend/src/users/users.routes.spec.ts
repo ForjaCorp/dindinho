@@ -7,7 +7,15 @@
  * @requires @prisma/client
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  beforeAll,
+  afterAll,
+} from "vitest";
 import { DeepMockProxy, mockReset } from "vitest-mock-extended";
 import { PrismaClient, User } from "@prisma/client";
 
@@ -30,6 +38,14 @@ const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>;
  */
 describe("Users Routes", () => {
   const app = buildApp();
+
+  beforeAll(async () => {
+    await app.ready();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
 
   beforeEach(() => {
     mockReset(prismaMock);
