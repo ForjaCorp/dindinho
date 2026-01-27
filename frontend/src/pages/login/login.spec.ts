@@ -27,6 +27,7 @@ describe('LoginComponent', () => {
     id: '1',
     name: 'Test User',
     email: 'test@example.com',
+    role: 'VIEWER',
   };
 
   const mockToken = 'test-token';

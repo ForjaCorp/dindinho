@@ -32,6 +32,7 @@ import { EmptyStateComponent } from '../app/components/empty-state.component';
 import { DashboardAccountsSectionComponent } from '../app/components/dashboard-accounts-section.component';
 import { DashboardCreditCardsSectionComponent } from '../app/components/dashboard-credit-cards-section.component';
 import { TransactionDrawerComponent } from '../app/components/transaction-drawer.component';
+import { AuthService } from '../app/services/auth.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -204,6 +205,27 @@ import { TransactionDrawerComponent } from '../app/components/transaction-drawer
 
       <app-backend-status-card [apiData]="apiData()" [error]="error()" />
 
+      @if (isAdmin()) {
+        <div
+          data-testid="dashboard-admin-section"
+          class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center justify-between"
+        >
+          <div class="space-y-1">
+            <h3 class="text-base font-semibold text-slate-800">Administração</h3>
+            <p class="text-sm text-slate-500">Gerencie a allowlist de cadastro</p>
+          </div>
+          <button
+            data-testid="dashboard-admin-allowlist"
+            type="button"
+            class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            (click)="onOpenAllowlist()"
+          >
+            <i class="pi pi-shield"></i>
+            Allowlist
+          </button>
+        </div>
+      }
+
       <app-transaction-drawer
         #transactionDrawer
         (updated)="onTransactionUpdated($event)"
@@ -221,6 +243,7 @@ export class DashboardComponent implements OnInit {
   private apiService = inject(ApiService);
   protected accountService = inject(AccountService);
   private router = inject(Router);
+  private authService = inject(AuthService);
 
   apiData = signal<ApiResponseDTO | null>(null);
   error = signal<string | null>(null);
@@ -238,6 +261,8 @@ export class DashboardComponent implements OnInit {
 
   // Signal reativo para o saldo total
   totalBalance = computed(() => this.accountService.totalBalance());
+
+  protected isAdmin = computed(() => this.authService.currentUser()?.role === 'ADMIN');
 
   protected standardAccounts = computed(() =>
     this.accountService.accounts().filter((a) => a.type === 'STANDARD'),
@@ -346,5 +371,9 @@ export class DashboardComponent implements OnInit {
     this.router.navigate(['/transactions/new'], {
       queryParams: { openAmount: 1 },
     });
+  }
+
+  protected onOpenAllowlist() {
+    this.router.navigate(['/admin/allowlist']);
   }
 }
