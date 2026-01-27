@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ApiService } from './api.service';
+import { ApiService, AllowlistDeleteResponse, AllowlistItem } from './api.service';
 import {
   ApiResponseDTO,
   LoginDTO,
@@ -49,6 +49,7 @@ describe('ApiService', () => {
       id: '1',
       name: 'Test User',
       email: 'test@example.com',
+      role: 'VIEWER',
     },
     token: 'mock-jwt-token',
     refreshToken: 'mock-refresh-token',
@@ -672,6 +673,63 @@ describe('ApiService', () => {
       const req = httpMock.expectOne('http://localhost:3333/api/categories');
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual(payload);
+      req.flush(responseBody);
+    });
+  });
+
+  describe('getAllowlist()', () => {
+    it('deve fazer requisição GET com x-admin-key para allowlist', () => {
+      const responseBody: AllowlistItem[] = [
+        {
+          id: '123e4567-e89b-12d3-a456-426614174000',
+          email: 'user@example.com',
+          createdAt: '2026-01-01T00:00:00.000Z',
+        },
+      ];
+
+      service.getAllowlist('admin-key').subscribe((response) => {
+        expect(response).toEqual(responseBody);
+      });
+
+      const req = httpMock.expectOne('http://localhost:3333/api/allowlist');
+      expect(req.request.method).toBe('GET');
+      expect(req.request.headers.get('x-admin-key')).toBe('admin-key');
+      req.flush(responseBody);
+    });
+  });
+
+  describe('addAllowlistEmail()', () => {
+    it('deve fazer requisição POST com x-admin-key para allowlist', () => {
+      const payload = { email: 'user@example.com' };
+      const responseBody: AllowlistItem = {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        email: payload.email,
+        createdAt: '2026-01-01T00:00:00.000Z',
+      };
+
+      service.addAllowlistEmail('admin-key', payload.email).subscribe((response) => {
+        expect(response).toEqual(responseBody);
+      });
+
+      const req = httpMock.expectOne('http://localhost:3333/api/allowlist');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.headers.get('x-admin-key')).toBe('admin-key');
+      expect(req.request.body).toEqual(payload);
+      req.flush(responseBody);
+    });
+  });
+
+  describe('deleteAllowlistEmail()', () => {
+    it('deve fazer requisição DELETE com x-admin-key para allowlist', () => {
+      const responseBody: AllowlistDeleteResponse = { deleted: true };
+
+      service.deleteAllowlistEmail('admin-key', 'user@example.com').subscribe((response) => {
+        expect(response).toEqual(responseBody);
+      });
+
+      const req = httpMock.expectOne('http://localhost:3333/api/allowlist/user%40example.com');
+      expect(req.request.method).toBe('DELETE');
+      expect(req.request.headers.get('x-admin-key')).toBe('admin-key');
       req.flush(responseBody);
     });
   });

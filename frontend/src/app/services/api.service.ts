@@ -24,6 +24,16 @@ export interface RefreshResponse {
   refreshToken: string;
 }
 
+export interface AllowlistItem {
+  id: string;
+  email: string;
+  createdAt: string;
+}
+
+export interface AllowlistDeleteResponse {
+  deleted: boolean;
+}
+
 /**
  * Serviço responsável por realizar chamadas à API do backend.
  *
@@ -209,5 +219,36 @@ export class ApiService {
 
   createCategory(data: CreateCategoryDTO): Observable<CategoryDTO> {
     return this.http.post<CategoryDTO>(`${this.baseUrl}/categories`, data);
+  }
+
+  getAllowlist(adminKey: string): Observable<AllowlistItem[]> {
+    return this.http.get<AllowlistItem[]>(`${this.baseUrl}/allowlist`, {
+      headers: {
+        'x-admin-key': adminKey,
+      },
+    });
+  }
+
+  addAllowlistEmail(adminKey: string, email: string): Observable<AllowlistItem> {
+    return this.http.post<AllowlistItem>(
+      `${this.baseUrl}/allowlist`,
+      { email },
+      {
+        headers: {
+          'x-admin-key': adminKey,
+        },
+      },
+    );
+  }
+
+  deleteAllowlistEmail(adminKey: string, email: string): Observable<AllowlistDeleteResponse> {
+    return this.http.delete<AllowlistDeleteResponse>(
+      `${this.baseUrl}/allowlist/${encodeURIComponent(email)}`,
+      {
+        headers: {
+          'x-admin-key': adminKey,
+        },
+      },
+    );
   }
 }
