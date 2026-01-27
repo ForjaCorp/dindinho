@@ -35,6 +35,13 @@ services:
       FRONTEND_URL: ${FRONTEND_URL}
     expose:
       - "80"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -fsS http://localhost/ || exit 1
+      interval: 30s
+      timeout: 5s
+      retries: 5
     networks:
       - coolify
 

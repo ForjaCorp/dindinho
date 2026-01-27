@@ -18,5 +18,8 @@ WORKDIR /usr/share/nginx/html
 RUN rm -rf /usr/share/nginx/html/*
 COPY --from=builder /app/frontend/dist/frontend/browser/ .
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
+RUN apk add --no-cache curl
 EXPOSE 80
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+  CMD curl -fsS http://localhost/ || exit 1
 CMD ["nginx", "-g", "daemon off;"]
