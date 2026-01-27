@@ -1,3 +1,5 @@
+#!/usr/bin/env sh
+
 BASE_REF="origin/main"
 
 if git rev-parse --verify "$BASE_REF" >/dev/null 2>&1; then
