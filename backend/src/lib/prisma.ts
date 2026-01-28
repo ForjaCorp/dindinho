@@ -37,6 +37,7 @@ if (!process.env.DATABASE_URL) {
 
 const dbUrl = new URL(process.env.DATABASE_URL);
 const isDev = process.env.NODE_ENV !== "production";
+const sslEnabled = process.env.DATABASE_SSL === "true";
 
 /**
  * Configuração do adaptador MariaDB para o Prisma
@@ -68,7 +69,7 @@ const adapter = new PrismaMariaDb({
   acquireTimeout: 20000,
   // Configurações de segurança para desenvolvimento
   allowPublicKeyRetrieval: isDev,
-  ssl: !isDev,
+  ssl: sslEnabled,
 });
 
 /**
