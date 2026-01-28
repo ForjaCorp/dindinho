@@ -519,11 +519,10 @@ describe('DashboardComponent', () => {
     expect(empty).toBeTruthy();
   });
 
-  it('deve exibir o card de status do backend', () => {
+  it('não deve exibir o card de status do backend quando usuário não é ADMIN', () => {
     const statusCard = fixture.nativeElement.querySelector('[data-testid="backend-status-card"]');
 
-    expect(statusCard).toBeTruthy();
-    expect(statusCard.textContent).toContain('Status do Backend');
+    expect(statusCard).toBeFalsy();
   });
 
   it('deve navegar para nova transação ao clicar em "Nova Transação"', () => {
@@ -556,9 +555,12 @@ describe('DashboardComponent', () => {
 
     const section = fixture.nativeElement.querySelector('[data-testid="dashboard-admin-section"]');
     const button = fixture.nativeElement.querySelector('[data-testid="dashboard-admin-allowlist"]');
+    const statusCard = fixture.nativeElement.querySelector('[data-testid="backend-status-card"]');
 
     expect(section).toBeTruthy();
     expect(button).toBeTruthy();
+    expect(statusCard).toBeTruthy();
+    expect(statusCard.textContent).toContain('Status do Backend');
   });
 
   it('deve navegar para allowlist ao clicar no acesso admin', () => {

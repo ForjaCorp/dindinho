@@ -203,7 +203,9 @@ import { AuthService } from '../app/services/auth.service';
         }
       </div>
 
-      <app-backend-status-card [apiData]="apiData()" [error]="error()" />
+      @if (isAdmin()) {
+        <app-backend-status-card [apiData]="apiData()" [error]="error()" />
+      }
 
       @if (isAdmin()) {
         <div
@@ -273,7 +275,9 @@ export class DashboardComponent implements OnInit {
   );
 
   ngOnInit() {
-    this.checkBackendConnection();
+    if (this.isAdmin()) {
+      this.checkBackendConnection();
+    }
     this.loadAccounts();
     this.loadRecentTransactions();
   }
@@ -291,8 +295,10 @@ export class DashboardComponent implements OnInit {
     this.apiService.getHello().subscribe({
       next: (response: ApiResponseDTO) => {
         this.apiData.set(response);
+        this.error.set(null);
       },
       error: () => {
+        this.apiData.set(null);
         this.error.set('Erro ao conectar com o backend');
       },
     });

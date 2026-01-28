@@ -1,52 +1,32 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const prismaMariaDbMock = vi.fn();
-const prismaClientMock = vi.fn();
+const buildUrl = () => new URL("mysql://user:pass@localhost:3306/dindinho");
 
-vi.mock("@prisma/adapter-mariadb", () => ({
-  PrismaMariaDb: prismaMariaDbMock,
-}));
-
-vi.mock("@prisma/client", () => ({
-  PrismaClient: prismaClientMock,
-}));
-
-const setBaseEnv = () => {
-  process.env.DATABASE_URL = "mysql://user:pass@localhost:3306/dindinho";
-};
-
-describe("Configuração do Prisma", () => {
+describe("Config Prisma MariaDB", () => {
   beforeEach(() => {
-    prismaMariaDbMock.mockClear();
-    prismaClientMock.mockClear();
     vi.resetModules();
-    setBaseEnv();
   });
 
-  afterEach(() => {
-    vi.unstubAllEnvs();
-    delete process.env.DATABASE_URL;
-    delete process.env.DATABASE_SSL;
-    delete process.env.NODE_ENV;
-  });
+  it("deve habilitar allowPublicKeyRetrieval quando SSL está desativado", async () => {
+    vi.stubEnv("DATABASE_URL", "mysql://user:pass@localhost:3306/dindinho");
+    vi.stubEnv("DATABASE_SSL", "false");
+    vi.stubEnv("NODE_ENV", "production");
 
-  it("deve desativar SSL quando DATABASE_SSL não é true", async () => {
-    process.env.NODE_ENV = "production";
+    const { buildMariaDbAdapterConfig } = await import("./prisma.js");
+    const config = buildMariaDbAdapterConfig(buildUrl());
 
-    await import("./prisma.js");
-
-    const config = prismaMariaDbMock.mock.calls[0]?.[0];
     expect(config.ssl).toBe(false);
-    expect(config.allowPublicKeyRetrieval).toBe(false);
+    expect(config.allowPublicKeyRetrieval).toBe(true);
   });
 
-  it("deve ativar SSL quando DATABASE_SSL é true", async () => {
-    process.env.NODE_ENV = "production";
-    process.env.DATABASE_SSL = "true";
+  it("deve desabilitar allowPublicKeyRetrieval quando SSL está ativo", async () => {
+    vi.stubEnv("DATABASE_URL", "mysql://user:pass@localhost:3306/dindinho");
+    vi.stubEnv("DATABASE_SSL", "true");
+    vi.stubEnv("NODE_ENV", "production");
 
-    await import("./prisma.js");
+    const { buildMariaDbAdapterConfig } = await import("./prisma.js");
+    const config = buildMariaDbAdapterConfig(buildUrl());
 
-    const config = prismaMariaDbMock.mock.calls[0]?.[0];
     expect(config.ssl).toBe(true);
     expect(config.allowPublicKeyRetrieval).toBe(false);
   });

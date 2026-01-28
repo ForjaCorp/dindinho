@@ -70,7 +70,9 @@ export class ApiService {
   private handler = inject(HttpBackend);
   private httpNoInterceptor = new HttpClient(this.handler);
   private readonly baseUrl = environment.apiUrl;
-  private readonly baseUrlWithoutApi = environment.apiUrl.replace('/api', '');
+  private readonly baseUrlWithoutApi = environment.apiUrl.endsWith('/api')
+    ? environment.apiUrl.slice(0, -4) || '/'
+    : environment.apiUrl;
 
   getHello(): Observable<ApiResponseDTO> {
     return this.http.get<ApiResponseDTO>(this.baseUrlWithoutApi);
