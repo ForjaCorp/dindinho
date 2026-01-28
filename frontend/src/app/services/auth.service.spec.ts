@@ -25,6 +25,7 @@ vi.mock('jwt-decode', () => ({
     sub: '1',
     email: 'test@example.com',
     name: 'Test User',
+    role: 'VIEWER',
     iat: 1234567890,
     exp: 1234567890 + 3600,
   })),
@@ -40,6 +41,7 @@ describe('AuthService', () => {
     id: '1',
     name: 'Test User',
     email: 'test@example.com',
+    role: 'VIEWER',
   };
 
   const mockLoginResponse: LoginResponseDTO = {
@@ -203,7 +205,12 @@ describe('AuthService', () => {
   describe('isAuthenticated', () => {
     it('should return true if user is authenticated', () => {
       // eslint-disable-next-line
-      (service.currentUser as any).set({ sub: '1', name: 'User' });
+      (service.currentUser as any).set({
+        id: '1',
+        name: 'User',
+        email: 'user@test.com',
+        role: 'VIEWER',
+      });
       expect(service.isAuthenticated()).toBe(true);
     });
 

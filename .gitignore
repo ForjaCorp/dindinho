@@ -20,6 +20,10 @@ build/
 /.next
 /out
 
+# Shared (evitar artefatos gerados no src)
+packages/shared/src/**/*.js
+packages/shared/src/**/*.js.map
+
 # Cache
 .cache
 .parcel-cache

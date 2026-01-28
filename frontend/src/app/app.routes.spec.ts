@@ -72,6 +72,10 @@ describe('Rotas da aplicação', () => {
     const createTxChild = mainRoute?.children?.find((child) => child.path === 'transactions/new');
     expect(createTxChild).toBeDefined();
     expect(createTxChild?.loadComponent).toBeDefined();
+
+    const allowlistChild = mainRoute?.children?.find((child) => child.path === 'admin/allowlist');
+    expect(allowlistChild).toBeDefined();
+    expect(allowlistChild?.loadComponent).toBeDefined();
   });
 
   it('deve ter rota curinga redirecionando para login', () => {

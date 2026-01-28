@@ -37,6 +37,22 @@ if (!process.env.DATABASE_URL) {
 
 const dbUrl = new URL(process.env.DATABASE_URL);
 const isDev = process.env.NODE_ENV !== "production";
+const sslEnabled = process.env.DATABASE_SSL === "true";
+
+export const buildMariaDbAdapterConfig = (url: URL) => {
+  return {
+    host: url.hostname,
+    port: Number(url.port) || 3306,
+    user: url.username,
+    password: url.password,
+    database: url.pathname.slice(1),
+    connectionLimit: 10,
+    connectTimeout: 20000,
+    acquireTimeout: 20000,
+    allowPublicKeyRetrieval: isDev || !sslEnabled,
+    ssl: sslEnabled,
+  };
+};
 
 /**
  * Configuração do adaptador MariaDB para o Prisma
@@ -57,19 +73,7 @@ const isDev = process.env.NODE_ENV !== "production";
  * // Em desenvolvimento: SSL desativado, allowPublicKeyRetrieval ativado
  * // Em produção: SSL ativado, allowPublicKeyRetrieval desativado
  */
-const adapter = new PrismaMariaDb({
-  host: dbUrl.hostname,
-  port: Number(dbUrl.port) || 3306,
-  user: dbUrl.username,
-  password: dbUrl.password,
-  database: dbUrl.pathname.slice(1),
-  connectionLimit: 10,
-  connectTimeout: 20000,
-  acquireTimeout: 20000,
-  // Configurações de segurança para desenvolvimento
-  allowPublicKeyRetrieval: isDev,
-  ssl: !isDev,
-});
+const adapter = new PrismaMariaDb(buildMariaDbAdapterConfig(dbUrl));
 
 /**
  * Instância do Prisma Client configurada para o MariaDB

@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 import { Component, signal } from '@angular/core';
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ApiResponseDTO } from '@dindinho/shared';
+import { HealthCheckDTO } from '@dindinho/shared';
 import { BackendStatusCardComponent } from './backend-status-card.component';
 
 const testBed = getTestBed();
@@ -16,7 +16,7 @@ if (!testBed.platform) {
   template: ` <app-backend-status-card [apiData]="apiData()" [error]="error()" /> `,
 })
 class BackendStatusCardHostComponent {
-  readonly apiData = signal<ApiResponseDTO | null>(null);
+  readonly apiData = signal<HealthCheckDTO | null>(null);
   readonly error = signal<string | null>(null);
 }
 
@@ -54,12 +54,9 @@ describe('BackendStatusCardComponent', () => {
 
   it('deve exibir dados quando apiData está preenchido', () => {
     fixture.componentInstance.apiData.set({
-      message: 'ok',
-      docs: 'docs',
-      endpoints: {
-        health: '/health',
-        test_db: '/test-db',
-      },
+      status: 'ok',
+      app: 'Dindinho API',
+      timestamp: '2026-01-01T00:00:00.000Z',
     });
     fixture.detectChanges();
 
@@ -67,7 +64,7 @@ describe('BackendStatusCardComponent', () => {
       '[data-testid="backend-status-card"]',
     ) as HTMLElement;
     expect(card).toBeTruthy();
-    expect(card.textContent).toContain('ok');
-    expect(card.textContent).toContain('docs');
+    expect(card.textContent).toContain('Status: ok');
+    expect(card.textContent).toContain('Dindinho API');
   });
 });

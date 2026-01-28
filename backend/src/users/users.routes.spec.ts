@@ -7,9 +7,17 @@
  * @requires @prisma/client
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  beforeAll,
+  afterAll,
+} from "vitest";
 import { DeepMockProxy, mockReset } from "vitest-mock-extended";
-import { PrismaClient, User } from "@prisma/client";
+import { PrismaClient, Role, User } from "@prisma/client";
 
 vi.mock("../lib/prisma", async () => {
   const { mockDeep } = await import("vitest-mock-extended");
@@ -31,8 +39,17 @@ const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>;
 describe("Users Routes", () => {
   const app = buildApp();
 
+  beforeAll(async () => {
+    await app.ready();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
   beforeEach(() => {
     mockReset(prismaMock);
+    process.env.SIGNUP_ALLOWLIST_ENABLED = "false";
   });
 
   /**
@@ -49,6 +66,7 @@ describe("Users Routes", () => {
       email: "vini@teste.com",
       passwordHash: "hash-seguro",
       avatarUrl: null,
+      role: Role.VIEWER,
       createdAt: new Date(),
       updatedAt: new Date(),
     } as User);
@@ -69,6 +87,24 @@ describe("Users Routes", () => {
     expect(body.password).toBeUndefined();
   });
 
+  it("deve bloquear criação quando email não está na allowlist", async () => {
+    process.env.SIGNUP_ALLOWLIST_ENABLED = "true";
+    prismaMock.signupAllowlist.findUnique.mockResolvedValue(null);
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/users",
+      payload: {
+        name: "Vini Teste",
+        email: "vini@teste.com",
+        password: "SenhaForte123@",
+      },
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(JSON.parse(response.body).message).toBe("Cadastro não permitido");
+  });
+
   /**
    * Testa a tentativa de criar um usuário com email já existente
    * @test {POST /users} Deve retornar 409 quando o email já estiver em uso
@@ -80,6 +116,7 @@ describe("Users Routes", () => {
       email: "duplicado@teste.com",
       passwordHash: "hash",
       avatarUrl: null,
+      role: Role.VIEWER,
       createdAt: new Date(),
       updatedAt: new Date(),
     } as User);

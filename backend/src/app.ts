@@ -2,6 +2,8 @@ import Fastify, { FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
+import fastifyRateLimit from "@fastify/rate-limit";
+import underPressure from "@fastify/under-pressure";
 import {
   serializerCompiler,
   validatorCompiler,
@@ -11,6 +13,7 @@ import { authRoutes } from "./auth/auth.routes";
 import { accountsRoutes } from "./accounts/accounts.routes";
 import { transactionsRoutes } from "./transactions/transactions.routes";
 import { categoriesRoutes } from "./categories/categories.routes";
+import { signupAllowlistRoutes } from "./signup-allowlist/signup-allowlist.routes";
 import { RefreshTokenService } from "./auth/refresh-token.service";
 import { ApiResponseDTO, HealthCheckDTO, DbTestDTO } from "@dindinho/shared";
 import { prisma } from "./lib/prisma";
@@ -25,7 +28,38 @@ import { prisma } from "./lib/prisma";
  * app.listen({ port: 3000 });
  */
 export function buildApp(): FastifyInstance {
-  const app = Fastify({ logger: true });
+  const level =
+    process.env.LOG_LEVEL ??
+    (process.env.NODE_ENV === "production" ? "info" : "debug");
+  const app = Fastify({
+    logger: {
+      level,
+      base: {
+        app: "dindinho-backend",
+        env: process.env.NODE_ENV ?? "development",
+      },
+      redact: [
+        "req.headers.authorization",
+        "request.headers.authorization",
+        "headers.authorization",
+        "req.headers.cookie",
+        "request.headers.cookie",
+        "response.headers.set-cookie",
+        "req.body.password",
+        "request.body.password",
+        "req.body.refreshToken",
+        "request.body.refreshToken",
+      ],
+    },
+    genReqId: (request) => {
+      const hdr = request.headers["x-request-id"];
+      if (typeof hdr === "string" && hdr.length > 0) return hdr;
+      return `req-${Date.now().toString(36)}-${Math.random()
+        .toString(36)
+        .slice(2, 8)}`;
+    },
+    trustProxy: process.env.TRUST_PROXY === "true",
+  });
   // Verificação de variáveis de ambiente obrigatórias
   if (!process.env.JWT_SECRET) {
     console.error("FATAL: JWT_SECRET não definida no .env");
@@ -59,7 +93,7 @@ export function buildApp(): FastifyInstance {
       return cb(new Error("Origin não permitido"), false);
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Admin-Key"],
     credentials: true,
   });
   // Configuração do JWT
@@ -68,6 +102,43 @@ export function buildApp(): FastifyInstance {
     sign: {
       expiresIn: "15m", // Access Token expira em 15 minutos
     },
+  });
+
+  app.register(fastifyRateLimit, {
+    global: true,
+    hook: "onRequest",
+    max: Number(process.env.RATE_LIMIT_MAX ?? "100"),
+    timeWindow: /^[0-9]+$/.test(process.env.RATE_LIMIT_TIME_WINDOW || "")
+      ? Number(process.env.RATE_LIMIT_TIME_WINDOW)
+      : (process.env.RATE_LIMIT_TIME_WINDOW ?? "1 minute"),
+    allowList: (process.env.RATE_LIMIT_ALLOWLIST || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter((v) => v.length > 0),
+    skipOnError: true,
+    keyGenerator: (request) =>
+      (request.headers["x-real-ip"] as string | undefined) || request.ip,
+    addHeaders: {
+      "x-ratelimit-limit": true,
+      "x-ratelimit-remaining": true,
+      "x-ratelimit-reset": true,
+      "retry-after": true,
+    },
+    addHeadersOnExceeding: {
+      "x-ratelimit-limit": true,
+      "x-ratelimit-remaining": true,
+      "x-ratelimit-reset": true,
+    },
+  });
+
+  app.register(underPressure, {
+    maxEventLoopDelay: Number(process.env.MAX_EVENT_LOOP_DELAY_MS ?? "1000"),
+    maxHeapUsedBytes: Number(process.env.MAX_HEAP_USED_BYTES ?? "200000000"),
+    maxRssBytes: Number(process.env.MAX_RSS_BYTES ?? "300000000"),
+    message: "Under pressure!",
+    retryAfter: 30,
+    healthCheckInterval: Number(process.env.HEALTHCHECK_INTERVAL_MS ?? "5000"),
+    healthCheck: async () => true,
   });
   // Error Handler Global
   app.setErrorHandler((error: unknown, request, reply) => {
@@ -89,6 +160,20 @@ export function buildApp(): FastifyInstance {
       });
     }
 
+    // Rate limit exceeded (429)
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "statusCode" in error &&
+      (error as any).statusCode === 429
+    ) {
+      return reply.status(429).send({
+        statusCode: 429,
+        error: "Too Many Requests",
+        message: "Limite de requisições excedido, tente novamente mais tarde",
+      });
+    }
+
     // Erros com statusCode definido (ex: lançados manualmente ou pelo JWT)
     if (typeof error === "object" && error !== null && "statusCode" in error) {
       const e = error as {
@@ -104,7 +189,7 @@ export function buildApp(): FastifyInstance {
     }
 
     // Erros não tratados
-    app.log.error(error);
+    app.log.error({ err: error, reqId: request.id });
     return reply.status(500).send({
       statusCode: 500,
       error: "Internal Server Error",
@@ -113,6 +198,7 @@ export function buildApp(): FastifyInstance {
   });
   // Rotas da aplicação
   app.register(usersRoutes, { prefix: "/api" });
+  app.register(signupAllowlistRoutes, { prefix: "/api" });
 
   // Instancia o RefreshTokenService com o logger da aplicação
   const refreshTokenService = new RefreshTokenService(prisma, app.log);
@@ -156,12 +242,59 @@ export function buildApp(): FastifyInstance {
   });
 
   // Health endpoints
-  app.get<{ Reply: HealthCheckDTO }>("/health", async () => {
-    return {
-      status: "ok",
-      timestamp: new Date().toISOString(),
-      app: "Dindinho API",
+  const healthRateLimiter = (() => {
+    const store = new Map<string, { count: number; resetAt: number }>();
+    const max = Number(process.env.RATE_LIMIT_MAX ?? "100");
+    const twRaw = process.env.RATE_LIMIT_TIME_WINDOW ?? "60000";
+    const timeWindow = /^[0-9]+$/.test(twRaw) ? Number(twRaw) : 60000;
+    const allowlist = (process.env.RATE_LIMIT_ALLOWLIST || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter((v) => v.length > 0);
+    return async (request: any, reply: any) => {
+      const ip =
+        (request.headers["x-real-ip"] as string | undefined) || request.ip;
+      if (allowlist.includes(ip)) {
+        return;
+      }
+      const now = Date.now();
+      const entry = store.get(ip) ?? { count: 0, resetAt: now + timeWindow };
+      if (now > entry.resetAt) {
+        entry.count = 0;
+        entry.resetAt = now + timeWindow;
+      }
+      if (entry.count >= max) {
+        return reply.status(429).send({
+          statusCode: 429,
+          error: "Too Many Requests",
+          message: "Limite de requisições excedido, tente novamente mais tarde",
+        });
+      }
+      entry.count++;
+      store.set(ip, entry);
     };
+  })();
+
+  const buildHealthPayload = (): HealthCheckDTO => ({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    app: "Dindinho API",
+  });
+
+  app.get<{ Reply: HealthCheckDTO }>(
+    "/health",
+    { preHandler: healthRateLimiter },
+    async () => buildHealthPayload(),
+  );
+
+  app.get<{ Reply: HealthCheckDTO }>(
+    "/api/health",
+    { preHandler: healthRateLimiter },
+    async () => buildHealthPayload(),
+  );
+
+  app.addHook("onSend", async (request, reply) => {
+    reply.header("x-request-id", request.id);
   });
 
   app.get<{ Reply: DbTestDTO }>("/test-db", async () => {
@@ -173,7 +306,7 @@ export function buildApp(): FastifyInstance {
         usersCount,
       };
     } catch (error) {
-      app.log.error(error);
+      app.log.error({ err: error });
       return {
         success: false,
         error: "Erro na conexão via Prisma",

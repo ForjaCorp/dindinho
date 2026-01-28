@@ -22,6 +22,7 @@ import {
   loginSchema,
   loginResponseSchema,
 } from "@dindinho/shared";
+import fastifyRateLimit from "@fastify/rate-limit";
 
 /**
  * Configura as rotas de autenticação da aplicação
@@ -47,6 +48,17 @@ export async function authRoutes(
   const refreshTokenService =
     opts.refreshTokenService ?? new RefreshTokenService(prisma, app.log);
   const service = new AuthService(prisma, refreshTokenService);
+
+  await app.register(fastifyRateLimit, {
+    global: true,
+    hook: "onRequest",
+    max: Number(process.env.LOGIN_RATE_LIMIT_MAX ?? "10"),
+    timeWindow: /^[0-9]+$/.test(process.env.LOGIN_RATE_LIMIT_TIME_WINDOW || "")
+      ? Number(process.env.LOGIN_RATE_LIMIT_TIME_WINDOW)
+      : (process.env.LOGIN_RATE_LIMIT_TIME_WINDOW ?? "1 minute"),
+    keyGenerator: (request) =>
+      (request.headers["x-real-ip"] as string | undefined) || request.ip,
+  });
 
   /**
    * Rota de autenticação de usuário via login
@@ -111,7 +123,11 @@ export async function authRoutes(
 
         // Gera o Access Token JWT (expira em 15 minutos)
         const token = app.jwt.sign(
-          { name: authResult.name, email: authResult.email },
+          {
+            name: authResult.name,
+            email: authResult.email,
+            role: authResult.role,
+          },
           { sub: authResult.id, expiresIn: "15m" },
         );
 
@@ -122,6 +138,7 @@ export async function authRoutes(
             id: authResult.id,
             name: authResult.name,
             email: authResult.email,
+            role: authResult.role,
           },
         };
 
@@ -184,7 +201,7 @@ export async function authRoutes(
         // Busca dados do usuário
         const user = await prisma.user.findUnique({
           where: { id: userId },
-          select: { id: true, name: true, email: true },
+          select: { id: true, name: true, email: true, role: true },
         });
 
         if (!user) {
@@ -195,7 +212,7 @@ export async function authRoutes(
 
         // Gera novo access token (15min)
         const newToken = app.jwt.sign(
-          { name: user.name, email: user.email },
+          { name: user.name, email: user.email, role: user.role },
           { sub: user.id, expiresIn: "15m" },
         );
 

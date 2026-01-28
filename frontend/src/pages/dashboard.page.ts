@@ -21,7 +21,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../app/services/api.service';
-import { ApiResponseDTO, TransactionDTO, AccountDTO } from '@dindinho/shared';
+import { HealthCheckDTO, TransactionDTO, AccountDTO } from '@dindinho/shared';
 import { AccountService } from '../app/services/account.service';
 import { CurrencyPipe } from '@angular/common';
 import { CreateAccountDialogComponent } from '../app/components/accounts/create-account-dialog.component';
@@ -32,6 +32,7 @@ import { EmptyStateComponent } from '../app/components/empty-state.component';
 import { DashboardAccountsSectionComponent } from '../app/components/dashboard-accounts-section.component';
 import { DashboardCreditCardsSectionComponent } from '../app/components/dashboard-credit-cards-section.component';
 import { TransactionDrawerComponent } from '../app/components/transaction-drawer.component';
+import { AuthService } from '../app/services/auth.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -202,7 +203,30 @@ import { TransactionDrawerComponent } from '../app/components/transaction-drawer
         }
       </div>
 
-      <app-backend-status-card [apiData]="apiData()" [error]="error()" />
+      @if (isAdmin()) {
+        <app-backend-status-card [apiData]="apiData()" [error]="error()" />
+      }
+
+      @if (isAdmin()) {
+        <div
+          data-testid="dashboard-admin-section"
+          class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center justify-between"
+        >
+          <div class="space-y-1">
+            <h3 class="text-base font-semibold text-slate-800">Administração</h3>
+            <p class="text-sm text-slate-500">Gerencie a allowlist de cadastro</p>
+          </div>
+          <button
+            data-testid="dashboard-admin-allowlist"
+            type="button"
+            class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            (click)="onOpenAllowlist()"
+          >
+            <i class="pi pi-shield"></i>
+            Allowlist
+          </button>
+        </div>
+      }
 
       <app-transaction-drawer
         #transactionDrawer
@@ -221,8 +245,9 @@ export class DashboardComponent implements OnInit {
   private apiService = inject(ApiService);
   protected accountService = inject(AccountService);
   private router = inject(Router);
+  private authService = inject(AuthService);
 
-  apiData = signal<ApiResponseDTO | null>(null);
+  apiData = signal<HealthCheckDTO | null>(null);
   error = signal<string | null>(null);
   isLoading = signal(false);
 
@@ -239,6 +264,8 @@ export class DashboardComponent implements OnInit {
   // Signal reativo para o saldo total
   totalBalance = computed(() => this.accountService.totalBalance());
 
+  protected isAdmin = computed(() => this.authService.currentUser()?.role === 'ADMIN');
+
   protected standardAccounts = computed(() =>
     this.accountService.accounts().filter((a) => a.type === 'STANDARD'),
   );
@@ -248,7 +275,9 @@ export class DashboardComponent implements OnInit {
   );
 
   ngOnInit() {
-    this.checkBackendConnection();
+    if (this.isAdmin()) {
+      this.checkBackendConnection();
+    }
     this.loadAccounts();
     this.loadRecentTransactions();
   }
@@ -264,10 +293,12 @@ export class DashboardComponent implements OnInit {
 
   checkBackendConnection() {
     this.apiService.getHello().subscribe({
-      next: (response: ApiResponseDTO) => {
+      next: (response: HealthCheckDTO) => {
         this.apiData.set(response);
+        this.error.set(null);
       },
       error: () => {
+        this.apiData.set(null);
         this.error.set('Erro ao conectar com o backend');
       },
     });
@@ -346,5 +377,9 @@ export class DashboardComponent implements OnInit {
     this.router.navigate(['/transactions/new'], {
       queryParams: { openAmount: 1 },
     });
+  }
+
+  protected onOpenAllowlist() {
+    this.router.navigate(['/admin/allowlist']);
   }
 }

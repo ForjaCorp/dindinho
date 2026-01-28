@@ -10,7 +10,7 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { DeepMockProxy, mockReset } from "vitest-mock-extended";
-import { PrismaClient, User } from "@prisma/client";
+import { PrismaClient, Role, User } from "@prisma/client";
 import { hash } from "bcryptjs";
 
 import { AuthService } from "./auth.service";
@@ -40,6 +40,7 @@ const createMockUser = (overrides?: Partial<User>): User => ({
   email: "default@test.com",
   passwordHash: "default-hash",
   avatarUrl: null,
+  role: Role.VIEWER,
   createdAt: new Date(),
   updatedAt: new Date(),
   ...overrides,
@@ -90,6 +91,7 @@ describe("AuthService", () => {
       id: "uuid-user",
       name: "Usuario Teste",
       email: "teste@auth.com",
+      role: Role.VIEWER,
       refreshToken: "mock-refresh-token",
     });
     expect(prismaMock.user.findUnique).toHaveBeenCalledWith({

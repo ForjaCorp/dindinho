@@ -20,6 +20,8 @@ import { ApiResponseDTO, TransactionDTO, AccountDTO } from '@dindinho/shared';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { CreateAccountDialogComponent } from '../app/components/accounts/create-account-dialog.component';
+import { signal } from '@angular/core';
+import { AuthService, UserState } from '../app/services/auth.service';
 
 describe('DashboardComponent', () => {
   let component: DashboardComponent;
@@ -40,6 +42,7 @@ describe('DashboardComponent', () => {
     totalBalance: ReturnType<typeof vi.fn>;
     loadAccounts: ReturnType<typeof vi.fn>;
   };
+  let authServiceMock: { currentUser: ReturnType<typeof signal<UserState | null>> };
 
   /**
    * Configura o ambiente de teste antes de cada caso de teste.
@@ -78,12 +81,22 @@ describe('DashboardComponent', () => {
       loadAccounts: vi.fn(),
     };
 
+    authServiceMock = {
+      currentUser: signal<UserState | null>({
+        id: 'user-1',
+        name: 'Usuário',
+        email: 'user@example.com',
+        role: 'VIEWER',
+      }),
+    };
+
     await TestBed.configureTestingModule({
       imports: [DashboardComponent],
       providers: [
         provideRouter([]),
         { provide: ApiService, useValue: apiServiceMock },
         { provide: AccountService, useValue: accountServiceMock },
+        { provide: AuthService, useValue: authServiceMock },
         { provide: MessageService, useValue: { add: vi.fn() } },
       ],
     }).compileComponents();
@@ -506,11 +519,10 @@ describe('DashboardComponent', () => {
     expect(empty).toBeTruthy();
   });
 
-  it('deve exibir o card de status do backend', () => {
+  it('não deve exibir o card de status do backend quando usuário não é ADMIN', () => {
     const statusCard = fixture.nativeElement.querySelector('[data-testid="backend-status-card"]');
 
-    expect(statusCard).toBeTruthy();
-    expect(statusCard.textContent).toContain('Status do Backend');
+    expect(statusCard).toBeFalsy();
   });
 
   it('deve navegar para nova transação ao clicar em "Nova Transação"', () => {
@@ -527,5 +539,69 @@ describe('DashboardComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/transactions/new'], {
       queryParams: { openAmount: 1 },
     });
+  });
+
+  it('deve exibir acesso admin quando usuário é ADMIN', () => {
+    authServiceMock.currentUser.set({
+      id: 'admin-1',
+      name: 'Admin',
+      email: 'admin@example.com',
+      role: 'ADMIN',
+    });
+
+    fixture = TestBed.createComponent(DashboardComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    const section = fixture.nativeElement.querySelector('[data-testid="dashboard-admin-section"]');
+    const button = fixture.nativeElement.querySelector('[data-testid="dashboard-admin-allowlist"]');
+    const statusCard = fixture.nativeElement.querySelector('[data-testid="backend-status-card"]');
+
+    expect(section).toBeTruthy();
+    expect(button).toBeTruthy();
+    expect(statusCard).toBeTruthy();
+    expect(statusCard.textContent).toContain('Status do Backend');
+  });
+
+  it('deve navegar para allowlist ao clicar no acesso admin', () => {
+    authServiceMock.currentUser.set({
+      id: 'admin-1',
+      name: 'Admin',
+      email: 'admin@example.com',
+      role: 'ADMIN',
+    });
+
+    fixture = TestBed.createComponent(DashboardComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    const button = fixture.nativeElement.querySelector(
+      '[data-testid="dashboard-admin-allowlist"]',
+    ) as HTMLButtonElement;
+
+    button.click();
+    fixture.detectChanges();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/admin/allowlist']);
+  });
+
+  it('não deve exibir acesso admin quando usuário não é ADMIN', () => {
+    authServiceMock.currentUser.set({
+      id: 'user-1',
+      name: 'Usuário',
+      email: 'user@example.com',
+      role: 'VIEWER',
+    });
+
+    fixture = TestBed.createComponent(DashboardComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    const section = fixture.nativeElement.querySelector('[data-testid="dashboard-admin-section"]');
+
+    expect(section).toBeFalsy();
   });
 });

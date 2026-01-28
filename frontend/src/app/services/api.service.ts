@@ -3,7 +3,7 @@ import { HttpClient, HttpBackend } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
-  ApiResponseDTO,
+  HealthCheckDTO,
   LoginDTO,
   LoginResponseDTO,
   CategoryDTO,
@@ -22,6 +22,16 @@ import {
 export interface RefreshResponse {
   token: string;
   refreshToken: string;
+}
+
+export interface AllowlistItem {
+  id: string;
+  email: string;
+  createdAt: string;
+}
+
+export interface AllowlistDeleteResponse {
+  deleted: boolean;
 }
 
 /**
@@ -60,10 +70,8 @@ export class ApiService {
   private handler = inject(HttpBackend);
   private httpNoInterceptor = new HttpClient(this.handler);
   private readonly baseUrl = environment.apiUrl;
-  private readonly baseUrlWithoutApi = environment.apiUrl.replace('/api', '');
-
-  getHello(): Observable<ApiResponseDTO> {
-    return this.http.get<ApiResponseDTO>(this.baseUrlWithoutApi);
+  getHello(): Observable<HealthCheckDTO> {
+    return this.http.get<HealthCheckDTO>(`${this.baseUrl}/health`);
   }
 
   /**
@@ -209,5 +217,36 @@ export class ApiService {
 
   createCategory(data: CreateCategoryDTO): Observable<CategoryDTO> {
     return this.http.post<CategoryDTO>(`${this.baseUrl}/categories`, data);
+  }
+
+  getAllowlist(adminKey: string): Observable<AllowlistItem[]> {
+    return this.http.get<AllowlistItem[]>(`${this.baseUrl}/allowlist`, {
+      headers: {
+        'x-admin-key': adminKey,
+      },
+    });
+  }
+
+  addAllowlistEmail(adminKey: string, email: string): Observable<AllowlistItem> {
+    return this.http.post<AllowlistItem>(
+      `${this.baseUrl}/allowlist`,
+      { email },
+      {
+        headers: {
+          'x-admin-key': adminKey,
+        },
+      },
+    );
+  }
+
+  deleteAllowlistEmail(adminKey: string, email: string): Observable<AllowlistDeleteResponse> {
+    return this.http.delete<AllowlistDeleteResponse>(
+      `${this.baseUrl}/allowlist/${encodeURIComponent(email)}`,
+      {
+        headers: {
+          'x-admin-key': adminKey,
+        },
+      },
+    );
   }
 }

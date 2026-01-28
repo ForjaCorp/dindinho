@@ -9,13 +9,14 @@
     "skipLibCheck": true,
     "incremental": true,
     "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
+    "rootDir": "./src",
     "outDir": "./dist",
     "baseUrl": "./src",
     "paths": {
       "@/*": ["./*"],
-      "@dindinho/shared": ["../../packages/shared/src/index.ts"]
+      "@dindinho/shared": ["../packages/shared/src/index.ts"]
     }
   },
-  "include": ["src/**/*", "prisma.config.ts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

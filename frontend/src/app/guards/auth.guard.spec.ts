@@ -7,7 +7,7 @@ import { Router, UrlTree } from '@angular/router';
 import { ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { runInInjectionContext, EnvironmentInjector } from '@angular/core';
 import { authGuard } from './auth.guard';
-import { AuthService } from '../services/auth.service';
+import { AuthService, UserState } from '../services/auth.service';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 
 const testBed = getTestBed();
@@ -25,11 +25,7 @@ describe('authGuard', () => {
   beforeEach(() => {
     const authServiceSpy = {
       isAuthenticated: vi.fn(),
-      currentUser: {
-        value: null,
-        set: vi.fn(),
-        update: vi.fn(),
-      },
+      currentUser: vi.fn(),
     };
 
     const routerSpy = {
@@ -56,8 +52,15 @@ describe('authGuard', () => {
     TestBed.resetTestingModule();
   });
 
-  it('should allow access when user is authenticated', () => {
+  it('deve permitir acesso quando usuário autenticado', () => {
     vi.spyOn(authService, 'isAuthenticated').mockReturnValue(true);
+    const user: UserState = {
+      id: '1',
+      name: 'User',
+      email: 'user@test.com',
+      role: 'VIEWER',
+    };
+    vi.spyOn(authService, 'currentUser').mockReturnValue(user);
 
     const result = runInInjectionContext(injector, () =>
       authGuard(mockActivatedRouteSnapshot, mockRouterStateSnapshot),
@@ -67,7 +70,7 @@ describe('authGuard', () => {
     expect(authService.isAuthenticated).toHaveBeenCalled();
   });
 
-  it('should redirect to login when user is NOT authenticated', () => {
+  it('deve redirecionar para login quando usuário não autenticado', () => {
     vi.spyOn(authService, 'isAuthenticated').mockReturnValue(false);
     const createUrlTreeSpy = vi.spyOn(router, 'createUrlTree');
 
@@ -79,12 +82,12 @@ describe('authGuard', () => {
     expect(createUrlTreeSpy).toHaveBeenCalledWith(['/login']);
   });
 
-  it('should be created with proper dependencies', () => {
+  it('deve criar dependências corretamente', () => {
     expect(authService).toBeTruthy();
     expect(router).toBeTruthy();
   });
 
-  it('should not call router.navigate when redirecting', () => {
+  it('deve evitar router.navigate ao redirecionar', () => {
     vi.spyOn(authService, 'isAuthenticated').mockReturnValue(false);
     const loginUrlTree = { url: '/login' } as unknown as UrlTree;
     vi.spyOn(router, 'createUrlTree').mockReturnValue(loginUrlTree);
@@ -97,7 +100,7 @@ describe('authGuard', () => {
     expect(router.createUrlTree).toHaveBeenCalledWith(['/login']);
   });
 
-  it('should work with different route snapshots', () => {
+  it('deve funcionar com diferentes snapshots de rota', () => {
     vi.spyOn(authService, 'isAuthenticated').mockReturnValue(false);
     const loginUrlTree = { url: '/login' } as unknown as UrlTree;
     vi.spyOn(router, 'createUrlTree').mockReturnValue(loginUrlTree);
@@ -112,5 +115,91 @@ describe('authGuard', () => {
 
     expect(result).toBe(loginUrlTree);
     expect(authService.isAuthenticated).toHaveBeenCalled();
+  });
+
+  it('deve bloquear acesso quando role não corresponde', () => {
+    vi.spyOn(authService, 'isAuthenticated').mockReturnValue(true);
+    const user: UserState = {
+      id: '1',
+      name: 'User',
+      email: 'user@test.com',
+      role: 'VIEWER',
+    };
+    vi.spyOn(authService, 'currentUser').mockReturnValue(user);
+
+    const routeWithRole = {
+      data: { requiredRole: 'ADMIN' },
+    } as unknown as ActivatedRouteSnapshot;
+
+    const result = runInInjectionContext(injector, () =>
+      authGuard(routeWithRole, mockRouterStateSnapshot),
+    );
+
+    expect(router.createUrlTree).toHaveBeenCalledWith(['/dashboard']);
+    expect(result).not.toBe(true);
+  });
+
+  it('deve permitir acesso quando role atende requisito', () => {
+    vi.spyOn(authService, 'isAuthenticated').mockReturnValue(true);
+    const user: UserState = {
+      id: '1',
+      name: 'User',
+      email: 'user@test.com',
+      role: 'ADMIN',
+    };
+    vi.spyOn(authService, 'currentUser').mockReturnValue(user);
+
+    const routeWithRole = {
+      data: { requiredRole: 'ADMIN' },
+    } as unknown as ActivatedRouteSnapshot;
+
+    const result = runInInjectionContext(injector, () =>
+      authGuard(routeWithRole, mockRouterStateSnapshot),
+    );
+
+    expect(result).toBe(true);
+  });
+
+  it('deve permitir acesso quando role está entre as permitidas', () => {
+    vi.spyOn(authService, 'isAuthenticated').mockReturnValue(true);
+    const user: UserState = {
+      id: '1',
+      name: 'User',
+      email: 'user@test.com',
+      role: 'EDITOR',
+    };
+    vi.spyOn(authService, 'currentUser').mockReturnValue(user);
+
+    const routeWithRoles = {
+      data: { roles: ['VIEWER', 'EDITOR'] },
+    } as unknown as ActivatedRouteSnapshot;
+
+    const result = runInInjectionContext(injector, () =>
+      authGuard(routeWithRoles, mockRouterStateSnapshot),
+    );
+
+    expect(result).toBe(true);
+  });
+
+  it('deve bloquear acesso quando role não está entre as permitidas', () => {
+    vi.spyOn(authService, 'isAuthenticated').mockReturnValue(true);
+    const user: UserState = {
+      id: '1',
+      name: 'User',
+      email: 'user@test.com',
+      role: 'VIEWER',
+    };
+    vi.spyOn(authService, 'currentUser').mockReturnValue(user);
+
+    const routeWithRoles = {
+      data: { roles: ['ADMIN'] },
+    } as unknown as ActivatedRouteSnapshot;
+
+    const result = runInInjectionContext(injector, () =>
+      authGuard(routeWithRoles, mockRouterStateSnapshot),
+    );
+
+    expect(router.createUrlTree).toHaveBeenCalledWith(['/dashboard']);
+    expect(result).not.toBe(true);
   });
 });

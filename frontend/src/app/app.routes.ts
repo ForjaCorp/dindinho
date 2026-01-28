@@ -68,6 +68,11 @@ export const routes: Routes = [
           ),
         data: { title: 'Nova transação' },
       },
+      {
+        path: 'admin/allowlist',
+        loadComponent: () => import('../pages/admin/allowlist.page').then((m) => m.AllowlistPage),
+        data: { title: 'Allowlist', requiredRole: 'ADMIN' },
+      },
       // Outras rotas autenticadas virão aqui (accounts, reports, profile)
     ],
   },
