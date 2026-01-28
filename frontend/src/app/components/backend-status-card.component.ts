@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { ApiResponseDTO } from '@dindinho/shared';
+import { HealthCheckDTO } from '@dindinho/shared';
 
 @Component({
   selector: 'app-backend-status-card',
@@ -19,8 +19,9 @@ import { ApiResponseDTO } from '@dindinho/shared';
 
       @if (apiData(); as data) {
         <div class="text-xs text-slate-600">
-          <p class="font-medium text-emerald-600">{{ data.message }}</p>
-          <p class="mt-1 opacity-70">{{ data.docs }}</p>
+          <p class="font-medium text-emerald-600">Status: {{ data.status }}</p>
+          <p class="mt-1 opacity-70">{{ data.app }}</p>
+          <p class="mt-1 opacity-70">{{ data.timestamp }}</p>
         </div>
       } @else if (error()) {
         <div class="text-xs text-red-500 bg-red-50 p-2 rounded-lg">
@@ -33,6 +34,6 @@ import { ApiResponseDTO } from '@dindinho/shared';
   `,
 })
 export class BackendStatusCardComponent {
-  readonly apiData = input<ApiResponseDTO | null>(null);
+  readonly apiData = input<HealthCheckDTO | null>(null);
   readonly error = input<string | null>(null);
 }

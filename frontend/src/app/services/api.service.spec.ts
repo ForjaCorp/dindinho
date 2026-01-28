@@ -9,7 +9,7 @@ import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ApiService, AllowlistDeleteResponse, AllowlistItem } from './api.service';
 import {
-  ApiResponseDTO,
+  HealthCheckDTO,
   LoginDTO,
   LoginResponseDTO,
   CategoryDTO,
@@ -30,13 +30,10 @@ describe('ApiService', () => {
   let service: ApiService;
   let httpMock: HttpTestingController;
 
-  const mockApiResponse: ApiResponseDTO = {
-    message: 'Hello from backend!',
-    docs: 'API documentation available at /docs',
-    endpoints: {
-      health: '/health',
-      test_db: '/test-db',
-    },
+  const mockApiResponse: HealthCheckDTO = {
+    status: 'ok',
+    app: 'Dindinho API',
+    timestamp: '2026-01-01T00:00:00.000Z',
   };
 
   const mockLoginData: LoginDTO = {
@@ -108,12 +105,12 @@ describe('ApiService', () => {
    * @description Verifica funcionamento da requisição GET para endpoint base
    */
   describe('getHello()', () => {
-    it('deve fazer requisição GET para a URL base', () => {
+    it('deve fazer requisição GET para o health da API', () => {
       service.getHello().subscribe((response) => {
         expect(response).toEqual(mockApiResponse);
       });
 
-      const req = httpMock.expectOne('http://localhost:3333');
+      const req = httpMock.expectOne('http://localhost:3333/api/health');
       expect(req.request.method).toBe('GET');
       req.flush(mockApiResponse);
     });
@@ -127,7 +124,7 @@ describe('ApiService', () => {
         },
       });
 
-      const req = httpMock.expectOne('http://localhost:3333');
+      const req = httpMock.expectOne('http://localhost:3333/api/health');
       expect(req.request.method).toBe('GET');
       req.flush('Server error', { status: 500, statusText: 'Internal Server Error' });
     });
@@ -140,7 +137,7 @@ describe('ApiService', () => {
         },
       });
 
-      const req = httpMock.expectOne('http://localhost:3333');
+      const req = httpMock.expectOne('http://localhost:3333/api/health');
       expect(req.request.method).toBe('GET');
       req.error(new ErrorEvent('Network error'));
     });

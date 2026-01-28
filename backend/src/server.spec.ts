@@ -65,6 +65,26 @@ describe("Server Health Endpoints", () => {
     expect(timestamp.toISOString()).toBe(body.timestamp);
   });
 
+  it("deve retornar status ok no endpoint api health", async () => {
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/health",
+    });
+
+    expect(response.statusCode).toBe(200);
+    const body = JSON.parse(response.body);
+
+    expect(body).toMatchObject({
+      status: "ok",
+      app: "Dindinho API",
+    });
+    expect(body.timestamp).toBeDefined();
+    expect(typeof body.timestamp).toBe("string");
+
+    const timestamp = new Date(body.timestamp);
+    expect(timestamp.toISOString()).toBe(body.timestamp);
+  });
+
   /**
    * Testa o endpoint de teste de banco com sucesso
    * @test {GET /test-db} Deve retornar sucesso e contagem de usuários

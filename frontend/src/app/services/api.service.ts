@@ -3,7 +3,7 @@ import { HttpClient, HttpBackend } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
-  ApiResponseDTO,
+  HealthCheckDTO,
   LoginDTO,
   LoginResponseDTO,
   CategoryDTO,
@@ -70,12 +70,8 @@ export class ApiService {
   private handler = inject(HttpBackend);
   private httpNoInterceptor = new HttpClient(this.handler);
   private readonly baseUrl = environment.apiUrl;
-  private readonly baseUrlWithoutApi = environment.apiUrl.endsWith('/api')
-    ? environment.apiUrl.slice(0, -4) || '/'
-    : environment.apiUrl;
-
-  getHello(): Observable<ApiResponseDTO> {
-    return this.http.get<ApiResponseDTO>(this.baseUrlWithoutApi);
+  getHello(): Observable<HealthCheckDTO> {
+    return this.http.get<HealthCheckDTO>(`${this.baseUrl}/health`);
   }
 
   /**

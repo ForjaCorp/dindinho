@@ -275,16 +275,22 @@ export function buildApp(): FastifyInstance {
     };
   })();
 
+  const buildHealthPayload = (): HealthCheckDTO => ({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    app: "Dindinho API",
+  });
+
   app.get<{ Reply: HealthCheckDTO }>(
     "/health",
     { preHandler: healthRateLimiter },
-    async () => {
-      return {
-        status: "ok",
-        timestamp: new Date().toISOString(),
-        app: "Dindinho API",
-      };
-    },
+    async () => buildHealthPayload(),
+  );
+
+  app.get<{ Reply: HealthCheckDTO }>(
+    "/api/health",
+    { preHandler: healthRateLimiter },
+    async () => buildHealthPayload(),
   );
 
   app.addHook("onSend", async (request, reply) => {

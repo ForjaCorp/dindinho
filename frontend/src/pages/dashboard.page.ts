@@ -21,7 +21,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../app/services/api.service';
-import { ApiResponseDTO, TransactionDTO, AccountDTO } from '@dindinho/shared';
+import { HealthCheckDTO, TransactionDTO, AccountDTO } from '@dindinho/shared';
 import { AccountService } from '../app/services/account.service';
 import { CurrencyPipe } from '@angular/common';
 import { CreateAccountDialogComponent } from '../app/components/accounts/create-account-dialog.component';
@@ -247,7 +247,7 @@ export class DashboardComponent implements OnInit {
   private router = inject(Router);
   private authService = inject(AuthService);
 
-  apiData = signal<ApiResponseDTO | null>(null);
+  apiData = signal<HealthCheckDTO | null>(null);
   error = signal<string | null>(null);
   isLoading = signal(false);
 
@@ -293,7 +293,7 @@ export class DashboardComponent implements OnInit {
 
   checkBackendConnection() {
     this.apiService.getHello().subscribe({
-      next: (response: ApiResponseDTO) => {
+      next: (response: HealthCheckDTO) => {
         this.apiData.set(response);
         this.error.set(null);
       },
