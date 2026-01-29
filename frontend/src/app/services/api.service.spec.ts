@@ -139,7 +139,7 @@ describe('ApiService', () => {
 
       const req = httpMock.expectOne('http://localhost:3333/api/health');
       expect(req.request.method).toBe('GET');
-      req.error(new ErrorEvent('Network error'));
+      req.error(new ProgressEvent('Network error'));
     });
   });
 
@@ -197,7 +197,7 @@ describe('ApiService', () => {
 
       const req = httpMock.expectOne('http://localhost:3333/api/login');
       expect(req.request.method).toBe('POST');
-      req.error(new ErrorEvent('Network error'));
+      req.error(new ProgressEvent('Network error'));
     });
 
     it('deve enviar cabeçalhos corretos', () => {
@@ -280,7 +280,7 @@ describe('ApiService', () => {
 
       const req = httpMock.expectOne('http://localhost:3333/api/accounts');
       expect(req.request.method).toBe('POST');
-      req.error(new ErrorEvent('Network error'));
+      req.error(new ProgressEvent('Network error'));
     });
 
     it('deve criar conta padrão sem informações de cartão de crédito', () => {
@@ -367,7 +367,7 @@ describe('ApiService', () => {
 
       const req = httpMock.expectOne('http://localhost:3333/api/accounts');
       expect(req.request.method).toBe('GET');
-      req.error(new ErrorEvent('Network error'));
+      req.error(new ProgressEvent('Network error'));
     });
 
     it('deve retornar array vazio quando usuário não possui contas', () => {

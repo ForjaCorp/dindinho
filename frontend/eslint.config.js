@@ -7,6 +7,12 @@ const angular = require('angular-eslint');
 module.exports = defineConfig([
   {
     files: ['**/*.ts'],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: __dirname,
+      },
+    },
     extends: [
       eslint.configs.recommended,
       tseslint.configs.recommended,
@@ -15,6 +21,7 @@ module.exports = defineConfig([
     ],
     processor: angular.processInlineTemplates,
     rules: {
+      '@typescript-eslint/no-deprecated': 'error',
       '@angular-eslint/directive-selector': [
         'error',
         {
