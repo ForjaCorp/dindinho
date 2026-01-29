@@ -57,6 +57,7 @@ export class UsersService {
       data: {
         name: data.name,
         email: emailNormalized,
+        phone: data.phone,
         passwordHash,
       },
     });
@@ -66,6 +67,7 @@ export class UsersService {
       id: user.id,
       name: user.name,
       email: user.email,
+      phone: user.phone!,
       createdAt: user.createdAt,
     };
   }

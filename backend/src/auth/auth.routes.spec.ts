@@ -28,6 +28,7 @@ const createMockUser = (overrides?: Partial<User>): User => ({
   email: "default@test.com",
   passwordHash: "default-hash",
   avatarUrl: null,
+  phone: null,
   role: Role.VIEWER,
   createdAt: new Date(),
   updatedAt: new Date(),

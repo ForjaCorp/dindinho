@@ -64,6 +64,7 @@ describe("Users Routes", () => {
       id: validUuid,
       name: "Vini Teste",
       email: "vini@teste.com",
+      phone: "+5511999999999",
       passwordHash: "hash-seguro",
       avatarUrl: null,
       role: Role.VIEWER,
@@ -77,6 +78,7 @@ describe("Users Routes", () => {
       payload: {
         name: "Vini Teste",
         email: "vini@teste.com",
+        phone: "+5511999999999",
         password: "SenhaForte123@",
       },
     });
@@ -97,6 +99,7 @@ describe("Users Routes", () => {
       payload: {
         name: "Vini Teste",
         email: "vini@teste.com",
+        phone: "+5511999999999",
         password: "SenhaForte123@",
       },
     });
@@ -127,6 +130,7 @@ describe("Users Routes", () => {
       payload: {
         name: "Novo Tentativa",
         email: "duplicado@teste.com",
+        phone: "+5511999999999",
         password: "SenhaForte123@",
       },
     });
@@ -162,7 +166,8 @@ describe("Users Routes", () => {
       payload: {
         name: "Teste",
         email: "email-invalido",
-        password: "senha123",
+        phone: "+5511999999999",
+        password: "SenhaForte123@",
       },
     });
 
@@ -182,13 +187,14 @@ describe("Users Routes", () => {
       payload: {
         name: "Teste",
         email: "teste@exemplo.com",
+        phone: "+5511999999999",
         password: "123",
       },
     });
 
     expect(response.statusCode).toBe(400);
     const body = JSON.parse(response.body);
-    expect(body.message).toContain("Senha deve ter pelo menos 8 caracteres");
+    expect(body.message).toContain("Senha deve ter pelo menos 6 caracteres");
   });
 
   /**
@@ -206,6 +212,7 @@ describe("Users Routes", () => {
       payload: {
         name: "Teste",
         email: "erro@teste.com",
+        phone: "+5511999999999",
         password: "SenhaForte123@",
       },
     });
@@ -232,6 +239,7 @@ describe("Users Routes", () => {
       id: validUuid,
       name: "Teste",
       email: "teste@exemplo.com",
+      phone: "+5511999999999",
       passwordHash: "hash-seguro",
       createdAt: mockDate,
       updatedAt: mockDate,
@@ -243,6 +251,7 @@ describe("Users Routes", () => {
       payload: {
         name: "Teste",
         email: "teste@exemplo.com",
+        phone: "+5511999999999",
         password: "SenhaForte123@",
       },
     });
@@ -259,6 +268,7 @@ describe("Users Routes", () => {
       id: validUuid,
       name: "Teste",
       email: "teste@exemplo.com",
+      phone: "+5511999999999",
       createdAt: mockDate.toISOString(),
     });
   });

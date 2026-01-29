@@ -55,6 +55,7 @@ describe("UsersService", () => {
       email: "joao@example.com",
       passwordHash: "hashed-password",
       avatarUrl: null,
+      phone: "+5511999999999",
       role: Role.VIEWER,
       createdAt: mockDate,
       updatedAt: mockDate,
@@ -64,12 +65,14 @@ describe("UsersService", () => {
       name: "João Silva",
       email: "joao@example.com",
       password: "senha123",
+      phone: "+5511999999999",
     });
 
     expect(result).toEqual({
       id: validUuid,
       name: "João Silva",
       email: "joao@example.com",
+      phone: "+5511999999999",
       createdAt: mockDate,
     });
 
@@ -81,6 +84,7 @@ describe("UsersService", () => {
       data: {
         name: "João Silva",
         email: "joao@example.com",
+        phone: "+5511999999999",
         passwordHash: expect.any(String),
       },
     });
@@ -97,6 +101,7 @@ describe("UsersService", () => {
       email: "duplicado@example.com",
       passwordHash: "hash",
       avatarUrl: null,
+      phone: null,
       role: Role.VIEWER,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -107,6 +112,7 @@ describe("UsersService", () => {
         name: "Novo Usuário",
         email: "duplicado@example.com",
         password: "senha123",
+        phone: "+5511999999999",
       }),
     ).rejects.toThrow("Email já cadastrado.");
 
@@ -132,6 +138,7 @@ describe("UsersService", () => {
       email: "test@example.com",
       passwordHash: "hashed-password",
       avatarUrl: null,
+      phone: "+5511999999999",
       createdAt: new Date(),
       updatedAt: new Date(),
     } as User);
@@ -140,6 +147,7 @@ describe("UsersService", () => {
       name: "Test User",
       email: "test@example.com",
       password: password,
+      phone: "+5511999999999",
     });
 
     const createCall = prismaMock.user.create.mock.calls[0][0];
@@ -158,6 +166,7 @@ describe("UsersService", () => {
         name: "Test User",
         email: "NOT_ALLOWED@EXAMPLE.COM",
         password: "senha123",
+        phone: "+5511999999999",
       }),
     ).rejects.toBeInstanceOf(SignupNotAllowedError);
 
@@ -177,6 +186,7 @@ describe("UsersService", () => {
       email: "allowed@example.com",
       passwordHash: "hash",
       avatarUrl: null,
+      phone: "+5511999999999",
       createdAt: new Date(),
       updatedAt: new Date(),
     } as User);
@@ -185,6 +195,7 @@ describe("UsersService", () => {
       name: "Test",
       email: "allowed@example.com",
       password: "senha123",
+      phone: "+5511999999999",
     });
 
     expect(result.email).toBe("allowed@example.com");
@@ -205,6 +216,7 @@ describe("UsersService", () => {
       email: "test@example.com",
       passwordHash: "hashed-password",
       avatarUrl: "http://example.com/avatar.jpg",
+      phone: "+5511999999999",
       createdAt: mockDate,
       updatedAt: mockDate,
     } as User);
@@ -213,6 +225,7 @@ describe("UsersService", () => {
       name: "Test User",
       email: "test@example.com",
       password: "senha123",
+      phone: "+5511999999999",
     });
 
     expect(result).not.toHaveProperty("passwordHash");
@@ -239,6 +252,7 @@ describe("UsersService", () => {
         name: "Test User",
         email: "test@example.com",
         password: "senha123",
+        phone: "+5511999999999",
       }),
     ).rejects.toThrow("Conexão falhou");
   });
@@ -258,6 +272,7 @@ describe("UsersService", () => {
         name: "Test User",
         email: "test@example.com",
         password: "senha123",
+        phone: "+5511999999999",
       }),
     ).rejects.toThrow("Falha ao criar usuário");
   });
@@ -274,6 +289,7 @@ describe("UsersService", () => {
       email: "test@example.com",
       passwordHash: "hash",
       avatarUrl: null,
+      phone: "+5511999999999",
       createdAt: new Date(),
       updatedAt: new Date(),
     } as User);
@@ -282,6 +298,7 @@ describe("UsersService", () => {
       name: "Test",
       email: "test@example.com",
       password: "senha123",
+      phone: "+5511999999999",
     });
 
     expect(prismaMock.user.findUnique).toHaveBeenCalledBefore(
