@@ -57,7 +57,7 @@ export class AllowlistService {
       .pipe(
         finalize(() => this.updateState({ loading: false })),
         tap({
-          next: (items) => this.updateState({ items }),
+          next: (items: AllowlistItem[]) => this.updateState({ items }),
           error: (err) => this.updateState({ error: this.mapHttpError(err) }),
         }),
       )
@@ -86,8 +86,10 @@ export class AllowlistService {
     return this.api.addAllowlistEmail(adminKey, normalizedEmail).pipe(
       finalize(() => this.updateState({ loading: false })),
       tap({
-        next: (item) => {
-          const items = this.state().items.filter((current) => current.email !== item.email);
+        next: (item: AllowlistItem) => {
+          const items = this.state().items.filter(
+            (current: AllowlistItem) => current.email !== item.email,
+          );
           this.updateState({ items: [item, ...items] });
         },
         error: (err) => this.updateState({ error: this.mapHttpError(err) }),
@@ -115,10 +117,12 @@ export class AllowlistService {
     return this.api.deleteAllowlistEmail(adminKey, normalizedEmail).pipe(
       finalize(() => this.updateState({ loading: false })),
       tap({
-        next: (response) => {
+        next: (response: AllowlistDeleteResponse) => {
           if (!response.deleted) return;
           this.updateState({
-            items: this.state().items.filter((item) => item.email !== normalizedEmail),
+            items: this.state().items.filter(
+              (item: AllowlistItem) => item.email !== normalizedEmail,
+            ),
           });
         },
         error: (err) => this.updateState({ error: this.mapHttpError(err) }),
@@ -131,7 +135,7 @@ export class AllowlistService {
   }
 
   private updateState(partial: Partial<AllowlistState>): void {
-    this.state.update((current) => ({ ...current, ...partial }));
+    this.state.update((current: AllowlistState) => ({ ...current, ...partial }));
   }
 
   private getStoredKey(): string | null {

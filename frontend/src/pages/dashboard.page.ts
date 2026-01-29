@@ -267,11 +267,11 @@ export class DashboardComponent implements OnInit {
   protected isAdmin = computed(() => this.authService.currentUser()?.role === 'ADMIN');
 
   protected standardAccounts = computed(() =>
-    this.accountService.accounts().filter((a) => a.type === 'STANDARD'),
+    this.accountService.accounts().filter((a: AccountDTO) => a.type === 'STANDARD'),
   );
 
   protected creditAccounts = computed(() =>
-    this.accountService.accounts().filter((a) => a.type === 'CREDIT'),
+    this.accountService.accounts().filter((a: AccountDTO) => a.type === 'CREDIT'),
   );
 
   ngOnInit() {
@@ -283,12 +283,16 @@ export class DashboardComponent implements OnInit {
   }
 
   protected onTransactionUpdated(updated: TransactionDTO) {
-    this.recentTransactions.update((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+    this.recentTransactions.update((prev: TransactionDTO[]) =>
+      prev.map((t: TransactionDTO) => (t.id === updated.id ? updated : t)),
+    );
   }
 
   protected onTransactionsDeleted(deletedIds: string[]) {
     const toRemove = new Set(deletedIds);
-    this.recentTransactions.update((prev) => prev.filter((t) => !toRemove.has(t.id)));
+    this.recentTransactions.update((prev: TransactionDTO[]) =>
+      prev.filter((t: TransactionDTO) => !toRemove.has(t.id)),
+    );
   }
 
   checkBackendConnection() {
@@ -312,7 +316,7 @@ export class DashboardComponent implements OnInit {
     this.recentTransactionsError.set(false);
     this.recentTransactionsLoading.set(true);
     this.apiService.getTransactions({ limit: 5 }).subscribe({
-      next: (res) => {
+      next: (res: { items: TransactionDTO[]; nextCursorId: string | null }) => {
         this.recentTransactions.set(res.items);
         this.recentTransactionsLoading.set(false);
       },

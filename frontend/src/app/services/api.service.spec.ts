@@ -5,7 +5,7 @@
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { HttpRequest, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ApiService, AllowlistDeleteResponse, AllowlistItem } from './api.service';
 import {
@@ -477,7 +477,7 @@ describe('ApiService', () => {
       });
 
       const req = httpMock.expectOne(
-        (r) =>
+        (r: HttpRequest<unknown>) =>
           r.url === 'http://localhost:3333/api/transactions' &&
           r.params.get('accountId') === accountId,
       );
@@ -494,7 +494,7 @@ describe('ApiService', () => {
       });
 
       const req = httpMock.expectOne(
-        (r) =>
+        (r: HttpRequest<unknown>) =>
           r.url === 'http://localhost:3333/api/transactions' &&
           r.params.get('from') === from &&
           r.params.get('to') === to &&
@@ -596,7 +596,7 @@ describe('ApiService', () => {
       });
 
       const req = httpMock.expectOne(
-        (r) =>
+        (r: HttpRequest<unknown>) =>
           r.url === `http://localhost:3333/api/transactions/${id}` &&
           r.params.get('scope') === 'ALL',
       );
@@ -616,7 +616,7 @@ describe('ApiService', () => {
       });
 
       const req = httpMock.expectOne(
-        (r) =>
+        (r: HttpRequest<unknown>) =>
           r.url === `http://localhost:3333/api/transactions/${id}` &&
           r.params.get('scope') === 'ONE',
       );

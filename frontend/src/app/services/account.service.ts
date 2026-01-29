@@ -80,7 +80,7 @@ export class AccountService {
    * const total = this.accountService.totalBalance();
    */
   readonly totalBalance = computed(() =>
-    this.accounts().reduce((acc, account) => acc + (account.balance || 0), 0),
+    this.accounts().reduce((acc: number, account: AccountDTO) => acc + (account.balance || 0), 0),
   );
 
   /**
@@ -92,8 +92,8 @@ export class AccountService {
   readonly accountsByType = computed(() => {
     const accounts = this.accounts();
     return {
-      standard: accounts.filter((a) => a.type === 'STANDARD'),
-      credit: accounts.filter((a) => a.type === 'CREDIT'),
+      standard: accounts.filter((a: AccountDTO) => a.type === 'STANDARD'),
+      credit: accounts.filter((a: AccountDTO) => a.type === 'CREDIT'),
     };
   });
 
@@ -109,7 +109,7 @@ export class AccountService {
     if (!accountId) {
       return undefined;
     }
-    return this.accounts().find((a) => a.id === accountId);
+    return this.accounts().find((a: AccountDTO) => a.id === accountId);
   }
 
   /**
@@ -121,7 +121,7 @@ export class AccountService {
    * const creditCards = this.accountService.getAccountsByType('CREDIT');
    */
   getAccountsByType(type: AccountDTO['type']): AccountDTO[] {
-    return this.accounts().filter((a) => a.type === type);
+    return this.accounts().filter((a: AccountDTO) => a.type === type);
   }
 
   /**
@@ -139,7 +139,7 @@ export class AccountService {
   ): AccountDTO[] {
     const accounts = [...this.accounts()];
 
-    return accounts.sort((a, b) => {
+    return accounts.sort((a: AccountDTO, b: AccountDTO) => {
       let comparison = 0;
 
       switch (sortBy) {
@@ -173,7 +173,7 @@ export class AccountService {
 
     const term = searchTerm.toLowerCase().trim();
     return this.accounts().filter(
-      (account) =>
+      (account: AccountDTO) =>
         account.name.toLowerCase().includes(term) || account.type.toLowerCase().includes(term),
     );
   }
@@ -190,7 +190,7 @@ export class AccountService {
       .pipe(
         finalize(() => this.updateState({ loading: false })),
         tap({
-          next: (accounts) => this.updateState({ accounts }),
+          next: (accounts: AccountDTO[]) => this.updateState({ accounts }),
           error: (err) =>
             this.updateState({
               accounts: [],
@@ -225,11 +225,11 @@ export class AccountService {
     return this.api.createAccount(payload).pipe(
       finalize(() => this.updateState({ loading: false })),
       tap({
-        next: (newAccount) => {
+        next: (newAccount: AccountDTO) => {
           const currentAccounts = this.state().accounts;
           this.updateState({ accounts: [...currentAccounts, newAccount] });
         },
-        error: (err) =>
+        error: (err: unknown) =>
           this.updateState({
             error: this.mapHttpError(err, {
               defaultMessage: 'Erro ao criar conta',
@@ -252,12 +252,14 @@ export class AccountService {
     return this.api.updateAccount(accountId, payload).pipe(
       finalize(() => this.updateState({ loading: false })),
       tap({
-        next: (updated) => {
+        next: (updated: AccountDTO) => {
           this.updateState({
-            accounts: this.state().accounts.map((a) => (a.id === updated.id ? updated : a)),
+            accounts: this.state().accounts.map((a: AccountDTO) =>
+              a.id === updated.id ? updated : a,
+            ),
           });
         },
-        error: (err) =>
+        error: (err: unknown) =>
           this.updateState({
             error: this.mapHttpError(err, {
               defaultMessage: 'Erro ao atualizar conta',
@@ -300,7 +302,7 @@ export class AccountService {
    * @private
    */
   private updateState(partial: Partial<AccountState>): void {
-    this.state.update((current) => ({ ...current, ...partial }));
+    this.state.update((current: AccountState) => ({ ...current, ...partial }));
   }
 
   /**
@@ -310,7 +312,7 @@ export class AccountService {
    * this.accountService.clearError();
    */
   clearError() {
-    this.state.update((s) => ({ ...s, error: null }));
+    this.state.update((s: AccountState) => ({ ...s, error: null }));
   }
 
   /**
@@ -326,9 +328,9 @@ export class AccountService {
       throw new Error('ID da conta é obrigatório');
     }
 
-    this.state.update((s) => ({
+    this.state.update((s: AccountState) => ({
       ...s,
-      accounts: s.accounts.filter((a) => a.id !== accountId),
+      accounts: s.accounts.filter((a: AccountDTO) => a.id !== accountId),
     }));
   }
 
@@ -363,7 +365,7 @@ export class AccountService {
 
     // Verificar se nome já existe localmente
     const existingAccount = this.accounts().find(
-      (a) => a.name.toLowerCase() === data.name.toLowerCase(),
+      (a: AccountDTO) => a.name.toLowerCase() === data.name.toLowerCase(),
     );
 
     if (existingAccount) {
@@ -386,7 +388,7 @@ export class AccountService {
    */
   createMultipleAccounts(accountsData: CreateAccountDTO[]) {
     if (!Array.isArray(accountsData) || accountsData.length === 0) {
-      this.state.update((s) => ({ ...s, error: 'Array de contas é obrigatório' }));
+      this.state.update((s: AccountState) => ({ ...s, error: 'Array de contas é obrigatório' }));
       return;
     }
 
@@ -395,12 +397,12 @@ export class AccountService {
       try {
         this.validateCreateAccountData(data);
       } catch (error) {
-        this.state.update((s) => ({ ...s, error: (error as Error).message }));
+        this.state.update((s: AccountState) => ({ ...s, error: (error as Error).message }));
         return;
       }
     }
 
-    this.state.update((s) => ({ ...s, loading: true, error: null }));
+    this.state.update((s: AccountState) => ({ ...s, loading: true, error: null }));
 
     // Criar contas sequencialmente (poderia ser paralelo, mas sequencial é mais seguro)
     const createdAccounts: AccountDTO[] = [];
@@ -409,7 +411,7 @@ export class AccountService {
     const createNext = () => {
       if (currentIndex >= accountsData.length) {
         // Todas criadas com sucesso
-        this.state.update((s) => ({
+        this.state.update((s: AccountState) => ({
           ...s,
           accounts: [...s.accounts, ...createdAccounts],
           loading: false,
@@ -422,20 +424,20 @@ export class AccountService {
         .pipe(
           finalize(() => {
             if (currentIndex >= accountsData.length - 1) {
-              this.state.update((s) => ({ ...s, loading: false }));
+              this.state.update((s: AccountState) => ({ ...s, loading: false }));
             }
           }),
         )
         .subscribe({
-          next: (newAccount) => {
+          next: (newAccount: AccountDTO) => {
             createdAccounts.push(newAccount);
             currentIndex++;
             createNext();
           },
-          error: (err) => {
+          error: (err: unknown) => {
             console.error('Erro ao criar conta em lote:', err);
             const errorMessage = this.extractErrorMessage(err);
-            this.state.update((s) => ({ ...s, error: errorMessage, loading: false }));
+            this.state.update((s: AccountState) => ({ ...s, error: errorMessage, loading: false }));
           },
         });
     };
@@ -463,9 +465,9 @@ export class AccountService {
       }
     }
 
-    this.state.update((s) => ({
+    this.state.update((s: AccountState) => ({
       ...s,
-      accounts: s.accounts.filter((a) => !accountIds.includes(a.id)),
+      accounts: s.accounts.filter((a: AccountDTO) => !accountIds.includes(a.id)),
     }));
   }
 
@@ -479,9 +481,11 @@ export class AccountService {
    * this.accountService.updateAccountInState(updatedAccount);
    */
   updateAccountInState(updatedAccount: AccountDTO) {
-    this.state.update((s) => ({
+    this.state.update((s: AccountState) => ({
       ...s,
-      accounts: s.accounts.map((a) => (a.id === updatedAccount.id ? updatedAccount : a)),
+      accounts: s.accounts.map((a: AccountDTO) =>
+        a.id === updatedAccount.id ? updatedAccount : a,
+      ),
     }));
   }
 
@@ -492,33 +496,44 @@ export class AccountService {
    * @private
    * @throws {Error} Quando o erro não tem formato esperado
    */
-  private extractErrorMessage(err: { status?: number; error?: { message?: string } }): string {
+  private extractErrorMessage(err: unknown): string {
+    const errObj = err && typeof err === 'object' ? (err as Record<string, unknown>) : undefined;
+    const status =
+      typeof errObj?.['status'] === 'number' ? (errObj['status'] as number) : undefined;
+    const errorValue = errObj?.['error'];
+    const errorObj =
+      errorValue && typeof errorValue === 'object'
+        ? (errorValue as Record<string, unknown>)
+        : undefined;
+    const message =
+      typeof errorObj?.['message'] === 'string' ? (errorObj['message'] as string) : undefined;
     // Erro de rede
-    if (err.status === 0) {
+    if (status === 0) {
       return 'Erro de conexão. Verifique sua internet.';
     }
 
     // Erro de autenticação
-    if (err.status === 401) {
+    if (status === 401) {
       return 'Sessão expirada. Faça login novamente.';
     }
 
     // Erro de validação
-    if (err.status === 400) {
-      return err.error?.message || 'Dados inválidos. Verifique as informações.';
+    if (status === 400) {
+      return message ?? 'Dados inválidos. Verifique as informações.';
     }
 
     // Nome duplicado
-    if (err.status === 409) {
-      return err.error?.message || 'Já existe uma conta com este nome.';
+    if (status === 409) {
+      return message ?? 'Já existe uma conta com este nome.';
     }
 
     // Erro do servidor
-    if (err.status && err.status >= 500) {
+    if (typeof status === 'number' && status >= 500) {
       return 'Erro no servidor. Tente novamente mais tarde.';
     }
 
-    // Erro genérico
-    return err.error?.message || 'Ocorreu um erro inesperado.';
+    const fallbackMessage =
+      typeof errObj?.['message'] === 'string' ? (errObj['message'] as string) : undefined;
+    return message ?? fallbackMessage ?? 'Ocorreu um erro inesperado.';
   }
 }
