@@ -8,7 +8,7 @@ import {
   FormControl,
 } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
+import { AppError } from '../../app/models/error.model';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { CardModule } from 'primeng/card';
@@ -217,17 +217,9 @@ export class LoginComponent {
         // O redirecionamento é feito no AuthService após o login bem-sucedido
         this.isLoading.set(false);
       },
-      error: (err: HttpErrorResponse) => {
+      error: (err: AppError) => {
         this.isLoading.set(false);
-
-        // Tratamento de erros específicos
-        if (err?.status === 401) {
-          this.errorMessage.set('Email ou senha incorretos.');
-        } else if (err?.status === 0) {
-          this.errorMessage.set('Não foi possível conectar ao servidor. Verifique sua conexão.');
-        } else {
-          this.errorMessage.set('Ocorreu um erro ao tentar entrar. Tente novamente.');
-        }
+        this.errorMessage.set(err.message);
       },
     });
   }

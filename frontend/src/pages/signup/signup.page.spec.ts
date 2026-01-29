@@ -149,7 +149,11 @@ describe('SignupPage', () => {
   });
 
   it('deve exibir erro se email já existe', () => {
-    const errorResponse = { status: 409 };
+    const errorResponse = {
+      type: 'HTTP',
+      code: 409,
+      message: 'Email já cadastrado.',
+    };
     authServiceMock.signup.mockReturnValue(throwError(() => errorResponse));
 
     component['signupForm'].patchValue({
@@ -171,7 +175,11 @@ describe('SignupPage', () => {
   });
 
   it('deve exibir botão da waitlist quando receber 403 (não convidado)', () => {
-    const errorResponse = { status: 403 };
+    const errorResponse = {
+      type: 'HTTP',
+      code: 403,
+      message: 'Cadastro não permitido',
+    };
     authServiceMock.signup.mockReturnValue(throwError(() => errorResponse));
 
     component['signupForm'].patchValue({
@@ -215,7 +223,11 @@ describe('SignupPage', () => {
   });
 
   it('deve exibir erro 409 ao entrar na waitlist', () => {
-    const errorResponse = { status: 409 };
+    const errorResponse = {
+      type: 'HTTP',
+      code: 409,
+      message: 'Email já está na lista de espera.',
+    };
     authServiceMock.joinWaitlist.mockReturnValue(throwError(() => errorResponse));
 
     component['signupForm'].patchValue({
@@ -271,7 +283,11 @@ describe('SignupPage', () => {
   });
 
   it('deve tratar erro genérico no signup', () => {
-    const errorResponse = { status: 500 };
+    const errorResponse = {
+      type: 'HTTP',
+      code: 500,
+      message: 'Erro ao criar conta. Tente novamente.',
+    };
     authServiceMock.signup.mockReturnValue(throwError(() => errorResponse));
 
     component['signupForm'].patchValue({
@@ -291,7 +307,11 @@ describe('SignupPage', () => {
   });
 
   it('deve tratar erro genérico na waitlist', () => {
-    const errorResponse = { status: 500 };
+    const errorResponse = {
+      type: 'HTTP',
+      code: 500,
+      message: 'Erro ao solicitar convite. Tente novamente.',
+    };
     authServiceMock.joinWaitlist.mockReturnValue(throwError(() => errorResponse));
 
     component['signupForm'].patchValue({

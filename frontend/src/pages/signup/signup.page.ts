@@ -17,7 +17,7 @@ import {
   ValidationErrors,
 } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
+import { AppError } from '../../app/models/error.model';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { CardModule } from 'primeng/card';
@@ -547,16 +547,11 @@ export class SignupPage {
           this.vibrate('success');
           this.router.navigate(['/login'], { state: { email } });
         },
-        error: (err: HttpErrorResponse) => {
+        error: (err: AppError) => {
           this.isLoading.set(false);
           this.vibrate('error');
 
-          if (err?.status === 409) {
-            this.errorMessage.set('Email já cadastrado.');
-            return;
-          }
-
-          if (err?.status === 403) {
+          if (err.code === 403) {
             this.errorMessage.set(
               'Cadastro não permitido. Seu email não está na lista de convidados.',
             );
@@ -564,7 +559,7 @@ export class SignupPage {
             return;
           }
 
-          this.errorMessage.set('Erro ao criar conta. Tente novamente.');
+          this.errorMessage.set(err.message);
         },
       });
   }
@@ -594,14 +589,10 @@ export class SignupPage {
           this.showWaitlistButton.set(false);
           this.waitlistSuccess.set(true);
         },
-        error: (err: HttpErrorResponse) => {
+        error: (err: AppError) => {
           this.isLoading.set(false);
           this.vibrate('error');
-          if (err?.status === 409) {
-            this.errorMessage.set('Email já está na lista de espera.');
-          } else {
-            this.errorMessage.set('Erro ao solicitar convite. Tente novamente.');
-          }
+          this.errorMessage.set(err.message);
         },
       });
   }
