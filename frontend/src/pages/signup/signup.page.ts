@@ -82,7 +82,8 @@ const phoneValidator = (control: AbstractControl): ValidationErrors | null => {
       <p-card styleClass="w-full max-w-md shadow-lg !rounded-2xl">
         <div class="flex flex-col items-center mb-6">
           <div
-            class="w-12 h-12 bg-linear-to-tr from-indigo-500 to-violet-500 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-md mb-3"
+            data-testid="signup-logo"
+            class="w-12 h-12 bg-linear-to-tr from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-md mb-3"
           >
             D
           </div>
@@ -287,12 +288,12 @@ const phoneValidator = (control: AbstractControl): ValidationErrors | null => {
               label="Criar Conta"
               [loading]="isLoading()"
               [disabled]="signupForm.invalid"
-              styleClass="w-full !bg-indigo-600 hover:!bg-indigo-700 !border-0"
+              styleClass="w-full !bg-emerald-600 hover:!bg-emerald-700 !border-0"
             />
 
             <div class="text-center mt-4 text-sm text-slate-500">
               Já tem uma conta?
-              <a routerLink="/login" class="text-indigo-600 font-medium hover:underline">Entrar</a>
+              <a routerLink="/login" class="text-emerald-600 font-medium hover:underline">Entrar</a>
             </div>
           </form>
         }
