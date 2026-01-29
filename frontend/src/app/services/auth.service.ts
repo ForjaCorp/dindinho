@@ -64,7 +64,9 @@ interface JwtPayload {
  *   next: () => {
  *     // Redirecionamento é feito automaticamente
  *   },
- *   error: (err) => console.error('Falha no login', err)
+ *   error: (err) => {
+ *     // Tratar erro
+ *   }
  * });
  *
  * // Verificar autenticação
@@ -78,7 +80,6 @@ interface JwtPayload {
  * // Acesso ao usuário atual (reativo)
  * effect(() => {
  *   const user = this.auth.currentUser();
- *   console.log('Usuário atual:', user);
  * });
  */
 @Injectable({
@@ -101,7 +102,6 @@ export class AuthService {
    * // Assinando mudanças no estado do usuário
    * effect(() => {
    *   const user = authService.currentUser();
-   *   console.log('Estado do usuário mudou:', user);
    * });
    *
    * @type {Signal<UserState | null>}
@@ -131,12 +131,11 @@ export class AuthService {
    * ```typescript
    * this.auth.login({ email: 'user@example.com', password: 'password' }).subscribe({
    *   next: (response) => {
-   *     console.log('Login bem-sucedido:', response.user);
    *     // Redirecionamento é feito automaticamente
    *   },
    *   error: (error) => {
    *     if (error.type === AuthError.INVALID_CREDENTIALS) {
-   *       console.log('Credenciais inválidas');
+   *       // Credenciais inválidas
    *     }
    *   }
    * });
@@ -153,8 +152,6 @@ export class AuthService {
         this.router.navigate(['/dashboard']);
       }),
       catchError((error) => {
-        console.error('Erro durante login:', error);
-
         // Limpa estado em caso de qualquer erro
         this.clearAuthState();
 
@@ -214,8 +211,7 @@ export class AuthService {
     try {
       this.clearAuthState();
       this.router.navigate(['/login']);
-    } catch (error) {
-      console.error('Erro durante logout:', error);
+    } catch {
       // Força redirecionamento mesmo em caso de erro
       this.router.navigate(['/login']);
     }
@@ -295,7 +291,6 @@ export class AuthService {
     try {
       // 1. Verifica ambiente de navegador (SSR/Testes)
       if (typeof localStorage === 'undefined') {
-        console.warn('localStorage não disponível - sessão não será restaurada');
         return null;
       }
 
@@ -309,14 +304,12 @@ export class AuthService {
 
       // 3. Se o token for inválido ou expirado, limpa o storage
       if (!user) {
-        console.warn('Token inválido ou expirado encontrado - limpando storage');
         localStorage.removeItem(this.TOKEN_KEY);
         return null;
       }
 
       return user;
-    } catch (error) {
-      console.error('Erro inesperado ao restaurar sessão:', error);
+    } catch {
       // Em caso de erro crítico, limpa o estado para segurança
       try {
         localStorage.removeItem(this.TOKEN_KEY);
@@ -354,9 +347,9 @@ export class AuthService {
    * ```typescript
    * const user = this.decodeToken(token);
    * if (user) {
-   *   console.log('Token válido para:', user.email);
+   *   // Token válido
    * } else {
-   *   console.log('Token inválido ou expirado');
+   *   // Token inválido ou expirado
    * }
    * ```
    */
@@ -364,7 +357,6 @@ export class AuthService {
     try {
       // 1. Validação básica do formato
       if (!token || typeof token !== 'string' || token.split('.').length !== 3) {
-        console.error('Token JWT malformado: formato inválido');
         return null;
       }
 
@@ -373,35 +365,22 @@ export class AuthService {
 
       // 3. Validação do payload
       if (!decoded || !decoded.sub || !decoded.name || !decoded.email || !decoded.role) {
-        console.error('Token JWT incompleto: dados obrigatórios ausentes');
         return null;
       }
 
       // 4. Verificação de expiração
       const now = Date.now() / 1000;
       if (!decoded.exp || decoded.exp < now) {
-        const expirationTime = decoded.exp
-          ? new Date(decoded.exp * 1000).toISOString()
-          : 'desconhecida';
-        console.warn(
-          `Token JWT expirado. Expiração: ${expirationTime}, Atual: ${new Date().toISOString()}`,
-        );
         return null;
       }
 
-      // 5. Retorno do estado do usuário
       return {
         id: decoded.sub,
         name: decoded.name,
         email: decoded.email,
         role: decoded.role,
       };
-    } catch (error) {
-      if (error && typeof error === 'object' && 'message' in error) {
-        console.error('Erro na decodificação JWT:', error.message);
-      } else {
-        console.error('Erro inesperado ao decodificar token:', error);
-      }
+    } catch {
       return null;
     }
   }
@@ -426,8 +405,7 @@ export class AuthService {
 
       localStorage.setItem(this.TOKEN_KEY, token);
       localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
-    } catch (error) {
-      console.error('Erro ao armazenar tokens:', error);
+    } catch {
       throw new Error(AuthError.STORAGE_ERROR);
     }
   }
@@ -457,8 +435,8 @@ export class AuthService {
         localStorage.removeItem(this.TOKEN_KEY);
         localStorage.removeItem(this.REFRESH_TOKEN_KEY);
       }
-    } catch (error) {
-      console.error('Erro ao limpar tokens do localStorage:', error);
+    } catch {
+      // Silently ignore
     }
 
     this.currentUser.set(null);

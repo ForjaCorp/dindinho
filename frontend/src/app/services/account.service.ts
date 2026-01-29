@@ -435,7 +435,6 @@ export class AccountService {
             createNext();
           },
           error: (err: unknown) => {
-            console.error('Erro ao criar conta em lote:', err);
             const errorMessage = this.extractErrorMessage(err);
             this.state.update((s: AccountState) => ({ ...s, error: errorMessage, loading: false }));
           },
