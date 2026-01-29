@@ -82,7 +82,7 @@ const phoneValidator = (control: AbstractControl): ValidationErrors | null => {
       <p-card styleClass="w-full max-w-md shadow-lg !rounded-2xl">
         <div class="flex flex-col items-center mb-6">
           <div
-            class="w-12 h-12 bg-linear-to-tr from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-md mb-3"
+            class="w-12 h-12 bg-linear-to-tr from-indigo-500 to-violet-500 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-md mb-3"
           >
             D
           </div>
@@ -101,7 +101,7 @@ const phoneValidator = (control: AbstractControl): ValidationErrors | null => {
         @if (waitlistSuccess()) {
           <div class="flex flex-col items-center gap-6 py-4">
             <div
-              class="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center"
+              class="w-20 h-20 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center"
             >
               <i class="pi pi-check text-4xl"></i>
             </div>
@@ -113,7 +113,7 @@ const phoneValidator = (control: AbstractControl): ValidationErrors | null => {
             </p>
             <p-button
               label="Voltar para o Login"
-              styleClass="w-full !bg-emerald-600 hover:!bg-emerald-700 !border-0"
+              styleClass="w-full !bg-indigo-600 hover:!bg-indigo-700 !border-0"
               routerLink="/login"
             />
           </div>
@@ -252,10 +252,20 @@ const phoneValidator = (control: AbstractControl): ValidationErrors | null => {
 
             @if (errorMessage()) {
               <div
-                class="bg-red-50 text-red-600 text-sm p-4 rounded-xl border border-red-100 flex flex-col gap-3"
+                [class]="
+                  showWaitlistButton()
+                    ? 'bg-indigo-50 text-indigo-700 border-indigo-100 p-4 rounded-xl border flex flex-col gap-3'
+                    : 'bg-red-50 text-red-600 text-sm p-4 rounded-xl border border-red-100 flex flex-col gap-3'
+                "
               >
                 <div class="flex gap-2">
-                  <i class="pi pi-exclamation-circle text-lg"></i>
+                  <i
+                    [class]="
+                      showWaitlistButton()
+                        ? 'pi pi-info-circle text-lg'
+                        : 'pi pi-exclamation-circle text-lg'
+                    "
+                  ></i>
                   <span>{{ errorMessage() }}</span>
                 </div>
 
@@ -263,8 +273,8 @@ const phoneValidator = (control: AbstractControl): ValidationErrors | null => {
                   <p-button
                     data-testid="waitlist-button"
                     label="Solicitar Convite"
-                    icon="pi pi-envelope"
-                    styleClass="w-full !bg-red-600 hover:!bg-red-700 !border-0 !py-2"
+                    icon="pi pi-star"
+                    styleClass="w-full !bg-indigo-600 hover:!bg-indigo-700 !border-0 !py-2 shadow-sm transition-all"
                     (onClick)="onJoinWaitlist()"
                   />
                 }
@@ -277,12 +287,12 @@ const phoneValidator = (control: AbstractControl): ValidationErrors | null => {
               label="Criar Conta"
               [loading]="isLoading()"
               [disabled]="signupForm.invalid"
-              styleClass="w-full !bg-emerald-600 hover:!bg-emerald-700 !border-0"
+              styleClass="w-full !bg-indigo-600 hover:!bg-indigo-700 !border-0"
             />
 
             <div class="text-center mt-4 text-sm text-slate-500">
               Já tem uma conta?
-              <a routerLink="/login" class="text-emerald-600 font-medium hover:underline">Entrar</a>
+              <a routerLink="/login" class="text-indigo-600 font-medium hover:underline">Entrar</a>
             </div>
           </form>
         }
