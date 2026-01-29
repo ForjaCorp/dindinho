@@ -18,6 +18,7 @@ import {
   DeleteTransactionScopeDTO,
   DeleteTransactionResponseDTO,
   CreateUserDTO,
+  CreateWaitlistDTO,
 } from '@dindinho/shared';
 
 export interface RefreshResponse {
@@ -107,6 +108,10 @@ export class ApiService {
    */
   signup(data: CreateUserDTO): Observable<unknown> {
     return this.http.post(`${this.baseUrl}/users`, data);
+  }
+
+  joinWaitlist(data: CreateWaitlistDTO): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/waitlist`, data);
   }
 
   /**

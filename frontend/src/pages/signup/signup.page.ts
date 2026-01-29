@@ -217,8 +217,19 @@ const phoneValidator = (control: AbstractControl): ValidationErrors | null => {
           </div>
 
           @if (errorMessage()) {
-            <div class="bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100">
-              {{ errorMessage() }}
+            <div
+              class="bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100 flex flex-col gap-2"
+            >
+              <span>{{ errorMessage() }}</span>
+              @if (showWaitlistButton()) {
+                <p-button
+                  data-testid="waitlist-button"
+                  label="Solicitar Convite"
+                  [text]="true"
+                  styleClass="!p-0 !text-red-700 hover:!underline !justify-start !w-fit"
+                  (onClick)="onJoinWaitlist()"
+                />
+              }
             </div>
           }
 
@@ -248,6 +259,8 @@ export class SignupPage {
 
   protected isLoading = signal(false);
   protected errorMessage = signal<string | null>(null);
+  protected showWaitlistButton = signal(false);
+  protected waitlistSuccess = signal(false);
 
   private readonly countryDisplayNames =
     typeof Intl !== 'undefined' && 'DisplayNames' in Intl
@@ -374,10 +387,45 @@ export class SignupPage {
             this.errorMessage.set(
               'Cadastro não permitido. Seu email não está na lista de convidados.',
             );
+            this.showWaitlistButton.set(true);
             return;
           }
 
           this.errorMessage.set('Erro ao criar conta. Tente novamente.');
+        },
+      });
+  }
+
+  onJoinWaitlist(): void {
+    const { name, email, countryCode, phone } = this.signupForm.getRawValue();
+    const parsed = this.parsePhone(phone, countryCode);
+
+    if (!parsed) return;
+
+    this.isLoading.set(true);
+
+    this.authService
+      .joinWaitlist({
+        name,
+        email,
+        phone: parsed.number,
+      })
+      .subscribe({
+        next: (res) => {
+          this.isLoading.set(false);
+          this.errorMessage.set(null);
+          this.showWaitlistButton.set(false);
+          // Opcional: Mostrar toast/mensagem de sucesso
+          alert(res.message);
+          this.router.navigate(['/login']);
+        },
+        error: (err: HttpErrorResponse) => {
+          this.isLoading.set(false);
+          if (err?.status === 409) {
+            this.errorMessage.set('Email já está na lista de espera.');
+          } else {
+            this.errorMessage.set('Erro ao solicitar convite. Tente novamente.');
+          }
         },
       });
   }

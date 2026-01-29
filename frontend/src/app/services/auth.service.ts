@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService, RefreshResponse } from './api.service';
-import { LoginDTO, LoginResponseDTO, CreateUserDTO } from '@dindinho/shared';
+import { LoginDTO, LoginResponseDTO, CreateUserDTO, CreateWaitlistDTO } from '@dindinho/shared';
 import { tap, catchError, map } from 'rxjs/operators';
 import { Observable, throwError } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
@@ -187,6 +187,10 @@ export class AuthService {
    */
   signup(data: CreateUserDTO): Observable<unknown> {
     return this.api.signup(data);
+  }
+
+  joinWaitlist(data: CreateWaitlistDTO): Observable<{ message: string }> {
+    return this.api.joinWaitlist(data);
   }
 
   /**
