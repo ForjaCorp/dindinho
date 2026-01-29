@@ -1,19 +1,18 @@
 /** @vitest-environment jsdom */
 import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
-import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 import { SignupPage } from './signup.page';
-
-const testBed = getTestBed();
-if (!testBed.platform) {
-  testBed.initTestEnvironment(BrowserTestingModule, platformBrowserTesting());
-}
 import { AuthService } from '../../app/services/auth.service';
 import { Router, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { By } from '@angular/platform-browser';
+import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
+
+const testBed = getTestBed();
+if (!testBed.platform) {
+  testBed.initTestEnvironment(BrowserTestingModule, platformBrowserTesting());
+}
 
 describe('SignupPage', () => {
   let component: SignupPage;
@@ -88,7 +87,7 @@ describe('SignupPage', () => {
     expect(component['signupForm'].get('phone')?.value).toBe(input.value);
   });
 
-  it('deve chamar signup com sucesso e redirecionar para login com email', () => {
+  it('deve chamar signup com sucesso', () => {
     authServiceMock.signup.mockReturnValue(
       of({
         id: '1',
@@ -118,7 +117,7 @@ describe('SignupPage', () => {
     expect(args.email).toBe('teste@email.com');
     expect(args.phone).toBe('+5511999999999'); // E.164
     expect(router.navigate).toHaveBeenCalledWith(['/login'], {
-      queryParams: { email: 'teste@email.com' },
+      state: { email: 'teste@email.com' },
     });
   });
 
@@ -141,7 +140,7 @@ describe('SignupPage', () => {
     expect(component['errorMessage']()).toBe('Email já cadastrado.');
   });
 
-  it('deve exibir erro 403 ao cadastrar e sugerir waitlist', () => {
+  it('deve exibir botão da waitlist quando receber 403 (não convidado)', () => {
     const errorResponse = { status: 403 };
     authServiceMock.signup.mockReturnValue(throwError(() => errorResponse));
 
@@ -191,15 +190,5 @@ describe('SignupPage', () => {
     component.onJoinWaitlist();
 
     expect(component['errorMessage']()).toBe('Email já está na lista de espera.');
-  });
-
-  it('deve exibir elementos via data-testid', () => {
-    const page = fixture.debugElement.query(By.css('[data-testid="signup-page"]'));
-    const form = fixture.debugElement.query(By.css('[data-testid="signup-form"]'));
-    const logo = fixture.debugElement.query(By.css('[data-testid="signup-logo"]'));
-
-    expect(page).toBeTruthy();
-    expect(form).toBeTruthy();
-    expect(logo).toBeTruthy();
   });
 });

@@ -8,7 +8,7 @@ const testBed = getTestBed();
 if (!testBed.platform) {
   testBed.initTestEnvironment(BrowserTestingModule, platformBrowserTesting());
 }
-import { provideRouter, ActivatedRoute } from '@angular/router';
+import { provideRouter, ActivatedRoute, Router } from '@angular/router';
 import { provideLocationMocks } from '@angular/common/testing';
 import { LoginComponent } from './login.page';
 import { AuthService, UserState } from '../../app/services/auth.service';
@@ -95,28 +95,32 @@ describe('LoginComponent', () => {
     expect(component['loginForm'].get('password')?.value).toBe('');
   });
 
-  it('deve preencher o e-mail se estiver presente nos queryParams', async () => {
-    // Para este teste, precisamos de um ActivatedRoute com queryParams
+  it('deve preencher o e-mail se estiver presente no router state', async () => {
     TestBed.resetTestingModule();
     const authServiceSpy = { login: vi.fn() };
+
+    const routerSpy = {
+      currentNavigation: vi.fn().mockReturnValue({
+        extras: {
+          state: {
+            email: 'preenchido@email.com',
+          },
+        },
+      }),
+      navigate: vi.fn(),
+      createUrlTree: vi.fn(),
+      serializeUrl: vi.fn(),
+      events: new Subject(),
+    };
 
     await TestBed.configureTestingModule({
       imports: [LoginComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideRouter([{ path: 'login', component: LoginComponent }]),
+        { provide: Router, useValue: routerSpy },
+        { provide: ActivatedRoute, useValue: {} },
         { provide: AuthService, useValue: authServiceSpy },
-        {
-          provide: ActivatedRoute,
-          useValue: {
-            snapshot: {
-              queryParamMap: {
-                get: (key: string) => (key === 'email' ? 'preenchido@email.com' : null),
-              },
-            },
-          },
-        },
       ],
     }).compileComponents();
 
