@@ -20,7 +20,7 @@ describe('appConfig', () => {
   });
 
   it('should have the correct number of providers', () => {
-    expect(config.providers).toHaveLength(4);
+    expect(config.providers).toHaveLength(6);
   });
 
   it('should include auth interceptor in http client configuration', () => {

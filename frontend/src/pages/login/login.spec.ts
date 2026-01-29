@@ -12,6 +12,7 @@ import { provideRouter, ActivatedRoute, Router } from '@angular/router';
 import { provideLocationMocks } from '@angular/common/testing';
 import { LoginComponent } from './login.page';
 import { AuthService, UserState } from '../../app/services/auth.service';
+import { ErrorMapper } from '../../app/utils/error-mapper';
 import { of, throwError, Subject } from 'rxjs';
 import { LoginDTO, LoginResponseDTO } from '@dindinho/shared';
 import { By } from '@angular/platform-browser';
@@ -193,7 +194,10 @@ describe('LoginComponent', () => {
 
     it('deve definir mensagem de erro em caso de erro 401', () => {
       component['loginForm'].setValue({ email: 'test@example.com', password: 'wrong' });
-      const errorResponse = { status: 401 };
+      const errorResponse = ErrorMapper.fromUnknown({
+        status: 401,
+        error: { message: 'Email ou senha incorretos.' },
+      });
       vi.spyOn(authService, 'login').mockReturnValue(throwError(() => errorResponse));
 
       component.onSubmit();
@@ -204,7 +208,7 @@ describe('LoginComponent', () => {
 
     it('deve definir mensagem de erro em caso de erro de conexão', () => {
       component['loginForm'].setValue({ email: 'test@example.com', password: 'password' });
-      const errorResponse = { status: 0 };
+      const errorResponse = ErrorMapper.fromUnknown({ status: 0 });
       vi.spyOn(authService, 'login').mockReturnValue(throwError(() => errorResponse));
 
       component.onSubmit();
@@ -214,12 +218,12 @@ describe('LoginComponent', () => {
 
     it('deve definir mensagem de erro genérica para outros erros', () => {
       component['loginForm'].setValue({ email: 'test@example.com', password: 'password' });
-      const errorResponse = { status: 500 };
+      const errorResponse = ErrorMapper.fromUnknown({ status: 500 });
       vi.spyOn(authService, 'login').mockReturnValue(throwError(() => errorResponse));
 
       component.onSubmit();
 
-      expect(component['errorMessage']()).toContain('Ocorreu um erro');
+      expect(component['errorMessage']()).toContain('Erro no servidor');
     });
   });
 
