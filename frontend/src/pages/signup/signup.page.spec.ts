@@ -1,11 +1,19 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+/** @vitest-environment jsdom */
+import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
+import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 import { SignupPage } from './signup.page';
+
+const testBed = getTestBed();
+if (!testBed.platform) {
+  testBed.initTestEnvironment(BrowserTestingModule, platformBrowserTesting());
+}
 import { AuthService } from '../../app/services/auth.service';
 import { Router, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { By } from '@angular/platform-browser';
 
 describe('SignupPage', () => {
   let component: SignupPage;
@@ -17,6 +25,7 @@ describe('SignupPage', () => {
   };
 
   beforeEach(async () => {
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [SignupPage],
       providers: [
@@ -180,5 +189,15 @@ describe('SignupPage', () => {
     component.onJoinWaitlist();
 
     expect(component['errorMessage']()).toBe('Email já está na lista de espera.');
+  });
+
+  it('deve exibir elementos via data-testid', () => {
+    const page = fixture.debugElement.query(By.css('[data-testid="signup-page"]'));
+    const form = fixture.debugElement.query(By.css('[data-testid="signup-form"]'));
+    const logo = fixture.debugElement.query(By.css('[data-testid="signup-logo"]'));
+
+    expect(page).toBeTruthy();
+    expect(form).toBeTruthy();
+    expect(logo).toBeTruthy();
   });
 });

@@ -1,6 +1,13 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+/** @vitest-environment jsdom */
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
+import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 import { ReactiveFormsModule } from '@angular/forms';
+
+const testBed = getTestBed();
+if (!testBed.platform) {
+  testBed.initTestEnvironment(BrowserTestingModule, platformBrowserTesting());
+}
 import { provideRouter } from '@angular/router';
 import { provideLocationMocks } from '@angular/common/testing';
 import { LoginComponent } from './login.page';
@@ -33,6 +40,7 @@ describe('LoginComponent', () => {
   const mockToken = 'test-token';
 
   beforeEach(async () => {
+    TestBed.resetTestingModule();
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
@@ -78,19 +86,19 @@ describe('LoginComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it('deve criar o componente', () => {
     expect(component).toBeTruthy();
   });
 
   // eslint-disable-next-line
   const getComponentAny = () => component as any;
 
-  it('should initialize form with empty fields', () => {
+  it('deve inicializar o formulário com campos vazios', () => {
     expect(getComponentAny().loginForm.get('email')?.value).toBe('');
     expect(getComponentAny().loginForm.get('password')?.value).toBe('');
   });
 
-  it('should make email control required', () => {
+  it('deve tornar o campo de email obrigatório', () => {
     const emailControl = getComponentAny().loginForm.get('email');
     emailControl?.setValue('');
     expect(emailControl?.hasError('required')).toBe(true);
@@ -99,7 +107,7 @@ describe('LoginComponent', () => {
     expect(emailControl?.hasError('required')).toBe(false);
   });
 
-  it('should validate email format', () => {
+  it('deve validar o formato do email', () => {
     const emailControl = getComponentAny().loginForm.get('email');
     emailControl?.setValue('invalid-email');
     expect(emailControl?.hasError('email')).toBe(true);
@@ -108,7 +116,7 @@ describe('LoginComponent', () => {
     expect(emailControl?.hasError('email')).toBe(false);
   });
 
-  it('should make password control required', () => {
+  it('deve tornar o campo de senha obrigatório', () => {
     const passwordControl = getComponentAny().loginForm.get('password');
     passwordControl?.setValue('');
     expect(passwordControl?.hasError('required')).toBe(true);
@@ -118,7 +126,7 @@ describe('LoginComponent', () => {
   });
 
   describe('onSubmit()', () => {
-    it('should not call authService.login if form is invalid', () => {
+    it('não deve chamar authService.login se o formulário for inválido', () => {
       getComponentAny().loginForm.setValue({ email: '', password: '' });
 
       component.onSubmit();
@@ -126,7 +134,7 @@ describe('LoginComponent', () => {
       expect(authService.login).not.toHaveBeenCalled();
     });
 
-    it('should set loading to true when form is submitted', () => {
+    it('deve definir o estado de carregamento como true ao enviar o formulário', () => {
       getComponentAny().loginForm.setValue({ email: 'test@example.com', password: 'password123' });
       // eslint-disable-next-line
       const loginSubject = new Subject<any>();
@@ -136,7 +144,7 @@ describe('LoginComponent', () => {
       loginSubject.complete();
     });
 
-    it('should call authService.login with form values when form is valid', () => {
+    it('deve chamar authService.login com os valores do formulário quando for válido', () => {
       const credentials: LoginDTO = {
         email: 'test@example.com',
         password: 'password123',
@@ -151,7 +159,7 @@ describe('LoginComponent', () => {
       expect(authService.login).toHaveBeenCalledWith(credentials);
     });
 
-    it('should set error message on 401 error', () => {
+    it('deve definir mensagem de erro em caso de erro 401', () => {
       getComponentAny().loginForm.setValue({ email: 'test@example.com', password: 'wrong' });
       const errorResponse = { status: 401 };
       vi.spyOn(authService, 'login').mockReturnValue(throwError(() => errorResponse));
@@ -162,7 +170,7 @@ describe('LoginComponent', () => {
       expect(getComponentAny().isLoading()).toBe(false);
     });
 
-    it('should set error message on connection error', () => {
+    it('deve definir mensagem de erro em caso de erro de conexão', () => {
       getComponentAny().loginForm.setValue({ email: 'test@example.com', password: 'password' });
       const errorResponse = { status: 0 };
       vi.spyOn(authService, 'login').mockReturnValue(throwError(() => errorResponse));
@@ -172,7 +180,7 @@ describe('LoginComponent', () => {
       expect(getComponentAny().errorMessage()).toContain('Não foi possível conectar');
     });
 
-    it('should set generic error message for other errors', () => {
+    it('deve definir mensagem de erro genérica para outros erros', () => {
       getComponentAny().loginForm.setValue({ email: 'test@example.com', password: 'password' });
       const errorResponse = { status: 500 };
       vi.spyOn(authService, 'login').mockReturnValue(throwError(() => errorResponse));
@@ -184,13 +192,13 @@ describe('LoginComponent', () => {
   });
 
   describe('isFieldInvalid()', () => {
-    it('should return false for pristine and untouched fields', () => {
+    it('deve retornar false para campos puros e não tocados', () => {
       const fieldName = 'email';
       const result = component.isFieldInvalid(fieldName);
       expect(result).toBe(false);
     });
 
-    it('should return true for invalid and touched fields', () => {
+    it('deve retornar true para campos inválidos e tocados', () => {
       const fieldName = 'email';
       const control = getComponentAny().loginForm.get(fieldName);
       control?.markAsTouched();
@@ -203,29 +211,31 @@ describe('LoginComponent', () => {
   });
 
   describe('Template', () => {
-    it('should display error message when errorMessage is set', () => {
-      getComponentAny().errorMessage.set('Test error message');
+    it('deve exibir mensagem de erro quando errorMessage estiver definido', () => {
+      getComponentAny().errorMessage.set('Mensagem de erro de teste');
       fixture.detectChanges();
 
-      const errorElement = fixture.debugElement.query(By.css('.bg-red-50'));
+      const errorElement = fixture.debugElement.query(
+        By.css('[data-testid="login-error-message"]'),
+      );
 
       expect(errorElement).toBeTruthy();
-      expect(errorElement.nativeElement.textContent).toContain('Test error message');
+      expect(errorElement.nativeElement.textContent).toContain('Mensagem de erro de teste');
     });
 
-    it('should disable submit button when form is invalid', () => {
+    it('deve desabilitar o botão de envio quando o formulário for inválido', () => {
       getComponentAny().loginForm.setValue({ email: '', password: '' });
       fixture.detectChanges();
 
-      const pButton = fixture.debugElement.query(By.css('p-button'));
+      const pButton = fixture.debugElement.query(By.css('[data-testid="login-submit-button"]'));
       expect(pButton.componentInstance.disabled).toBe(true);
     });
 
-    it('should show loading state when submitting', () => {
+    it('deve mostrar estado de carregamento ao enviar', () => {
       getComponentAny().isLoading.set(true);
       fixture.detectChanges();
 
-      const button = fixture.debugElement.query(By.css('p-button'));
+      const button = fixture.debugElement.query(By.css('[data-testid="login-submit-button"]'));
       expect(button.componentInstance.loading).toBe(true);
     });
   });
