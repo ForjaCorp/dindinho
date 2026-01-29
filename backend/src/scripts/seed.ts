@@ -1,6 +1,10 @@
 import { prisma } from "../lib/prisma";
 import { hash } from "bcryptjs";
 
+/**
+ * Script de seed para popular o banco de dados com dados iniciais.
+ * Garante a criação de categorias padrão e do usuário de desenvolvimento com permissão de ADMIN.
+ */
 export async function main() {
   const email = "dev@dindinho.com";
   const password = "Password123!";
@@ -36,7 +40,15 @@ export async function main() {
   });
 
   if (existingUser) {
-    console.log(`Usuário de dev já existe: ${email}`);
+    if (existingUser.role !== "ADMIN") {
+      await prisma.user.update({
+        where: { email },
+        data: { role: "ADMIN" },
+      });
+      console.log(`Role do usuário ${email} atualizada para ADMIN`);
+    } else {
+      console.log(`Usuário de dev já existe e é ADMIN: ${email}`);
+    }
     return;
   }
 
