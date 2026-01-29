@@ -59,10 +59,14 @@ interface LoginFormValues {
     PasswordModule,
   ],
   template: `
-    <div class="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <p-card styleClass="w-full max-w-md shadow-lg !rounded-2xl">
+    <div
+      data-testid="login-page"
+      class="min-h-screen flex items-center justify-center bg-slate-50 p-4"
+    >
+      <p-card data-testid="login-card" styleClass="w-full max-w-md shadow-lg !rounded-2xl">
         <div class="flex flex-col items-center mb-6">
           <div
+            data-testid="login-logo"
             class="w-12 h-12 bg-linear-to-tr from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-md mb-3"
           >
             D
@@ -71,11 +75,17 @@ interface LoginFormValues {
           <p class="text-slate-500 text-sm">Acesse sua conta Dindinho</p>
         </div>
 
-        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-4">
+        <form
+          data-testid="login-form"
+          [formGroup]="loginForm"
+          (ngSubmit)="onSubmit()"
+          class="flex flex-col gap-4"
+        >
           <div class="flex flex-col gap-2">
             <label for="email" class="text-sm font-medium text-slate-700">Email</label>
             <input
               pInputText
+              data-testid="login-email-input"
               id="email"
               formControlName="email"
               placeholder="seu@email.com"
@@ -90,6 +100,7 @@ interface LoginFormValues {
           <div class="flex flex-col gap-2">
             <label for="password" class="text-sm font-medium text-slate-700">Senha</label>
             <p-password
+              data-testid="login-password-input"
               id="password"
               formControlName="password"
               [feedback]="false"
@@ -104,12 +115,16 @@ interface LoginFormValues {
           </div>
 
           @if (errorMessage()) {
-            <div class="bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100">
+            <div
+              data-testid="login-error-message"
+              class="bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100"
+            >
               {{ errorMessage() }}
             </div>
           }
 
           <p-button
+            data-testid="login-submit-button"
             type="submit"
             label="Entrar"
             [loading]="isLoading()"
@@ -117,7 +132,7 @@ interface LoginFormValues {
             styleClass="w-full !bg-emerald-600 hover:!bg-emerald-700 !border-0"
           />
 
-          <div class="text-center mt-4 text-sm text-slate-500">
+          <div data-testid="signup-link" class="text-center text-sm text-slate-500">
             Ainda não tem conta?
             <a routerLink="/signup" class="text-emerald-600 font-medium hover:underline"
               >Crie agora</a
