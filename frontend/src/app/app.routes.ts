@@ -29,6 +29,11 @@ export const routes: Routes = [
         loadComponent: () => import('../pages/login/login.page').then((m) => m.LoginComponent),
         canActivate: [guestGuard],
       },
+      {
+        path: 'signup',
+        loadComponent: () => import('../pages/signup/signup.page').then((m) => m.SignupPage),
+        canActivate: [guestGuard],
+      },
       // Futuro registro:
       // { path: 'register', ... }
     ],

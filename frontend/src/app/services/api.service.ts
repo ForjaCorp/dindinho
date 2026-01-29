@@ -17,6 +17,7 @@ import {
   UpdateTransactionScopeDTO,
   DeleteTransactionScopeDTO,
   DeleteTransactionResponseDTO,
+  CreateUserDTO,
 } from '@dindinho/shared';
 
 export interface RefreshResponse {
@@ -97,6 +98,15 @@ export class ApiService {
    */
   login(data: LoginDTO): Observable<LoginResponseDTO> {
     return this.http.post<LoginResponseDTO>(`${this.baseUrl}/login`, data);
+  }
+
+  /**
+   * Registra um novo usuário na API.
+   * @param data Dados do novo usuário
+   * @returns Observable com dados do usuário criado
+   */
+  signup(data: CreateUserDTO): Observable<unknown> {
+    return this.http.post(`${this.baseUrl}/users`, data);
   }
 
   /**

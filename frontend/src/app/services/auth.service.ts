@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { ApiService } from './api.service';
-import { LoginDTO, LoginResponseDTO } from '@dindinho/shared';
+import { ApiService, RefreshResponse } from './api.service';
+import { LoginDTO, LoginResponseDTO, CreateUserDTO } from '@dindinho/shared';
 import { tap, catchError, map } from 'rxjs/operators';
 import { Observable, throwError } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
@@ -144,7 +144,7 @@ export class AuthService {
    */
   login(credentials: LoginDTO): Observable<LoginResponseDTO> {
     return this.api.login(credentials).pipe(
-      tap((response) => {
+      tap((response: LoginResponseDTO) => {
         // Armazena os tokens e atualiza o estado do usuário
         this.storeTokens(response.token, response.refreshToken);
         this.currentUser.set(response.user);
@@ -178,6 +178,15 @@ export class AuthService {
         }));
       }),
     );
+  }
+
+  /**
+   * Realiza cadastro de novo usuário.
+   * @param data Dados do usuário
+   * @returns Observable com resultado
+   */
+  signup(data: CreateUserDTO): Observable<unknown> {
+    return this.api.signup(data);
   }
 
   /**
@@ -221,10 +230,10 @@ export class AuthService {
     }
 
     return this.api.refresh(refreshToken).pipe(
-      tap((response) => {
+      tap((response: RefreshResponse) => {
         this.storeTokens(response.token, response.refreshToken);
       }),
-      map((response) => response.token),
+      map((response: RefreshResponse) => response.token),
       catchError((error) => {
         this.logout();
         return throwError(() => error);

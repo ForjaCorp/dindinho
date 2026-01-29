@@ -119,7 +119,7 @@ interface LoginFormValues {
 
           <div class="text-center mt-4 text-sm text-slate-500">
             Ainda não tem conta?
-            <a routerLink="/register" class="text-emerald-600 font-medium hover:underline"
+            <a routerLink="/signup" class="text-emerald-600 font-medium hover:underline"
               >Crie agora</a
             >
           </div>
