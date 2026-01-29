@@ -1,4 +1,4 @@
-import { FastifyInstance } from "fastify";
+import { FastifyInstance, FastifyRequest } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
@@ -22,7 +22,7 @@ export async function signupAllowlistRoutes(app: FastifyInstance) {
     )
       ? Number(process.env.ALLOWLIST_RATE_LIMIT_TIME_WINDOW)
       : (process.env.ALLOWLIST_RATE_LIMIT_TIME_WINDOW ?? "1 minute"),
-    keyGenerator: (request) =>
+    keyGenerator: (request: FastifyRequest) =>
       (request.headers["x-real-ip"] as string | undefined) || request.ip,
   });
   app.addHook("onRequest", async (request, reply) => {
@@ -82,10 +82,12 @@ export async function signupAllowlistRoutes(app: FastifyInstance) {
         select: { id: true, email: true, createdAt: true },
       });
 
-      return items.map((item) => ({
-        ...item,
-        createdAt: item.createdAt.toISOString(),
-      }));
+      return items.map(
+        (item: { id: string; email: string; createdAt: Date }) => ({
+          ...item,
+          createdAt: item.createdAt.toISOString(),
+        }),
+      );
     },
   );
 

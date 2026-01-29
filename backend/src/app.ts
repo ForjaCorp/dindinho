@@ -1,4 +1,4 @@
-import Fastify, { FastifyInstance } from "fastify";
+import Fastify, { FastifyInstance, FastifyRequest } from "fastify";
 import { ZodError } from "zod";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
@@ -90,7 +90,7 @@ export function buildApp(): FastifyInstance {
       if (/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) {
         return cb(null, true);
       }
-      return cb(new Error("Origin não permitido"), false);
+      return cb(null, false);
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Admin-Key"],
@@ -116,7 +116,7 @@ export function buildApp(): FastifyInstance {
       .map((s) => s.trim())
       .filter((v) => v.length > 0),
     skipOnError: true,
-    keyGenerator: (request) =>
+    keyGenerator: (request: FastifyRequest) =>
       (request.headers["x-real-ip"] as string | undefined) || request.ip,
     addHeaders: {
       "x-ratelimit-limit": true,
