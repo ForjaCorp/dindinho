@@ -8,7 +8,7 @@ const testBed = getTestBed();
 if (!testBed.platform) {
   testBed.initTestEnvironment(BrowserTestingModule, platformBrowserTesting());
 }
-import { provideRouter } from '@angular/router';
+import { provideRouter, ActivatedRoute } from '@angular/router';
 import { provideLocationMocks } from '@angular/common/testing';
 import { LoginComponent } from './login.page';
 import { AuthService, UserState } from '../../app/services/auth.service';
@@ -96,6 +96,39 @@ describe('LoginComponent', () => {
   it('deve inicializar o formulário com campos vazios', () => {
     expect(getComponentAny().loginForm.get('email')?.value).toBe('');
     expect(getComponentAny().loginForm.get('password')?.value).toBe('');
+  });
+
+  it('deve preencher o e-mail se estiver presente nos queryParams', async () => {
+    // Para este teste, precisamos de um ActivatedRoute com queryParams
+    TestBed.resetTestingModule();
+    const authServiceSpy = { login: vi.fn() };
+
+    await TestBed.configureTestingModule({
+      imports: [LoginComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([{ path: 'login', component: LoginComponent }]),
+        { provide: AuthService, useValue: authServiceSpy },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: {
+                get: (key: string) => (key === 'email' ? 'preenchido@email.com' : null),
+              },
+            },
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const newFixture = TestBed.createComponent(LoginComponent);
+    const newComponent = newFixture.componentInstance;
+    newFixture.detectChanges();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((newComponent as any).loginForm.get('email')?.value).toBe('preenchido@email.com');
   });
 
   it('deve tornar o campo de email obrigatório', () => {

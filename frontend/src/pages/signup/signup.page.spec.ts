@@ -88,7 +88,7 @@ describe('SignupPage', () => {
     expect(component['signupForm'].get('phone')?.value).toBe(input.value);
   });
 
-  it('deve chamar signup com sucesso', () => {
+  it('deve chamar signup com sucesso e redirecionar para login com email', () => {
     authServiceMock.signup.mockReturnValue(
       of({
         id: '1',
@@ -117,7 +117,9 @@ describe('SignupPage', () => {
     const args = authServiceMock.signup.mock.calls[0][0];
     expect(args.email).toBe('teste@email.com');
     expect(args.phone).toBe('+5511999999999'); // E.164
-    expect(router.navigate).toHaveBeenCalledWith(['/login']);
+    expect(router.navigate).toHaveBeenCalledWith(['/login'], {
+      queryParams: { email: 'teste@email.com' },
+    });
   });
 
   it('deve exibir erro se email já existe', () => {
@@ -139,7 +141,7 @@ describe('SignupPage', () => {
     expect(component['errorMessage']()).toBe('Email já cadastrado.');
   });
 
-  it('deve exibir botão da waitlist quando receber 403 (não convidado)', () => {
+  it('deve exibir erro 403 ao cadastrar e sugerir waitlist', () => {
     const errorResponse = { status: 403 };
     authServiceMock.signup.mockReturnValue(throwError(() => errorResponse));
 

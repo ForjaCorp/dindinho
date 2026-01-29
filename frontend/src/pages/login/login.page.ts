@@ -1,4 +1,4 @@
-import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   ReactiveFormsModule,
@@ -7,7 +7,7 @@ import {
   FormGroup,
   FormControl,
 } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { RouterLink, ActivatedRoute } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -143,12 +143,15 @@ interface LoginFormValues {
     </div>
   `,
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   /** Serviço para construção de formulários reativos */
   private fb = inject(FormBuilder);
 
   /** Serviço de autenticação */
   private authService = inject(AuthService);
+
+  /** Rota ativa para capturar parâmetros da URL */
+  private route = inject(ActivatedRoute);
 
   /** Estado de carregamento do formulário */
   protected isLoading = signal(false);
@@ -163,6 +166,16 @@ export class LoginComponent {
     email: new FormControl('', [Validators.required, Validators.email]),
     password: new FormControl('', [Validators.required]),
   });
+
+  /**
+   * Inicializa o componente e verifica se há um e-mail pré-preenchido na URL
+   */
+  ngOnInit(): void {
+    const email = this.route.snapshot.queryParamMap.get('email');
+    if (email) {
+      this.loginForm.patchValue({ email });
+    }
+  }
 
   /**
    * Verifica se um campo do formulário é inválido e foi tocado

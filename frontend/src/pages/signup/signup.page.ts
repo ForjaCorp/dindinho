@@ -545,7 +545,7 @@ export class SignupPage {
         next: () => {
           this.isLoading.set(false);
           this.vibrate('success');
-          this.router.navigate(['/login']);
+          this.router.navigate(['/login'], { queryParams: { email } });
         },
         error: (err: HttpErrorResponse) => {
           this.isLoading.set(false);
