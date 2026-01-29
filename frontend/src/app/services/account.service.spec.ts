@@ -3,9 +3,20 @@
  * @description Testes unitários do AccountService responsável pelo gerenciamento de estado
  * @since 1.0.0
  */
+/**
+ * @vitest-environment jsdom
+ */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { TestBed } from '@angular/core/testing';
+import { TestBed, getTestBed } from '@angular/core/testing';
+import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
+
+const testBed = getTestBed();
+if (!testBed.platform) {
+  testBed.initTestEnvironment(BrowserTestingModule, platformBrowserTesting());
+}
+
 import { of, throwError } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { AccountService } from './account.service';
 import { ApiService } from './api.service';
 import { CreateAccountDTO, AccountDTO, UpdateAccountDTO } from '@dindinho/shared';
@@ -59,6 +70,7 @@ describe('AccountService', () => {
   };
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
@@ -145,7 +157,7 @@ describe('AccountService', () => {
     });
 
     it('deve tratar erro de rede', () => {
-      const networkError = { status: 0 };
+      const networkError = new HttpErrorResponse({ status: 0 });
       apiService.getAccounts.mockReturnValue(throwError(() => networkError));
 
       service.loadAccounts();
@@ -155,11 +167,11 @@ describe('AccountService', () => {
 
       expect(service.accounts()).toEqual([]);
       expect(service.isLoading()).toBe(false);
-      expect(service.error()).toBe('Erro de conexão. Verifique sua internet.');
+      expect(service.error()).toBe('Não foi possível conectar ao servidor. Verifique sua conexão.');
     });
 
     it('deve tratar erro de autenticação', () => {
-      const authError = { status: 401 };
+      const authError = new HttpErrorResponse({ status: 401 });
       apiService.getAccounts.mockReturnValue(throwError(() => authError));
 
       service.loadAccounts();
@@ -167,14 +179,16 @@ describe('AccountService', () => {
       vi.useFakeTimers();
       vi.runAllTimers();
 
-      expect(service.error()).toBe('Sessão expirada. Faça login novamente.');
+      expect(service.error()).toBe(
+        'Sessão expirada ou não autorizada. Por favor, faça login novamente.',
+      );
     });
 
     it('deve tratar erro de validação', () => {
-      const validationError = {
+      const validationError = new HttpErrorResponse({
         status: 400,
         error: { message: 'Dados inválidos' },
-      };
+      });
       apiService.getAccounts.mockReturnValue(throwError(() => validationError));
 
       service.loadAccounts();
@@ -186,7 +200,7 @@ describe('AccountService', () => {
     });
 
     it('deve tratar erro de servidor', () => {
-      const serverError = { status: 500 };
+      const serverError = new HttpErrorResponse({ status: 500 });
       apiService.getAccounts.mockReturnValue(throwError(() => serverError));
 
       service.loadAccounts();
@@ -194,11 +208,11 @@ describe('AccountService', () => {
       vi.useFakeTimers();
       vi.runAllTimers();
 
-      expect(service.error()).toBe('Erro no servidor. Tente novamente mais tarde.');
+      expect(service.error()).toBe('Erro no servidor. Estamos trabalhando para resolver.');
     });
 
     it('deve tratar erro genérico', () => {
-      const genericError = { status: 418 };
+      const genericError = new HttpErrorResponse({ status: 418 });
       apiService.getAccounts.mockReturnValue(throwError(() => genericError));
 
       service.loadAccounts();
@@ -206,7 +220,7 @@ describe('AccountService', () => {
       vi.useFakeTimers();
       vi.runAllTimers();
 
-      expect(service.error()).toBe('Ocorreu um erro inesperado.');
+      expect(service.error()).toBe('Ocorreu um erro inesperado. Tente novamente mais tarde.');
     });
   });
 
@@ -245,7 +259,10 @@ describe('AccountService', () => {
     });
 
     it('deve tratar erro de nome duplicado', () => {
-      const duplicateError = { status: 409, error: { message: 'Nome já existe' } };
+      const duplicateError = new HttpErrorResponse({
+        status: 409,
+        error: { message: 'Nome já existe' },
+      });
       apiService.createAccount.mockReturnValue(throwError(() => duplicateError));
 
       const observable = service.createAccount(mockCreateAccountData);
@@ -263,10 +280,10 @@ describe('AccountService', () => {
     });
 
     it('deve tratar erro de validação na criação', () => {
-      const validationError = {
+      const validationError = new HttpErrorResponse({
         status: 400,
         error: { message: 'Cor inválida' },
-      };
+      });
       apiService.createAccount.mockReturnValue(throwError(() => validationError));
 
       const observable = service.createAccount(mockCreateAccountData);
@@ -317,7 +334,9 @@ describe('AccountService', () => {
 
       const payload: UpdateAccountDTO = { name: '' };
       apiService.updateAccount.mockReturnValue(
-        throwError(() => ({ status: 400, error: { message: 'Dados inválidos' } })),
+        throwError(
+          () => new HttpErrorResponse({ status: 400, error: { message: 'Dados inválidos' } }),
+        ),
       );
 
       service.updateAccount(initial.id, payload).subscribe({ error: () => undefined });

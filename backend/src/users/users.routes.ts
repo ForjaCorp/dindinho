@@ -14,7 +14,11 @@ import { FastifyInstance } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
-import { SignupNotAllowedError, UsersService } from "./users.service";
+import {
+  SignupNotAllowedError,
+  EmailAlreadyExistsError,
+  UsersService,
+} from "./users.service";
 import { CreateUserDTO, createUserSchema } from "@dindinho/shared";
 
 /**
@@ -47,11 +51,13 @@ export async function usersRoutes(app: FastifyInstance) {
    * @param {Object} request.body - Dados do novo usuário
    * @param {string} request.body.name - Nome completo do usuário (mínimo 2 caracteres)
    * @param {string} request.body.email - Email válido e único do usuário
+   * @param {string} request.body.phone - Telefone válido e único do usuário
    * @param {string} request.body.password - Senha com mínimo 6 caracteres
    * @returns {Promise<Object>} Dados do usuário criado (sem senha)
    * @returns {string} returns.id - UUID único do usuário
    * @returns {string} returns.name - Nome do usuário
    * @returns {string} returns.email - Email do usuário
+   * @returns {string} returns.phone - Telefone do usuário
    * @returns {string} returns.createdAt - Data de criação em formato ISO
    * @throws {409} Retorna quando o email já está cadastrado
    * @throws {400} Retorna quando os dados de entrada são inválidos
@@ -62,6 +68,7 @@ export async function usersRoutes(app: FastifyInstance) {
    * {
    *   "name": "João Silva",
    *   "email": "joao@exemplo.com",
+   *   "phone": "+5511999999999",
    *   "password": "senha123"
    * }
    *
@@ -70,6 +77,7 @@ export async function usersRoutes(app: FastifyInstance) {
    *   "id": "550e8400-e29b-41d4-a716-446655440000",
    *   "name": "João Silva",
    *   "email": "joao@exemplo.com",
+   *   "phone": "+5511999999999",
    *   "createdAt": "2023-01-01T00:00:00.000Z"
    * }
    *
@@ -93,6 +101,7 @@ export async function usersRoutes(app: FastifyInstance) {
             id: z.string().uuid(),
             name: z.string(),
             email: z.string().email(),
+            phone: z.string(),
             createdAt: z.string().datetime(),
           }),
           403: z.object({
@@ -114,15 +123,13 @@ export async function usersRoutes(app: FastifyInstance) {
           createdAt: user.createdAt.toISOString(),
         });
       } catch (error) {
-        if (error instanceof SignupNotAllowedError) {
-          return reply.status(403).send({ message: error.message });
-        }
-
         if (
-          error instanceof Error &&
-          error.message === "Email já cadastrado."
+          error instanceof SignupNotAllowedError ||
+          error instanceof EmailAlreadyExistsError
         ) {
-          return reply.status(409).send({ message: error.message });
+          return reply
+            .status(error.statusCode)
+            .send({ message: error.message });
         }
 
         throw error;

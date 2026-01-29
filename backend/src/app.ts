@@ -1,4 +1,4 @@
-import Fastify, { FastifyInstance } from "fastify";
+import Fastify, { FastifyInstance, FastifyRequest } from "fastify";
 import { ZodError } from "zod";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
@@ -14,6 +14,7 @@ import { accountsRoutes } from "./accounts/accounts.routes";
 import { transactionsRoutes } from "./transactions/transactions.routes";
 import { categoriesRoutes } from "./categories/categories.routes";
 import { signupAllowlistRoutes } from "./signup-allowlist/signup-allowlist.routes";
+import { waitlistRoutes } from "./waitlist/waitlist.routes";
 import { RefreshTokenService } from "./auth/refresh-token.service";
 import { ApiResponseDTO, HealthCheckDTO, DbTestDTO } from "@dindinho/shared";
 import { prisma } from "./lib/prisma";
@@ -90,7 +91,7 @@ export function buildApp(): FastifyInstance {
       if (/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) {
         return cb(null, true);
       }
-      return cb(new Error("Origin não permitido"), false);
+      return cb(null, false);
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Admin-Key"],
@@ -116,7 +117,7 @@ export function buildApp(): FastifyInstance {
       .map((s) => s.trim())
       .filter((v) => v.length > 0),
     skipOnError: true,
-    keyGenerator: (request) =>
+    keyGenerator: (request: FastifyRequest) =>
       (request.headers["x-real-ip"] as string | undefined) || request.ip,
     addHeaders: {
       "x-ratelimit-limit": true,
@@ -199,6 +200,7 @@ export function buildApp(): FastifyInstance {
   // Rotas da aplicação
   app.register(usersRoutes, { prefix: "/api" });
   app.register(signupAllowlistRoutes, { prefix: "/api" });
+  app.register(waitlistRoutes, { prefix: "/api" });
 
   // Instancia o RefreshTokenService com o logger da aplicação
   const refreshTokenService = new RefreshTokenService(prisma, app.log);

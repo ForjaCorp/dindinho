@@ -29,6 +29,7 @@
   "private": true,
   "packageManager": "npm@11.6.2",
   "dependencies": {
+    "@angular/animations": "^21.1.0",
     "@angular/common": "^21.1.0",
     "@angular/core": "^21.1.0",
     "@angular/forms": "^21.1.0",
@@ -37,6 +38,7 @@
     "@dindinho/shared": "*",
     "@primeuix/themes": "^2.0.2",
     "jwt-decode": "^4.0.0",
+    "libphonenumber-js": "^1.12.35",
     "primeng": "^21.0.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"

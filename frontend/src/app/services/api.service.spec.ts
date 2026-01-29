@@ -5,7 +5,7 @@
  */
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { HttpRequest, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ApiService, AllowlistDeleteResponse, AllowlistItem } from './api.service';
 import {
@@ -139,7 +139,7 @@ describe('ApiService', () => {
 
       const req = httpMock.expectOne('http://localhost:3333/api/health');
       expect(req.request.method).toBe('GET');
-      req.error(new ErrorEvent('Network error'));
+      req.error(new ProgressEvent('Network error'));
     });
   });
 
@@ -197,7 +197,7 @@ describe('ApiService', () => {
 
       const req = httpMock.expectOne('http://localhost:3333/api/login');
       expect(req.request.method).toBe('POST');
-      req.error(new ErrorEvent('Network error'));
+      req.error(new ProgressEvent('Network error'));
     });
 
     it('deve enviar cabeçalhos corretos', () => {
@@ -280,7 +280,7 @@ describe('ApiService', () => {
 
       const req = httpMock.expectOne('http://localhost:3333/api/accounts');
       expect(req.request.method).toBe('POST');
-      req.error(new ErrorEvent('Network error'));
+      req.error(new ProgressEvent('Network error'));
     });
 
     it('deve criar conta padrão sem informações de cartão de crédito', () => {
@@ -367,7 +367,7 @@ describe('ApiService', () => {
 
       const req = httpMock.expectOne('http://localhost:3333/api/accounts');
       expect(req.request.method).toBe('GET');
-      req.error(new ErrorEvent('Network error'));
+      req.error(new ProgressEvent('Network error'));
     });
 
     it('deve retornar array vazio quando usuário não possui contas', () => {
@@ -477,7 +477,7 @@ describe('ApiService', () => {
       });
 
       const req = httpMock.expectOne(
-        (r) =>
+        (r: HttpRequest<unknown>) =>
           r.url === 'http://localhost:3333/api/transactions' &&
           r.params.get('accountId') === accountId,
       );
@@ -494,7 +494,7 @@ describe('ApiService', () => {
       });
 
       const req = httpMock.expectOne(
-        (r) =>
+        (r: HttpRequest<unknown>) =>
           r.url === 'http://localhost:3333/api/transactions' &&
           r.params.get('from') === from &&
           r.params.get('to') === to &&
@@ -596,7 +596,7 @@ describe('ApiService', () => {
       });
 
       const req = httpMock.expectOne(
-        (r) =>
+        (r: HttpRequest<unknown>) =>
           r.url === `http://localhost:3333/api/transactions/${id}` &&
           r.params.get('scope') === 'ALL',
       );
@@ -616,7 +616,7 @@ describe('ApiService', () => {
       });
 
       const req = httpMock.expectOne(
-        (r) =>
+        (r: HttpRequest<unknown>) =>
           r.url === `http://localhost:3333/api/transactions/${id}` &&
           r.params.get('scope') === 'ONE',
       );

@@ -47,6 +47,10 @@ packages/shared/src/**/*.js.map
 .DS_Store
 *.pem
 
+# Testes e Cobertura
+coverage/
+*.lcov
+
 # PWA
 ngsw/
 

@@ -7,8 +7,8 @@ import {
   FormGroup,
   FormControl,
 } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
+import { RouterLink, Router } from '@angular/router';
+import { AppError } from '../../app/models/error.model';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { CardModule } from 'primeng/card';
@@ -21,6 +21,13 @@ import { AuthService } from '../../app/services/auth.service';
 interface LoginFormControls {
   email: FormControl<string | null>;
   password: FormControl<string | null>;
+}
+
+/**
+ * Interface para o estado de navegação vindo do Signup
+ */
+export interface LoginNavigationState {
+  email: string;
 }
 
 /**
@@ -59,10 +66,14 @@ interface LoginFormValues {
     PasswordModule,
   ],
   template: `
-    <div class="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <p-card styleClass="w-full max-w-md shadow-lg !rounded-2xl">
+    <div
+      data-testid="login-page"
+      class="min-h-screen flex items-center justify-center bg-slate-50 p-4"
+    >
+      <p-card data-testid="login-card" styleClass="w-full max-w-md shadow-lg !rounded-2xl">
         <div class="flex flex-col items-center mb-6">
           <div
+            data-testid="login-logo"
             class="w-12 h-12 bg-linear-to-tr from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-md mb-3"
           >
             D
@@ -71,11 +82,17 @@ interface LoginFormValues {
           <p class="text-slate-500 text-sm">Acesse sua conta Dindinho</p>
         </div>
 
-        <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-4">
+        <form
+          data-testid="login-form"
+          [formGroup]="loginForm"
+          (ngSubmit)="onSubmit()"
+          class="flex flex-col gap-4"
+        >
           <div class="flex flex-col gap-2">
             <label for="email" class="text-sm font-medium text-slate-700">Email</label>
             <input
               pInputText
+              data-testid="login-email-input"
               id="email"
               formControlName="email"
               placeholder="seu@email.com"
@@ -90,6 +107,7 @@ interface LoginFormValues {
           <div class="flex flex-col gap-2">
             <label for="password" class="text-sm font-medium text-slate-700">Senha</label>
             <p-password
+              data-testid="login-password-input"
               id="password"
               formControlName="password"
               [feedback]="false"
@@ -104,12 +122,16 @@ interface LoginFormValues {
           </div>
 
           @if (errorMessage()) {
-            <div class="bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100">
+            <div
+              data-testid="login-error-message"
+              class="bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100"
+            >
               {{ errorMessage() }}
             </div>
           }
 
           <p-button
+            data-testid="login-submit-button"
             type="submit"
             label="Entrar"
             [loading]="isLoading()"
@@ -117,9 +139,9 @@ interface LoginFormValues {
             styleClass="w-full !bg-emerald-600 hover:!bg-emerald-700 !border-0"
           />
 
-          <div class="text-center mt-4 text-sm text-slate-500">
+          <div data-testid="signup-link" class="text-center text-sm text-slate-500">
             Ainda não tem conta?
-            <a routerLink="/register" class="text-emerald-600 font-medium hover:underline"
+            <a routerLink="/signup" class="text-emerald-600 font-medium hover:underline"
               >Crie agora</a
             >
           </div>
@@ -134,6 +156,17 @@ export class LoginComponent {
 
   /** Serviço de autenticação */
   private authService = inject(AuthService);
+
+  private router = inject(Router);
+
+  constructor() {
+    const navigation = this.router.currentNavigation ? this.router.currentNavigation() : null;
+    const state = navigation?.extras.state as LoginNavigationState | undefined;
+
+    if (state?.email) {
+      this.loginForm.controls.email.setValue(state.email);
+    }
+  }
 
   /** Estado de carregamento do formulário */
   protected isLoading = signal(false);
@@ -184,18 +217,9 @@ export class LoginComponent {
         // O redirecionamento é feito no AuthService após o login bem-sucedido
         this.isLoading.set(false);
       },
-      error: (err: HttpErrorResponse) => {
-        console.error('Erro no login:', err);
+      error: (err: AppError) => {
         this.isLoading.set(false);
-
-        // Tratamento de erros específicos
-        if (err?.status === 401) {
-          this.errorMessage.set('Email ou senha incorretos.');
-        } else if (err?.status === 0) {
-          this.errorMessage.set('Não foi possível conectar ao servidor. Verifique sua conexão.');
-        } else {
-          this.errorMessage.set('Ocorreu um erro ao tentar entrar. Tente novamente.');
-        }
+        this.errorMessage.set(err.message);
       },
     });
   }

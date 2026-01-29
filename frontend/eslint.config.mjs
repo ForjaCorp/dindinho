@@ -1,20 +1,29 @@
 // @ts-check
-const eslint = require('@eslint/js');
-const { defineConfig } = require('eslint/config');
-const tseslint = require('typescript-eslint');
-const angular = require('angular-eslint');
+import eslint from '@eslint/js';
+import { defineConfig } from 'eslint/config';
+import tseslint from 'typescript-eslint';
+import angular from 'angular-eslint';
 
-module.exports = defineConfig([
+export default defineConfig([
   {
-    files: ['**/*.ts'],
+    files: ['**/*.ts', '**/*.mjs'],
+    languageOptions: {
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: ['*.config.mjs', 'vitest.config.ts'],
+        },
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
     extends: [
       eslint.configs.recommended,
-      tseslint.configs.recommended,
-      tseslint.configs.stylistic,
+      ...tseslint.configs.recommended,
+      ...tseslint.configs.stylistic,
       angular.configs.tsRecommended,
     ],
     processor: angular.processInlineTemplates,
     rules: {
+      '@typescript-eslint/no-deprecated': 'error',
       '@angular-eslint/directive-selector': [
         'error',
         {

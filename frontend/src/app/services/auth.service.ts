@@ -1,22 +1,12 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { ApiService } from './api.service';
-import { LoginDTO, LoginResponseDTO } from '@dindinho/shared';
+import { ApiService, RefreshResponse } from './api.service';
+import { LoginDTO, LoginResponseDTO, CreateUserDTO, CreateWaitlistDTO } from '@dindinho/shared';
 import { tap, catchError, map } from 'rxjs/operators';
 import { Observable, throwError } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
-
-/**
- * Erros específicos do serviço de autenticação
- */
-export enum AuthError {
-  INVALID_CREDENTIALS = 'INVALID_CREDENTIALS',
-  TOKEN_EXPIRED = 'TOKEN_EXPIRED',
-  TOKEN_INVALID = 'TOKEN_INVALID',
-  NETWORK_ERROR = 'NETWORK_ERROR',
-  STORAGE_ERROR = 'STORAGE_ERROR',
-  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
-}
+import { LoggerService } from './logger.service';
+import { ErrorMapper } from '../utils/error-mapper';
 
 /**
  * Interface que representa o estado do usuário autenticado
@@ -64,7 +54,9 @@ interface JwtPayload {
  *   next: () => {
  *     // Redirecionamento é feito automaticamente
  *   },
- *   error: (err) => console.error('Falha no login', err)
+ *   error: (err) => {
+ *     // Tratar erro
+ *   }
  * });
  *
  * // Verificar autenticação
@@ -78,7 +70,6 @@ interface JwtPayload {
  * // Acesso ao usuário atual (reativo)
  * effect(() => {
  *   const user = this.auth.currentUser();
- *   console.log('Usuário atual:', user);
  * });
  */
 @Injectable({
@@ -87,6 +78,7 @@ interface JwtPayload {
 export class AuthService {
   private api = inject(ApiService);
   private router = inject(Router);
+  private logger = inject(LoggerService);
   private readonly TOKEN_KEY = 'dindinho_token';
   private readonly REFRESH_TOKEN_KEY = 'dindinho_refresh_token';
 
@@ -101,23 +93,18 @@ export class AuthService {
    * // Assinando mudanças no estado do usuário
    * effect(() => {
    *   const user = authService.currentUser();
-   *   console.log('Estado do usuário mudou:', user);
    * });
    *
    * @type {Signal<UserState | null>}
    * @readonly
    */
   readonly currentUser = signal<UserState | null>(this.tryRestoreSession());
+
   /**
    * Realiza o login do usuário
    *
    * @param {LoginDTO} credentials - Credenciais do usuário (email e senha)
    * @returns {Observable<LoginResponseDTO>} Observable com a resposta completa do login (token e usuário)
-   *
-   * @throws {AuthError.INVALID_CREDENTIALS} Quando as credenciais são inválidas
-   * @throws {AuthError.NETWORK_ERROR} Quando há erro de comunicação com a API
-   * @throws {AuthError.STORAGE_ERROR} Quando não é possível armazenar o token
-   * @throws {AuthError.TOKEN_INVALID} Quando o token recebido é inválido
    *
    * @description
    * Processo de autenticação:
@@ -131,53 +118,46 @@ export class AuthService {
    * ```typescript
    * this.auth.login({ email: 'user@example.com', password: 'password' }).subscribe({
    *   next: (response) => {
-   *     console.log('Login bem-sucedido:', response.user);
    *     // Redirecionamento é feito automaticamente
    *   },
    *   error: (error) => {
-   *     if (error.type === AuthError.INVALID_CREDENTIALS) {
-   *       console.log('Credenciais inválidas');
-   *     }
+   *     // O erro é tratado globalmente, mas pode ser capturado aqui para lógica local
    *   }
    * });
    * ```
    */
   login(credentials: LoginDTO): Observable<LoginResponseDTO> {
     return this.api.login(credentials).pipe(
-      tap((response) => {
+      tap((response: LoginResponseDTO) => {
         // Armazena os tokens e atualiza o estado do usuário
         this.storeTokens(response.token, response.refreshToken);
         this.currentUser.set(response.user);
+        this.logger.info(`Usuário ${response.user.email} logado com sucesso.`);
 
         // Redireciona para o dashboard
         this.router.navigate(['/dashboard']);
       }),
       catchError((error) => {
-        console.error('Erro durante login:', error);
-
-        // Limpa estado em caso de qualquer erro
+        // Limpa estado em caso de qualquer erro de autenticação
         this.clearAuthState();
-
-        // Mapeia erros da API para tipos de erro específicos
-        let authError: AuthError;
-
-        if (error?.status === 401) {
-          authError = AuthError.INVALID_CREDENTIALS;
-        } else if (error?.status === 0 || error?.message?.includes('network')) {
-          authError = AuthError.NETWORK_ERROR;
-        } else if (error?.message === AuthError.STORAGE_ERROR) {
-          authError = AuthError.STORAGE_ERROR;
-        } else {
-          authError = AuthError.UNKNOWN_ERROR;
-        }
-
-        return throwError(() => ({
-          type: authError,
-          message: this.getErrorMessage(authError),
-          originalError: error,
-        }));
+        // Mapeia o erro para AppError (idempotente se já for AppError)
+        const appError = ErrorMapper.fromUnknown(error);
+        return throwError(() => appError);
       }),
     );
+  }
+
+  /**
+   * Realiza cadastro de novo usuário.
+   * @param data Dados do usuário
+   * @returns Observable com resultado
+   */
+  signup(data: CreateUserDTO): Observable<unknown> {
+    return this.api.signup(data);
+  }
+
+  joinWaitlist(data: CreateWaitlistDTO): Observable<{ message: string }> {
+    return this.api.joinWaitlist(data);
   }
 
   /**
@@ -198,14 +178,8 @@ export class AuthService {
    * ```
    */
   logout(): void {
-    try {
-      this.clearAuthState();
-      this.router.navigate(['/login']);
-    } catch (error) {
-      console.error('Erro durante logout:', error);
-      // Força redirecionamento mesmo em caso de erro
-      this.router.navigate(['/login']);
-    }
+    this.clearAuthState();
+    this.router.navigate(['/login']);
   }
 
   /**
@@ -221,10 +195,10 @@ export class AuthService {
     }
 
     return this.api.refresh(refreshToken).pipe(
-      tap((response) => {
+      tap((response: RefreshResponse) => {
         this.storeTokens(response.token, response.refreshToken);
       }),
-      map((response) => response.token),
+      map((response: RefreshResponse) => response.token),
       catchError((error) => {
         this.logout();
         return throwError(() => error);
@@ -282,7 +256,6 @@ export class AuthService {
     try {
       // 1. Verifica ambiente de navegador (SSR/Testes)
       if (typeof localStorage === 'undefined') {
-        console.warn('localStorage não disponível - sessão não será restaurada');
         return null;
       }
 
@@ -296,20 +269,15 @@ export class AuthService {
 
       // 3. Se o token for inválido ou expirado, limpa o storage
       if (!user) {
-        console.warn('Token inválido ou expirado encontrado - limpando storage');
         localStorage.removeItem(this.TOKEN_KEY);
         return null;
       }
 
       return user;
-    } catch (error) {
-      console.error('Erro inesperado ao restaurar sessão:', error);
+    } catch (err) {
       // Em caso de erro crítico, limpa o estado para segurança
-      try {
-        localStorage.removeItem(this.TOKEN_KEY);
-      } catch {
-        // Silently ignore localStorage errors during cleanup
-      }
+      this.logger.error('Erro ao restaurar sessão:', err);
+      this.clearAuthState();
       return null;
     }
   }
@@ -341,9 +309,9 @@ export class AuthService {
    * ```typescript
    * const user = this.decodeToken(token);
    * if (user) {
-   *   console.log('Token válido para:', user.email);
+   *   // Token válido
    * } else {
-   *   console.log('Token inválido ou expirado');
+   *   // Token inválido ou expirado
    * }
    * ```
    */
@@ -351,7 +319,6 @@ export class AuthService {
     try {
       // 1. Validação básica do formato
       if (!token || typeof token !== 'string' || token.split('.').length !== 3) {
-        console.error('Token JWT malformado: formato inválido');
         return null;
       }
 
@@ -360,35 +327,23 @@ export class AuthService {
 
       // 3. Validação do payload
       if (!decoded || !decoded.sub || !decoded.name || !decoded.email || !decoded.role) {
-        console.error('Token JWT incompleto: dados obrigatórios ausentes');
         return null;
       }
 
       // 4. Verificação de expiração
       const now = Date.now() / 1000;
       if (!decoded.exp || decoded.exp < now) {
-        const expirationTime = decoded.exp
-          ? new Date(decoded.exp * 1000).toISOString()
-          : 'desconhecida';
-        console.warn(
-          `Token JWT expirado. Expiração: ${expirationTime}, Atual: ${new Date().toISOString()}`,
-        );
         return null;
       }
 
-      // 5. Retorno do estado do usuário
       return {
         id: decoded.sub,
         name: decoded.name,
         email: decoded.email,
         role: decoded.role,
       };
-    } catch (error) {
-      if (error && typeof error === 'object' && 'message' in error) {
-        console.error('Erro na decodificação JWT:', error.message);
-      } else {
-        console.error('Erro inesperado ao decodificar token:', error);
-      }
+    } catch (err) {
+      this.logger.debug('Falha ao decodificar token:', err);
       return null;
     }
   }
@@ -402,21 +357,18 @@ export class AuthService {
    * @throws {AuthError.STORAGE_ERROR} Quando não é possível armazenar os tokens
    */
   private storeTokens(token: string, refreshToken: string): void {
-    try {
-      if (typeof localStorage === 'undefined') {
-        throw new Error('localStorage não disponível');
-      }
-
-      if (!token || !refreshToken) {
-        throw new Error('Tokens inválidos para armazenamento');
-      }
-
-      localStorage.setItem(this.TOKEN_KEY, token);
-      localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
-    } catch (error) {
-      console.error('Erro ao armazenar tokens:', error);
-      throw new Error(AuthError.STORAGE_ERROR);
+    if (typeof localStorage === 'undefined') {
+      this.logger.warn('localStorage não disponível para armazenar tokens');
+      return;
     }
+
+    if (!token || !refreshToken) {
+      this.logger.error('Tentativa de armazenar tokens inválidos');
+      return;
+    }
+
+    localStorage.setItem(this.TOKEN_KEY, token);
+    localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
   }
 
   /**
@@ -439,40 +391,15 @@ export class AuthService {
    * interromper o fluxo de logout.
    */
   private clearAuthState(): void {
-    try {
-      if (typeof localStorage !== 'undefined') {
+    if (typeof localStorage !== 'undefined') {
+      try {
         localStorage.removeItem(this.TOKEN_KEY);
         localStorage.removeItem(this.REFRESH_TOKEN_KEY);
+      } catch (err) {
+        this.logger.debug('Erro ao limpar localStorage:', err);
       }
-    } catch (error) {
-      console.error('Erro ao limpar tokens do localStorage:', error);
     }
 
     this.currentUser.set(null);
-  }
-
-  /**
-   * Retorna mensagem de erro amigável baseada no tipo de erro.
-   *
-   * @private
-   * @param {AuthError} errorType - Tipo do erro de autenticação
-   * @returns {string} Mensagem de erro amigável
-   */
-  private getErrorMessage(errorType: AuthError): string {
-    switch (errorType) {
-      case AuthError.INVALID_CREDENTIALS:
-        return 'Email ou senha incorretos. Verifique suas credenciais.';
-      case AuthError.TOKEN_EXPIRED:
-        return 'Sua sessão expirou. Faça login novamente.';
-      case AuthError.TOKEN_INVALID:
-        return 'Sessão inválida. Faça login novamente.';
-      case AuthError.NETWORK_ERROR:
-        return 'Erro de conexão. Verifique sua internet e tente novamente.';
-      case AuthError.STORAGE_ERROR:
-        return 'Erro ao salvar sessão. Verifique as configurações do navegador.';
-      case AuthError.UNKNOWN_ERROR:
-      default:
-        return 'Ocorreu um erro inesperado. Tente novamente.';
-    }
   }
 }

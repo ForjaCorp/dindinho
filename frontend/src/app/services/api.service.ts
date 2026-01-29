@@ -17,6 +17,8 @@ import {
   UpdateTransactionScopeDTO,
   DeleteTransactionScopeDTO,
   DeleteTransactionResponseDTO,
+  CreateUserDTO,
+  CreateWaitlistDTO,
 } from '@dindinho/shared';
 
 export interface RefreshResponse {
@@ -51,14 +53,14 @@ export interface AllowlistDeleteResponse {
  * @example
  * // Injeção do serviço:
  * constructor(private api: ApiService) {}
- *
- * // Login de usuário:
+ * @example
+ * // Exemplo de uso:
  * this.api.login({ email: 'user@dindinho.com', password: 'senha123' })
- *   .subscribe(response => console.log(response.token));
+ *   .subscribe(response => response.token);
  *
  * // Criação de conta:
  * this.api.createAccount({ name: 'Minha Conta', type: 'STANDARD' })
- *   .subscribe((account) => console.log(account.id));
+ *   .subscribe((account) => account.id);
  *
  * @since 1.0.0
  */
@@ -89,14 +91,28 @@ export class ApiService {
    * this.api.login({ email: 'user@dindinho.com', password: 'senha123' })
    *   .subscribe({
    *     next: (response) => {
-   *       console.log('Token:', response.token);
-   *       console.log('Usuário:', response.user);
+   *       // Sucesso
    *     },
-   *     error: (error) => console.error('Falha no login', error)
+   *     error: (error) => {
+   *       // Erro
+   *     }
    *   });
    */
   login(data: LoginDTO): Observable<LoginResponseDTO> {
     return this.http.post<LoginResponseDTO>(`${this.baseUrl}/login`, data);
+  }
+
+  /**
+   * Registra um novo usuário na API.
+   * @param data Dados do novo usuário
+   * @returns Observable com dados do usuário criado
+   */
+  signup(data: CreateUserDTO): Observable<unknown> {
+    return this.http.post(`${this.baseUrl}/users`, data);
+  }
+
+  joinWaitlist(data: CreateWaitlistDTO): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/waitlist`, data);
   }
 
   /**
@@ -125,8 +141,8 @@ export class ApiService {
    * // Exemplo de uso:
    * this.api.createAccount({ name: 'Conta Principal', type: 'STANDARD' })
    *   .subscribe({
-   *     next: (account) => console.log('Conta criada:', account.id),
-   *     error: (error) => console.error('Erro ao criar conta', error)
+   *     next: (account) => {},
+   *     error: (error) => {}
    *   });
    */
   createAccount(data: CreateAccountDTO): Observable<AccountDTO> {
@@ -145,8 +161,8 @@ export class ApiService {
    * @example
    * // Exemplo de uso:
    * this.api.getAccounts().subscribe({
-   *   next: (accounts) => console.log('Contas:', accounts),
-   *   error: (error) => console.error('Erro ao listar contas', error)
+   *   next: (accounts) => {},
+   *   error: (error) => {}
    * });
    */
   getAccounts(): Observable<AccountDTO[]> {

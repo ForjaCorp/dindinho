@@ -97,7 +97,7 @@ export class AccountsPage implements OnInit {
   private router = inject(Router);
 
   protected readonly standardAccounts = computed(() =>
-    this.accountService.accounts().filter((a) => a.type === 'STANDARD'),
+    this.accountService.accounts().filter((a: AccountDTO) => a.type === 'STANDARD'),
   );
 
   ngOnInit() {
