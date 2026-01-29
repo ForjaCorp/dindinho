@@ -78,6 +78,11 @@ export const routes: Routes = [
         loadComponent: () => import('../pages/admin/allowlist.page').then((m) => m.AllowlistPage),
         data: { title: 'Allowlist', requiredRole: 'ADMIN' },
       },
+      {
+        path: 'profile',
+        loadComponent: () => import('../pages/profile.page').then((m) => m.ProfilePage),
+        data: { title: 'Meu Perfil' },
+      },
       // Outras rotas autenticadas virão aqui (accounts, reports, profile)
     ],
   },
