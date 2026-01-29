@@ -27,8 +27,8 @@ import { App } from './app/app';
  * bootstrapApplication(App, appConfig)
  *   .catch(err => {});
  */
-bootstrapApplication(App, appConfig).catch(() => {
-  // Falha na inicialização da aplicação
-  // Aqui poderiamos adicionar lógica adicional de tratamento de erro,
-  // como enviar para um serviço de monitoramento
+bootstrapApplication(App, appConfig).catch((err) => {
+  // Falha crítica na inicialização da aplicação.
+  // Como o LoggerService ainda não está injetado, usamos console.error.
+  console.error('[FATAL] Falha na inicialização da aplicação:', err);
 });

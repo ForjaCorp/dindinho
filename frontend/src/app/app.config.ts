@@ -10,13 +10,16 @@
  * @module AppConfig
  */
 
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { ApplicationConfig, provideBrowserGlobalErrorListeners, ErrorHandler } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { providePrimeNG } from 'primeng/config';
+import { MessageService } from 'primeng/api';
 import Aura from '@primeuix/themes/aura';
 import { routes } from './app.routes';
-import { authInterceptor } from './interceptors/auth.interceptor'; // Importe o interceptor criado
+import { authInterceptor } from './interceptors/auth.interceptor';
+import { httpErrorInterceptor } from './interceptors/error.interceptor';
+import { GlobalErrorHandler } from './services/global-error-handler.service';
 
 /**
  * Configuração principal da aplicação.
@@ -29,11 +32,17 @@ export const appConfig: ApplicationConfig = {
     // Habilita o tratamento global de erros
     provideBrowserGlobalErrorListeners(),
 
+    // Handler global customizado para erros não capturados
+    { provide: ErrorHandler, useClass: GlobalErrorHandler },
+
+    // Serviço de mensagens do PrimeNG para Toasts
+    MessageService,
+
     // Configuração do roteador com as rotas definidas
     provideRouter(routes),
 
-    // Configuração do HttpClient com Fetch
-    provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
+    // Configuração do HttpClient com Fetch e interceptores
+    provideHttpClient(withFetch(), withInterceptors([authInterceptor, httpErrorInterceptor])),
 
     // Configuração do PrimeNG com o tema Aura
     providePrimeNG({
