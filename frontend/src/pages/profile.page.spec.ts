@@ -54,6 +54,7 @@ describe('ProfilePage', () => {
   });
 
   it('deve exibir o nome do usuário corretamente', () => {
+    // Busca o elemento pelo data-testid que contém o nome
     const nameElement = fixture.nativeElement.querySelector('[data-testid="user-name"]');
     expect(nameElement).toBeTruthy();
     expect(nameElement.textContent).toContain('Usuário Teste');

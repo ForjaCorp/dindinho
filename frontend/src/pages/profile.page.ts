@@ -12,12 +12,16 @@ import { AuthService } from '../app/services/auth.service';
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
         <h2 class="text-xl font-bold text-slate-800 mb-2">Perfil</h2>
         <p class="text-slate-600 mb-6">
-          Olá, <span class="font-semibold text-emerald-600">{{ auth.currentUser()?.name }}</span
+          Olá,
+          <span data-testid="user-name" class="font-semibold text-emerald-600">{{
+            auth.currentUser()?.name
+          }}</span
           >!
         </p>
 
         <button
           data-testid="logout-button"
+          (click)="auth.logout()"
           class="w-full py-3 px-4 bg-red-50 text-red-600 font-semibold rounded-xl hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
         >
           <i class="pi pi-sign-out"></i>
