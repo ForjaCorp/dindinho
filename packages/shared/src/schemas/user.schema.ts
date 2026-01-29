@@ -8,6 +8,7 @@ import { isValidPhoneNumber } from "libphonenumber-js";
  * @property {string} email - Email válido
  * @property {string} phone - Telefone válido (formato internacional)
  * @property {string} password - Senha (mínimo 6 caracteres)
+ * @property {boolean} acceptedTerms - Aceite dos termos de uso
  *
  * @example
  * // Exemplo de uso:
@@ -15,7 +16,8 @@ import { isValidPhoneNumber } from "libphonenumber-js";
  *   name: "João Silva",
  *   email: "joao@example.com",
  *   phone: "+5511999999999",
- *   password: "senha123"
+ *   password: "senha123",
+ *   acceptedTerms: true
  * };
  * const validatedData = createUserSchema.parse(userData);
  */
@@ -38,6 +40,9 @@ export const createUserSchema = z.object({
       /[^A-Za-z0-9]/,
       "Senha deve conter pelo menos um caractere especial",
     ),
+  acceptedTerms: z.boolean().refine((val) => val === true, {
+    message: "Você deve aceitar os termos de uso",
+  }),
 });
 
 /**
@@ -47,6 +52,7 @@ export const createUserSchema = z.object({
  * @property {string} email - Email do usuário
  * @property {string} phone - Telefone do usuário
  * @property {string} password - Senha do usuário (texto plano, será hasheada antes de salvar)
+ * @property {boolean} acceptedTerms - Aceite dos termos de uso
  *
  * @example
  * // Exemplo de uso:

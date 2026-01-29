@@ -4,7 +4,6 @@ import { AuthService } from '../../app/services/auth.service';
 import { Router, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
@@ -21,7 +20,6 @@ describe('SignupPage', () => {
     await TestBed.configureTestingModule({
       imports: [SignupPage],
       providers: [
-        provideNoopAnimations(),
         { provide: AuthService, useValue: authServiceMock },
         provideRouter([]),
         provideHttpClient(),

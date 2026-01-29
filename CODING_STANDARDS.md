@@ -61,6 +61,10 @@
 - **Componentes**: Usar a sintaxe de componentes standalone do Angular
 - **Serviços**: Usar `providedIn: 'root'` para serviços globais
 - **Estados**: Usar Signals para gerenciamento de estado reativo
+- **Animações**: O projeto utiliza Angular 21+ e PrimeNG v21+, que migraram para animações nativas de CSS.
+  - **NÃO** utilizar `provideAnimations()` ou `provideAnimationsAsync()`, pois são legados.
+  - O PrimeNG v21+ gerencia as animações internamente via CSS.
+  - Para animações customizadas, preferir o uso das novas APIs `animate.enter` e `animate.leave` ou CSS puro.
 - **Testes**: Usar `data-testid` para selecionar elementos nos testes
 - **Rotas**: Preferir `loadComponent` em páginas para manter bundles menores
   - Evitar importar módulos pesados no app-shell quando não necessários
