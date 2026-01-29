@@ -8,6 +8,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
+import { By } from '@angular/platform-browser';
 
 const testBed = getTestBed();
 if (!testBed.platform) {
@@ -41,21 +42,45 @@ describe('SignupPage', () => {
 
     authServiceMock.signup.mockReset();
     authServiceMock.joinWaitlist.mockReset();
+
+    // Mock navigator.vibrate
+    if (typeof navigator !== 'undefined') {
+      if (!navigator.vibrate) {
+        Object.defineProperty(navigator, 'vibrate', {
+          value: vi.fn(),
+          writable: true,
+          configurable: true,
+        });
+      }
+      vi.spyOn(navigator, 'vibrate').mockImplementation(() => true);
+    }
   });
 
   it('deve criar o componente', () => {
     expect(component).toBeTruthy();
+    const page = fixture.debugElement.query(By.css('[data-testid="signup-page"]'));
+    expect(page).toBeTruthy();
   });
 
   it('deve validar formulário inválido inicialmente', () => {
     expect(component['signupForm'].valid).toBe(false);
+    const submitBtn = fixture.debugElement.query(By.css('[data-testid="signup-submit-button"]'));
+    expect(submitBtn.componentInstance.disabled).toBe(true);
   });
 
   it('deve validar email incorreto', () => {
     const emailControl = component['signupForm'].get('email');
+
     emailControl?.setValue('email-invalido');
+    emailControl?.markAsTouched();
+    fixture.detectChanges();
+
     expect(emailControl?.valid).toBe(false);
     expect(emailControl?.hasError('email')).toBe(true);
+
+    const errorMsg = fixture.debugElement.query(By.css('#email-error'));
+    expect(errorMsg).toBeTruthy();
+    expect(errorMsg.nativeElement.textContent).toContain('Email inválido');
   });
 
   it('deve validar senha fraca', () => {
@@ -76,15 +101,14 @@ describe('SignupPage', () => {
   });
 
   it('deve formatar telefone ao digitar (br)', () => {
-    const input = document.createElement('input');
-    input.value = '11999999999';
-    const event = { target: input } as unknown as Event;
-
-    component.onPhoneInput(event);
+    const phoneInput = fixture.debugElement.query(By.css('[data-testid="signup-phone-input"]'));
+    phoneInput.nativeElement.value = '11999999999';
+    phoneInput.nativeElement.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
 
     // AsYouType (BR) formata como (11) 99999-9999
-    expect(input.value).toContain('(');
-    expect(component['signupForm'].get('phone')?.value).toBe(input.value);
+    expect(phoneInput.nativeElement.value).toContain('(');
+    expect(component['signupForm'].get('phone')?.value).toBe(phoneInput.nativeElement.value);
   });
 
   it('deve chamar signup com sucesso', () => {
@@ -106,11 +130,13 @@ describe('SignupPage', () => {
       password: 'SenhaForte1@',
       acceptedTerms: true,
     });
+    fixture.detectChanges();
 
     const router = TestBed.inject(Router);
     vi.spyOn(router, 'navigate').mockResolvedValue(true);
 
-    component.onSubmit();
+    const form = fixture.debugElement.query(By.css('[data-testid="signup-form"]'));
+    form.triggerEventHandler('ngSubmit', null);
 
     expect(authServiceMock.signup).toHaveBeenCalled();
     const args = authServiceMock.signup.mock.calls[0][0];
@@ -119,6 +145,7 @@ describe('SignupPage', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/login'], {
       state: { email: 'teste@email.com' },
     });
+    expect(navigator.vibrate).toHaveBeenCalledWith(100);
   });
 
   it('deve exibir erro se email já existe', () => {
@@ -133,11 +160,14 @@ describe('SignupPage', () => {
       password: 'SenhaForte1@',
       acceptedTerms: true,
     });
+    fixture.detectChanges();
 
     component.onSubmit();
+    fixture.detectChanges();
 
     expect(authServiceMock.signup).toHaveBeenCalled();
     expect(component['errorMessage']()).toBe('Email já cadastrado.');
+    expect(navigator.vibrate).toHaveBeenCalledWith([100, 50, 100]);
   });
 
   it('deve exibir botão da waitlist quando receber 403 (não convidado)', () => {
@@ -152,11 +182,16 @@ describe('SignupPage', () => {
       password: 'SenhaForte1@',
       acceptedTerms: true,
     });
+    fixture.detectChanges();
 
     component.onSubmit();
+    fixture.detectChanges();
 
     expect(component['errorMessage']()).toContain('Cadastro não permitido');
     expect(component['showWaitlistButton']()).toBe(true);
+
+    const waitlistBtn = fixture.debugElement.query(By.css('[data-testid="waitlist-button"]'));
+    expect(waitlistBtn).toBeTruthy();
   });
 
   it('deve entrar na waitlist com sucesso', () => {
@@ -168,12 +203,15 @@ describe('SignupPage', () => {
       countryCode: 'BR',
       phone: '11999999999',
     });
+    fixture.detectChanges();
 
     component.onJoinWaitlist();
+    fixture.detectChanges();
 
     expect(authServiceMock.joinWaitlist).toHaveBeenCalled();
     expect(component['waitlistSuccess']()).toBe(true);
     expect(component['errorMessage']()).toBeNull();
+    expect(navigator.vibrate).toHaveBeenCalledWith(100);
   });
 
   it('deve exibir erro 409 ao entrar na waitlist', () => {
@@ -186,9 +224,87 @@ describe('SignupPage', () => {
       countryCode: 'BR',
       phone: '11999999999',
     });
+    fixture.detectChanges();
 
     component.onJoinWaitlist();
+    fixture.detectChanges();
 
     expect(component['errorMessage']()).toBe('Email já está na lista de espera.');
+    expect(navigator.vibrate).toHaveBeenCalledWith([100, 50, 100]);
+  });
+
+  it('deve limpar mensagem de erro ao alterar o formulário', () => {
+    component['errorMessage'].set('Erro de teste');
+    fixture.detectChanges();
+
+    component['signupForm'].patchValue({ name: 'Novo Nome' });
+    fixture.detectChanges();
+
+    expect(component['errorMessage']()).toBeNull();
+  });
+
+  it('deve validar telefone inválido na submissão', () => {
+    component['signupForm'].patchValue({
+      name: 'Teste',
+      email: 'teste@email.com',
+      countryCode: 'BR',
+      phone: '123', // Inválido
+      password: 'SenhaForte1@',
+      acceptedTerms: true,
+    });
+    fixture.detectChanges();
+
+    component.onSubmit();
+    fixture.detectChanges();
+
+    expect(component['signupForm'].hasError('phoneInvalid')).toBe(true);
+    expect(navigator.vibrate).toHaveBeenCalledWith([100, 50, 100]);
+  });
+
+  it('deve marcar todos os campos como tocados se o formulário for inválido', () => {
+    const markAllAsTouchedSpy = vi.spyOn(component['signupForm'], 'markAllAsTouched');
+
+    component.onSubmit();
+
+    expect(markAllAsTouchedSpy).toHaveBeenCalled();
+    expect(navigator.vibrate).toHaveBeenCalledWith([100, 50, 100]);
+  });
+
+  it('deve tratar erro genérico no signup', () => {
+    const errorResponse = { status: 500 };
+    authServiceMock.signup.mockReturnValue(throwError(() => errorResponse));
+
+    component['signupForm'].patchValue({
+      name: 'Teste Silva',
+      email: 'erro@email.com',
+      countryCode: 'BR',
+      phone: '11999999999',
+      password: 'SenhaForte1@',
+      acceptedTerms: true,
+    });
+    fixture.detectChanges();
+
+    component.onSubmit();
+    fixture.detectChanges();
+
+    expect(component['errorMessage']()).toBe('Erro ao criar conta. Tente novamente.');
+  });
+
+  it('deve tratar erro genérico na waitlist', () => {
+    const errorResponse = { status: 500 };
+    authServiceMock.joinWaitlist.mockReturnValue(throwError(() => errorResponse));
+
+    component['signupForm'].patchValue({
+      name: 'Teste',
+      email: 'erro-waitlist@email.com',
+      countryCode: 'BR',
+      phone: '11999999999',
+    });
+    fixture.detectChanges();
+
+    component.onJoinWaitlist();
+    fixture.detectChanges();
+
+    expect(component['errorMessage']()).toBe('Erro ao solicitar convite. Tente novamente.');
   });
 });
