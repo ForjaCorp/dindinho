@@ -1,8 +1,10 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { finalize, tap } from 'rxjs/operators';
-import { Observable, throwError } from 'rxjs';
+import { finalize, tap, catchError } from 'rxjs/operators';
+import { Observable, throwError, of } from 'rxjs';
 import { CreateAccountDTO, AccountDTO, UpdateAccountDTO } from '@dindinho/shared';
 import { ApiService } from './api.service';
+import { LoggerService } from './logger.service';
+import { ErrorMapper } from '../utils/error-mapper';
 
 /**
  * Interface do estado de contas
@@ -37,6 +39,7 @@ interface AccountState {
 })
 export class AccountService {
   private api = inject(ApiService);
+  private logger = inject(LoggerService);
 
   /**
    * Estado reativo privado das contas
@@ -189,21 +192,14 @@ export class AccountService {
       .getAccounts()
       .pipe(
         finalize(() => this.updateState({ loading: false })),
-        tap({
-          next: (accounts: AccountDTO[]) => this.updateState({ accounts }),
-          error: (err) =>
-            this.updateState({
-              accounts: [],
-              error: this.mapHttpError(err, {
-                defaultMessage: 'Erro ao carregar contas',
-                validationFallback: 'Dados inválidos',
-              }),
-            }),
+        tap((accounts: AccountDTO[]) => this.updateState({ accounts })),
+        catchError((err) => {
+          const appError = ErrorMapper.fromUnknown(err);
+          this.updateState({ accounts: [], error: appError.message });
+          return of([]); // Retorna array vazio para completar o stream sem erro não capturado
         }),
       )
-      .subscribe({
-        error: () => undefined,
-      });
+      .subscribe();
   }
 
   /**
@@ -224,18 +220,14 @@ export class AccountService {
 
     return this.api.createAccount(payload).pipe(
       finalize(() => this.updateState({ loading: false })),
-      tap({
-        next: (newAccount: AccountDTO) => {
-          const currentAccounts = this.state().accounts;
-          this.updateState({ accounts: [...currentAccounts, newAccount] });
-        },
-        error: (err: unknown) =>
-          this.updateState({
-            error: this.mapHttpError(err, {
-              defaultMessage: 'Erro ao criar conta',
-              validationFallback: 'Dados inválidos',
-            }),
-          }),
+      tap((newAccount: AccountDTO) => {
+        const currentAccounts = this.state().accounts;
+        this.updateState({ accounts: [...currentAccounts, newAccount] });
+      }),
+      catchError((err) => {
+        const appError = ErrorMapper.fromUnknown(err);
+        this.updateState({ error: appError.message });
+        return throwError(() => appError);
       }),
     );
   }
@@ -243,58 +235,28 @@ export class AccountService {
   updateAccount(accountId: string, payload: UpdateAccountDTO): Observable<AccountDTO> {
     if (!accountId || accountId.trim() === '') {
       const err = new Error('ID da conta é obrigatório');
-      this.updateState({ loading: false, error: err.message });
-      return throwError(() => err);
+      const appError = ErrorMapper.fromUnknown(err);
+      this.updateState({ loading: false, error: appError.message });
+      return throwError(() => appError);
     }
 
     this.updateState({ loading: true, error: null });
 
     return this.api.updateAccount(accountId, payload).pipe(
       finalize(() => this.updateState({ loading: false })),
-      tap({
-        next: (updated: AccountDTO) => {
-          this.updateState({
-            accounts: this.state().accounts.map((a: AccountDTO) =>
-              a.id === updated.id ? updated : a,
-            ),
-          });
-        },
-        error: (err: unknown) =>
-          this.updateState({
-            error: this.mapHttpError(err, {
-              defaultMessage: 'Erro ao atualizar conta',
-              validationFallback: 'Dados inválidos',
-            }),
-          }),
+      tap((updated: AccountDTO) => {
+        this.updateState({
+          accounts: this.state().accounts.map((a: AccountDTO) =>
+            a.id === updated.id ? updated : a,
+          ),
+        });
+      }),
+      catchError((err) => {
+        const appError = ErrorMapper.fromUnknown(err);
+        this.updateState({ error: appError.message });
+        return throwError(() => appError);
       }),
     );
-  }
-
-  private mapHttpError(
-    err: unknown,
-    opts: { defaultMessage: string; validationFallback: string },
-  ): string {
-    const errObj = err && typeof err === 'object' ? (err as Record<string, unknown>) : undefined;
-
-    const status =
-      typeof errObj?.['status'] === 'number' ? (errObj['status'] as number) : undefined;
-    const errorValue = errObj?.['error'];
-    const errorObj =
-      errorValue && typeof errorValue === 'object'
-        ? (errorValue as Record<string, unknown>)
-        : undefined;
-    const message =
-      typeof errorObj?.['message'] === 'string' ? (errorObj['message'] as string) : undefined;
-
-    if (status === 0) return 'Erro de conexão. Verifique sua internet.';
-    if (status === 401) return 'Sessão expirada. Faça login novamente.';
-    if (status === 400) return message ?? opts.validationFallback;
-    if (status === 409) return message ?? opts.defaultMessage;
-    if (typeof status === 'number' && status >= 500) {
-      return 'Erro no servidor. Tente novamente mais tarde.';
-    }
-
-    return 'Ocorreu um erro inesperado.';
   }
 
   /**
@@ -434,9 +396,13 @@ export class AccountService {
             currentIndex++;
             createNext();
           },
-          error: (err: unknown) => {
-            const errorMessage = this.extractErrorMessage(err);
-            this.state.update((s: AccountState) => ({ ...s, error: errorMessage, loading: false }));
+          error: (err) => {
+            const appError = ErrorMapper.fromUnknown(err);
+            this.state.update((s: AccountState) => ({
+              ...s,
+              error: appError.message,
+              loading: false,
+            }));
           },
         });
     };
@@ -486,53 +452,5 @@ export class AccountService {
         a.id === updatedAccount.id ? updatedAccount : a,
       ),
     }));
-  }
-
-  /**
-   * Extrai mensagem de erro baseada no tipo de erro
-   * @param err - Erro retornado pela API
-   * @returns Mensagem de erro tratada
-   * @private
-   * @throws {Error} Quando o erro não tem formato esperado
-   */
-  private extractErrorMessage(err: unknown): string {
-    const errObj = err && typeof err === 'object' ? (err as Record<string, unknown>) : undefined;
-    const status =
-      typeof errObj?.['status'] === 'number' ? (errObj['status'] as number) : undefined;
-    const errorValue = errObj?.['error'];
-    const errorObj =
-      errorValue && typeof errorValue === 'object'
-        ? (errorValue as Record<string, unknown>)
-        : undefined;
-    const message =
-      typeof errorObj?.['message'] === 'string' ? (errorObj['message'] as string) : undefined;
-    // Erro de rede
-    if (status === 0) {
-      return 'Erro de conexão. Verifique sua internet.';
-    }
-
-    // Erro de autenticação
-    if (status === 401) {
-      return 'Sessão expirada. Faça login novamente.';
-    }
-
-    // Erro de validação
-    if (status === 400) {
-      return message ?? 'Dados inválidos. Verifique as informações.';
-    }
-
-    // Nome duplicado
-    if (status === 409) {
-      return message ?? 'Já existe uma conta com este nome.';
-    }
-
-    // Erro do servidor
-    if (typeof status === 'number' && status >= 500) {
-      return 'Erro no servidor. Tente novamente mais tarde.';
-    }
-
-    const fallbackMessage =
-      typeof errObj?.['message'] === 'string' ? (errObj['message'] as string) : undefined;
-    return message ?? fallbackMessage ?? 'Ocorreu um erro inesperado.';
   }
 }

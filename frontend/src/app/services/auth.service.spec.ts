@@ -11,7 +11,7 @@ if (!testBed.platform) {
 }
 
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { Router, provideRouter } from '@angular/router';
 import { provideLocationMocks } from '@angular/common/testing';
 import { AuthService, UserState } from './auth.service';
@@ -113,7 +113,12 @@ describe('AuthService', () => {
         email: 'test@example.com',
         password: 'wrongpassword',
       };
-      const errorResponse = { status: 401, message: 'Unauthorized' };
+      const errorResponse = new HttpErrorResponse({
+        status: 401,
+        statusText: 'Unauthorized',
+        error: { message: 'Unauthorized' },
+        url: 'http://localhost/api/login',
+      });
 
       vi.spyOn(apiService, 'login').mockReturnValue(throwError(() => errorResponse));
 
@@ -121,8 +126,10 @@ describe('AuthService', () => {
         service.login(credentials).subscribe({
           error: (err) => {
             expect(err).toEqual({
-              type: 'INVALID_CREDENTIALS',
-              message: 'Email ou senha incorretos. Verifique suas credenciais.',
+              type: 'AUTH',
+              message: 'Unauthorized',
+              code: 401,
+              details: errorResponse.error,
               originalError: errorResponse,
             });
             expect(service.currentUser()).toBeNull();
