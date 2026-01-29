@@ -10,6 +10,14 @@ export class SignupNotAllowedError extends Error {
   }
 }
 
+export class EmailAlreadyExistsError extends Error {
+  readonly statusCode = 409;
+
+  constructor() {
+    super("Email já cadastrado.");
+  }
+}
+
 /**
  * Serviço responsável por operações relacionadas a usuários
  * @class UsersService
@@ -46,7 +54,7 @@ export class UsersService {
     });
 
     if (userExists) {
-      throw new Error("Email já cadastrado.");
+      throw new EmailAlreadyExistsError();
     }
 
     // 2. Hash da senha

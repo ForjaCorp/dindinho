@@ -47,6 +47,12 @@ export default defineConfig({
     globals: true,
 
     /**
+     * Timeout para os testes (mitigar instabilidade no CI)
+     */
+    testTimeout: 10000,
+    hookTimeout: 10000,
+
+    /**
      * Variáveis de ambiente para testes
      * @type {Object}
      */

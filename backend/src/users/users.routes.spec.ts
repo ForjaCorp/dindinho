@@ -80,6 +80,7 @@ describe("Users Routes", () => {
         email: "vini@teste.com",
         phone: "+5511999999999",
         password: "SenhaForte123@",
+        acceptedTerms: true,
       },
     });
 
@@ -101,6 +102,7 @@ describe("Users Routes", () => {
         email: "vini@teste.com",
         phone: "+5511999999999",
         password: "SenhaForte123@",
+        acceptedTerms: true,
       },
     });
 
@@ -132,6 +134,7 @@ describe("Users Routes", () => {
         email: "duplicado@teste.com",
         phone: "+5511999999999",
         password: "SenhaForte123@",
+        acceptedTerms: true,
       },
     });
 
@@ -214,6 +217,7 @@ describe("Users Routes", () => {
         email: "erro@teste.com",
         phone: "+5511999999999",
         password: "SenhaForte123@",
+        acceptedTerms: true,
       },
     });
 
@@ -253,6 +257,7 @@ describe("Users Routes", () => {
         email: "teste@exemplo.com",
         phone: "+5511999999999",
         password: "SenhaForte123@",
+        acceptedTerms: true,
       },
     });
 

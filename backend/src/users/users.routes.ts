@@ -14,7 +14,11 @@ import { FastifyInstance } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
-import { SignupNotAllowedError, UsersService } from "./users.service";
+import {
+  SignupNotAllowedError,
+  EmailAlreadyExistsError,
+  UsersService,
+} from "./users.service";
 import { CreateUserDTO, createUserSchema } from "@dindinho/shared";
 
 /**
@@ -119,15 +123,13 @@ export async function usersRoutes(app: FastifyInstance) {
           createdAt: user.createdAt.toISOString(),
         });
       } catch (error) {
-        if (error instanceof SignupNotAllowedError) {
-          return reply.status(403).send({ message: error.message });
-        }
-
         if (
-          error instanceof Error &&
-          error.message === "Email já cadastrado."
+          error instanceof SignupNotAllowedError ||
+          error instanceof EmailAlreadyExistsError
         ) {
-          return reply.status(409).send({ message: error.message });
+          return reply
+            .status(error.statusCode)
+            .send({ message: error.message });
         }
 
         throw error;
