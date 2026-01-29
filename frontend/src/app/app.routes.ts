@@ -83,6 +83,11 @@ export const routes: Routes = [
         loadComponent: () => import('../pages/profile.page').then((m) => m.ProfilePage),
         data: { title: 'Meu Perfil' },
       },
+      {
+        path: 'reports',
+        loadComponent: () => import('../pages/reports/reports.page').then((m) => m.ReportsPage),
+        data: { title: 'Relatórios' },
+      },
       // Outras rotas autenticadas virão aqui (accounts, reports, profile)
     ],
   },
