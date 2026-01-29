@@ -351,7 +351,7 @@ const phoneValidator = (control: AbstractControl): ValidationErrors | null => {
               styleClass="w-full !bg-emerald-600 hover:!bg-emerald-700 !border-0"
             />
 
-            <div class="text-center text-sm text-slate-500">
+            <div class="text-center mt-4 text-sm text-slate-500">
               Já tem uma conta?
               <a routerLink="/login" class="text-emerald-600 font-medium hover:underline">Entrar</a>
             </div>
@@ -545,7 +545,7 @@ export class SignupPage {
         next: () => {
           this.isLoading.set(false);
           this.vibrate('success');
-          this.router.navigate(['/login'], { queryParams: { email } });
+          this.router.navigate(['/login'], { state: { email } });
         },
         error: (err: HttpErrorResponse) => {
           this.isLoading.set(false);

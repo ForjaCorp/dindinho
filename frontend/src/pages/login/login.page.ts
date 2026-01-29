@@ -1,4 +1,4 @@
-import { Component, inject, signal, ChangeDetectionStrategy, OnInit } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   ReactiveFormsModule,
@@ -7,7 +7,7 @@ import {
   FormGroup,
   FormControl,
 } from '@angular/forms';
-import { RouterLink, ActivatedRoute } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -21,6 +21,13 @@ import { AuthService } from '../../app/services/auth.service';
 interface LoginFormControls {
   email: FormControl<string | null>;
   password: FormControl<string | null>;
+}
+
+/**
+ * Interface para o estado de navegação vindo do Signup
+ */
+export interface LoginNavigationState {
+  email: string;
 }
 
 /**
@@ -143,15 +150,23 @@ interface LoginFormValues {
     </div>
   `,
 })
-export class LoginComponent implements OnInit {
+export class LoginComponent {
   /** Serviço para construção de formulários reativos */
   private fb = inject(FormBuilder);
 
   /** Serviço de autenticação */
   private authService = inject(AuthService);
 
-  /** Rota ativa para capturar parâmetros da URL */
-  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
+  constructor() {
+    const navigation = this.router.currentNavigation ? this.router.currentNavigation() : null;
+    const state = navigation?.extras.state as LoginNavigationState | undefined;
+
+    if (state?.email) {
+      this.loginForm.controls.email.setValue(state.email);
+    }
+  }
 
   /** Estado de carregamento do formulário */
   protected isLoading = signal(false);
@@ -166,16 +181,6 @@ export class LoginComponent implements OnInit {
     email: new FormControl('', [Validators.required, Validators.email]),
     password: new FormControl('', [Validators.required]),
   });
-
-  /**
-   * Inicializa o componente e verifica se há um e-mail pré-preenchido na URL
-   */
-  ngOnInit(): void {
-    const email = this.route.snapshot.queryParamMap.get('email');
-    if (email) {
-      this.loginForm.patchValue({ email });
-    }
-  }
 
   /**
    * Verifica se um campo do formulário é inválido e foi tocado
@@ -213,7 +218,6 @@ export class LoginComponent implements OnInit {
         this.isLoading.set(false);
       },
       error: (err: HttpErrorResponse) => {
-        console.error('Erro no login:', err);
         this.isLoading.set(false);
 
         // Tratamento de erros específicos
