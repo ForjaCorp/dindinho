@@ -157,3 +157,18 @@ model SignupAllowlist {
   email     String   @unique
   createdAt DateTime @default(now())
 }
+
+enum WaitlistStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Waitlist {
+  id        String         @id @default(uuid())
+  email     String         @unique
+  name      String
+  phone     String
+  status    WaitlistStatus @default(PENDING)
+  createdAt DateTime       @default(now())
+}
