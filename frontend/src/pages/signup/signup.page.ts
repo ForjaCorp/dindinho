@@ -51,6 +51,11 @@ const phoneValidator = (control: AbstractControl): ValidationErrors | null => {
   return parsed && parsed.isValid() ? null : { phoneInvalid: true };
 };
 
+/**
+ * Página de cadastro de usuários.
+ * Gerencia a criação de conta e o fluxo de lista de espera (waitlist).
+ * @class SignupPage
+ */
 @Component({
   selector: 'app-signup',
   standalone: true,
@@ -81,172 +86,206 @@ const phoneValidator = (control: AbstractControl): ValidationErrors | null => {
           >
             D
           </div>
-          <h1 class="text-2xl font-bold text-slate-800">Crie sua conta</h1>
-          <p class="text-slate-500 text-sm">Comece a controlar suas finanças hoje</p>
+          <h1 class="text-2xl font-bold text-slate-800">
+            {{ waitlistSuccess() ? 'Solicitação Enviada!' : 'Crie sua conta' }}
+          </h1>
+          <p class="text-slate-500 text-sm">
+            {{
+              waitlistSuccess()
+                ? 'Entraremos em contato em breve.'
+                : 'Comece a controlar suas finanças hoje'
+            }}
+          </p>
         </div>
 
-        <form
-          data-testid="signup-form"
-          [formGroup]="signupForm"
-          (ngSubmit)="onSubmit()"
-          class="flex flex-col gap-4"
-        >
-          <div class="flex flex-col gap-2">
-            <label for="name" class="text-sm font-medium text-slate-700">Nome Completo</label>
-            <input
-              data-testid="signup-name-input"
-              pInputText
-              id="name"
-              formControlName="name"
-              placeholder="Seu nome"
-              class="w-full"
-              [class]="isFieldInvalid('name') ? 'ng-invalid ng-dirty w-full' : 'w-full'"
-            />
-            @if (isFieldInvalid('name')) {
-              <small class="text-red-500">Nome deve ter pelo menos 2 caracteres</small>
-            }
-          </div>
-
-          <div class="flex flex-col gap-2">
-            <label for="email" class="text-sm font-medium text-slate-700">Email</label>
-            <input
-              data-testid="signup-email-input"
-              pInputText
-              id="email"
-              formControlName="email"
-              placeholder="seu@email.com"
-              class="w-full"
-              [class]="isFieldInvalid('email') ? 'ng-invalid ng-dirty w-full' : 'w-full'"
-            />
-            @if (isFieldInvalid('email')) {
-              <small class="text-red-500">Email inválido</small>
-            }
-          </div>
-
-          <div class="flex flex-col gap-2">
-            <label for="phone" class="text-sm font-medium text-slate-700">Celular</label>
-            <div class="flex gap-2">
-              <p-select
-                data-testid="signup-country-select"
-                [options]="countries"
-                formControlName="countryCode"
-                optionLabel="name"
-                optionValue="code"
-                [filter]="true"
-                filterBy="name,dialCode"
-                styleClass="w-[110px]"
-                [panelStyle]="{ width: '250px' }"
-                appendTo="body"
-              >
-                <ng-template pTemplate="selectedItem" let-selectedOption>
-                  @if (selectedOption) {
-                    <div class="flex items-center gap-2">
-                      <img
-                        [ngSrc]="
-                          'https://flagcdn.com/w20/' + selectedOption.code.toLowerCase() + '.png'
-                        "
-                        width="20"
-                        height="15"
-                        [class]="'flag flag-' + selectedOption.code.toLowerCase()"
-                        [alt]="selectedOption.name"
-                      />
-                      <div>{{ selectedOption.dialCode }}</div>
-                    </div>
-                  }
-                </ng-template>
-                <ng-template let-country pTemplate="item">
-                  <div class="flex items-center gap-2">
-                    <img
-                      [ngSrc]="'https://flagcdn.com/w20/' + country.code.toLowerCase() + '.png'"
-                      width="20"
-                      height="15"
-                      [class]="'flag flag-' + country.code.toLowerCase()"
-                      [alt]="country.name"
-                    />
-                    <div>{{ country.name }}</div>
-                    <div class="text-slate-400 text-xs ml-auto">{{ country.dialCode }}</div>
-                  </div>
-                </ng-template>
-              </p-select>
-
-              <input
-                data-testid="signup-phone-input"
-                pInputText
-                id="phone"
-                formControlName="phone"
-                placeholder="(99) 99999-9999"
-                class="flex-1"
-                [class]="isFieldInvalid('phone') ? 'ng-invalid ng-dirty w-full' : 'w-full'"
-                (input)="onPhoneInput($event)"
-              />
-            </div>
-            @if (isFieldInvalid('phone')) {
-              <small class="text-red-500">Telefone inválido</small>
-            }
-          </div>
-
-          <div class="flex flex-col gap-2">
-            <label for="password" class="text-sm font-medium text-slate-700">Senha</label>
-            <p-password
-              data-testid="signup-password-input"
-              id="password"
-              formControlName="password"
-              [toggleMask]="true"
-              styleClass="w-full"
-              inputStyleClass="w-full"
-              placeholder="Mínimo 6 caracteres"
-              promptLabel="Digite uma senha forte"
-              weakLabel="Fraca"
-              mediumLabel="Média"
-              strongLabel="Forte"
-            >
-              <ng-template pTemplate="footer">
-                <p class="mt-2 text-xs text-slate-500">Requisitos:</p>
-                <ul class="pl-2 ml-2 mt-0 list-disc text-xs text-slate-500">
-                  <li>Pelo menos 6 caracteres</li>
-                  <li>Uma letra maiúscula</li>
-                  <li>Uma letra minúscula</li>
-                  <li>Um número</li>
-                  <li>Um caractere especial</li>
-                </ul>
-              </ng-template>
-            </p-password>
-            @if (isFieldInvalid('password')) {
-              <small class="text-red-500">Senha não atende aos requisitos</small>
-            }
-          </div>
-
-          @if (errorMessage()) {
+        @if (waitlistSuccess()) {
+          <div class="flex flex-col items-center gap-6 py-4">
             <div
-              class="bg-red-50 text-red-600 text-sm p-3 rounded-lg border border-red-100 flex flex-col gap-2"
+              class="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center"
             >
-              <span>{{ errorMessage() }}</span>
-              @if (showWaitlistButton()) {
-                <p-button
-                  data-testid="waitlist-button"
-                  label="Solicitar Convite"
-                  [text]="true"
-                  styleClass="!p-0 !text-red-700 hover:!underline !justify-start !w-fit"
-                  (onClick)="onJoinWaitlist()"
-                />
+              <i class="pi pi-check text-4xl"></i>
+            </div>
+            <p class="text-center text-slate-600">
+              Recebemos seu interesse! Assim que uma vaga na nossa lista de convidados for liberada
+              para
+              <strong>{{ signupForm.controls.email.value }}</strong
+              >, você receberá um e-mail com as instruções.
+            </p>
+            <p-button
+              label="Voltar para o Login"
+              styleClass="w-full !bg-emerald-600 hover:!bg-emerald-700 !border-0"
+              routerLink="/login"
+            />
+          </div>
+        } @else {
+          <form
+            data-testid="signup-form"
+            [formGroup]="signupForm"
+            (ngSubmit)="onSubmit()"
+            class="flex flex-col gap-4"
+          >
+            <!-- ... existing form fields ... -->
+            <div class="flex flex-col gap-2">
+              <label for="name" class="text-sm font-medium text-slate-700">Nome Completo</label>
+              <input
+                data-testid="signup-name-input"
+                pInputText
+                id="name"
+                formControlName="name"
+                placeholder="Seu nome"
+                class="w-full"
+                [class]="isFieldInvalid('name') ? 'ng-invalid ng-dirty w-full' : 'w-full'"
+              />
+              @if (isFieldInvalid('name')) {
+                <small class="text-red-500">Nome deve ter pelo menos 2 caracteres</small>
               }
             </div>
-          }
 
-          <p-button
-            data-testid="signup-submit-button"
-            type="submit"
-            label="Criar Conta"
-            [loading]="isLoading()"
-            [disabled]="signupForm.invalid"
-            styleClass="w-full !bg-emerald-600 hover:!bg-emerald-700 !border-0"
-          />
+            <div class="flex flex-col gap-2">
+              <label for="email" class="text-sm font-medium text-slate-700">Email</label>
+              <input
+                data-testid="signup-email-input"
+                pInputText
+                id="email"
+                formControlName="email"
+                placeholder="seu@email.com"
+                class="w-full"
+                [class]="isFieldInvalid('email') ? 'ng-invalid ng-dirty w-full' : 'w-full'"
+              />
+              @if (isFieldInvalid('email')) {
+                <small class="text-red-500">Email inválido</small>
+              }
+            </div>
 
-          <div class="text-center mt-4 text-sm text-slate-500">
-            Já tem uma conta?
-            <a routerLink="/login" class="text-emerald-600 font-medium hover:underline">Entrar</a>
-          </div>
-        </form>
+            <div class="flex flex-col gap-2">
+              <label for="phone" class="text-sm font-medium text-slate-700">Celular</label>
+              <div class="flex gap-2">
+                <p-select
+                  data-testid="signup-country-select"
+                  [options]="countries"
+                  formControlName="countryCode"
+                  optionLabel="name"
+                  optionValue="code"
+                  [filter]="true"
+                  filterBy="name,dialCode"
+                  styleClass="w-[110px]"
+                  [panelStyle]="{ width: '250px' }"
+                  appendTo="body"
+                >
+                  <ng-template pTemplate="selectedItem" let-selectedOption>
+                    @if (selectedOption) {
+                      <div class="flex items-center gap-2">
+                        <img
+                          [ngSrc]="
+                            'https://flagcdn.com/w20/' + selectedOption.code.toLowerCase() + '.png'
+                          "
+                          width="20"
+                          height="15"
+                          [class]="'flag flag-' + selectedOption.code.toLowerCase()"
+                          [alt]="selectedOption.name"
+                        />
+                        <div>{{ selectedOption.dialCode }}</div>
+                      </div>
+                    }
+                  </ng-template>
+                  <ng-template let-country pTemplate="item">
+                    <div class="flex items-center gap-2">
+                      <img
+                        [ngSrc]="'https://flagcdn.com/w20/' + country.code.toLowerCase() + '.png'"
+                        width="20"
+                        height="15"
+                        [class]="'flag flag-' + country.code.toLowerCase()"
+                        [alt]="country.name"
+                      />
+                      <div>{{ country.name }}</div>
+                      <div class="text-slate-400 text-xs ml-auto">{{ country.dialCode }}</div>
+                    </div>
+                  </ng-template>
+                </p-select>
+
+                <input
+                  data-testid="signup-phone-input"
+                  pInputText
+                  id="phone"
+                  formControlName="phone"
+                  placeholder="(99) 99999-9999"
+                  class="flex-1"
+                  [class]="isFieldInvalid('phone') ? 'ng-invalid ng-dirty w-full' : 'w-full'"
+                  (input)="onPhoneInput($event)"
+                />
+              </div>
+              @if (isFieldInvalid('phone')) {
+                <small class="text-red-500">Telefone inválido</small>
+              }
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <label for="password" class="text-sm font-medium text-slate-700">Senha</label>
+              <p-password
+                data-testid="signup-password-input"
+                id="password"
+                formControlName="password"
+                [toggleMask]="true"
+                styleClass="w-full"
+                inputStyleClass="w-full"
+                placeholder="Mínimo 6 caracteres"
+                promptLabel="Digite uma senha forte"
+                weakLabel="Fraca"
+                mediumLabel="Média"
+                strongLabel="Forte"
+              >
+                <ng-template pTemplate="footer">
+                  <p class="mt-2 text-xs text-slate-500">Requisitos:</p>
+                  <ul class="pl-2 ml-2 mt-0 list-disc text-xs text-slate-500">
+                    <li>Pelo menos 6 caracteres</li>
+                    <li>Uma letra maiúscula</li>
+                    <li>Uma letra minúscula</li>
+                    <li>Um número</li>
+                    <li>Um caractere especial</li>
+                  </ul>
+                </ng-template>
+              </p-password>
+              @if (isFieldInvalid('password')) {
+                <small class="text-red-500">Senha não atende aos requisitos</small>
+              }
+            </div>
+
+            @if (errorMessage()) {
+              <div
+                class="bg-red-50 text-red-600 text-sm p-4 rounded-xl border border-red-100 flex flex-col gap-3"
+              >
+                <div class="flex gap-2">
+                  <i class="pi pi-exclamation-circle text-lg"></i>
+                  <span>{{ errorMessage() }}</span>
+                </div>
+
+                @if (showWaitlistButton()) {
+                  <p-button
+                    data-testid="waitlist-button"
+                    label="Solicitar Convite"
+                    icon="pi pi-envelope"
+                    styleClass="w-full !bg-red-600 hover:!bg-red-700 !border-0 !py-2"
+                    (onClick)="onJoinWaitlist()"
+                  />
+                }
+              </div>
+            }
+
+            <p-button
+              data-testid="signup-submit-button"
+              type="submit"
+              label="Criar Conta"
+              [loading]="isLoading()"
+              [disabled]="signupForm.invalid"
+              styleClass="w-full !bg-emerald-600 hover:!bg-emerald-700 !border-0"
+            />
+
+            <div class="text-center mt-4 text-sm text-slate-500">
+              Já tem uma conta?
+              <a routerLink="/login" class="text-emerald-600 font-medium hover:underline">Entrar</a>
+            </div>
+          </form>
+        }
       </p-card>
     </div>
   `,
@@ -313,6 +352,11 @@ export class SignupPage {
     });
   }
 
+  /**
+   * Verifica se um campo do formulário está inválido.
+   * @param {keyof SignupFormControls} field - Nome do campo
+   * @returns {boolean} True se o campo estiver inválido e tocado/sujo
+   */
   isFieldInvalid(field: keyof SignupFormControls): boolean {
     const control = this.signupForm.controls[field];
     if (field === 'phone') {
@@ -324,6 +368,13 @@ export class SignupPage {
     return control.invalid && (control.dirty || control.touched);
   }
 
+  /**
+   * Converte uma string de telefone para o formato internacional.
+   * @private
+   * @param {string} phone - Telefone em formato texto
+   * @param {CountryCode} countryCode - Código do país (ISO)
+   * @returns {PhoneNumber | null} Objeto de telefone parseado ou null
+   */
   private parsePhone(phone: string, countryCode: CountryCode): PhoneNumber | null {
     const parsed = parsePhoneNumberFromString(phone, countryCode);
     if (!parsed || !parsed.isValid()) {
@@ -343,6 +394,9 @@ export class SignupPage {
     }
   }
 
+  /**
+   * Processa a submissão do formulário de cadastro.
+   */
   onSubmit(): void {
     if (this.signupForm.invalid) {
       this.signupForm.markAllAsTouched();
@@ -396,6 +450,9 @@ export class SignupPage {
       });
   }
 
+  /**
+   * Solicita entrada na lista de espera caso o cadastro não seja permitido.
+   */
   onJoinWaitlist(): void {
     const { name, email, countryCode, phone } = this.signupForm.getRawValue();
     const parsed = this.parsePhone(phone, countryCode);
@@ -411,13 +468,11 @@ export class SignupPage {
         phone: parsed.number,
       })
       .subscribe({
-        next: (res) => {
+        next: () => {
           this.isLoading.set(false);
           this.errorMessage.set(null);
           this.showWaitlistButton.set(false);
-          // Opcional: Mostrar toast/mensagem de sucesso
-          alert(res.message);
-          this.router.navigate(['/login']);
+          this.waitlistSuccess.set(true);
         },
         error: (err: HttpErrorResponse) => {
           this.isLoading.set(false);
