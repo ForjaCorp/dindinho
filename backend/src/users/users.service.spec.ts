@@ -66,6 +66,7 @@ describe("UsersService", () => {
       email: "joao@example.com",
       password: "senha123",
       phone: "+5511999999999",
+      acceptedTerms: true,
     });
 
     expect(result).toEqual({
@@ -113,6 +114,7 @@ describe("UsersService", () => {
         email: "duplicado@example.com",
         password: "senha123",
         phone: "+5511999999999",
+        acceptedTerms: true,
       }),
     ).rejects.toThrow("Email já cadastrado.");
 
@@ -148,6 +150,7 @@ describe("UsersService", () => {
       email: "test@example.com",
       password: password,
       phone: "+5511999999999",
+      acceptedTerms: true,
     });
 
     const createCall = prismaMock.user.create.mock.calls[0][0];
@@ -167,6 +170,7 @@ describe("UsersService", () => {
         email: "NOT_ALLOWED@EXAMPLE.COM",
         password: "senha123",
         phone: "+5511999999999",
+        acceptedTerms: true,
       }),
     ).rejects.toBeInstanceOf(SignupNotAllowedError);
 
@@ -196,6 +200,7 @@ describe("UsersService", () => {
       email: "allowed@example.com",
       password: "senha123",
       phone: "+5511999999999",
+      acceptedTerms: true,
     });
 
     expect(result.email).toBe("allowed@example.com");
@@ -226,6 +231,7 @@ describe("UsersService", () => {
       email: "test@example.com",
       password: "senha123",
       phone: "+5511999999999",
+      acceptedTerms: true,
     });
 
     expect(result).not.toHaveProperty("passwordHash");
@@ -253,6 +259,7 @@ describe("UsersService", () => {
         email: "test@example.com",
         password: "senha123",
         phone: "+5511999999999",
+        acceptedTerms: true,
       }),
     ).rejects.toThrow("Conexão falhou");
   });
@@ -273,6 +280,7 @@ describe("UsersService", () => {
         email: "test@example.com",
         password: "senha123",
         phone: "+5511999999999",
+        acceptedTerms: true,
       }),
     ).rejects.toThrow("Falha ao criar usuário");
   });
@@ -299,6 +307,7 @@ describe("UsersService", () => {
       email: "test@example.com",
       password: "senha123",
       phone: "+5511999999999",
+      acceptedTerms: true,
     });
 
     expect(prismaMock.user.findUnique).toHaveBeenCalledBefore(

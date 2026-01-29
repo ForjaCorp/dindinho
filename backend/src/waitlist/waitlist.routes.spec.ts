@@ -38,7 +38,7 @@ describe("WaitlistRoutes", () => {
     const payload = {
       name: "Teste",
       email: "teste@exemplo.com",
-      phone: "11999999999",
+      phone: "+5511999999999",
     };
 
     vi.mocked(prisma.waitlist.findUnique).mockResolvedValue(null);
@@ -66,7 +66,7 @@ describe("WaitlistRoutes", () => {
     const payload = {
       name: "Teste",
       email: "existente@exemplo.com",
-      phone: "11999999999",
+      phone: "+5511999999999",
     };
 
     vi.mocked(prisma.waitlist.findUnique).mockResolvedValue({ id: "1" } as any);
