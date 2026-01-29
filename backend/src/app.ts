@@ -15,6 +15,7 @@ import { transactionsRoutes } from "./transactions/transactions.routes";
 import { categoriesRoutes } from "./categories/categories.routes";
 import { signupAllowlistRoutes } from "./signup-allowlist/signup-allowlist.routes";
 import { waitlistRoutes } from "./waitlist/waitlist.routes";
+import { reportsRoutes } from "./reports/reports.routes";
 import { RefreshTokenService } from "./auth/refresh-token.service";
 import { ApiResponseDTO, HealthCheckDTO, DbTestDTO } from "@dindinho/shared";
 import { prisma } from "./lib/prisma";
@@ -201,6 +202,7 @@ export function buildApp(): FastifyInstance {
   app.register(usersRoutes, { prefix: "/api" });
   app.register(signupAllowlistRoutes, { prefix: "/api" });
   app.register(waitlistRoutes, { prefix: "/api" });
+  app.register(reportsRoutes, { prefix: "/api" });
 
   // Instancia o RefreshTokenService com o logger da aplicação
   const refreshTokenService = new RefreshTokenService(prisma, app.log);

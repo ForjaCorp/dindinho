@@ -14,6 +14,7 @@ import {
   UpdateTransactionDTO,
   UpdateTransactionScopeDTO,
 } from "@dindinho/shared";
+import { SnapshotService } from "../reports/snapshot.service";
 
 class ForbiddenError extends Error {
   readonly statusCode = 403;
@@ -109,7 +110,10 @@ const toTransactionDTO = (t: any): TransactionDTO => ({
 });
 
 export class TransactionsService {
-  constructor(private prisma: PrismaClient) {}
+  private snapshotService: SnapshotService;
+  constructor(private prisma: PrismaClient) {
+    this.snapshotService = new SnapshotService(prisma);
+  }
 
   private ensureCreditCardInfo(account: {
     type: AccountType;
@@ -332,6 +336,12 @@ export class TransactionsService {
           return [outTx, inTx];
         });
 
+        await this.snapshotService.updateSnapshots(originAccount.id, baseDate);
+        await this.snapshotService.updateSnapshots(
+          destinationAccount.id,
+          baseDate,
+        );
+
         return created.map(toTransactionDTO);
       }
 
@@ -391,6 +401,8 @@ export class TransactionsService {
           return results;
         });
 
+        await this.snapshotService.updateSnapshots(originAccount.id, baseDate);
+
         return created.map(toTransactionDTO);
       }
 
@@ -421,6 +433,9 @@ export class TransactionsService {
               : {}),
           },
         });
+
+        await this.snapshotService.updateSnapshots(originAccount.id, baseDate);
+
         return toTransactionDTO(created);
       }
 
@@ -478,6 +493,8 @@ export class TransactionsService {
         }
         return results;
       });
+
+      await this.snapshotService.updateSnapshots(originAccount.id, baseDate);
 
       return created.map(toTransactionDTO);
     } catch (error) {
@@ -708,6 +725,17 @@ export class TransactionsService {
         }
       });
 
+      // Recalcula snapshots para ambas as contas envolvidas na transferência
+      const affectedDates = [existing.date];
+      if (nextDate) affectedDates.push(nextDate);
+      const minDate = new Date(
+        Math.min(...affectedDates.filter(Boolean).map((d) => d!.getTime())),
+      );
+
+      for (const accId of accountIds) {
+        await this.snapshotService.updateSnapshots(accId, minDate);
+      }
+
       return this.getById(userId, id);
     }
 
@@ -773,6 +801,13 @@ export class TransactionsService {
         }
       });
 
+      const affectedDates = [existing.date, ...affected.map((a) => a.date)];
+      if (nextDate) affectedDates.push(nextDate);
+      const minDate = new Date(
+        Math.min(...affectedDates.filter(Boolean).map((d) => d!.getTime())),
+      );
+      await this.snapshotService.updateSnapshots(existing.accountId, minDate);
+
       return this.getById(userId, id);
     }
 
@@ -797,6 +832,13 @@ export class TransactionsService {
       where: { id },
       data: baseUpdate,
     });
+
+    const affectedDates = [existing.date];
+    if (nextDate) affectedDates.push(nextDate);
+    const minDate = new Date(
+      Math.min(...affectedDates.filter(Boolean).map((d) => d!.getTime())),
+    );
+    await this.snapshotService.updateSnapshots(existing.accountId, minDate);
 
     return toTransactionDTO(updated);
   }
@@ -823,12 +865,18 @@ export class TransactionsService {
     if (tx.transferId) {
       const toDelete = await this.prisma.transaction.findMany({
         where: { transferId: tx.transferId },
-        select: { id: true },
+        select: { id: true, accountId: true, date: true },
       });
       const deletedIds = toDelete.map((t) => t.id);
       await this.prisma.transaction.deleteMany({
         where: { transferId: tx.transferId },
       });
+
+      // Atualiza snapshots para cada conta afetada
+      for (const item of toDelete) {
+        await this.snapshotService.updateSnapshots(item.accountId, item.date);
+      }
+
       return { deletedIds };
     }
 
@@ -837,19 +885,35 @@ export class TransactionsService {
       typeof tx.installmentNumber === "number";
 
     if (!hasSeries || scope === "ONE") {
+      const deleted = await this.prisma.transaction.findUnique({
+        where: { id: tx.id },
+        select: { date: true },
+      });
       await this.prisma.transaction.delete({ where: { id: tx.id } });
+      if (deleted) {
+        await this.snapshotService.updateSnapshots(tx.accountId, deleted.date);
+      }
       return { deletedIds: [tx.id] };
     }
 
     if (scope === "ALL") {
       const toDelete = await this.prisma.transaction.findMany({
         where: { recurrenceId: tx.recurrenceId as string },
-        select: { id: true },
+        select: { id: true, date: true },
       });
       const deletedIds = toDelete.map((t) => t.id);
+      const minDate = new Date(
+        Math.min(
+          ...toDelete.filter((d) => d.date).map((d) => d.date.getTime()),
+        ),
+      );
+
       await this.prisma.transaction.deleteMany({
         where: { recurrenceId: tx.recurrenceId as string },
       });
+
+      await this.snapshotService.updateSnapshots(tx.accountId, minDate);
+
       return { deletedIds };
     }
 
@@ -858,15 +922,22 @@ export class TransactionsService {
         recurrenceId: tx.recurrenceId as string,
         installmentNumber: { gte: tx.installmentNumber as number },
       },
-      select: { id: true },
+      select: { id: true, date: true },
     });
     const deletedIds = toDelete.map((t) => t.id);
+    const minDate = new Date(
+      Math.min(...toDelete.filter((d) => d.date).map((d) => d.date.getTime())),
+    );
+
     await this.prisma.transaction.deleteMany({
       where: {
         recurrenceId: tx.recurrenceId as string,
         installmentNumber: { gte: tx.installmentNumber as number },
       },
     });
+
+    await this.snapshotService.updateSnapshots(tx.accountId, minDate);
+
     return { deletedIds };
   }
 }
