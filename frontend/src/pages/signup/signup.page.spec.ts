@@ -98,6 +98,7 @@ describe('SignupPage', () => {
       countryCode: 'BR',
       phone: '11999999999',
       password: 'SenhaForte1@',
+      acceptedTerms: true,
     });
 
     const router = TestBed.inject(Router);
@@ -122,6 +123,7 @@ describe('SignupPage', () => {
       countryCode: 'BR',
       phone: '11999999999',
       password: 'SenhaForte1@',
+      acceptedTerms: true,
     });
 
     component.onSubmit();
@@ -140,6 +142,7 @@ describe('SignupPage', () => {
       countryCode: 'BR',
       phone: '11999999999',
       password: 'SenhaForte1@',
+      acceptedTerms: true,
     });
 
     component.onSubmit();
