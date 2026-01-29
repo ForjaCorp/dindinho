@@ -14,6 +14,7 @@ describe('SignupPage', () => {
 
   const authServiceMock = {
     signup: vi.fn(),
+    joinWaitlist: vi.fn(),
   };
 
   beforeEach(async () => {
@@ -33,6 +34,7 @@ describe('SignupPage', () => {
     fixture.detectChanges();
 
     authServiceMock.signup.mockReset();
+    authServiceMock.joinWaitlist.mockReset();
   });
 
   it('deve criar o componente', () => {
@@ -126,5 +128,56 @@ describe('SignupPage', () => {
 
     expect(authServiceMock.signup).toHaveBeenCalled();
     expect(component['errorMessage']()).toBe('Email já cadastrado.');
+  });
+
+  it('deve exibir botão da waitlist quando receber 403 (não convidado)', () => {
+    const errorResponse = { status: 403 };
+    authServiceMock.signup.mockReturnValue(throwError(() => errorResponse));
+
+    component['signupForm'].patchValue({
+      name: 'Teste',
+      email: 'nao-convidado@email.com',
+      countryCode: 'BR',
+      phone: '11999999999',
+      password: 'SenhaForte1@',
+    });
+
+    component.onSubmit();
+
+    expect(component['errorMessage']()).toContain('Cadastro não permitido');
+    expect(component['showWaitlistButton']()).toBe(true);
+  });
+
+  it('deve entrar na waitlist com sucesso', () => {
+    authServiceMock.joinWaitlist.mockReturnValue(of({ message: 'Sucesso' }));
+
+    component['signupForm'].patchValue({
+      name: 'Teste',
+      email: 'waitlist@email.com',
+      countryCode: 'BR',
+      phone: '11999999999',
+    });
+
+    component.onJoinWaitlist();
+
+    expect(authServiceMock.joinWaitlist).toHaveBeenCalled();
+    expect(component['waitlistSuccess']()).toBe(true);
+    expect(component['errorMessage']()).toBeNull();
+  });
+
+  it('deve exibir erro 409 ao entrar na waitlist', () => {
+    const errorResponse = { status: 409 };
+    authServiceMock.joinWaitlist.mockReturnValue(throwError(() => errorResponse));
+
+    component['signupForm'].patchValue({
+      name: 'Teste',
+      email: 'ja-na-lista@email.com',
+      countryCode: 'BR',
+      phone: '11999999999',
+    });
+
+    component.onJoinWaitlist();
+
+    expect(component['errorMessage']()).toBe('Email já está na lista de espera.');
   });
 });
