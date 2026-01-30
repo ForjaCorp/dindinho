@@ -1,203 +1,203 @@
-import { Component, OnInit, inject, signal, ViewChild } from '@angular/core';
+import { Component, OnInit, inject, signal, Directive } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ReportsService } from '../../app/services/reports.service';
 import { AccountService } from '../../app/services/account.service';
 import { PageHeaderComponent } from '../../app/components/page-header.component';
-import { ChartConfiguration, ChartData } from 'chart.js';
+import { ChartData, ActiveElement, ChartOptions } from 'chart.js';
 import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { DatePickerModule } from 'primeng/datepicker';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { CardModule } from 'primeng/card';
+import { ButtonModule } from 'primeng/button';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { SkeletonModule } from 'primeng/skeleton';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 import { ReportFilterDTO } from '@dindinho/shared';
 import { finalize } from 'rxjs';
+import { DownloadUtil } from '../../app/utils/download.util';
+import { COMMON_CHART_OPTIONS } from '../../app/utils/chart.util';
+
+/**
+ * Wrapper para o BaseChartDirective para seguir padrões de seletor.
+ */
+@Directive({
+  selector: 'canvas[appBaseChart]',
+  standalone: true,
+  hostDirectives: [
+    {
+      directive: BaseChartDirective,
+      inputs: ['data', 'options', 'type'],
+    },
+  ],
+})
+export class AppBaseChartDirective {}
 
 /**
  * Página de Relatórios e Insights Financeiros.
- *
- * @description
- * Esta página fornece uma visão detalhada das finanças do usuário através de gráficos:
- * 1. Gastos por Categoria (Doughnut)
- * 2. Fluxo de Caixa Mensal (Barra)
- * 3. Evolução de Saldo (Linha)
- *
- * @since 1.0.0
  */
 @Component({
-  selector: 'app-reports-page',
+  selector: 'app-reports',
   standalone: true,
   imports: [
     CommonModule,
     FormsModule,
     PageHeaderComponent,
-    BaseChartDirective,
+    AppBaseChartDirective,
     DatePickerModule,
     MultiSelectModule,
     CardModule,
+    ButtonModule,
     ProgressSpinnerModule,
     SkeletonModule,
+    ToastModule,
   ],
-  providers: [provideCharts(withDefaultRegisterables())],
+  providers: [provideCharts(withDefaultRegisterables()), MessageService],
   template: `
     <div class="flex flex-col gap-6 pb-24">
-      <app-page-header title="Relatórios" />
+      <p-toast />
+      <app-page-header title="Relatórios">
+        <p-button
+          page-header-actions
+          label="Exportar CSV"
+          icon="pi pi-download"
+          size="small"
+          [loading]="exporting()"
+          (onClick)="exportCsv()"
+          severity="secondary"
+          data-testid="export-csv-button"
+          aria-label="Exportar dados filtrados para CSV"
+        />
+      </app-page-header>
 
       <!-- Filtros -->
-      <div
-        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-4"
+      <section
+        class="bg-white mx-4 p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-end"
         role="search"
         aria-label="Filtros de relatório"
       >
-        <div class="flex flex-col gap-1.5">
+        <div class="flex flex-col gap-1.5 flex-1 min-w-[280px]">
           <label
-            for="filter-date-range"
-            class="text-xs font-bold text-slate-600 uppercase tracking-wider ml-1"
+            for="date-range"
+            class="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1"
             >Período</label
           >
           <p-datepicker
-            id="filter-date-range"
+            inputId="date-range"
             [(ngModel)]="dateRange"
             selectionMode="range"
             [readonlyInput]="true"
             [showIcon]="true"
-            iconDisplay="input"
+            (onSelect)="onDateChange()"
             placeholder="Selecione o período"
             styleClass="w-full"
             inputStyleClass="!bg-white !border-slate-200 !rounded-xl !py-3 !px-4"
-            (onSelect)="onDateChange()"
-            appendTo="body"
-            data-testid="filter-date-range"
-            aria-label="Selecionar período de datas"
+            dateFormat="dd/mm/yy"
+            aria-label="Selecionar intervalo de datas"
           />
         </div>
 
-        <div class="flex flex-col gap-1.5">
+        <div class="flex flex-col gap-1.5 flex-1 min-w-[280px]">
           <label
-            for="filter-accounts"
-            class="text-xs font-bold text-slate-600 uppercase tracking-wider ml-1"
+            for="accounts-select"
+            class="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1"
             >Contas</label
           >
-          <p-multiSelect
-            id="filter-accounts"
-            [options]="accountService.accounts()"
+          <p-multiselect
+            inputId="accounts-select"
             [(ngModel)]="selectedAccountIds"
+            [options]="accountService.accounts()"
             optionLabel="name"
             optionValue="id"
             placeholder="Todas as contas"
-            styleClass="w-full !bg-white !border-slate-200 !rounded-xl !min-h-[46px]"
-            panelStyleClass="!rounded-xl shadow-xl"
             (onChange)="loadAllReports()"
+            styleClass="w-full !bg-white !border-slate-200 !rounded-xl !min-h-[46px]"
             display="chip"
-            appendTo="body"
-            data-testid="filter-accounts"
-            aria-label="Filtrar por contas bancárias"
+            [maxSelectedLabels]="3"
+            aria-label="Selecionar contas para filtrar"
           />
         </div>
-      </div>
+      </section>
 
-      <!-- Conteúdo de Gráficos -->
+      <!-- Gráficos -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 px-4">
         <!-- Gastos por Categoria -->
         <p-card
           header="Gastos por Categoria"
-          styleClass="!shadow-sm !border-none !bg-white !rounded-2xl"
+          styleClass="h-full border border-slate-200 shadow-sm !rounded-2xl"
           aria-label="Relatório de gastos por categoria"
         >
-          @if (loadingSpending()) {
-            <div class="flex flex-col gap-4 h-[300px]" aria-hidden="true">
-              <p-skeleton shape="circle" size="200px" styleClass="mx-auto mt-4" />
-              <div class="flex justify-center gap-2">
-                <p-skeleton width="60px" height="12px" />
-                <p-skeleton width="60px" height="12px" />
-                <p-skeleton width="60px" height="12px" />
+          <div class="h-[300px] flex items-center justify-center relative">
+            @if (loadingSpending()) {
+              <p-skeleton shape="circle" size="200px" />
+            } @else if (!spendingData().datasets[0]?.data?.length) {
+              <div class="flex flex-col items-center gap-3 text-slate-400" role="status">
+                <i class="pi pi-inbox text-4xl opacity-20"></i>
+                <p>Nenhum gasto registrado no período</p>
               </div>
-            </div>
-          } @else if (spendingData().datasets[0].data.length === 0) {
-            <div
-              class="flex flex-col items-center justify-center h-[300px] text-slate-400 bg-slate-50/50 rounded-xl"
-              role="status"
-            >
-              <i class="pi pi-chart-pie text-4xl mb-2 opacity-20" aria-hidden="true"></i>
-              <p class="text-sm font-medium">Nenhum gasto registrado</p>
-            </div>
-          } @else {
-            <div
-              class="h-[300px] flex items-center justify-center p-2"
-              role="region"
-              aria-label="Gráfico de pizza mostrando gastos por categoria"
-            >
+            } @else {
               <canvas
-                baseChart
+                appBaseChart
                 [data]="spendingData()"
                 [options]="doughnutChartOptions"
                 [type]="'doughnut'"
+                class="cursor-pointer"
               >
               </canvas>
-            </div>
-          }
+            }
+          </div>
         </p-card>
 
-        <!-- Evolução de Saldo -->
+        <!-- Histórico de Saldo -->
         <p-card
-          header="Evolução de Saldo"
-          styleClass="!shadow-sm !border-none !bg-white !rounded-2xl"
+          header="Evolução do Saldo"
+          styleClass="h-full border border-slate-200 shadow-sm !rounded-2xl"
           aria-label="Relatório de evolução de saldo"
         >
-          @if (loadingBalance()) {
-            <div class="h-[300px] pt-8" aria-hidden="true">
-              <p-skeleton width="100%" height="220px" />
-            </div>
-          } @else if (balanceData().labels?.length === 0) {
-            <div
-              class="flex flex-col items-center justify-center h-[300px] text-slate-400 bg-slate-50/50 rounded-xl"
-              role="status"
-            >
-              <i class="pi pi-chart-line text-4xl mb-2 opacity-20" aria-hidden="true"></i>
-              <p class="text-sm font-medium">Sem histórico no período</p>
-            </div>
-          } @else {
-            <div
-              class="h-[300px] p-2"
-              role="region"
-              aria-label="Gráfico de linha mostrando a evolução do saldo ao longo do tempo"
-            >
-              <canvas baseChart [data]="balanceData()" [options]="lineChartOptions" [type]="'line'">
+          <div class="h-[300px]">
+            @if (loadingBalance()) {
+              <p-skeleton width="100%" height="100%" />
+            } @else {
+              <canvas
+                appBaseChart
+                [data]="balanceData()"
+                [options]="lineChartOptions"
+                [type]="'line'"
+              >
               </canvas>
-            </div>
-          }
+            }
+          </div>
         </p-card>
 
         <!-- Fluxo de Caixa -->
         <p-card
-          header="Fluxo de Caixa"
-          styleClass="!shadow-sm !border-none !bg-white !rounded-2xl lg:col-span-2"
+          header="Fluxo de Caixa Mensal"
+          styleClass="lg:col-span-2 border border-slate-200 shadow-sm !rounded-2xl"
           aria-label="Relatório de fluxo de caixa mensal"
         >
-          @if (loadingCashFlow()) {
-            <div class="h-[350px] pt-8" aria-hidden="true">
-              <p-skeleton width="100%" height="270px" />
-            </div>
-          } @else if (cashFlowData().labels?.length === 0) {
-            <div
-              class="flex flex-col items-center justify-center h-[300px] text-slate-400 bg-slate-50/50 rounded-xl"
-              role="status"
-            >
-              <i class="pi pi-chart-bar text-4xl mb-2 opacity-20" aria-hidden="true"></i>
-              <p class="text-sm font-medium">Nenhuma movimentação no período</p>
-            </div>
-          } @else {
-            <div
-              class="h-[350px] p-2"
-              role="region"
-              aria-label="Gráfico de barras mostrando receitas e despesas por período"
-            >
-              <canvas baseChart [data]="cashFlowData()" [options]="barChartOptions" [type]="'bar'">
+          <div class="h-[350px]">
+            @if (loadingCashFlow()) {
+              <div class="grid grid-cols-6 gap-4 h-full items-end p-4">
+                <p-skeleton height="40%" />
+                <p-skeleton height="70%" />
+                <p-skeleton height="50%" />
+                <p-skeleton height="90%" />
+                <p-skeleton height="60%" />
+                <p-skeleton height="80%" />
+              </div>
+            } @else {
+              <canvas
+                appBaseChart
+                [data]="cashFlowData()"
+                [options]="barChartOptions"
+                [type]="'bar'"
+                class="cursor-pointer"
+              >
               </canvas>
-            </div>
-          }
+            }
+          </div>
         </p-card>
       </div>
     </div>
@@ -205,6 +205,9 @@ import { finalize } from 'rxjs';
   styles: [
     `
       :host ::ng-deep {
+        canvas.cursor-pointer {
+          cursor: pointer;
+        }
         .p-card {
           border-radius: 1rem;
           overflow: hidden;
@@ -219,108 +222,79 @@ import { finalize } from 'rxjs';
   ],
 })
 export class ReportsPage implements OnInit {
-  @ViewChild(BaseChartDirective) chart?: BaseChartDirective;
   private reportsService = inject(ReportsService);
   protected accountService = inject(AccountService);
   private router = inject(Router);
-
-  // Armazenamento local para IDs de categoria (para drill-down)
-  private categoryIds: (string | null)[] = [];
+  private messageService = inject(MessageService);
 
   // Filtros
-  dateRange = signal<Date[]>([
-    new Date(new Date().getFullYear(), new Date().getMonth(), 1), // Primeiro dia do mês
-    new Date(),
+  dateRange = signal<[Date | null, Date | null]>([
+    new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
   ]);
+  accounts = this.accountService.accounts;
   selectedAccountIds = signal<string[]>([]);
 
-  // Estados de Loading
+  // Estados de Carregamento
   loadingSpending = signal(false);
   loadingCashFlow = signal(false);
   loadingBalance = signal(false);
+  exporting = signal(false);
 
   // Dados dos Gráficos
   spendingData = signal<ChartData<'doughnut'>>({
     labels: [],
-    datasets: [{ data: [], backgroundColor: [], hoverOffset: 4 }],
+    datasets: [{ data: [] }],
   });
-
   cashFlowData = signal<ChartData<'bar'>>({
     labels: [],
     datasets: [],
   });
-
   balanceData = signal<ChartData<'line'>>({
     labels: [],
     datasets: [],
   });
 
-  // Opções dos Gráficos
-  doughnutChartOptions: ChartConfiguration<'doughnut'>['options'] = {
-    responsive: true,
-    maintainAspectRatio: false,
-    onClick: (event, elements) => {
+  private categoryIds: string[] = [];
+
+  // Configurações dos Gráficos
+  doughnutChartOptions: ChartOptions<'doughnut'> = {
+    ...COMMON_CHART_OPTIONS,
+    onClick: (_, elements: ActiveElement[]) => {
       if (elements.length > 0) {
         const index = elements[0].index;
         const categoryId = this.categoryIds[index];
         this.navigateToTransactions('EXPENSE', categoryId);
       }
     },
-    plugins: {
-      legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } },
-      tooltip: {
-        callbacks: {
-          label: (context) => {
-            const label = context.label || '';
-            const value = context.raw as number;
-            return ` ${label}: R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-          },
-        },
+  };
+
+  lineChartOptions: ChartOptions<'line'> = {
+    ...COMMON_CHART_OPTIONS,
+    scales: {
+      y: {
+        beginAtZero: false,
+        grid: { color: '#f1f5f9' },
+      },
+      x: {
+        grid: { display: false },
       },
     },
   };
 
-  barChartOptions: ChartConfiguration<'bar'>['options'] = {
-    responsive: true,
-    maintainAspectRatio: false,
-    onClick: (event, elements) => {
+  barChartOptions: ChartOptions<'bar'> = {
+    ...COMMON_CHART_OPTIONS,
+    onClick: (_, elements: ActiveElement[]) => {
       if (elements.length > 0) {
-        const index = elements[0].index;
-        const datasetIndex = elements[0].datasetIndex;
-        const period = this.cashFlowData().labels?.[index] as string;
-        const type = datasetIndex === 0 ? 'INCOME' : 'EXPENSE';
-        this.navigateToTransactions(type, null, period);
+        const element = elements[0];
+        const month = this.cashFlowData().labels?.[element.index] as string;
+        const type = element.datasetIndex === 0 ? 'INCOME' : 'EXPENSE';
+        this.navigateToTransactions(type, undefined, month);
       }
     },
-    plugins: {
-      legend: { position: 'bottom' },
-    },
     scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          callback: (value) => `R$ ${value}`,
-        },
-      },
-    },
-  };
-
-  lineChartOptions: ChartConfiguration<'line'>['options'] = {
-    responsive: true,
-    maintainAspectRatio: false,
-    elements: {
-      line: { tension: 0.4 },
-      point: { radius: 2, hoverRadius: 5 },
-    },
-    plugins: {
-      legend: { display: false },
-    },
-    scales: {
-      y: {
-        ticks: {
-          callback: (value) => `R$ ${value}`,
-        },
-      },
+      x: { stacked: false, grid: { display: false } },
+      y: { stacked: false, grid: { color: '#f1f5f9' } },
     },
   };
 
@@ -330,7 +304,8 @@ export class ReportsPage implements OnInit {
   }
 
   onDateChange() {
-    if (this.dateRange()?.length === 2 && this.dateRange()[0] && this.dateRange()[1]) {
+    const [start, end] = this.dateRange();
+    if (start && end) {
       this.loadAllReports();
     }
   }
@@ -351,110 +326,111 @@ export class ReportsPage implements OnInit {
     this.fetchBalanceHistory(filters);
   }
 
+  exportCsv() {
+    const [start, end] = this.dateRange();
+    if (!start || !end) return;
+
+    const filters: ReportFilterDTO = {
+      startDate: start.toISOString(),
+      endDate: end.toISOString(),
+      accountIds: this.selectedAccountIds().length > 0 ? this.selectedAccountIds() : undefined,
+      includePending: true,
+    };
+
+    this.exporting.set(true);
+    this.reportsService
+      .exportTransactionsCsv(filters)
+      .pipe(finalize(() => this.exporting.set(false)))
+      .subscribe({
+        next: (blob: Blob) => {
+          const fileName = DownloadUtil.generateFileName('transacoes');
+          DownloadUtil.downloadBlob(blob, fileName);
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Sucesso',
+            detail: 'Relatório exportado com sucesso',
+          });
+        },
+        error: () => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Erro',
+            detail: 'Falha ao exportar relatório',
+          });
+        },
+      });
+  }
+
   private fetchSpending(filters: ReportFilterDTO) {
     this.loadingSpending.set(true);
     this.reportsService
-      .getSpendingByCategory(filters)
+      .getSpendingByCategoryChart(filters)
       .pipe(finalize(() => this.loadingSpending.set(false)))
-      .subscribe(
-        (
-          data: {
-            categoryId: string | null;
-            categoryName: string;
-            amount: number;
-            color?: string;
-          }[],
-        ) => {
-          this.categoryIds = data.map((i) => i.categoryId);
-          this.spendingData.set({
-            labels: data.map((i) => i.categoryName),
-            datasets: [
-              {
-                data: data.map((i) => i.amount),
-                backgroundColor: data.map((i) => i.color || this.getRandomColor()),
-                hoverOffset: 4,
-              },
-            ],
-          });
+      .subscribe({
+        next: (result) => {
+          this.spendingData.set(result.data);
+          this.categoryIds = result.categoryIds;
         },
-      );
-  }
-
-  private navigateToTransactions(
-    type?: 'INCOME' | 'EXPENSE' | 'TRANSFER',
-    categoryId?: string | null,
-    period?: string,
-  ) {
-    const queryParams: Record<string, string | number> = { openFilters: 1 };
-
-    if (type) queryParams['type'] = type;
-    if (categoryId) queryParams['categoryId'] = categoryId;
-    if (this.selectedAccountIds().length === 1)
-      queryParams['accountId'] = this.selectedAccountIds()[0];
-
-    if (period) {
-      queryParams['month'] = period; // YYYY-MM
-    } else if (this.dateRange()?.length === 2 && this.dateRange()[0]) {
-      // Se não houver período específico, usamos o mês da data inicial do filtro
-      const start = this.dateRange()[0];
-      queryParams['month'] =
-        `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`;
-    }
-
-    this.router.navigate(['/transactions'], { queryParams });
+        error: () => this.resetSpendingData(),
+      });
   }
 
   private fetchCashFlow(filters: ReportFilterDTO) {
     this.loadingCashFlow.set(true);
     this.reportsService
-      .getCashFlow(filters)
+      .getCashFlowChart(filters)
       .pipe(finalize(() => this.loadingCashFlow.set(false)))
-      .subscribe((data) => {
-        this.cashFlowData.set({
-          labels: data.map((i) => i.period),
-          datasets: [
-            {
-              label: 'Receitas',
-              data: data.map((i) => i.income),
-              backgroundColor: '#10b981', // Emerald 500
-              borderRadius: 4,
-            },
-            {
-              label: 'Despesas',
-              data: data.map((i) => i.expense),
-              backgroundColor: '#ef4444', // Red 500
-              borderRadius: 4,
-            },
-          ],
-        });
+      .subscribe({
+        next: (data) => this.cashFlowData.set(data),
+        error: () => this.resetCashFlowData(),
       });
   }
 
   private fetchBalanceHistory(filters: ReportFilterDTO) {
     this.loadingBalance.set(true);
     this.reportsService
-      .getBalanceHistory(filters)
+      .getBalanceHistoryChart(filters)
       .pipe(finalize(() => this.loadingBalance.set(false)))
-      .subscribe((data) => {
-        this.balanceData.set({
-          labels: data.map((i) => new Date(i.date).toLocaleDateString('pt-BR')),
-          datasets: [
-            {
-              label: 'Saldo',
-              data: data.map((i) => i.balance),
-              fill: true,
-              borderColor: '#6366f1', // Indigo 500
-              backgroundColor: 'rgba(99, 102, 241, 0.1)',
-              pointBackgroundColor: '#6366f1',
-              borderWidth: 2,
-            },
-          ],
-        });
+      .subscribe({
+        next: (data) => this.balanceData.set(data),
+        error: () => this.resetBalanceData(),
       });
   }
 
-  private getRandomColor() {
-    const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
-    return colors[Math.floor(Math.random() * colors.length)];
+  private resetSpendingData() {
+    this.spendingData.set({ labels: [], datasets: [{ data: [] }] });
+    this.categoryIds = [];
+  }
+
+  private resetCashFlowData() {
+    this.cashFlowData.set({ labels: [], datasets: [] });
+  }
+
+  private resetBalanceData() {
+    this.balanceData.set({ labels: [], datasets: [] });
+  }
+
+  private navigateToTransactions(type: 'INCOME' | 'EXPENSE', categoryId?: string, month?: string) {
+    const [start, end] = this.dateRange();
+    const queryParams: Record<string, string | number | undefined> = {
+      type,
+      startDate: start?.toISOString(),
+      endDate: end?.toISOString(),
+      openFilters: 1,
+    };
+
+    if (categoryId && categoryId !== 'none') {
+      queryParams['categoryId'] = categoryId;
+    }
+
+    if (month) {
+      queryParams['month'] = month;
+    }
+
+    if (this.selectedAccountIds().length === 1) {
+      queryParams['accountId'] = this.selectedAccountIds()[0];
+    }
+
+    this.router.navigate(['/transactions'], { queryParams });
   }
 }

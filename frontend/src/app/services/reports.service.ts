@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
   ReportFilterDTO,
@@ -8,6 +8,8 @@ import {
   CashFlowDTO,
   BalanceHistoryDTO,
 } from '@dindinho/shared';
+import { ChartData } from 'chart.js';
+import { CATEGORY_PALETTE, CHART_COLORS } from '../utils/chart.util';
 
 /**
  * Serviço responsável por buscar dados de relatórios e estatísticas.
@@ -24,6 +26,83 @@ import {
 export class ReportsService {
   private http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiUrl}/reports`;
+
+  /**
+   * Busca gastos agrupados por categoria e mapeia para o formato do Chart.js.
+   */
+  getSpendingByCategoryChart(filters: ReportFilterDTO): Observable<{
+    data: ChartData<'doughnut'>;
+    categoryIds: string[];
+  }> {
+    return this.getSpendingByCategory(filters).pipe(
+      map((data) => {
+        const categoryIds = data.map((d) => d.categoryId || 'none');
+        return {
+          categoryIds,
+          data: {
+            labels: data.map((d) => d.categoryName),
+            datasets: [
+              {
+                data: data.map((d) => d.amount),
+                backgroundColor: CATEGORY_PALETTE.slice(0, data.length),
+                hoverOffset: 12,
+                borderRadius: 4,
+                spacing: 2,
+              },
+            ],
+          },
+        };
+      }),
+    );
+  }
+
+  /**
+   * Busca fluxo de caixa e mapeia para o formato do Chart.js.
+   */
+  getCashFlowChart(filters: ReportFilterDTO): Observable<ChartData<'bar'>> {
+    return this.getCashFlow(filters).pipe(
+      map((data) => ({
+        labels: data.map((d) => d.period),
+        datasets: [
+          {
+            label: 'Receitas',
+            data: data.map((d) => d.income),
+            backgroundColor: CHART_COLORS.emerald.base,
+            borderRadius: 6,
+          },
+          {
+            label: 'Despesas',
+            data: data.map((d) => d.expense),
+            backgroundColor: CHART_COLORS.red.base,
+            borderRadius: 6,
+          },
+        ],
+      })),
+    );
+  }
+
+  /**
+   * Busca histórico de saldo e mapeia para o formato do Chart.js.
+   */
+  getBalanceHistoryChart(filters: ReportFilterDTO): Observable<ChartData<'line'>> {
+    return this.getBalanceHistory(filters).pipe(
+      map((data) => ({
+        labels: data.map((d) => d.date),
+        datasets: [
+          {
+            label: 'Saldo',
+            data: data.map((d) => d.balance),
+            borderColor: CHART_COLORS.indigo.base,
+            backgroundColor: CHART_COLORS.indigo.light + '33', // 20% opacity
+            fill: true,
+            tension: 0.4,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+          },
+        ],
+      })),
+    );
+  }
 
   /**
    * Obtém o relatório de gastos agrupados por categoria.
@@ -56,6 +135,20 @@ export class ReportsService {
   getBalanceHistory(filters: ReportFilterDTO): Observable<BalanceHistoryDTO> {
     const params = this.buildParams(filters);
     return this.http.get<BalanceHistoryDTO>(`${this.baseUrl}/balance-history`, { params });
+  }
+
+  /**
+   * Exporta as transações filtradas para CSV.
+   *
+   * @param filters Filtros de data e contas
+   * @returns Observable com o blob do arquivo CSV
+   */
+  exportTransactionsCsv(filters: ReportFilterDTO): Observable<Blob> {
+    const params = this.buildParams(filters);
+    return this.http.get(`${this.baseUrl}/export/csv`, {
+      params,
+      responseType: 'blob',
+    });
   }
 
   /**
