@@ -1,7 +1,9 @@
+// @vitest-environment jsdom
 import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { MainLayoutComponent } from './main-layout.component';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 const testBed = getTestBed();
 if (!testBed.platform) {
@@ -11,6 +13,10 @@ if (!testBed.platform) {
 describe('MainLayoutComponent', () => {
   let component: MainLayoutComponent;
   let fixture: ComponentFixture<MainLayoutComponent>;
+
+  afterEach(() => {
+    TestBed.resetTestingModule();
+  });
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
