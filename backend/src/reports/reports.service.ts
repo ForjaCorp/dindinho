@@ -17,29 +17,8 @@ export class ReportsService {
     userId: string,
     filters: ReportFilterDTO,
   ): Promise<SpendingByCategoryDTO> {
-    const { startDate, endDate, accountIds, includePending } = filters;
-
-    const where: Prisma.TransactionWhereInput = {
-      account: {
-        ownerId: userId,
-      },
-      type: TransactionType.EXPENSE,
-    };
-
-    if (startDate || endDate) {
-      where.date = {
-        ...(startDate ? { gte: new Date(startDate) } : {}),
-        ...(endDate ? { lte: new Date(endDate) } : {}),
-      };
-    }
-
-    if (accountIds?.length) {
-      where.accountId = { in: accountIds };
-    }
-
-    if (!includePending) {
-      where.isPaid = true;
-    }
+    const where = this.buildBaseWhere(userId, filters);
+    where.type = TransactionType.EXPENSE;
 
     const aggregations = await this.prisma.transaction.groupBy({
       by: ["categoryId"],
@@ -84,29 +63,8 @@ export class ReportsService {
     userId: string,
     filters: ReportFilterDTO,
   ): Promise<CashFlowDTO> {
-    const { startDate, endDate, accountIds, includePending } = filters;
-
-    const where: Prisma.TransactionWhereInput = {
-      account: {
-        ownerId: userId,
-      },
-      type: { in: [TransactionType.INCOME, TransactionType.EXPENSE] },
-    };
-
-    if (startDate || endDate) {
-      where.date = {
-        ...(startDate ? { gte: new Date(startDate) } : {}),
-        ...(endDate ? { lte: new Date(endDate) } : {}),
-      };
-    }
-
-    if (accountIds?.length) {
-      where.accountId = { in: accountIds };
-    }
-
-    if (!includePending) {
-      where.isPaid = true;
-    }
+    const where = this.buildBaseWhere(userId, filters);
+    where.type = { in: [TransactionType.INCOME, TransactionType.EXPENSE] };
 
     const transactions = await this.prisma.transaction.findMany({
       where,
@@ -198,28 +156,7 @@ export class ReportsService {
     userId: string,
     filters: ReportFilterDTO,
   ): Promise<string> {
-    const { startDate, endDate, accountIds, includePending } = filters;
-
-    const where: Prisma.TransactionWhereInput = {
-      account: {
-        ownerId: userId,
-      },
-    };
-
-    if (startDate || endDate) {
-      where.date = {
-        ...(startDate ? { gte: new Date(startDate) } : {}),
-        ...(endDate ? { lte: new Date(endDate) } : {}),
-      };
-    }
-
-    if (accountIds?.length) {
-      where.accountId = { in: accountIds };
-    }
-
-    if (!includePending) {
-      where.isPaid = true;
-    }
+    const where = this.buildBaseWhere(userId, filters);
 
     const transactions = await this.prisma.transaction.findMany({
       where,
@@ -254,5 +191,38 @@ export class ReportsService {
     }
 
     return csv.build();
+  }
+
+  /**
+   * Constrói o filtro base para transações
+   */
+  private buildBaseWhere(
+    userId: string,
+    filters: ReportFilterDTO,
+  ): Prisma.TransactionWhereInput {
+    const { startDate, endDate, accountIds, includePending } = filters;
+
+    const where: Prisma.TransactionWhereInput = {
+      account: {
+        ownerId: userId,
+      },
+    };
+
+    if (startDate || endDate) {
+      where.date = {
+        ...(startDate ? { gte: new Date(startDate) } : {}),
+        ...(endDate ? { lte: new Date(endDate) } : {}),
+      };
+    }
+
+    if (accountIds?.length) {
+      where.accountId = { in: accountIds };
+    }
+
+    if (!includePending) {
+      where.isPaid = true;
+    }
+
+    return where;
   }
 }
