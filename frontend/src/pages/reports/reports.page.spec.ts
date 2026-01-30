@@ -126,8 +126,24 @@ describe('ReportsPage', () => {
     fixture.detectChanges();
   });
 
+  it('deve manter cards alinhados com o título no mobile', () => {
+    const root = fixture.nativeElement.querySelector('[data-testid="reports-page"]');
+    const filters = fixture.nativeElement.querySelector('[data-testid="reports-filters"]');
+    const charts = fixture.nativeElement.querySelector('[data-testid="reports-charts"]');
+
+    expect(root).toBeTruthy();
+    expect(filters).toBeTruthy();
+    expect(charts).toBeTruthy();
+
+    const filtersClass = (filters as HTMLElement).className;
+    const chartsClass = (charts as HTMLElement).className;
+
+    expect(filtersClass).not.toContain('mx-4');
+    expect(chartsClass).not.toContain('px-4');
+  });
+
   it('deve renderizar os filtros com acessibilidade', () => {
-    const filters = fixture.nativeElement.querySelector('[role="search"]');
+    const filters = fixture.nativeElement.querySelector('[data-testid="reports-filters"]');
     expect(filters).toBeTruthy();
     expect(filters.getAttribute('aria-label')).toBe('Filtros de relatório');
   });
