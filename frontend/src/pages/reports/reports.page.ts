@@ -274,6 +274,7 @@ export class ReportsPage implements OnInit {
     labels: [],
     datasets: [],
   });
+  cashFlowPeriodKeys = signal<string[]>([]);
   balanceData = signal<ChartData<'line'>>({
     labels: [],
     datasets: [],
@@ -323,9 +324,9 @@ export class ReportsPage implements OnInit {
       onClick: (_, elements: ActiveElement[]) => {
         if (elements.length > 0) {
           const element = elements[0];
-          const month = this.cashFlowData().labels?.[element.index] as string;
+          const invoiceMonth = this.cashFlowPeriodKeys()[element.index];
           const type = element.datasetIndex === 0 ? 'INCOME' : 'EXPENSE';
-          this.navigateToTransactions(type, undefined, month);
+          this.navigateToTransactions(type, undefined, invoiceMonth);
         }
       },
       scales: {
@@ -418,7 +419,10 @@ export class ReportsPage implements OnInit {
       .getCashFlowChart(filters)
       .pipe(finalize(() => this.loadingCashFlow.set(false)))
       .subscribe({
-        next: (data) => this.cashFlowData.set(data),
+        next: (result) => {
+          this.cashFlowData.set(result.data);
+          this.cashFlowPeriodKeys.set(result.periodKeys);
+        },
         error: () => this.resetCashFlowData(),
       });
   }
@@ -441,13 +445,18 @@ export class ReportsPage implements OnInit {
 
   private resetCashFlowData() {
     this.cashFlowData.set({ labels: [], datasets: [] });
+    this.cashFlowPeriodKeys.set([]);
   }
 
   private resetBalanceData() {
     this.balanceData.set({ labels: [], datasets: [] });
   }
 
-  private navigateToTransactions(type: 'INCOME' | 'EXPENSE', categoryId?: string, month?: string) {
+  private navigateToTransactions(
+    type: 'INCOME' | 'EXPENSE',
+    categoryId?: string,
+    invoiceMonth?: string,
+  ) {
     const [start, end] = this.dateRange();
     const queryParams: Record<string, string | number | undefined> = {
       type,
@@ -460,8 +469,8 @@ export class ReportsPage implements OnInit {
       queryParams['categoryId'] = categoryId;
     }
 
-    if (month) {
-      queryParams['month'] = month;
+    if (invoiceMonth) {
+      queryParams['invoiceMonth'] = invoiceMonth;
     }
 
     if (this.selectedAccountIds().length === 1) {

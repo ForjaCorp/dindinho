@@ -27,6 +27,48 @@ export class ReportsService {
   private http = inject(HttpClient);
   private readonly baseUrl = `${environment.apiUrl}/reports`;
 
+  private readonly ptBrShortMonths = [
+    'Jan',
+    'Fev',
+    'Mar',
+    'Abr',
+    'Mai',
+    'Jun',
+    'Jul',
+    'Ago',
+    'Set',
+    'Out',
+    'Nov',
+    'Dez',
+  ];
+
+  private parsePeriodToSortKey(period: string): number {
+    const monthMatch = period.match(/^(\d{4})-(\d{2})$/);
+    if (monthMatch) {
+      const year = Number(monthMatch[1]);
+      const month = Number(monthMatch[2]);
+      return Date.UTC(year, month - 1, 1);
+    }
+
+    const parsed = Date.parse(period);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  private formatPeriodLabel(period: string): string {
+    const monthMatch = period.match(/^(\d{4})-(\d{2})$/);
+    if (monthMatch) {
+      const year = Number(monthMatch[1]);
+      const month = Number(monthMatch[2]);
+      if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) {
+        return period;
+      }
+
+      return `${this.ptBrShortMonths[month - 1]}/${year}`;
+    }
+
+    return period;
+  }
+
   /**
    * Busca gastos agrupados por categoria e mapeia para o formato do Chart.js.
    */
@@ -59,25 +101,37 @@ export class ReportsService {
   /**
    * Busca fluxo de caixa e mapeia para o formato do Chart.js.
    */
-  getCashFlowChart(filters: ReportFilterDTO): Observable<ChartData<'bar'>> {
+  getCashFlowChart(filters: ReportFilterDTO): Observable<{
+    data: ChartData<'bar'>;
+    periodKeys: string[];
+  }> {
     return this.getCashFlow(filters).pipe(
-      map((data) => ({
-        labels: data.map((d) => d.period),
-        datasets: [
-          {
-            label: 'Receitas',
-            data: data.map((d) => d.income),
-            backgroundColor: CHART_COLORS.emerald.base,
-            borderRadius: 6,
+      map((data) => {
+        const ordered = [...data].sort(
+          (a, b) => this.parsePeriodToSortKey(a.period) - this.parsePeriodToSortKey(b.period),
+        );
+
+        return {
+          periodKeys: ordered.map((d) => d.period),
+          data: {
+            labels: ordered.map((d) => this.formatPeriodLabel(d.period)),
+            datasets: [
+              {
+                label: 'Receitas',
+                data: ordered.map((d) => d.income),
+                backgroundColor: CHART_COLORS.emerald.base,
+                borderRadius: 6,
+              },
+              {
+                label: 'Despesas',
+                data: ordered.map((d) => d.expense),
+                backgroundColor: CHART_COLORS.red.base,
+                borderRadius: 6,
+              },
+            ],
           },
-          {
-            label: 'Despesas',
-            data: data.map((d) => d.expense),
-            backgroundColor: CHART_COLORS.red.base,
-            borderRadius: 6,
-          },
-        ],
-      })),
+        };
+      }),
     );
   }
 
