@@ -47,10 +47,7 @@ const utcEndOfMonthIso = (year: number, month: number) =>
     TransactionDrawerComponent,
   ],
   template: `
-    <div
-      data-testid="transactions-page"
-      class="flex flex-col gap-6 p-4 md:p-6 pb-24 max-w-5xl mx-auto w-full"
-    >
+    <div data-testid="transactions-page" class="flex flex-col gap-6 w-full">
       <app-page-header
         title="Transações"
         subtitle="Todas as transações, da mais nova pra mais velha"

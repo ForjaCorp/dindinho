@@ -54,7 +54,7 @@ export class AppBaseChartDirective {}
   ],
   providers: [provideCharts(withDefaultRegisterables()), MessageService],
   template: `
-    <div class="flex flex-col gap-6 p-4 md:p-6 pb-24 max-w-5xl mx-auto">
+    <div class="flex flex-col gap-6">
       <p-toast />
       <app-page-header title="Relatórios">
         <p-button

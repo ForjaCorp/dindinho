@@ -10,7 +10,7 @@ import { filter } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   template: `
-    <div class="flex flex-col h-screen bg-slate-50 font-sans">
+    <div class="flex flex-col h-dvh bg-slate-50 font-sans">
       <!-- Cabeçalho -->
       <header
         class="bg-white/80 backdrop-blur-md px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 z-50 shadow-sm"
@@ -40,9 +40,11 @@ import { filter } from 'rxjs/operators';
       <!-- Conteúdo Principal -->
       <main
         data-testid="main-content"
-        class="flex-1 overflow-y-auto scroll-smooth overscroll-contain pb-[calc(4.5rem+env(safe-area-inset-bottom))]"
+        class="flex-1 overflow-y-auto scroll-smooth overscroll-contain"
       >
-        <router-outlet></router-outlet>
+        <div [class]="'w-full mx-auto p-4 md:p-6 pb-24 ' + maxWidthClass()">
+          <router-outlet></router-outlet>
+        </div>
       </main>
 
       <!-- Navegação Inferior -->
@@ -114,11 +116,15 @@ export class MainLayoutComponent {
   private destroyRef = inject(DestroyRef);
 
   protected readonly title = signal('Dindinho');
+  protected readonly maxWidthClass = signal('max-w-5xl');
 
   constructor() {
-    const updateTitle = () => {
-      const title = this.getDeepestRouteTitle();
-      this.title.set(title ?? 'Dindinho');
+    const updateRouteData = () => {
+      const title = this.getDeepestRouteData('title');
+      this.title.set((title as string) ?? 'Dindinho');
+
+      const maxWidth = this.getDeepestRouteData('maxWidth');
+      this.maxWidthClass.set(maxWidth ? `max-w-${maxWidth}` : 'max-w-5xl');
     };
 
     this.router.events
@@ -126,10 +132,10 @@ export class MainLayoutComponent {
         filter((e): e is NavigationEnd => e instanceof NavigationEnd),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe(() => updateTitle());
+      .subscribe(() => updateRouteData());
   }
 
-  private getDeepestRouteTitle(): string | null {
+  private getDeepestRouteData(key: string): unknown {
     const root = this.router.routerState.snapshot.root;
 
     let current: typeof root | null = root;
@@ -137,11 +143,6 @@ export class MainLayoutComponent {
       current = current.firstChild;
     }
 
-    const value = (current as unknown as { data?: Record<string, unknown> } | null)?.data?.[
-      'title'
-    ];
-    if (typeof value !== 'string') return null;
-    const normalized = value.trim();
-    return normalized.length > 0 ? normalized : null;
+    return (current as unknown as { data?: Record<string, unknown> } | null)?.data?.[key] ?? null;
   }
 }

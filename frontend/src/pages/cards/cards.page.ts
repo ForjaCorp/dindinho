@@ -24,7 +24,7 @@ import { AccountDTO } from '@dindinho/shared';
     SkeletonModule,
   ],
   template: `
-    <div data-testid="cards-page" class="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+    <div data-testid="cards-page" class="space-y-6">
       <app-page-header title="Meus Cartões" subtitle="Gerencie seus cartões de crédito">
         <p-button
           page-header-actions
