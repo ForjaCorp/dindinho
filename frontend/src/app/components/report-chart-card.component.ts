@@ -73,5 +73,5 @@ export class ReportChartCardComponent {
   @Input() emptyMessage = 'Nenhum dado encontrado no período';
   @Input() emptyIcon = 'pi-inbox';
   @Input() styleClass = '';
-  @Input() contentClass = 'h-[300px]';
+  @Input() contentClass = 'h-[250px] md:h-[300px]';
 }

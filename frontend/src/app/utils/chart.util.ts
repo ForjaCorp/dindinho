@@ -51,6 +51,14 @@ export const CATEGORY_PALETTE = [
 export const COMMON_CHART_OPTIONS = {
   responsive: true,
   maintainAspectRatio: false,
+  layout: {
+    padding: {
+      left: 10,
+      right: 10,
+      top: 10,
+      bottom: 20,
+    },
+  },
   plugins: {
     legend: {
       position: 'bottom' as const,
