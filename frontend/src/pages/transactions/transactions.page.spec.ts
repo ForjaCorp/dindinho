@@ -1,3 +1,9 @@
+import {
+  Component,
+  signal,
+  input,
+  Input
+} from '@angular/core';
 import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -12,7 +18,47 @@ import { BehaviorSubject, of } from 'rxjs';
 import { TransactionsPage } from './transactions.page';
 import { ApiService } from '../../app/services/api.service';
 import { AccountService } from '../../app/services/account.service';
+import { CategoryService } from '../../app/services/category.service';
 import { TransactionDTO, AccountDTO } from '@dindinho/shared';
+import { PageHeaderComponent } from '../../app/components/page-header.component';
+import { TransactionDrawerComponent } from '../../app/components/transaction-drawer.component';
+import { EmptyStateComponent } from '../../app/components/empty-state.component';
+
+@Component({
+  selector: 'app-page-header',
+  standalone: true,
+  template: '<ng-content select="[page-header-actions]"></ng-content>'
+})
+class MockPageHeaderComponent {
+  title = input<string>();
+  subtitle = input<string>();
+}
+
+@Component({
+  selector: 'app-transaction-drawer',
+  standalone: true,
+  template: ''
+})
+class MockTransactionDrawerComponent {
+  show(id: string) {
+    return id;
+  }
+}
+
+@Component({
+  selector: 'app-empty-state',
+  standalone: true,
+  template: '',
+  host: {
+    '[attr.data-testid]': 'testId'
+  }
+})
+class MockEmptyStateComponent {
+  @Input() testId = '';
+  icon = input<string>();
+  title = input<string>();
+  description = input<string>();
+}
 
 const testBed = getTestBed();
 if (!testBed.platform) {
@@ -94,8 +140,15 @@ describe('TransactionsPage', () => {
     };
 
     const accountServiceMock = {
-      accounts: vi.fn(() => [account]),
+      accounts: signal([account]),
       loadAccounts: vi.fn(),
+      totalBalance: signal(100),
+    };
+
+    const categoryServiceMock = {
+      list: vi.fn(() => of([])),
+      loadCategories: vi.fn(),
+      categories: signal([]),
     };
 
     await TestBed.configureTestingModule({
@@ -110,8 +163,14 @@ describe('TransactionsPage', () => {
         },
         { provide: ApiService, useValue: apiServiceMock },
         { provide: AccountService, useValue: accountServiceMock },
+        { provide: CategoryService, useValue: categoryServiceMock },
       ],
-    }).compileComponents();
+    })
+    .overrideComponent(TransactionsPage, {
+      remove: { imports: [PageHeaderComponent, TransactionDrawerComponent, EmptyStateComponent] },
+      add: { imports: [MockPageHeaderComponent, MockTransactionDrawerComponent, MockEmptyStateComponent] }
+    })
+    .compileComponents();
 
     fixture = TestBed.createComponent(TransactionsPage);
     router = TestBed.inject(Router);
@@ -121,6 +180,7 @@ describe('TransactionsPage', () => {
 
   afterEach(() => {
     globalThis.IntersectionObserver = originalIntersectionObserver;
+    TestBed.resetTestingModule();
   });
 
   it('deve renderizar a página', () => {
@@ -156,9 +216,16 @@ describe('TransactionsPage', () => {
     component.onTransactionsDeleted([txs[0].id]);
     fixture.detectChanges();
 
+    // Verify items are empty
+    // Accessing protected signal via any or component instance if public enough
+    // But we can check the list element
     const list = fixture.nativeElement.querySelector('[data-testid="transactions-list"]');
     expect(list).toBeFalsy();
-    expect(fixture.nativeElement.querySelector('[data-testid="transactions-empty"]')).toBeTruthy();
+    
+    // Check if empty state is rendered
+    const emptyState = fixture.nativeElement.querySelector('app-empty-state');
+    expect(emptyState).toBeTruthy();
+    expect(emptyState.getAttribute('data-testid')).toBe('transactions-empty');
   });
 
   it('deve navegar para nova transação ao acionar ação', () => {
@@ -245,6 +312,22 @@ describe('TransactionsPage', () => {
     expect(select.value).toBe('account-1');
   });
 
+  it('deve aplicar filtro de categoria via query param', () => {
+    const api = TestBed.inject(ApiService) as unknown as {
+      getTransactions: ReturnType<typeof vi.fn>;
+    };
+
+    queryParamMap$.next(convertToParamMap({ categoryId: 'cat-1', openFilters: '1' }));
+    fixture.detectChanges();
+
+    const lastCall = api.getTransactions.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(lastCall).toMatchObject({ limit: 30, categoryId: 'cat-1' });
+
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="transactions-filters"]'),
+    ).toBeTruthy();
+  });
+
   it('deve aplicar filtro de tipo via query param', () => {
     const api = TestBed.inject(ApiService) as unknown as {
       getTransactions: ReturnType<typeof vi.fn>;
@@ -279,6 +362,28 @@ describe('TransactionsPage', () => {
       expect.objectContaining({
         queryParamsHandling: 'merge',
         queryParams: expect.objectContaining({ accountId: 'account-1', openFilters: 1 }),
+      }),
+    );
+  });
+
+  it('deve sincronizar query params ao mudar filtro de categoria', () => {
+    const component = fixture.componentInstance as unknown as {
+      toggleFilters: () => void;
+      onCategoryFilterChange: (e: Event) => void;
+    };
+
+    component.toggleFilters();
+    fixture.detectChanges();
+
+    component.onCategoryFilterChange({
+      target: { value: 'cat-1' },
+    } as unknown as Event);
+
+    expect(router.navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({
+        queryParamsHandling: 'merge',
+        queryParams: expect.objectContaining({ categoryId: 'cat-1', openFilters: 1 }),
       }),
     );
   });

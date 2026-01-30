@@ -170,6 +170,7 @@ export type DeleteTransactionResponseDTO = z.infer<
 
 export const listTransactionsQuerySchema = z.object({
   accountId: z.string().uuid().optional(),
+  categoryId: z.string().uuid().optional(),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
   q: z.string().trim().min(1).max(120).optional(),
