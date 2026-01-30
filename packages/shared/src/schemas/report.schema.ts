@@ -7,7 +7,7 @@ export const reportFilterSchema = z.object({
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
   accountIds: z.array(z.string().uuid()).optional(),
-  includePending: z.boolean().default(false),
+  includePending: z.coerce.boolean().default(false),
 });
 
 export type ReportFilterDTO = z.infer<typeof reportFilterSchema>;
