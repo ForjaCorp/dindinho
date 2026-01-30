@@ -25,12 +25,6 @@ import { TransactionDrawerComponent } from '../../app/components/transaction-dra
 
 type TransactionTypeFilter = '' | TransactionDTO['type'];
 
-const utcStartOfMonthIso = (year: number, month: number) =>
-  new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0)).toISOString();
-
-const utcEndOfMonthIso = (year: number, month: number) =>
-  new Date(Date.UTC(year, month, 0, 23, 59, 59, 999)).toISOString();
-
 @Component({
   selector: 'app-transactions-page',
   standalone: true,
@@ -306,7 +300,7 @@ export class TransactionsPage {
     accountId?: string | null;
     categoryId?: string | null;
     type?: TransactionTypeFilter | null;
-    month?: string | null;
+    invoiceMonth?: string | null;
     openFilters?: 0 | 1;
   }) {
     this.router.navigate([], {
@@ -315,7 +309,7 @@ export class TransactionsPage {
         accountId: partial.accountId,
         categoryId: partial.categoryId,
         type: partial.type,
-        month: partial.month,
+        invoiceMonth: partial.invoiceMonth,
         openFilters: partial.openFilters,
       },
       queryParamsHandling: 'merge',
@@ -353,7 +347,7 @@ export class TransactionsPage {
         this.typeFilter.set(type);
       }
 
-      const month = this.parseMonthParam(params.get('month'));
+      const month = this.parseMonthParam(params.get('invoiceMonth') ?? params.get('month'));
       const currentMonth = this.monthYearFilter();
       const nextMonthParam = this.toMonthParam(month);
       const currentMonthParam = this.toMonthParam(currentMonth);
@@ -382,7 +376,7 @@ export class TransactionsPage {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => {
         this.monthYearFilter.set(value);
-        this.syncQueryParams({ month: this.toMonthParam(value), openFilters: 1 });
+        this.syncQueryParams({ invoiceMonth: this.toMonthParam(value), openFilters: 1 });
       });
 
     effect(() => {
@@ -405,20 +399,20 @@ export class TransactionsPage {
       const categoryId = this.categoryFilterId();
       const type = this.typeFilter();
 
-      const range = this.dateRangeFilters(this.monthYearFilter());
+      const invoiceMonth = this.toMonthParam(this.monthYearFilter());
 
       const filters: {
         q?: string;
         accountId?: string;
         categoryId?: string;
         type?: TransactionDTO['type'];
-        from?: string;
-        to?: string;
-      } = { ...range };
+        invoiceMonth?: string;
+      } = {};
       if (q) filters.q = q;
       if (accountId) filters.accountId = accountId;
       if (categoryId) filters.categoryId = categoryId;
       if (type) filters.type = type;
+      if (invoiceMonth) filters.invoiceMonth = invoiceMonth;
       this.resetAndLoad(filters);
     });
 
@@ -499,8 +493,7 @@ export class TransactionsPage {
     accountId?: string;
     categoryId?: string;
     type?: TransactionDTO['type'];
-    from?: string;
-    to?: string;
+    invoiceMonth?: string;
   }) {
     const seq = ++this.initialLoadSeq;
     this.error.set(null);
@@ -539,7 +532,7 @@ export class TransactionsPage {
     const accountId = this.accountFilterId();
     const categoryId = this.categoryFilterId();
     const type = this.typeFilter();
-    const range = this.dateRangeFilters(this.monthYearFilter());
+    const invoiceMonth = this.toMonthParam(this.monthYearFilter());
 
     const filters: {
       cursorId: string;
@@ -548,15 +541,13 @@ export class TransactionsPage {
       accountId?: string;
       categoryId?: string;
       type?: TransactionDTO['type'];
-      from?: string;
-      to?: string;
+      invoiceMonth?: string;
     } = { cursorId, limit: 30 };
     if (q) filters.q = q;
     if (accountId) filters.accountId = accountId;
     if (categoryId) filters.categoryId = categoryId;
     if (type) filters.type = type;
-    if (range.from) filters.from = range.from;
-    if (range.to) filters.to = range.to;
+    if (invoiceMonth) filters.invoiceMonth = invoiceMonth;
 
     this.loadingMore.set(true);
     this.api
@@ -618,17 +609,5 @@ export class TransactionsPage {
         this.observedEl = null;
       }
     });
-  }
-
-  private dateRangeFilters(monthYear: Date | null): { from?: string; to?: string } {
-    if (!monthYear) return {};
-    const year = monthYear.getFullYear();
-    const month = monthYear.getMonth() + 1;
-    if (!Number.isFinite(year) || year < 1970 || year > 2100) return {};
-    if (!Number.isFinite(month) || month < 1 || month > 12) return {};
-    return {
-      from: utcStartOfMonthIso(year, month),
-      to: utcEndOfMonthIso(year, month),
-    };
   }
 }

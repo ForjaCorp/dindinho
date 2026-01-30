@@ -540,6 +540,7 @@ export class TransactionsService {
       categoryId?: string;
       from?: string;
       to?: string;
+      invoiceMonth?: string;
       q?: string;
       type?: "INCOME" | "EXPENSE" | "TRANSFER";
       limit?: number;
@@ -550,8 +551,10 @@ export class TransactionsService {
       typeof input.accountId === "string" ? input.accountId : undefined;
     const categoryId =
       typeof input.categoryId === "string" ? input.categoryId : undefined;
-    const from = input.from ? new Date(input.from) : undefined;
-    const to = input.to ? new Date(input.to) : undefined;
+    const invoiceMonth =
+      typeof input.invoiceMonth === "string" ? input.invoiceMonth : undefined;
+    const from = !invoiceMonth && input.from ? new Date(input.from) : undefined;
+    const to = !invoiceMonth && input.to ? new Date(input.to) : undefined;
     const limit = typeof input.limit === "number" ? input.limit : 30;
     const cursorId =
       typeof input.cursorId === "string" ? input.cursorId : undefined;
@@ -571,6 +574,42 @@ export class TransactionsService {
             },
           }
         : {};
+
+    const invoiceMonthStart = invoiceMonth
+      ? parseInvoiceMonthToDate(invoiceMonth)
+      : null;
+    const invoiceMonthEnd = invoiceMonthStart
+      ? new Date(
+          Date.UTC(
+            invoiceMonthStart.getUTCFullYear(),
+            invoiceMonthStart.getUTCMonth() + 1,
+            1,
+            0,
+            0,
+            0,
+            0,
+          ),
+        )
+      : null;
+
+    const invoiceMonthFilter: Prisma.TransactionWhereInput = invoiceMonth
+      ? {
+          OR: [
+            { invoiceMonth },
+            {
+              AND: [
+                { invoiceMonth: null },
+                {
+                  date: {
+                    gte: invoiceMonthStart!,
+                    lt: invoiceMonthEnd!,
+                  },
+                },
+              ],
+            },
+          ],
+        }
+      : {};
 
     const where: Prisma.TransactionWhereInput = {
       ...(accountId
@@ -596,6 +635,7 @@ export class TransactionsService {
           }
         : {}),
       ...(type ? { type: type as TransactionType } : {}),
+      ...invoiceMonthFilter,
       ...dateFilter,
     };
 

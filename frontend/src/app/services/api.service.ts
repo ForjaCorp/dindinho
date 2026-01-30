@@ -182,6 +182,7 @@ export class ApiService {
     categoryId?: string;
     from?: string;
     to?: string;
+    invoiceMonth?: string;
     q?: string;
     type?: TransactionDTO['type'];
     limit?: number;
@@ -192,6 +193,7 @@ export class ApiService {
       ...(params.categoryId ? { categoryId: params.categoryId } : {}),
       ...(params.from ? { from: params.from } : {}),
       ...(params.to ? { to: params.to } : {}),
+      ...(params.invoiceMonth ? { invoiceMonth: params.invoiceMonth } : {}),
       ...(params.q ? { q: params.q } : {}),
       ...(params.type ? { type: params.type } : {}),
       ...(typeof params.limit === 'number' ? { limit: String(params.limit) } : {}),

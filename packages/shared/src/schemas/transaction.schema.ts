@@ -173,6 +173,7 @@ export const listTransactionsQuerySchema = z.object({
   categoryId: z.string().uuid().optional(),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
+  invoiceMonth: invoiceMonthSchema.optional(),
   q: z.string().trim().min(1).max(120).optional(),
   type: TransactionTypeEnum.optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),

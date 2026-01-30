@@ -104,7 +104,18 @@ export async function transactionsRoutes(app: FastifyInstance) {
       const queryFromRequest = normalizeQuery(request.query);
       const queryFromUrl = parseQueryFromUrl(request.raw.url ?? request.url);
       const mergedQuery = { ...queryFromRequest, ...queryFromUrl };
-      const parsed = listTransactionsQuerySchema.parse(mergedQuery);
+
+      const monthFallback =
+        typeof mergedQuery.month === "string" ? mergedQuery.month : undefined;
+
+      const normalizedMergedQuery =
+        typeof mergedQuery.invoiceMonth !== "string" &&
+        typeof monthFallback === "string" &&
+        /^\d{4}-\d{2}$/.test(monthFallback)
+          ? { ...mergedQuery, invoiceMonth: monthFallback }
+          : mergedQuery;
+
+      const parsed = listTransactionsQuerySchema.parse(normalizedMergedQuery);
       const categoryIdFallback =
         typeof mergedQuery.categoryId === "string"
           ? mergedQuery.categoryId
