@@ -13,7 +13,7 @@ import { filter } from 'rxjs/operators';
     <div class="flex flex-col h-dvh bg-slate-50 font-sans">
       <!-- Cabeçalho -->
       <header
-        class="bg-white/80 backdrop-blur-md px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 z-50 shadow-sm"
+        class="bg-white/80 backdrop-blur-md px-4 md:px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 z-50 shadow-sm"
       >
         <div class="flex items-center gap-3">
           <div
@@ -42,7 +42,13 @@ import { filter } from 'rxjs/operators';
         data-testid="main-content"
         class="flex-1 overflow-y-auto scroll-smooth overscroll-contain"
       >
-        <div [class]="'w-full mx-auto p-4 md:p-6 pb-24 ' + maxWidthClass()">
+        <div
+          data-testid="page-container"
+          [class]="
+            'w-full mx-auto px-4 md:px-6 pt-4 md:pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] ' +
+            maxWidthClass()
+          "
+        >
           <router-outlet></router-outlet>
         </div>
       </main>
@@ -50,7 +56,7 @@ import { filter } from 'rxjs/operators';
       <!-- Navegação Inferior -->
       <nav
         data-testid="bottom-navigation"
-        class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-2 flex justify-between items-end z-50 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.02)]"
+        class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 md:px-6 py-2 flex justify-between items-end z-50 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.02)]"
       >
         <!-- Botão para acessar a página de início -->
         <a

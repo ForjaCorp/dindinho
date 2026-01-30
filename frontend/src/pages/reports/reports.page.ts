@@ -54,7 +54,7 @@ export class AppBaseChartDirective {}
   ],
   providers: [provideCharts(withDefaultRegisterables()), MessageService],
   template: `
-    <div class="flex flex-col gap-6">
+    <div class="flex flex-col gap-4 md:gap-6" data-testid="reports-page">
       <p-toast />
       <app-page-header title="Relatórios">
         <p-button
@@ -72,7 +72,8 @@ export class AppBaseChartDirective {}
 
       <!-- Filtros -->
       <section
-        class="bg-white mx-4 p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-end"
+        class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-4 items-end"
+        data-testid="reports-filters"
         role="search"
         aria-label="Filtros de relatório"
       >
@@ -120,7 +121,7 @@ export class AppBaseChartDirective {}
       </section>
 
       <!-- Gráficos -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 px-4">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6" data-testid="reports-charts">
         <!-- Gastos por Categoria -->
         <app-report-chart-card
           title="Gastos por Categoria"
