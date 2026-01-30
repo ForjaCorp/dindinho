@@ -83,19 +83,25 @@ export class AppBaseChartDirective {}
             class="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1"
             >Período</label
           >
-          <p-datepicker
-            inputId="date-range"
-            [(ngModel)]="dateRange"
-            selectionMode="range"
-            [readonlyInput]="true"
-            [showIcon]="true"
-            (onSelect)="onDateChange()"
-            placeholder="Selecione o período"
-            styleClass="w-full"
-            inputStyleClass="!bg-white !border-slate-200 !rounded-xl !py-3 !px-4"
-            dateFormat="dd/mm/yy"
-            aria-label="Selecionar intervalo de datas"
-          />
+          <div
+            class="reports-period-field w-full bg-white border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-emerald-200 focus-within:border-emerald-300"
+          >
+            <p-datepicker
+              inputId="date-range"
+              [(ngModel)]="dateRange"
+              selectionMode="range"
+              [readonlyInput]="true"
+              [showIcon]="true"
+              appendTo="body"
+              [baseZIndex]="1000"
+              (onSelect)="onDateChange()"
+              placeholder="Selecione o período"
+              styleClass="w-full reports-period-picker"
+              inputStyleClass="!bg-transparent !border-0 !rounded-none !py-3 !px-4 !shadow-none !min-h-[46px]"
+              dateFormat="dd/mm/yy"
+              aria-label="Selecionar intervalo de datas"
+            />
+          </div>
         </div>
 
         <div class="flex flex-col gap-1.5 flex-1 min-w-[280px]">
@@ -136,7 +142,7 @@ export class AppBaseChartDirective {}
             [data]="spendingData()"
             [options]="doughnutChartOptions"
             [type]="'doughnut'"
-            class="cursor-pointer"
+            class="cursor-pointer block w-full h-full"
           >
           </canvas>
         </app-report-chart-card>
@@ -147,7 +153,13 @@ export class AppBaseChartDirective {}
           ariaLabel="Relatório de evolução de saldo"
           [loading]="loadingBalance()"
         >
-          <canvas appBaseChart [data]="balanceData()" [options]="lineChartOptions" [type]="'line'">
+          <canvas
+            appBaseChart
+            [data]="balanceData()"
+            [options]="lineChartOptions"
+            [type]="'line'"
+            class="block w-full h-full"
+          >
           </canvas>
         </app-report-chart-card>
 
@@ -164,7 +176,7 @@ export class AppBaseChartDirective {}
             [data]="cashFlowData()"
             [options]="barChartOptions"
             [type]="'bar'"
-            class="cursor-pointer"
+            class="cursor-pointer block w-full h-full"
           >
           </canvas>
         </app-report-chart-card>
@@ -173,10 +185,62 @@ export class AppBaseChartDirective {}
   `,
   styles: [
     `
-      :host ::ng-deep {
-        canvas.cursor-pointer {
-          cursor: pointer;
-        }
+      :host ::ng-deep canvas.cursor-pointer {
+        cursor: pointer;
+      }
+
+      :host ::ng-deep .reports-period-field .reports-period-picker.p-datepicker {
+        display: flex;
+        width: 100%;
+        align-items: stretch;
+      }
+
+      :host ::ng-deep .reports-period-field .p-inputgroup,
+      :host ::ng-deep .reports-period-field .p-inputwrapper {
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: transparent !important;
+      }
+
+      :host ::ng-deep .reports-period-field .p-inputtext,
+      :host ::ng-deep .reports-period-field .p-datepicker-input {
+        flex: 1 1 auto;
+        min-width: 0;
+        width: auto;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: transparent !important;
+      }
+
+      :host ::ng-deep .reports-period-field .p-datepicker-dropdown,
+      :host ::ng-deep .reports-period-field .p-datepicker-trigger {
+        flex: 0 0 48px;
+        width: 48px;
+        min-width: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 0 2px 0 !important;
+        line-height: 1;
+        border: 0 !important;
+        border-left: 1px solid #e2e8f0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        color: #475569;
+      }
+
+      :host ::ng-deep .reports-period-field .p-datepicker-dropdown .p-icon,
+      :host ::ng-deep .reports-period-field .p-datepicker-trigger .p-icon {
+        display: block;
+        width: 16px;
+        height: 16px;
+      }
+
+      :host ::ng-deep .reports-period-field .p-datepicker-trigger .p-button-icon {
+        color: #475569;
       }
     `,
   ],
