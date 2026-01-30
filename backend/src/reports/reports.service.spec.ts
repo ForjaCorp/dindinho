@@ -1,26 +1,21 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { PrismaClient, TransactionType } from "@prisma/client";
+import {
+  PrismaClient,
+  TransactionType,
+  Transaction,
+  Category,
+} from "@prisma/client";
 import { ReportsService } from "./reports.service";
+import { mockDeep, mockReset } from "vitest-mock-extended";
 
-const mockPrisma = {
-  transaction: {
-    groupBy: vi.fn(),
-    findMany: vi.fn(),
-  },
-  category: {
-    findMany: vi.fn(),
-  },
-  dailySnapshot: {
-    groupBy: vi.fn(),
-  },
-} as unknown as PrismaClient;
+const mockPrisma = mockDeep<PrismaClient>();
 
 describe("ReportsService", () => {
   let service: ReportsService;
 
   beforeEach(() => {
+    mockReset(mockPrisma);
     service = new ReportsService(mockPrisma);
-    vi.clearAllMocks();
   });
 
   describe("getSpendingByCategory", () => {
@@ -31,12 +26,11 @@ describe("ReportsService", () => {
       vi.mocked(mockPrisma.transaction.groupBy).mockResolvedValue([
         { categoryId: "cat-1", _sum: { amount: 100 } },
         { categoryId: "cat-2", _sum: { amount: 300 } },
-      ] as any);
-
-      vi.mocked(mockPrisma.category.findMany).mockResolvedValue([
+      ] as unknown as []);
+      mockPrisma.category.findMany.mockResolvedValue([
         { id: "cat-1", name: "Alimentação", icon: "pi-shopping-cart" },
         { id: "cat-2", name: "Lazer", icon: "pi-ticket" },
-      ] as any);
+      ] as unknown as Category[]);
 
       const result = await service.getSpendingByCategory(userId, filters);
 
@@ -61,8 +55,8 @@ describe("ReportsService", () => {
       const userId = "user-1";
       vi.mocked(mockPrisma.transaction.groupBy).mockResolvedValue([
         { categoryId: null, _sum: { amount: 100 } },
-      ] as any);
-      vi.mocked(mockPrisma.category.findMany).mockResolvedValue([]);
+      ] as unknown as []);
+      mockPrisma.category.findMany.mockResolvedValue([]);
 
       const result = await service.getSpendingByCategory(userId, {
         includePending: true,
@@ -85,8 +79,10 @@ describe("ReportsService", () => {
         includePending: true,
       };
 
-      vi.mocked(mockPrisma.transaction.groupBy).mockResolvedValue([]);
-      vi.mocked(mockPrisma.category.findMany).mockResolvedValue([]);
+      vi.mocked(mockPrisma.transaction.groupBy).mockResolvedValue(
+        [] as unknown as [],
+      );
+      mockPrisma.category.findMany.mockResolvedValue([]);
 
       await service.getSpendingByCategory(userId, filters);
 
@@ -134,8 +130,8 @@ describe("ReportsService", () => {
         },
       ];
 
-      vi.mocked(mockPrisma.transaction.findMany).mockResolvedValue(
-        mockTransactions as unknown as never,
+      mockPrisma.transaction.findMany.mockResolvedValue(
+        mockTransactions as unknown as Transaction[],
       );
 
       const result = await service.getCashFlow(userId, filters);
@@ -159,7 +155,7 @@ describe("ReportsService", () => {
       ];
 
       vi.mocked(mockPrisma.dailySnapshot.groupBy).mockResolvedValue(
-        mockSnapshots as any,
+        mockSnapshots as unknown as [],
       );
 
       const result = await service.getBalanceHistory(userId, {
@@ -206,8 +202,8 @@ describe("ReportsService", () => {
         },
       ];
 
-      vi.mocked(mockPrisma.transaction.findMany).mockResolvedValue(
-        mockTransactions as any,
+      mockPrisma.transaction.findMany.mockResolvedValue(
+        mockTransactions as unknown as Transaction[],
       );
 
       const result = await service.exportTransactionsCsv(userId, filters);

@@ -1,25 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Account, Transaction } from "@prisma/client";
 import { SnapshotService } from "./snapshot.service";
+import { mockDeep, mockReset } from "vitest-mock-extended";
 
-const mockPrisma = {
-  account: {
-    findUnique: vi.fn(),
-  },
-  transaction: {
-    findMany: vi.fn(),
-  },
-  dailySnapshot: {
-    upsert: vi.fn(),
-  },
-} as unknown as PrismaClient;
+const mockPrisma = mockDeep<PrismaClient>();
 
 describe("SnapshotService", () => {
   let service: SnapshotService;
 
   beforeEach(() => {
+    mockReset(mockPrisma);
     service = new SnapshotService(mockPrisma);
-    vi.clearAllMocks();
   });
 
   describe("updateSnapshots", () => {
@@ -27,10 +18,10 @@ describe("SnapshotService", () => {
       const accountId = "acc-1";
       const startDate = new Date("2024-01-01T00:00:00Z");
 
-      vi.mocked(mockPrisma.account.findUnique).mockResolvedValue({
+      mockPrisma.account.findUnique.mockResolvedValue({
         initialBalance: 1000,
-      } as any);
-      vi.mocked(mockPrisma.transaction.findMany).mockResolvedValue([]);
+      } as unknown as Account);
+      mockPrisma.transaction.findMany.mockResolvedValue([]);
 
       await service.updateSnapshots(accountId, startDate);
 
@@ -53,17 +44,17 @@ describe("SnapshotService", () => {
       const accountId = "acc-1";
       const startDate = new Date("2024-01-01T00:00:00Z");
 
-      vi.mocked(mockPrisma.account.findUnique).mockResolvedValue({
+      mockPrisma.account.findUnique.mockResolvedValue({
         initialBalance: 1000,
-      } as any);
+      } as unknown as Account);
 
       const transactions = [
         { amount: 500, date: new Date("2024-01-01T10:00:00Z") }, // Saldo: 1500
         { amount: -200, date: new Date("2024-01-02T15:00:00Z") }, // Saldo: 1300
       ];
 
-      vi.mocked(mockPrisma.transaction.findMany).mockResolvedValue(
-        transactions as any,
+      mockPrisma.transaction.findMany.mockResolvedValue(
+        transactions as unknown as Transaction[],
       );
 
       // Mock Date global para controlar "hoje"
@@ -122,16 +113,16 @@ describe("SnapshotService", () => {
       const accountId = "acc-1";
       const startDate = new Date("2024-01-02T00:00:00Z");
 
-      vi.mocked(mockPrisma.account.findUnique).mockResolvedValue({
+      mockPrisma.account.findUnique.mockResolvedValue({
         initialBalance: 1000,
-      } as any);
+      } as unknown as Account);
 
       const transactions = [
         { amount: 500, date: new Date("2024-01-01T10:00:00Z") }, // Saldo: 1500
       ];
 
-      vi.mocked(mockPrisma.transaction.findMany).mockResolvedValue(
-        transactions as any,
+      mockPrisma.transaction.findMany.mockResolvedValue(
+        transactions as unknown as Transaction[],
       );
 
       const mockToday = new Date("2024-01-02T00:00:00Z");
@@ -158,7 +149,7 @@ describe("SnapshotService", () => {
     });
 
     it("deve retornar silenciosamente se a conta não existir", async () => {
-      vi.mocked(mockPrisma.account.findUnique).mockResolvedValue(null);
+      mockPrisma.account.findUnique.mockResolvedValue(null);
 
       await service.updateSnapshots("invalid", new Date());
 

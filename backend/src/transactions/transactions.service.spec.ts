@@ -1,5 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { PrismaClient, TransactionType, AccountType } from "@prisma/client";
+import { describe, it, expect, beforeEach } from "vitest";
+import {
+  PrismaClient,
+  TransactionType,
+  AccountType,
+  Category,
+  Account,
+  Transaction,
+} from "@prisma/client";
 import { mockDeep, DeepMockProxy } from "vitest-mock-extended";
 import { TransactionsService } from "./transactions.service";
 
@@ -28,14 +35,14 @@ describe("TransactionsService", () => {
     prisma.category.findUnique.mockResolvedValue({
       id: "cat-1",
       userId: userId,
-    } as any);
+    } as unknown as Category);
 
     prisma.account.findUnique.mockResolvedValue({
       id: accountId,
       ownerId: userId,
       type: AccountType.STANDARD,
       creditCardInfo: null,
-    } as any);
+    } as unknown as Account);
 
     prisma.transaction.create.mockResolvedValue({
       id: "tx-1",
@@ -46,7 +53,7 @@ describe("TransactionsService", () => {
       description: "Teste",
       createdAt: new Date(),
       updatedAt: new Date(),
-    } as any);
+    } as unknown as Transaction);
 
     const result = await service.create(userId, data);
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { DeepMockProxy, mockReset } from "vitest-mock-extended";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Category, Transaction } from "@prisma/client";
 
 // Mock profundo do Prisma
 vi.mock("../lib/prisma", async () => {
@@ -39,10 +39,10 @@ describe("Rotas de Relatórios", () => {
       const categoryId = "123e4567-e89b-12d3-a456-426614174001";
       vi.mocked(prismaMock.transaction.groupBy).mockResolvedValue([
         { categoryId, _sum: { amount: 100 } },
-      ] as any);
-      vi.mocked(prismaMock.category.findMany).mockResolvedValue([
+      ] as unknown as []);
+      prismaMock.category.findMany.mockResolvedValue([
         { id: categoryId, name: "Alimentação", icon: "pi-tag" },
-      ] as any);
+      ] as unknown as Category[]);
 
       const response = await app.inject({
         method: "GET",
@@ -89,7 +89,7 @@ describe("Rotas de Relatórios", () => {
           date: new Date("2024-01-20"),
           invoiceMonth: null,
         },
-      ] as any);
+      ] as unknown as Transaction[]);
 
       const response = await app.inject({
         method: "GET",
@@ -115,7 +115,7 @@ describe("Rotas de Relatórios", () => {
     it("deve retornar 200 e dados de histórico de saldo", async () => {
       vi.mocked(prismaMock.dailySnapshot.groupBy).mockResolvedValue([
         { date: new Date("2024-01-01"), _sum: { balance: 1000 } },
-      ] as any);
+      ] as unknown as []);
 
       const response = await app.inject({
         method: "GET",
@@ -132,7 +132,7 @@ describe("Rotas de Relatórios", () => {
 
   describe("GET /api/reports/export/csv", () => {
     it("deve retornar 200 e arquivo CSV", async () => {
-      vi.mocked(prismaMock.transaction.findMany).mockResolvedValue([
+      prismaMock.transaction.findMany.mockResolvedValue([
         {
           date: new Date("2024-01-01"),
           description: "Teste",
@@ -142,7 +142,7 @@ describe("Rotas de Relatórios", () => {
           category: { name: "Food" },
           account: { name: "Wallet" },
         },
-      ] as any);
+      ] as unknown as Transaction[]);
 
       const response = await app.inject({
         method: "GET",

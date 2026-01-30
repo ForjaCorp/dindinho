@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { DeepMockProxy, mockReset } from "vitest-mock-extended";
-import { PrismaClient, Prisma, TransactionType } from "@prisma/client";
+import {
+  PrismaClient,
+  Prisma,
+  TransactionType,
+  Account,
+  Category,
+  Transaction,
+} from "@prisma/client";
 
 vi.mock("../lib/prisma", async () => {
   const { mockDeep } = await import("vitest-mock-extended");
@@ -27,9 +34,11 @@ describe("Rotas de Transações", () => {
     vi.stubEnv("JWT_SECRET", "test-secret");
     mockReset(prismaMock);
 
-    prismaMock.$transaction.mockImplementation(async (fn: any) => {
-      return fn(prismaMock as any);
-    });
+    prismaMock.$transaction.mockImplementation(
+      async (fn: (prisma: PrismaClient) => Promise<unknown>) => {
+        return fn(prismaMock);
+      },
+    );
 
     app = buildApp();
     await app.ready();
@@ -73,12 +82,12 @@ describe("Rotas de Transações", () => {
         id: accountId,
         ownerId: userId,
         creditCardInfo: null,
-      } as any);
+      } as unknown as Account);
 
       prismaMock.category.findUnique.mockResolvedValue({
         id: categoryId,
         userId: null,
-      } as any);
+      } as unknown as Category);
 
       prismaMock.transaction.create.mockResolvedValue({
         id: "123e4567-e89b-12d3-a456-426614174010",
@@ -100,7 +109,7 @@ describe("Rotas de Transações", () => {
         invoiceMonth: null,
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
         updatedAt: new Date("2026-01-01T00:00:00.000Z"),
-      } as any);
+      } as unknown as Transaction);
 
       const response = await app.inject({
         method: "POST",
@@ -131,12 +140,12 @@ describe("Rotas de Transações", () => {
         id: accountId,
         ownerId: userId,
         creditCardInfo: null,
-      } as any);
+      } as unknown as Account);
 
       prismaMock.category.findUnique.mockResolvedValue({
         id: categoryId,
         userId: null,
-      } as any);
+      } as unknown as Category);
 
       const prismaError = new Prisma.PrismaClientKnownRequestError(
         "Foreign key",
@@ -147,7 +156,7 @@ describe("Rotas de Transações", () => {
         },
       );
 
-      prismaMock.transaction.create.mockRejectedValue(prismaError as any);
+      prismaMock.transaction.create.mockRejectedValue(prismaError);
 
       const response = await app.inject({
         method: "POST",
@@ -177,12 +186,12 @@ describe("Rotas de Transações", () => {
         id: accountId,
         ownerId: userId,
         creditCardInfo: null,
-      } as any);
+      } as unknown as Account);
 
       prismaMock.category.findUnique.mockResolvedValue({
         id: categoryId,
         userId: null,
-      } as any);
+      } as unknown as Category);
 
       prismaMock.transaction.create
         .mockResolvedValueOnce({
@@ -205,7 +214,7 @@ describe("Rotas de Transações", () => {
           invoiceMonth: null,
           createdAt: new Date("2026-01-01T00:00:00.000Z"),
           updatedAt: new Date("2026-01-01T00:00:00.000Z"),
-        } as any)
+        } as unknown as Transaction)
         .mockResolvedValueOnce({
           id: "123e4567-e89b-12d3-a456-426614174012",
           accountId,
@@ -226,7 +235,7 @@ describe("Rotas de Transações", () => {
           invoiceMonth: null,
           createdAt: new Date("2026-01-01T00:00:00.000Z"),
           updatedAt: new Date("2026-01-01T00:00:00.000Z"),
-        } as any)
+        } as unknown as Transaction)
         .mockResolvedValueOnce({
           id: "123e4567-e89b-12d3-a456-426614174013",
           accountId,
@@ -247,7 +256,7 @@ describe("Rotas de Transações", () => {
           invoiceMonth: null,
           createdAt: new Date("2026-01-01T00:00:00.000Z"),
           updatedAt: new Date("2026-01-01T00:00:00.000Z"),
-        } as any);
+        } as unknown as Transaction);
 
       const response = await app.inject({
         method: "POST",
@@ -260,14 +269,16 @@ describe("Rotas de Transações", () => {
       const body = JSON.parse(response.body);
       expect(Array.isArray(body)).toBe(true);
       expect(body).toHaveLength(3);
-      const amounts = body.map((t: any) => t.amount);
+      const amounts = body.map((t: { amount: number }) => t.amount);
       expect(amounts.reduce((a: number, b: number) => a + b, 0)).toBe(1000);
     });
   });
 
   describe("GET /api/transactions", () => {
     it("deve listar transações da conta", async () => {
-      prismaMock.account.findFirst.mockResolvedValue({ id: accountId } as any);
+      prismaMock.account.findFirst.mockResolvedValue({
+        id: accountId,
+      } as unknown as Account);
 
       prismaMock.transaction.findMany.mockResolvedValue([
         {
@@ -291,7 +302,7 @@ describe("Rotas de Transações", () => {
           createdAt: new Date("2026-01-01T00:00:00.000Z"),
           updatedAt: new Date("2026-01-01T00:00:00.000Z"),
         },
-      ] as any);
+      ] as unknown as Transaction[]);
 
       const response = await app.inject({
         method: "GET",
@@ -306,7 +317,7 @@ describe("Rotas de Transações", () => {
       expect(body.nextCursorId).toBeNull();
     });
 
-    it.skip("deve listar transações filtradas por categoria", async () => {
+    it("deve listar transações filtradas por categoria", async () => {
       prismaMock.transaction.findMany.mockResolvedValue([
         {
           id: "123e4567-e89b-12d3-a456-426614174015",
@@ -329,11 +340,12 @@ describe("Rotas de Transações", () => {
           createdAt: new Date("2026-01-01T00:00:00.000Z"),
           updatedAt: new Date("2026-01-01T00:00:00.000Z"),
         },
-      ] as any);
+      ] as unknown as Transaction[]);
 
       const response = await app.inject({
         method: "GET",
-        url: `/api/transactions?categoryId=${categoryId}`,
+        url: "/api/transactions",
+        query: { categoryId },
         headers: { authorization: `Bearer ${token}` },
       });
 
@@ -375,7 +387,7 @@ describe("Rotas de Transações", () => {
             createdAt: new Date("2026-01-02T00:00:00.000Z"),
             updatedAt: new Date("2026-01-02T00:00:00.000Z"),
           },
-        ] as any)
+        ] as unknown as Transaction[])
         .mockResolvedValueOnce([
           {
             id: "123e4567-e89b-12d3-a456-426614174013",
@@ -398,7 +410,7 @@ describe("Rotas de Transações", () => {
             createdAt: new Date("2026-01-01T00:00:00.000Z"),
             updatedAt: new Date("2026-01-01T00:00:00.000Z"),
           },
-        ] as any);
+        ] as unknown as Transaction[]);
 
       const response1 = await app.inject({
         method: "GET",
@@ -448,7 +460,7 @@ describe("Rotas de Transações", () => {
         invoiceMonth: null,
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
         updatedAt: new Date("2026-01-01T00:00:00.000Z"),
-      } as any);
+      } as unknown as Transaction);
 
       const response = await app.inject({
         method: "GET",
@@ -477,12 +489,12 @@ describe("Rotas de Transações", () => {
         accountId,
         type: TransactionType.EXPENSE,
         transferId: null,
-      } as any);
+      } as unknown as Transaction);
 
       prismaMock.account.findUnique.mockResolvedValue({
         id: accountId,
         ownerId: userId,
-      } as any);
+      } as unknown as Account);
 
       prismaMock.transaction.update.mockResolvedValue({
         id,
@@ -504,7 +516,7 @@ describe("Rotas de Transações", () => {
         invoiceMonth: null,
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
         updatedAt: new Date("2026-01-02T00:00:00.000Z"),
-      } as any);
+      } as unknown as Transaction);
 
       const response = await app.inject({
         method: "PATCH",
@@ -534,14 +546,16 @@ describe("Rotas de Transações", () => {
         recurrenceId: "rec-1",
         installmentNumber: 2,
         date: new Date("2026-01-02T00:00:00.000Z"),
-      } as any);
+      } as unknown as Transaction);
 
       prismaMock.account.findUnique.mockResolvedValue({
         id: accountId,
         ownerId: userId,
-      } as any);
+      } as unknown as Account);
 
-      prismaMock.transaction.updateMany.mockResolvedValue({ count: 3 } as any);
+      prismaMock.transaction.updateMany.mockResolvedValue({
+        count: 3,
+      } as unknown as Prisma.BatchPayload);
 
       prismaMock.transaction.findFirst.mockResolvedValue({
         id,
@@ -563,7 +577,7 @@ describe("Rotas de Transações", () => {
         invoiceMonth: null,
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
         updatedAt: new Date("2026-01-03T00:00:00.000Z"),
-      } as any);
+      } as unknown as Transaction);
 
       const response = await app.inject({
         method: "PATCH",
@@ -594,14 +608,16 @@ describe("Rotas de Transações", () => {
         transferId: null,
         recurrenceId: null,
         installmentNumber: null,
-      } as any);
+      } as unknown as Transaction);
 
       prismaMock.account.findUnique.mockResolvedValue({
         id: accountId,
         ownerId: userId,
-      } as any);
+      } as unknown as Account);
 
-      prismaMock.transaction.delete.mockResolvedValue({ id } as any);
+      prismaMock.transaction.delete.mockResolvedValue({
+        id,
+      } as unknown as Transaction);
 
       const response = await app.inject({
         method: "DELETE",
