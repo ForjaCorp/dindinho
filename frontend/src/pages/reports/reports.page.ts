@@ -9,16 +9,15 @@ import { ChartData, ActiveElement, ChartOptions } from 'chart.js';
 import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
 import { DatePickerModule } from 'primeng/datepicker';
 import { MultiSelectModule } from 'primeng/multiselect';
-import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { SkeletonModule } from 'primeng/skeleton';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { ReportFilterDTO } from '@dindinho/shared';
 import { finalize } from 'rxjs';
 import { DownloadUtil } from '../../app/utils/download.util';
 import { COMMON_CHART_OPTIONS } from '../../app/utils/chart.util';
+import { ReportChartCardComponent } from '../../app/components/report-chart-card.component';
 
 /**
  * Wrapper para o BaseChartDirective para seguir padrões de seletor.
@@ -46,12 +45,11 @@ export class AppBaseChartDirective {}
     FormsModule,
     PageHeaderComponent,
     AppBaseChartDirective,
+    ReportChartCardComponent,
     DatePickerModule,
     MultiSelectModule,
-    CardModule,
     ButtonModule,
     ProgressSpinnerModule,
-    SkeletonModule,
     ToastModule,
   ],
   providers: [provideCharts(withDefaultRegisterables()), MessageService],
@@ -124,81 +122,51 @@ export class AppBaseChartDirective {}
       <!-- Gráficos -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 px-4">
         <!-- Gastos por Categoria -->
-        <p-card
-          header="Gastos por Categoria"
-          styleClass="h-full border border-slate-200 shadow-sm !rounded-2xl"
-          aria-label="Relatório de gastos por categoria"
+        <app-report-chart-card
+          title="Gastos por Categoria"
+          ariaLabel="Relatório de gastos por categoria"
+          [loading]="loadingSpending()"
+          loadingType="circle"
+          [isEmpty]="!spendingData().datasets[0]?.data?.length"
+          emptyMessage="Nenhum gasto registrado no período"
         >
-          <div class="h-[300px] flex items-center justify-center relative">
-            @if (loadingSpending()) {
-              <p-skeleton shape="circle" size="200px" />
-            } @else if (!spendingData().datasets[0]?.data?.length) {
-              <div class="flex flex-col items-center gap-3 text-slate-400" role="status">
-                <i class="pi pi-inbox text-4xl opacity-20"></i>
-                <p>Nenhum gasto registrado no período</p>
-              </div>
-            } @else {
-              <canvas
-                appBaseChart
-                [data]="spendingData()"
-                [options]="doughnutChartOptions"
-                [type]="'doughnut'"
-                class="cursor-pointer"
-              >
-              </canvas>
-            }
-          </div>
-        </p-card>
+          <canvas
+            appBaseChart
+            [data]="spendingData()"
+            [options]="doughnutChartOptions"
+            [type]="'doughnut'"
+            class="cursor-pointer"
+          >
+          </canvas>
+        </app-report-chart-card>
 
         <!-- Histórico de Saldo -->
-        <p-card
-          header="Evolução do Saldo"
-          styleClass="h-full border border-slate-200 shadow-sm !rounded-2xl"
-          aria-label="Relatório de evolução de saldo"
+        <app-report-chart-card
+          title="Evolução do Saldo"
+          ariaLabel="Relatório de evolução de saldo"
+          [loading]="loadingBalance()"
         >
-          <div class="h-[300px]">
-            @if (loadingBalance()) {
-              <p-skeleton width="100%" height="100%" />
-            } @else {
-              <canvas
-                appBaseChart
-                [data]="balanceData()"
-                [options]="lineChartOptions"
-                [type]="'line'"
-              >
-              </canvas>
-            }
-          </div>
-        </p-card>
+          <canvas appBaseChart [data]="balanceData()" [options]="lineChartOptions" [type]="'line'">
+          </canvas>
+        </app-report-chart-card>
 
         <!-- Fluxo de Caixa -->
-        <p-card
-          header="Fluxo de Caixa Mensal"
-          styleClass="lg:col-span-2 border border-slate-200 shadow-sm !rounded-2xl"
-          aria-label="Relatório de fluxo de caixa mensal"
+        <app-report-chart-card
+          title="Fluxo de Caixa Mensal"
+          ariaLabel="Relatório de fluxo de caixa mensal"
+          styleClass="lg:col-span-2"
+          contentClass="h-[350px]"
+          [loading]="loadingCashFlow()"
         >
-          <div class="h-[350px]">
-            @if (loadingCashFlow()) {
-              <div class="grid grid-cols-6 gap-4 h-full items-end p-4">
-                <p-skeleton height="40%" />
-                <p-skeleton height="70%" />
-                <p-skeleton height="50%" />
-                <p-skeleton height="90%" />
-                <p-skeleton height="60%" />
-                <p-skeleton height="80%" />
-              </div>
-            } @else {
-              <canvas
-                appBaseChart
-                [data]="cashFlowData()"
-                [options]="barChartOptions"
-                [type]="'bar'"
-                class="cursor-pointer"
-              >
-              </canvas>
-            }
-          </div>
-        </p-card>
+          <canvas
+            appBaseChart
+            [data]="cashFlowData()"
+            [options]="barChartOptions"
+            [type]="'bar'"
+            class="cursor-pointer"
+          >
+          </canvas>
+        </app-report-chart-card>
       </div>
     </div>
   `,
@@ -207,15 +175,6 @@ export class AppBaseChartDirective {}
       :host ::ng-deep {
         canvas.cursor-pointer {
           cursor: pointer;
-        }
-        .p-card {
-          border-radius: 1rem;
-          overflow: hidden;
-        }
-        .p-card-title {
-          font-size: 1.125rem;
-          font-weight: 600;
-          color: #1e293b;
         }
       }
     `,
@@ -258,45 +217,55 @@ export class ReportsPage implements OnInit {
   private categoryIds: string[] = [];
 
   // Configurações dos Gráficos
-  doughnutChartOptions: ChartOptions<'doughnut'> = {
-    ...COMMON_CHART_OPTIONS,
-    onClick: (_, elements: ActiveElement[]) => {
-      if (elements.length > 0) {
-        const index = elements[0].index;
-        const categoryId = this.categoryIds[index];
-        this.navigateToTransactions('EXPENSE', categoryId);
-      }
-    },
-  };
+  doughnutChartOptions = this.createDoughnutOptions();
+  lineChartOptions = this.createLineOptions();
+  barChartOptions = this.createBarOptions();
 
-  lineChartOptions: ChartOptions<'line'> = {
-    ...COMMON_CHART_OPTIONS,
-    scales: {
-      y: {
-        beginAtZero: false,
-        grid: { color: '#f1f5f9' },
+  private createDoughnutOptions(): ChartOptions<'doughnut'> {
+    return {
+      ...COMMON_CHART_OPTIONS,
+      onClick: (_, elements: ActiveElement[]) => {
+        if (elements.length > 0) {
+          const index = elements[0].index;
+          const categoryId = this.categoryIds[index];
+          this.navigateToTransactions('EXPENSE', categoryId);
+        }
       },
-      x: {
-        grid: { display: false },
-      },
-    },
-  };
+    };
+  }
 
-  barChartOptions: ChartOptions<'bar'> = {
-    ...COMMON_CHART_OPTIONS,
-    onClick: (_, elements: ActiveElement[]) => {
-      if (elements.length > 0) {
-        const element = elements[0];
-        const month = this.cashFlowData().labels?.[element.index] as string;
-        const type = element.datasetIndex === 0 ? 'INCOME' : 'EXPENSE';
-        this.navigateToTransactions(type, undefined, month);
-      }
-    },
-    scales: {
-      x: { stacked: false, grid: { display: false } },
-      y: { stacked: false, grid: { color: '#f1f5f9' } },
-    },
-  };
+  private createLineOptions(): ChartOptions<'line'> {
+    return {
+      ...COMMON_CHART_OPTIONS,
+      scales: {
+        y: {
+          beginAtZero: false,
+          grid: { color: '#f1f5f9' },
+        },
+        x: {
+          grid: { display: false },
+        },
+      },
+    };
+  }
+
+  private createBarOptions(): ChartOptions<'bar'> {
+    return {
+      ...COMMON_CHART_OPTIONS,
+      onClick: (_, elements: ActiveElement[]) => {
+        if (elements.length > 0) {
+          const element = elements[0];
+          const month = this.cashFlowData().labels?.[element.index] as string;
+          const type = element.datasetIndex === 0 ? 'INCOME' : 'EXPENSE';
+          this.navigateToTransactions(type, undefined, month);
+        }
+      },
+      scales: {
+        x: { stacked: false, grid: { display: false } },
+        y: { stacked: false, grid: { color: '#f1f5f9' } },
+      },
+    };
+  }
 
   ngOnInit() {
     this.accountService.loadAccounts();

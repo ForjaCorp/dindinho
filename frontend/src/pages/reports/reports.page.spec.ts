@@ -6,19 +6,20 @@ import { of, throwError } from 'rxjs';
 import { ReportsPage, AppBaseChartDirective } from './reports.page';
 import { ReportsService } from '../../app/services/reports.service';
 import { AccountService } from '../../app/services/account.service';
-import { Component, input, Directive } from '@angular/core';
+import { Component, Directive, Input } from '@angular/core';
 import { Router } from '@angular/router';
 import { PageHeaderComponent } from '../../app/components/page-header.component';
+import { ReportChartCardComponent } from '../../app/components/report-chart-card.component';
 import { ChartEvent, ActiveElement, ChartData, ChartOptions, ChartType } from 'chart.js';
 
 @Component({
   selector: 'app-page-header',
   standalone: true,
-  template: '<div>{{ title() }}</div>',
+  template: '<div>{{ title }}</div>',
 })
 class MockPageHeaderComponent {
-  title = input<string>('');
-  subtitle = input<string | null>(null);
+  @Input() title = '';
+  @Input() subtitle: string | null = null;
 }
 
 @Directive({
@@ -26,9 +27,35 @@ class MockPageHeaderComponent {
   standalone: true,
 })
 class MockBaseChartDirective {
-  data = input<ChartData | null>(null);
-  options = input<ChartOptions | null>(null);
-  type = input<ChartType | null>(null);
+  @Input() data: ChartData | null = null;
+  @Input() options: ChartOptions | null = null;
+  @Input() type: ChartType | null = null;
+}
+
+@Component({
+  selector: 'app-report-chart-card',
+  standalone: true,
+  template: `
+    <div [attr.aria-label]="ariaLabel" class="mock-card">
+      @if (loading) {
+        <div class="mock-skeleton"></div>
+      } @else if (isEmpty) {
+        <div role="status">{{ emptyMessage }}</div>
+      }
+      <ng-content></ng-content>
+    </div>
+  `,
+})
+class MockReportChartCardComponent {
+  @Input() title = '';
+  @Input() ariaLabel = '';
+  @Input() loading = false;
+  @Input() loadingType: 'circle' | 'rect' = 'rect';
+  @Input() isEmpty = false;
+  @Input() emptyMessage = 'Nenhum dado encontrado';
+  @Input() emptyIcon = 'pi-inbox';
+  @Input() styleClass = '';
+  @Input() contentClass = '';
 }
 
 const testBed = getTestBed();
@@ -73,15 +100,24 @@ describe('ReportsPage', () => {
 
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
-      imports: [ReportsPage, MockPageHeaderComponent, MockBaseChartDirective],
+      imports: [
+        ReportsPage,
+        MockPageHeaderComponent,
+        MockBaseChartDirective,
+        MockReportChartCardComponent,
+      ],
       providers: [
         { provide: ReportsService, useValue: reportsServiceMock },
         { provide: AccountService, useValue: accountServiceMock },
       ],
     })
       .overrideComponent(ReportsPage, {
-        remove: { imports: [PageHeaderComponent, AppBaseChartDirective] },
-        add: { imports: [MockPageHeaderComponent, MockBaseChartDirective] },
+        remove: {
+          imports: [PageHeaderComponent, AppBaseChartDirective, ReportChartCardComponent],
+        },
+        add: {
+          imports: [MockPageHeaderComponent, MockBaseChartDirective, MockReportChartCardComponent],
+        },
       })
       .compileComponents();
 
@@ -97,7 +133,7 @@ describe('ReportsPage', () => {
   });
 
   it('deve renderizar os cards de gráficos com ARIA labels', () => {
-    const cards = fixture.nativeElement.querySelectorAll('p-card');
+    const cards = fixture.nativeElement.querySelectorAll('.mock-card');
     expect(cards.length).toBe(3);
     expect(cards[0].getAttribute('aria-label')).toBe('Relatório de gastos por categoria');
     expect(cards[1].getAttribute('aria-label')).toBe('Relatório de evolução de saldo');
@@ -107,7 +143,7 @@ describe('ReportsPage', () => {
   it('deve mostrar skeletons durante o carregamento', () => {
     component.loadingSpending.set(true);
     fixture.detectChanges();
-    const skeletons = fixture.nativeElement.querySelectorAll('p-skeleton');
+    const skeletons = fixture.nativeElement.querySelectorAll('.mock-skeleton');
     expect(skeletons.length).toBeGreaterThan(0);
   });
 
