@@ -5,6 +5,8 @@ import {
   TransactionType,
   AccountType,
   RecurrenceFrequency,
+  Transaction,
+  CreditCardInfo,
 } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import {
@@ -86,12 +88,11 @@ const computeInvoiceMonth = (purchaseDate: Date, closingDay: number) => {
   return formatInvoiceMonth(utcDay > closingDay ? addMonths(base, 1) : base);
 };
 
-const toTransactionDTO = (t: any): TransactionDTO => ({
+const toTransactionDTO = (t: Transaction): TransactionDTO => ({
   id: t.id,
   accountId: t.accountId,
   categoryId: t.categoryId ?? null,
-  amount:
-    typeof t.amount?.toNumber === "function" ? t.amount.toNumber() : t.amount,
+  amount: t.amount.toNumber(),
   description: t.description ?? null,
   date: new Date(t.date).toISOString(),
   type: t.type,
@@ -102,7 +103,7 @@ const toTransactionDTO = (t: any): TransactionDTO => ({
   recurrenceIntervalDays: t.recurrenceIntervalDays ?? null,
   installmentNumber: t.installmentNumber ?? null,
   totalInstallments: t.totalInstallments ?? null,
-  tags: Array.isArray(t.tags) ? t.tags : (t.tags ?? null),
+  tags: Array.isArray(t.tags) ? (t.tags as string[]) : null,
   purchaseDate: t.purchaseDate ? new Date(t.purchaseDate).toISOString() : null,
   invoiceMonth: t.invoiceMonth ?? null,
   createdAt: new Date(t.createdAt).toISOString(),
@@ -117,7 +118,7 @@ export class TransactionsService {
 
   private ensureCreditCardInfo(account: {
     type: AccountType;
-    creditCardInfo: any | null;
+    creditCardInfo: CreditCardInfo | null;
   }) {
     if (account.type !== AccountType.CREDIT) return;
     if (
@@ -136,8 +137,8 @@ export class TransactionsService {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2003") {
         const field =
-          typeof (error as any).meta?.field_name === "string"
-            ? (error as any).meta.field_name
+          error.meta && typeof error.meta.field_name === "string"
+            ? error.meta.field_name
             : "";
         const normalized = field.toLowerCase();
         if (normalized.includes("category")) {
@@ -366,7 +367,7 @@ export class TransactionsService {
             : null;
 
         const created = await this.prisma.$transaction(async (tx) => {
-          const results: any[] = [];
+          const results: Transaction[] = [];
 
           for (let i = 1; i <= count; i++) {
             const date =
@@ -453,7 +454,7 @@ export class TransactionsService {
           : null;
 
       const created = await this.prisma.$transaction(async (tx) => {
-        const results: any[] = [];
+        const results: Transaction[] = [];
         for (let i = 1; i <= totalInstallments; i++) {
           const cents =
             i < totalInstallments
@@ -536,6 +537,7 @@ export class TransactionsService {
     userId: string,
     input: {
       accountId?: string;
+      categoryId?: string;
       from?: string;
       to?: string;
       q?: string;
@@ -546,6 +548,8 @@ export class TransactionsService {
   ): Promise<{ items: TransactionDTO[]; nextCursorId: string | null }> {
     const accountId =
       typeof input.accountId === "string" ? input.accountId : undefined;
+    const categoryId =
+      typeof input.categoryId === "string" ? input.categoryId : undefined;
     const from = input.from ? new Date(input.from) : undefined;
     const to = input.to ? new Date(input.to) : undefined;
     const limit = typeof input.limit === "number" ? input.limit : 30;
@@ -583,6 +587,7 @@ export class TransactionsService {
               ],
             },
           }),
+      ...(categoryId ? { categoryId } : {}),
       ...(q
         ? {
             description: {
@@ -590,7 +595,7 @@ export class TransactionsService {
             },
           }
         : {}),
-      ...(type ? { type: type as any } : {}),
+      ...(type ? { type: type as TransactionType } : {}),
       ...dateFilter,
     };
 

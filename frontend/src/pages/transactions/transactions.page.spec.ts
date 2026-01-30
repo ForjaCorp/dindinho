@@ -1,9 +1,4 @@
-import {
-  Component,
-  signal,
-  input,
-  Input
-} from '@angular/core';
+import { Component, signal, input, Input } from '@angular/core';
 import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -27,7 +22,7 @@ import { EmptyStateComponent } from '../../app/components/empty-state.component'
 @Component({
   selector: 'app-page-header',
   standalone: true,
-  template: '<ng-content select="[page-header-actions]"></ng-content>'
+  template: '<ng-content select="[page-header-actions]"></ng-content>',
 })
 class MockPageHeaderComponent {
   title = input<string>();
@@ -37,7 +32,7 @@ class MockPageHeaderComponent {
 @Component({
   selector: 'app-transaction-drawer',
   standalone: true,
-  template: ''
+  template: '',
 })
 class MockTransactionDrawerComponent {
   show(id: string) {
@@ -50,8 +45,8 @@ class MockTransactionDrawerComponent {
   standalone: true,
   template: '',
   host: {
-    '[attr.data-testid]': 'testId'
-  }
+    '[attr.data-testid]': 'testId',
+  },
 })
 class MockEmptyStateComponent {
   @Input() testId = '';
@@ -166,11 +161,17 @@ describe('TransactionsPage', () => {
         { provide: CategoryService, useValue: categoryServiceMock },
       ],
     })
-    .overrideComponent(TransactionsPage, {
-      remove: { imports: [PageHeaderComponent, TransactionDrawerComponent, EmptyStateComponent] },
-      add: { imports: [MockPageHeaderComponent, MockTransactionDrawerComponent, MockEmptyStateComponent] }
-    })
-    .compileComponents();
+      .overrideComponent(TransactionsPage, {
+        remove: { imports: [PageHeaderComponent, TransactionDrawerComponent, EmptyStateComponent] },
+        add: {
+          imports: [
+            MockPageHeaderComponent,
+            MockTransactionDrawerComponent,
+            MockEmptyStateComponent,
+          ],
+        },
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(TransactionsPage);
     router = TestBed.inject(Router);
@@ -221,7 +222,7 @@ describe('TransactionsPage', () => {
     // But we can check the list element
     const list = fixture.nativeElement.querySelector('[data-testid="transactions-list"]');
     expect(list).toBeFalsy();
-    
+
     // Check if empty state is rendered
     const emptyState = fixture.nativeElement.querySelector('app-empty-state');
     expect(emptyState).toBeTruthy();

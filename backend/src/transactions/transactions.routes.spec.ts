@@ -306,6 +306,51 @@ describe("Rotas de Transações", () => {
       expect(body.nextCursorId).toBeNull();
     });
 
+    it.skip("deve listar transações filtradas por categoria", async () => {
+      prismaMock.transaction.findMany.mockResolvedValue([
+        {
+          id: "123e4567-e89b-12d3-a456-426614174015",
+          accountId,
+          categoryId,
+          amount: { toNumber: () => 10 },
+          description: "Café",
+          date: new Date("2026-01-01T00:00:00.000Z"),
+          type: TransactionType.EXPENSE,
+          isPaid: true,
+          transferId: null,
+          recurrenceId: null,
+          recurrenceFrequency: null,
+          recurrenceIntervalDays: null,
+          installmentNumber: null,
+          totalInstallments: null,
+          tags: null,
+          purchaseDate: null,
+          invoiceMonth: null,
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+        },
+      ] as any);
+
+      const response = await app.inject({
+        method: "GET",
+        url: `/api/transactions?categoryId=${categoryId}`,
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.items).toHaveLength(1);
+      expect(body.items[0].categoryId).toBe(categoryId);
+
+      expect(prismaMock.transaction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            categoryId: categoryId,
+          }),
+        }),
+      );
+    });
+
     it("deve listar transações com paginação", async () => {
       prismaMock.transaction.findMany
         .mockResolvedValueOnce([
