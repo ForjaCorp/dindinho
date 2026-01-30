@@ -54,7 +54,7 @@ export class AppBaseChartDirective {}
   ],
   providers: [provideCharts(withDefaultRegisterables()), MessageService],
   template: `
-    <div class="flex flex-col gap-6 pb-24">
+    <div class="flex flex-col gap-6 pb-24 px-6 pt-6">
       <p-toast />
       <app-page-header title="Relatórios">
         <p-button
@@ -237,6 +237,9 @@ export class ReportsPage implements OnInit {
   private createLineOptions(): ChartOptions<'line'> {
     return {
       ...COMMON_CHART_OPTIONS,
+      layout: {
+        padding: 10,
+      },
       scales: {
         y: {
           beginAtZero: false,
