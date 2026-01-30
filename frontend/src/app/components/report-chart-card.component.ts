@@ -19,7 +19,7 @@ import { SkeletonModule } from 'primeng/skeleton';
       [attr.aria-label]="ariaLabel"
       data-testid="report-chart-card"
     >
-      <div [class]="'relative ' + contentClass" data-testid="card-content">
+      <div [class]="'relative w-full overflow-hidden ' + contentClass" data-testid="card-content">
         @if (loading) {
           <div
             class="flex flex-col gap-4 items-center justify-center h-full"
@@ -41,7 +41,7 @@ import { SkeletonModule } from 'primeng/skeleton';
             <p data-testid="empty-message">{{ emptyMessage }}</p>
           </div>
         } @else {
-          <div data-testid="actual-content">
+          <div class="h-full w-full" data-testid="actual-content">
             <ng-content></ng-content>
           </div>
         }
@@ -54,6 +54,17 @@ import { SkeletonModule } from 'primeng/skeleton';
         .p-card {
           border-radius: 1rem;
           overflow: hidden;
+        }
+
+        [data-testid='actual-content'] {
+          height: 100%;
+          width: 100%;
+        }
+
+        [data-testid='actual-content'] canvas {
+          display: block;
+          width: 100% !important;
+          height: 100% !important;
         }
         .p-card-title {
           font-size: 1.125rem;
