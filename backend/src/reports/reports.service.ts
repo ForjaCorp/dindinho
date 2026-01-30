@@ -5,6 +5,7 @@ import {
   CashFlowDTO,
   BalanceHistoryDTO,
 } from "@dindinho/shared";
+import { CsvHelper } from "../lib/csv-helper";
 
 export class ReportsService {
   constructor(private prisma: PrismaClient) {}
@@ -188,5 +189,70 @@ export class ReportsService {
       date: s.date.toISOString().split("T")[0],
       balance: Number(s._sum.balance || 0),
     }));
+  }
+
+  /**
+   * Gera CSV das transações filtradas
+   */
+  async exportTransactionsCsv(
+    userId: string,
+    filters: ReportFilterDTO,
+  ): Promise<string> {
+    const { startDate, endDate, accountIds, includePending } = filters;
+
+    const where: Prisma.TransactionWhereInput = {
+      account: {
+        ownerId: userId,
+      },
+    };
+
+    if (startDate || endDate) {
+      where.date = {
+        ...(startDate ? { gte: new Date(startDate) } : {}),
+        ...(endDate ? { lte: new Date(endDate) } : {}),
+      };
+    }
+
+    if (accountIds?.length) {
+      where.accountId = { in: accountIds };
+    }
+
+    if (!includePending) {
+      where.isPaid = true;
+    }
+
+    const transactions = await this.prisma.transaction.findMany({
+      where,
+      include: {
+        category: true,
+        account: true,
+      },
+      orderBy: { date: "desc" },
+    });
+
+    const csv = new CsvHelper();
+    csv.setHeaders([
+      "Data",
+      "Descrição",
+      "Categoria",
+      "Conta",
+      "Tipo",
+      "Valor",
+      "Pago",
+    ]);
+
+    for (const t of transactions) {
+      csv.addRow([
+        t.date.toISOString().split("T")[0],
+        t.description || "",
+        t.category?.name || "Sem Categoria",
+        t.account.name,
+        t.type,
+        Number(t.amount),
+        t.isPaid ? "Sim" : "Não",
+      ]);
+    }
+
+    return csv.build();
   }
 }

@@ -73,4 +73,27 @@ export async function reportsRoutes(app: FastifyInstance) {
       return service.getBalanceHistory(userId, request.query);
     },
   );
+
+  app.withTypeProvider<ZodTypeProvider>().get(
+    "/reports/export/csv",
+    {
+      schema: {
+        summary: "Exportar transações filtradas para CSV",
+        tags: ["reports"],
+        querystring: reportFilterSchema,
+      },
+    },
+    async (request, reply) => {
+      const userId = request.user.sub;
+      const csv = await service.exportTransactionsCsv(userId, request.query);
+
+      reply
+        .header("Content-Type", "text/csv; charset=utf-8")
+        .header(
+          "Content-Disposition",
+          `attachment; filename=transacoes-${new Date().toISOString().split("T")[0]}.csv`,
+        )
+        .send(csv);
+    },
+  );
 }
