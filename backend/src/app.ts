@@ -1,4 +1,8 @@
-import Fastify, { FastifyInstance, FastifyRequest } from "fastify";
+import Fastify, {
+  FastifyInstance,
+  FastifyRequest,
+  FastifyReply,
+} from "fastify";
 import { ZodError } from "zod";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
@@ -167,7 +171,7 @@ export function buildApp(): FastifyInstance {
       typeof error === "object" &&
       error !== null &&
       "statusCode" in error &&
-      (error as any).statusCode === 429
+      (error as { statusCode: number }).statusCode === 429
     ) {
       return reply.status(429).send({
         statusCode: 429,
@@ -255,7 +259,7 @@ export function buildApp(): FastifyInstance {
       .split(",")
       .map((s) => s.trim())
       .filter((v) => v.length > 0);
-    return async (request: any, reply: any) => {
+    return async (request: FastifyRequest, reply: FastifyReply) => {
       const ip =
         (request.headers["x-real-ip"] as string | undefined) || request.ip;
       if (allowlist.includes(ip)) {
