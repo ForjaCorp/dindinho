@@ -23,6 +23,31 @@ import {
 export async function transactionsRoutes(app: FastifyInstance) {
   const service = new TransactionsService(prisma);
 
+  const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === "object" && value !== null && !Array.isArray(value);
+
+  const normalizeQuery = (value: unknown): Record<string, unknown> => {
+    if (value instanceof URLSearchParams) {
+      return Object.fromEntries(value.entries());
+    }
+    if (!isRecord(value)) return {};
+    return Object.fromEntries(
+      Object.entries(value).flatMap(([key, entry]) => {
+        const normalized = Array.isArray(entry) ? entry[0] : entry;
+        if (normalized === undefined) return [];
+        return [[key, normalized]];
+      }),
+    );
+  };
+
+  const parseQueryFromUrl = (
+    url: string | undefined,
+  ): Record<string, string> => {
+    if (!url) return {};
+    const parsedUrl = new URL(url, "http://localhost");
+    return Object.fromEntries(parsedUrl.searchParams.entries());
+  };
+
   const paramsSchema = z.object({
     id: z.string().uuid(),
   });
@@ -76,8 +101,20 @@ export async function transactionsRoutes(app: FastifyInstance) {
     },
     async (request) => {
       const { sub: userId } = request.user as { sub: string };
-      const parsed = listTransactionsQuerySchema.parse(request.query);
-      return service.list(userId, parsed);
+      const queryFromRequest = normalizeQuery(request.query);
+      const queryFromUrl = parseQueryFromUrl(request.raw.url ?? request.url);
+      const mergedQuery = { ...queryFromRequest, ...queryFromUrl };
+      const parsed = listTransactionsQuerySchema.parse(mergedQuery);
+      const categoryIdFallback =
+        typeof mergedQuery.categoryId === "string"
+          ? mergedQuery.categoryId
+          : typeof mergedQuery.categoryid === "string"
+            ? mergedQuery.categoryid
+            : undefined;
+      const normalizedQuery = categoryIdFallback
+        ? { ...parsed, categoryId: categoryIdFallback }
+        : parsed;
+      return service.list(userId, normalizedQuery);
     },
   );
 
