@@ -87,7 +87,12 @@ describe('ReportsPage', () => {
         of({ data: { labels: [], datasets: [{ data: [] }] }, categoryIds: [] }),
       ),
       getCashFlow: vi.fn(() => of([])),
-      getCashFlowChart: vi.fn(() => of({ labels: [], datasets: [{ data: [] }, { data: [] }] })),
+      getCashFlowChart: vi.fn(() =>
+        of({
+          periodKeys: [],
+          data: { labels: [], datasets: [{ data: [] }, { data: [] }] },
+        }),
+      ),
       getBalanceHistory: vi.fn(() => of([])),
       getBalanceHistoryChart: vi.fn(() => of({ labels: [], datasets: [{ data: [] }] })),
       exportTransactionsCsv: vi.fn(() => of(new Blob())),
@@ -205,6 +210,7 @@ describe('ReportsPage', () => {
     });
 
     it('deve navegar para transações ao clicar em uma barra no gráfico de fluxo de caixa', () => {
+      component.cashFlowPeriodKeys.set(['2024-01', '2024-02']);
       component.cashFlowData.set({
         labels: ['2024-01', '2024-02'],
         datasets: [
@@ -225,7 +231,7 @@ describe('ReportsPage', () => {
       expect(router.navigate).toHaveBeenCalledWith(['/transactions'], {
         queryParams: expect.objectContaining({
           type: 'INCOME',
-          month: '2024-01',
+          invoiceMonth: '2024-01',
           openFilters: 1,
         }),
       });
@@ -233,6 +239,7 @@ describe('ReportsPage', () => {
 
     it('deve incluir accountId na navegação se apenas uma conta estiver selecionada', () => {
       component.selectedAccountIds.set(['acc-123']);
+      component.cashFlowPeriodKeys.set(['2024-01', '2024-02']);
       component.cashFlowData.set({
         labels: ['2024-01', '2024-02'],
         datasets: [
@@ -253,7 +260,7 @@ describe('ReportsPage', () => {
       expect(router.navigate).toHaveBeenCalledWith(['/transactions'], {
         queryParams: expect.objectContaining({
           type: 'EXPENSE',
-          month: '2024-02',
+          invoiceMonth: '2024-02',
           accountId: 'acc-123',
           openFilters: 1,
         }),

@@ -5,7 +5,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 import { ReportsService } from './reports.service';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { SpendingByCategoryDTO } from '@dindinho/shared';
+import { CashFlowDTO, SpendingByCategoryDTO } from '@dindinho/shared';
 
 const testBed = getTestBed();
 if (!testBed.platform) {
@@ -65,6 +65,26 @@ describe('ReportsService', () => {
     expect(req.request.params.getAll('accountIds')).toEqual(['acc-1', 'acc-2']);
     expect(req.request.params.get('includePending')).toBe('true');
     req.flush([]);
+  });
+
+  it('deve formatar labels de mês sem shift de timezone no cash-flow', async () => {
+    const mockData: CashFlowDTO = [
+      { period: '2026-02', income: 20, expense: 0, balance: 20 },
+      { period: '2026-01', income: 10, expense: 5, balance: 5 },
+    ];
+
+    const resultPromise = new Promise<void>((resolve) => {
+      service.getCashFlowChart({ includePending: true }).subscribe((result) => {
+        expect(result.periodKeys).toEqual(['2026-01', '2026-02']);
+        expect(result.data.labels).toEqual(['Jan/2026', 'Fev/2026']);
+        resolve();
+      });
+    });
+
+    const req = httpMock.expectOne((r) => r.url.endsWith('/cash-flow'));
+    req.flush(mockData);
+
+    await resultPromise;
   });
 
   it('deve buscar histórico de saldo', () => {
