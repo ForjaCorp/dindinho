@@ -113,6 +113,7 @@ export class ReportsService {
         amount: true,
         type: true,
         date: true,
+        invoiceMonth: true,
       },
       orderBy: { date: "asc" },
     });
@@ -120,7 +121,14 @@ export class ReportsService {
     const monthlyData = new Map<string, { income: number; expense: number }>();
 
     for (const tx of transactions) {
-      const monthKey = tx.date.toISOString().substring(0, 7); // YYYY-MM
+      // Usar invoiceMonth para cartões de crédito, date para o resto
+      let monthKey: string;
+      if (tx.invoiceMonth) {
+        monthKey = tx.invoiceMonth;
+      } else {
+        monthKey = tx.date.toISOString().substring(0, 7); // YYYY-MM
+      }
+
       const current = monthlyData.get(monthKey) || { income: 0, expense: 0 };
 
       const amount = Math.abs(Number(tx.amount));
