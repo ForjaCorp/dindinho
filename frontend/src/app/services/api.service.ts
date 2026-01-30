@@ -179,6 +179,7 @@ export class ApiService {
 
   getTransactions(params: {
     accountId?: string;
+    categoryId?: string;
     from?: string;
     to?: string;
     q?: string;
@@ -188,6 +189,7 @@ export class ApiService {
   }): Observable<{ items: TransactionDTO[]; nextCursorId: string | null }> {
     const queryParams: Record<string, string> = {
       ...(params.accountId ? { accountId: params.accountId } : {}),
+      ...(params.categoryId ? { categoryId: params.categoryId } : {}),
       ...(params.from ? { from: params.from } : {}),
       ...(params.to ? { to: params.to } : {}),
       ...(params.q ? { q: params.q } : {}),
