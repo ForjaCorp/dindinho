@@ -294,7 +294,7 @@ describe('ReportsPage', () => {
   });
 
   it('deve configurar o eixo X do saldo como linear para respeitar o tempo', () => {
-    const options = component.lineChartOptions;
+    const options = component.lineChartOptions();
     const scales = options.scales as unknown as Record<
       string,
       { type?: unknown; ticks?: { callback?: unknown } }
@@ -311,7 +311,7 @@ describe('ReportsPage', () => {
   });
 
   it('deve mostrar tooltip de intervalo no saldo quando houver período', () => {
-    const options = component.lineChartOptions;
+    const options = component.lineChartOptions();
     const tooltip = options.plugins?.tooltip as unknown as {
       callbacks?: { title?: unknown };
     };
@@ -327,6 +327,30 @@ describe('ReportsPage', () => {
       ]);
       expect(title).toBe('01/01 - 07/01');
     }
+  });
+
+  it('deve clamar o eixo X do saldo ao período selecionado', () => {
+    component.dateRange.set([new Date(2024, 0, 1), new Date(2024, 0, 31)]);
+    fixture.detectChanges();
+
+    const options = component.lineChartOptions();
+    const scales = options.scales as unknown as Record<string, { min?: unknown; max?: unknown }>;
+    const x = scales?.['x'];
+
+    expect(x?.min).toBe(Date.UTC(2024, 0, 1));
+    expect(x?.max).toBe(Date.UTC(2024, 0, 31));
+  });
+
+  it('deve normalizar o período quando as datas estiverem invertidas', () => {
+    component.dateRange.set([new Date(2024, 0, 31), new Date(2024, 0, 1)]);
+    fixture.detectChanges();
+
+    const options = component.lineChartOptions();
+    const scales = options.scales as unknown as Record<string, { min?: unknown; max?: unknown }>;
+    const x = scales?.['x'];
+
+    expect(x?.min).toBe(Date.UTC(2024, 0, 1));
+    expect(x?.max).toBe(Date.UTC(2024, 0, 31));
   });
 
   it('deve mostrar skeletons durante o carregamento', () => {
