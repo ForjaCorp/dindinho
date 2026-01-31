@@ -15,18 +15,28 @@ import { AccountService } from '../../app/services/account.service';
 import { PageHeaderComponent } from '../../app/components/page-header.component';
 import { ChartData, ActiveElement, ChartOptions, TooltipItem } from 'chart.js';
 import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
-import { DatePickerModule } from 'primeng/datepicker';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { ButtonModule } from 'primeng/button';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
-import { BalanceHistoryGranularity, ReportFilterDTO } from '@dindinho/shared';
+import {
+  BalanceHistoryGranularity,
+  ReportFilterDTO,
+  TimeFilterSelectionDTO,
+} from '@dindinho/shared';
 import { finalize } from 'rxjs';
 import { DownloadUtil } from '../../app/utils/download.util';
 import { COMMON_CHART_OPTIONS } from '../../app/utils/chart.util';
 import { ReportChartCardComponent } from '../../app/components/report-chart-card.component';
+import { TimeFilterComponent } from '../../app/components/time-filter.component';
+import {
+  formatIsoDayLocal,
+  parseIsoMonthToLocalDate,
+  resolvePeriodSelectionToDayRange,
+  resolveTimeFilterToTransactionsQuery,
+} from '../../app/utils/time-filter.util';
 
 /**
  * Wrapper para o BaseChartDirective para seguir padrões de seletor.
@@ -56,7 +66,7 @@ export class AppBaseChartDirective {}
     PageHeaderComponent,
     AppBaseChartDirective,
     ReportChartCardComponent,
-    DatePickerModule,
+    TimeFilterComponent,
     MultiSelectModule,
     SelectButtonModule,
     ButtonModule,
@@ -89,31 +99,15 @@ export class AppBaseChartDirective {}
         aria-label="Filtros de relatório"
       >
         <div class="flex flex-col gap-1.5 flex-1 min-w-[280px]">
-          <label
-            for="date-range"
-            class="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1"
-            >Período</label
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1"
+            >Período</span
           >
-          <div
-            class="reports-period-field w-full bg-white border border-slate-200 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-emerald-200 focus-within:border-emerald-300"
-          >
-            <p-datepicker
-              inputId="date-range"
-              [ngModel]="dateRange()"
-              (ngModelChange)="onDateRangeModelChange($event)"
-              selectionMode="range"
-              [readonlyInput]="true"
-              [showIcon]="true"
-              appendTo="body"
-              [baseZIndex]="1000"
-              (onSelect)="onDateChange()"
-              placeholder="Selecione o período"
-              styleClass="w-full reports-period-picker"
-              inputStyleClass="!bg-transparent !border-0 !rounded-none !py-3 !px-4 !shadow-none !min-h-[46px]"
-              dateFormat="dd/mm/yy"
-              aria-label="Selecionar intervalo de datas"
-            />
-          </div>
+          <app-time-filter
+            data-testid="reports-time-filter"
+            [selection]="timeFilterSelection()"
+            (selectionChange)="onTimeFilterSelectionChange($event)"
+            aria-label="Selecionar período do relatório"
+          />
         </div>
 
         <div class="flex flex-col gap-1.5 flex-1 min-w-[280px]">
@@ -254,60 +248,6 @@ export class AppBaseChartDirective {}
       :host ::ng-deep canvas.cursor-pointer {
         cursor: pointer;
       }
-
-      :host ::ng-deep .reports-period-field .reports-period-picker.p-datepicker {
-        display: flex;
-        width: 100%;
-        align-items: stretch;
-      }
-
-      :host ::ng-deep .reports-period-field .p-inputgroup,
-      :host ::ng-deep .reports-period-field .p-inputwrapper {
-        border: 0 !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
-        background: transparent !important;
-      }
-
-      :host ::ng-deep .reports-period-field .p-inputtext,
-      :host ::ng-deep .reports-period-field .p-datepicker-input {
-        flex: 1 1 auto;
-        min-width: 0;
-        width: auto;
-        border: 0 !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
-        background: transparent !important;
-      }
-
-      :host ::ng-deep .reports-period-field .p-datepicker-dropdown,
-      :host ::ng-deep .reports-period-field .p-datepicker-trigger {
-        flex: 0 0 48px;
-        width: 48px;
-        min-width: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0 0 2px 0 !important;
-        line-height: 1;
-        border: 0 !important;
-        border-left: 1px solid #e2e8f0 !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
-        background: transparent !important;
-        color: #475569;
-      }
-
-      :host ::ng-deep .reports-period-field .p-datepicker-dropdown .p-icon,
-      :host ::ng-deep .reports-period-field .p-datepicker-trigger .p-icon {
-        display: block;
-        width: 16px;
-        height: 16px;
-      }
-
-      :host ::ng-deep .reports-period-field .p-datepicker-trigger .p-button-icon {
-        color: #475569;
-      }
     `,
   ],
 })
@@ -331,12 +271,11 @@ export class ReportsPage implements OnInit {
   balanceGranularity = signal<BalanceHistoryGranularity>('DAY');
 
   // Filtros
-  dateRange = signal<[Date | null, Date | null]>([
-    new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-    new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0),
-  ]);
+  timeFilterSelection = signal<TimeFilterSelectionDTO>(this.buildDefaultSelection());
   accounts = this.accountService.accounts;
   selectedAccountIds = signal<string[]>([]);
+
+  private readonly localDateRange = computed(() => this.resolveSelectionToLocalDateRange());
 
   // Estados de Carregamento
   loadingSpending = signal(false);
@@ -438,7 +377,7 @@ export class ReportsPage implements OnInit {
    * Normaliza datas invertidas para garantir min <= max.
    */
   private getBalanceHistoryDomainMs(): { min: number; max: number } | null {
-    const [start, end] = this.dateRange();
+    const [start, end] = this.localDateRange();
     if (!start || !end) return null;
 
     const min = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
@@ -549,11 +488,12 @@ export class ReportsPage implements OnInit {
     this.loadAllReports();
   }
 
-  onDateChange() {
-    const [start, end] = this.dateRange();
-    if (start && end) {
-      this.loadAllReports();
-    }
+  /**
+   * Aplica a seleção do filtro temporal quando o usuário confirma no editor.
+   */
+  protected onTimeFilterSelectionChange(selection: TimeFilterSelectionDTO) {
+    this.timeFilterSelection.set(selection);
+    this.loadAllReports();
   }
 
   loadAllReports() {
@@ -624,7 +564,7 @@ export class ReportsPage implements OnInit {
   private fetchBalanceHistory(filters: ReportFilterDTO) {
     this.loadingBalance.set(true);
 
-    const [start, end] = this.dateRange();
+    const [start, end] = this.localDateRange();
     const rangeDays = this.computeUtcDaysInclusive(start, end);
     const changeOnly =
       this.balanceGranularity() === 'DAY' && rangeDays != null ? rangeDays > 120 : undefined;
@@ -664,12 +604,6 @@ export class ReportsPage implements OnInit {
     this.fetchBalanceHistory(filters);
   }
 
-  protected onDateRangeModelChange(value: unknown) {
-    const normalized = this.normalizeDateRange(value);
-    if (!normalized) return;
-    this.dateRange.set(normalized);
-  }
-
   protected onSelectedAccountIdsModelChange(value: unknown) {
     const normalized = this.normalizeAccountIds(value);
     if (!normalized) return;
@@ -677,27 +611,27 @@ export class ReportsPage implements OnInit {
     this.loadAllReports();
   }
 
+  /**
+   * Converte a seleção do filtro temporal em `ReportFilterDTO`.
+   *
+   * Regras:
+   * - `INVOICE_MONTH`: envia `invoiceMonth`.
+   * - `DAY_RANGE`: envia `startDay/endDay/tzOffsetMinutes`.
+   */
   private getCurrentFilters(): ReportFilterDTO | null {
-    const [start, end] = this.dateRange();
-    if (!start || !end) return null;
-
-    const startDay = this.formatIsoDayLocal(start);
-    const endDay = this.formatIsoDayLocal(end);
+    const query = resolveTimeFilterToTransactionsQuery(this.timeFilterSelection());
+    if (!query.invoiceMonth && (!query.startDay || !query.endDay)) return null;
 
     return {
-      startDay,
-      endDay,
-      tzOffsetMinutes: start.getTimezoneOffset(),
+      ...(query.invoiceMonth ? { invoiceMonth: query.invoiceMonth } : {}),
+      ...(query.startDay ? { startDay: query.startDay } : {}),
+      ...(query.endDay ? { endDay: query.endDay } : {}),
+      ...(typeof query.tzOffsetMinutes === 'number'
+        ? { tzOffsetMinutes: query.tzOffsetMinutes }
+        : {}),
       accountIds: this.selectedAccountIds().length > 0 ? this.selectedAccountIds() : undefined,
       includePending: true,
     };
-  }
-
-  private formatIsoDayLocal(value: Date): string {
-    const year = value.getFullYear();
-    const month = String(value.getMonth() + 1).padStart(2, '0');
-    const day = String(value.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
   }
 
   private readBalanceGranularityFromStorage(): BalanceHistoryGranularity {
@@ -718,22 +652,48 @@ export class ReportsPage implements OnInit {
     return null;
   }
 
-  private normalizeDateRange(value: unknown): [Date | null, Date | null] | null {
-    if (!Array.isArray(value) || value.length !== 2) return null;
-
-    const start = value[0];
-    const end = value[1];
-
-    const startDate = start instanceof Date ? start : start == null ? null : null;
-    const endDate = end instanceof Date ? end : end == null ? null : null;
-
-    return [startDate, endDate];
-  }
-
   private normalizeAccountIds(value: unknown): string[] | null {
     if (!Array.isArray(value)) return null;
     const ids = value.filter((v) => typeof v === 'string');
     return ids.length === value.length ? ids : null;
+  }
+
+  private buildDefaultSelection(): TimeFilterSelectionDTO {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    return {
+      mode: 'DAY_RANGE',
+      period: {
+        preset: 'CUSTOM',
+        startDay: formatIsoDayLocal(start),
+        endDay: formatIsoDayLocal(end),
+        tzOffsetMinutes: now.getTimezoneOffset(),
+      },
+    };
+  }
+
+  /**
+   * Resolve o período atual para um range de `Date` local.
+   *
+   * Usado para:
+   * - domínio do eixo X (saldo)
+   * - cálculo de dias no período para heurísticas (ex.: `changeOnly`)
+   */
+  private resolveSelectionToLocalDateRange(): [Date | null, Date | null] {
+    const sel = this.timeFilterSelection();
+
+    if (sel.mode === 'INVOICE_MONTH') {
+      const start = parseIsoMonthToLocalDate(sel.invoiceMonth);
+      if (!start) return [null, null];
+      const end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+      return [start, end];
+    }
+
+    const resolved = resolvePeriodSelectionToDayRange(sel.period);
+    if (!resolved) return [null, null];
+    return [resolved.start, resolved.end];
   }
 
   private computeUtcDaysInclusive(start: Date | null, end: Date | null): number | null {
@@ -856,16 +816,20 @@ export class ReportsPage implements OnInit {
     return abs;
   }
 
+  /**
+   * Navega para Transações mantendo coerência com o filtro atual.
+   *
+   * Prioridade do período:
+   * 1) `invoiceMonth` explícito (drill-down de barra)
+   * 2) seleção atual no filtro temporal
+   */
   private navigateToTransactions(
     type?: 'INCOME' | 'EXPENSE',
     categoryId?: string,
     invoiceMonth?: string,
   ) {
-    const [start, end] = this.dateRange();
     const queryParams: Record<string, string | number | undefined> = {
       type,
-      startDate: start?.toISOString(),
-      endDate: end?.toISOString(),
       openFilters: 1,
     };
 
@@ -875,6 +839,24 @@ export class ReportsPage implements OnInit {
 
     if (invoiceMonth) {
       queryParams['invoiceMonth'] = invoiceMonth;
+    } else {
+      const selection = this.timeFilterSelection();
+      if (selection.mode === 'INVOICE_MONTH') {
+        queryParams['invoiceMonth'] = selection.invoiceMonth;
+      } else if (selection.period.preset && selection.period.preset !== 'CUSTOM') {
+        queryParams['periodPreset'] = selection.period.preset;
+        if (typeof selection.period.tzOffsetMinutes === 'number') {
+          queryParams['tzOffsetMinutes'] = selection.period.tzOffsetMinutes;
+        }
+      } else {
+        const resolved = resolvePeriodSelectionToDayRange(selection.period);
+        if (resolved) {
+          queryParams['periodPreset'] = 'CUSTOM';
+          queryParams['startDay'] = resolved.startDay;
+          queryParams['endDay'] = resolved.endDay;
+          queryParams['tzOffsetMinutes'] = resolved.tzOffsetMinutes;
+        }
+      }
     }
 
     if (this.selectedAccountIds().length === 1) {
