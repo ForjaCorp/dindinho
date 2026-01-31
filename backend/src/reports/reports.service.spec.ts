@@ -154,22 +154,126 @@ describe("ReportsService", () => {
         { date: new Date("2024-01-02T00:00:00Z"), _sum: { balance: 1100 } },
       ];
 
+      mockPrisma.account.findMany.mockResolvedValue([
+        { id: "acc-1" },
+      ] as unknown as []);
+
+      vi.mocked(mockPrisma.dailySnapshot.findFirst).mockResolvedValue(null);
+
+      vi.mocked(mockPrisma.dailySnapshot.aggregate).mockResolvedValue({
+        _min: { date: new Date("2024-01-01T00:00:00Z") },
+        _max: { date: new Date("2024-01-02T00:00:00Z") },
+      } as unknown as never);
+
+      vi.mocked(mockPrisma.dailySnapshot.count).mockResolvedValue(2);
+
       vi.mocked(mockPrisma.dailySnapshot.groupBy).mockResolvedValue(
         mockSnapshots as unknown as [],
       );
 
       const result = await service.getBalanceHistory(userId, {
+        startDate: "2024-01-01T00:00:00Z",
+        endDate: "2024-01-02T00:00:00Z",
         includePending: true,
       });
 
       expect(result).toHaveLength(2);
-      expect(result[0]).toEqual({ date: "2024-01-01", balance: 1000 });
-      expect(result[1]).toEqual({ date: "2024-01-02", balance: 1100 });
+      expect(result[0]).toEqual(
+        expect.objectContaining({
+          date: "2024-01-01",
+          label: "2024-01-01",
+          t: Date.UTC(2024, 0, 1),
+          periodStart: "2024-01-01",
+          periodEnd: "2024-01-01",
+          balance: 1000,
+          changed: true,
+        }),
+      );
+      expect(result[1]).toEqual(
+        expect.objectContaining({
+          date: "2024-01-02",
+          label: "2024-01-02",
+          t: Date.UTC(2024, 0, 2),
+          periodStart: "2024-01-02",
+          periodEnd: "2024-01-02",
+          balance: 1100,
+          changed: true,
+          delta: 100,
+        }),
+      );
+    });
+
+    it("deve preencher metadados de período ao usar granularidade semanal", async () => {
+      const userId = "user-1";
+
+      mockPrisma.account.findMany.mockResolvedValue([
+        { id: "acc-1" },
+      ] as unknown as []);
+
+      vi.mocked(mockPrisma.dailySnapshot.findFirst).mockResolvedValue(null);
+
+      vi.mocked(mockPrisma.dailySnapshot.aggregate).mockResolvedValue({
+        _min: { date: new Date("2024-01-01T00:00:00Z") },
+        _max: { date: new Date("2024-01-30T00:00:00Z") },
+      } as unknown as never);
+
+      vi.mocked(mockPrisma.dailySnapshot.count).mockResolvedValue(30);
+
+      vi.mocked(mockPrisma.dailySnapshot.groupBy).mockResolvedValue([
+        { date: new Date("2024-01-07T00:00:00Z"), _sum: { balance: 1000 } },
+        { date: new Date("2024-01-30T00:00:00Z"), _sum: { balance: 1200 } },
+      ] as unknown as []);
+
+      const result = await service.getBalanceHistory(userId, {
+        startDate: "2024-01-01T00:00:00Z",
+        endDate: "2024-01-30T00:00:00Z",
+        granularity: "WEEK",
+        includePending: true,
+      });
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual(
+        expect.objectContaining({
+          date: "2024-01-07",
+          label: "2024-01-07",
+          t: Date.UTC(2024, 0, 7),
+          periodStart: "2024-01-01",
+          periodEnd: "2024-01-07",
+          balance: 1000,
+        }),
+      );
+      expect(result[1]).toEqual(
+        expect.objectContaining({
+          date: "2024-01-30",
+          label: "2024-01-30",
+          t: Date.UTC(2024, 0, 30),
+          periodStart: "2024-01-29",
+          periodEnd: "2024-01-30",
+          balance: 1200,
+          delta: 200,
+          changed: true,
+        }),
+      );
     });
 
     it("deve lidar com ausência de dados de saldo", async () => {
+      mockPrisma.account.findMany.mockResolvedValue([
+        { id: "acc-1" },
+      ] as unknown as []);
+
+      vi.mocked(mockPrisma.dailySnapshot.findFirst).mockResolvedValue(null);
+
+      vi.mocked(mockPrisma.dailySnapshot.aggregate).mockResolvedValue({
+        _min: { date: new Date("2024-01-01T00:00:00Z") },
+        _max: { date: new Date("2024-01-02T00:00:00Z") },
+      } as unknown as never);
+
+      vi.mocked(mockPrisma.dailySnapshot.count).mockResolvedValue(2);
+
       vi.mocked(mockPrisma.dailySnapshot.groupBy).mockResolvedValue([]);
       const result = await service.getBalanceHistory("user-1", {
+        startDate: "2024-01-01T00:00:00Z",
+        endDate: "2024-01-02T00:00:00Z",
         includePending: true,
       });
       expect(result).toEqual([]);

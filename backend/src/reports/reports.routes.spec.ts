@@ -113,6 +113,19 @@ describe("Rotas de Relatórios", () => {
 
   describe("GET /api/reports/balance-history", () => {
     it("deve retornar 200 e dados de histórico de saldo", async () => {
+      prismaMock.account.findMany.mockResolvedValue([
+        { id: "acc-1" },
+      ] as unknown as []);
+
+      vi.mocked(prismaMock.dailySnapshot.findFirst).mockResolvedValue(null);
+
+      vi.mocked(prismaMock.dailySnapshot.aggregate).mockResolvedValue({
+        _min: { date: new Date("2024-01-01T00:00:00Z") },
+        _max: { date: new Date("2024-01-02T00:00:00Z") },
+      } as unknown as never);
+
+      vi.mocked(prismaMock.dailySnapshot.count).mockResolvedValue(2);
+
       vi.mocked(prismaMock.dailySnapshot.groupBy).mockResolvedValue([
         { date: new Date("2024-01-01"), _sum: { balance: 1000 } },
       ] as unknown as []);
@@ -121,6 +134,10 @@ describe("Rotas de Relatórios", () => {
         method: "GET",
         url: "/api/reports/balance-history",
         headers: { authorization: `Bearer ${token}` },
+        query: {
+          startDate: "2024-01-01T00:00:00Z",
+          endDate: "2024-01-02T00:00:00Z",
+        },
       });
 
       expect(response.statusCode).toBe(200);
