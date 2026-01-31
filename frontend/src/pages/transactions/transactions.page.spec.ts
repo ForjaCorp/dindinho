@@ -1,3 +1,4 @@
+/** @vitest-environment jsdom */
 import { Component, signal, input, Input } from '@angular/core';
 import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
@@ -14,7 +15,7 @@ import { TransactionsPage } from './transactions.page';
 import { ApiService } from '../../app/services/api.service';
 import { AccountService } from '../../app/services/account.service';
 import { CategoryService } from '../../app/services/category.service';
-import { TransactionDTO, AccountDTO } from '@dindinho/shared';
+import { TransactionDTO, AccountDTO, TimeFilterSelectionDTO } from '@dindinho/shared';
 import { PageHeaderComponent } from '../../app/components/page-header.component';
 import { TransactionDrawerComponent } from '../../app/components/transaction-drawer.component';
 import { EmptyStateComponent } from '../../app/components/empty-state.component';
@@ -217,9 +218,6 @@ describe('TransactionsPage', () => {
     component.onTransactionsDeleted([txs[0].id]);
     fixture.detectChanges();
 
-    // Verify items are empty
-    // Accessing protected signal via any or component instance if public enough
-    // But we can check the list element
     const list = fixture.nativeElement.querySelector('[data-testid="transactions-list"]');
     expect(list).toBeFalsy();
 
@@ -260,28 +258,29 @@ describe('TransactionsPage', () => {
     expect(btn?.getAttribute('aria-label')).toBeTruthy();
   });
 
-  it('deve exibir filtros de mês e ano ao abrir filtros avançados', () => {
+  it('deve exibir filtro de período ao abrir filtros avançados', () => {
     const component = fixture.componentInstance as unknown as { toggleFilters: () => void };
     component.toggleFilters();
     fixture.detectChanges();
 
     expect(
-      fixture.nativeElement.querySelector('[data-testid="transactions-month-year-picker"]'),
+      fixture.nativeElement.querySelector('[data-testid="transactions-time-filter"]'),
     ).toBeTruthy();
   });
 
-  it('deve aplicar filtro de mês e ano ao carregar transações', () => {
+  it('deve aplicar filtro de invoiceMonth ao carregar transações', () => {
     const api = TestBed.inject(ApiService) as unknown as {
       getTransactions: ReturnType<typeof vi.fn>;
     };
 
-    const component = fixture.componentInstance as unknown as { toggleFilters: () => void };
+    const component = fixture.componentInstance as unknown as {
+      toggleFilters: () => void;
+      onTimeFilterSelectionChange: (s: TimeFilterSelectionDTO) => void;
+    };
     component.toggleFilters();
     fixture.detectChanges();
 
-    (
-      fixture.componentInstance as unknown as { monthYearControl: { setValue: (v: Date) => void } }
-    ).monthYearControl.setValue(new Date(2026, 0, 1));
+    component.onTimeFilterSelectionChange({ mode: 'INVOICE_MONTH', invoiceMonth: '2026-01' });
     fixture.detectChanges();
 
     const lastCall = api.getTransactions.mock.calls.at(-1)?.[0] as Record<string, unknown>;
@@ -289,6 +288,136 @@ describe('TransactionsPage', () => {
       limit: 30,
       invoiceMonth: '2026-01',
     });
+
+    expect(router.navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({
+        queryParamsHandling: 'merge',
+        queryParams: expect.objectContaining({
+          invoiceMonth: '2026-01',
+          month: null,
+          periodPreset: null,
+          startDay: null,
+          endDay: null,
+        }),
+      }),
+    );
+  });
+
+  it('deve aplicar filtro de startDay/endDay ao carregar transações', () => {
+    const api = TestBed.inject(ApiService) as unknown as {
+      getTransactions: ReturnType<typeof vi.fn>;
+    };
+
+    queryParamMap$.next(
+      convertToParamMap({
+        startDay: '2026-01-10',
+        endDay: '2026-01-15',
+        tzOffsetMinutes: '180',
+        openFilters: '1',
+      }),
+    );
+    fixture.detectChanges();
+
+    const lastCall = api.getTransactions.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(lastCall).toMatchObject({
+      limit: 30,
+      startDay: '2026-01-10',
+      endDay: '2026-01-15',
+      tzOffsetMinutes: 180,
+    });
+  });
+
+  it('deve aplicar preset via query param e manter label por extenso', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 0, 30, 12, 0, 0));
+
+    const api = TestBed.inject(ApiService) as unknown as {
+      getTransactions: ReturnType<typeof vi.fn>;
+    };
+
+    queryParamMap$.next(
+      convertToParamMap({
+        periodPreset: 'TODAY',
+        tzOffsetMinutes: '180',
+        openFilters: '1',
+      }),
+    );
+    fixture.detectChanges();
+
+    const lastCall = api.getTransactions.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(lastCall).toMatchObject({
+      limit: 30,
+      tzOffsetMinutes: 180,
+    });
+    expect(typeof lastCall['startDay']).toBe('string');
+    expect(typeof lastCall['endDay']).toBe('string');
+
+    const summary = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-summary"]',
+    ) as HTMLElement | null;
+    expect(summary).toBeTruthy();
+    expect((summary?.textContent ?? '').trim()).toBe('Hoje');
+
+    vi.useRealTimers();
+  });
+
+  it('deve sincronizar periodPreset ao selecionar preset no filtro', () => {
+    const component = fixture.componentInstance as unknown as {
+      toggleFilters: () => void;
+      onTimeFilterSelectionChange: (s: TimeFilterSelectionDTO) => void;
+    };
+
+    component.toggleFilters();
+    fixture.detectChanges();
+
+    component.onTimeFilterSelectionChange({
+      mode: 'DAY_RANGE',
+      period: { preset: 'TODAY', tzOffsetMinutes: 180 },
+    });
+
+    expect(router.navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({
+        queryParamsHandling: 'merge',
+        queryParams: expect.objectContaining({
+          periodPreset: 'TODAY',
+          invoiceMonth: null,
+          month: null,
+          startDay: null,
+          endDay: null,
+        }),
+      }),
+    );
+  });
+
+  it('deve limpar query param legado month ao trocar para preset', () => {
+    queryParamMap$.next(convertToParamMap({ month: '2026-01', openFilters: '1' }));
+    fixture.detectChanges();
+
+    const component = fixture.componentInstance as unknown as {
+      toggleFilters: () => void;
+      onTimeFilterSelectionChange: (s: TimeFilterSelectionDTO) => void;
+    };
+    component.toggleFilters();
+    fixture.detectChanges();
+
+    component.onTimeFilterSelectionChange({
+      mode: 'DAY_RANGE',
+      period: { preset: 'TODAY', tzOffsetMinutes: 180 },
+    });
+
+    expect(router.navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({
+        queryParamsHandling: 'merge',
+        queryParams: expect.objectContaining({
+          month: null,
+          invoiceMonth: null,
+          periodPreset: 'TODAY',
+        }),
+      }),
+    );
   });
 
   it('deve aplicar filtro de conta via query param', () => {
