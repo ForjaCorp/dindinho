@@ -208,7 +208,7 @@ export class AppBaseChartDirective {}
             appBaseChart
             data-testid="balance-history-chart"
             [data]="balanceData()"
-            [options]="lineChartOptions"
+            [options]="lineChartOptions()"
             [type]="'line'"
             class="block w-full h-full"
             role="img"
@@ -365,7 +365,7 @@ export class ReportsPage implements OnInit {
 
   // Configurações dos Gráficos
   doughnutChartOptions = this.createDoughnutOptions();
-  lineChartOptions = this.createLineOptions();
+  lineChartOptions = computed(() => this.createLineOptions());
   barChartOptions = this.createBarOptions();
 
   private createDoughnutOptions(): ChartOptions<'doughnut'> {
@@ -381,7 +381,13 @@ export class ReportsPage implements OnInit {
     };
   }
 
+  /**
+   * Opções do gráfico de saldo (linha) com eixo X linear.
+   * O clamp do domínio evita ticks fora do período selecionado.
+   */
   private createLineOptions(): ChartOptions<'line'> {
+    const domain = this.getBalanceHistoryDomainMs();
+
     return {
       ...COMMON_CHART_OPTIONS,
       layout: {
@@ -413,6 +419,8 @@ export class ReportsPage implements OnInit {
         x: {
           type: 'linear',
           grid: { display: false },
+          min: domain?.min,
+          max: domain?.max,
           ticks: {
             autoSkip: true,
             maxTicksLimit: 8,
@@ -423,6 +431,22 @@ export class ReportsPage implements OnInit {
         },
       },
     };
+  }
+
+  /**
+   * Calcula o domínio do eixo X em UTC (ms) com base no período selecionado.
+   * Normaliza datas invertidas para garantir min <= max.
+   */
+  private getBalanceHistoryDomainMs(): { min: number; max: number } | null {
+    const [start, end] = this.dateRange();
+    if (!start || !end) return null;
+
+    const min = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+    const max = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
+
+    if (min <= max) return { min, max };
+    return { min: max, max: min };
   }
 
   private readonly ptBrShortMonths = [
