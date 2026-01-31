@@ -287,4 +287,178 @@ describe('TimeFilterComponent', () => {
     expect(pill).toBeTruthy();
     expect((pill?.textContent ?? '').trim()).toBe('Período');
   });
+
+  it('deve preservar o último rascunho ao alternar entre Período e Fatura', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 0, 15, 12, 0, 0));
+
+    const open = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-open"]',
+    ) as HTMLButtonElement;
+    open.click();
+    fixture.detectChanges();
+
+    const preset = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-preset-LAST_MONTH"]',
+    ) as HTMLButtonElement | null;
+    expect(preset).toBeTruthy();
+    preset?.click();
+    fixture.detectChanges();
+
+    const modeInvoice = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-mode-invoice"]',
+    ) as HTMLButtonElement | null;
+    expect(modeInvoice).toBeTruthy();
+    modeInvoice?.click();
+    fixture.detectChanges();
+
+    (
+      component as unknown as { suppressInvoiceMonthModelChange: boolean }
+    ).suppressInvoiceMonthModelChange = false;
+    (
+      component as unknown as { onInvoiceMonthModelChange: (v: unknown) => void }
+    ).onInvoiceMonthModelChange(new Date(2026, 1, 15, 12, 0, 0));
+    fixture.detectChanges();
+
+    const summary = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-sheet-summary"]',
+    ) as HTMLElement | null;
+    expect(summary).toBeTruthy();
+    expect((summary?.textContent ?? '').replace(/\s+/g, ' ').trim()).toContain('Fatura 02/2026');
+
+    const modeDay = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-mode-day"]',
+    ) as HTMLButtonElement | null;
+    expect(modeDay).toBeTruthy();
+    modeDay?.click();
+    fixture.detectChanges();
+
+    const summaryDay = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-sheet-summary"]',
+    ) as HTMLElement | null;
+    expect(summaryDay).toBeTruthy();
+    expect((summaryDay?.textContent ?? '').replace(/\s+/g, ' ').trim()).toContain('Último mês');
+
+    modeInvoice?.click();
+    fixture.detectChanges();
+
+    const summaryInvoiceAgain = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-sheet-summary"]',
+    ) as HTMLElement | null;
+    expect(summaryInvoiceAgain).toBeTruthy();
+    expect((summaryInvoiceAgain?.textContent ?? '').replace(/\s+/g, ' ').trim()).toContain(
+      'Fatura 02/2026',
+    );
+
+    vi.useRealTimers();
+  });
+
+  it('deve emitir dayRangeChange ao aplicar um preset de período', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 0, 15, 12, 0, 0));
+
+    const dayRangeSpy = vi.spyOn(component.dayRangeChange, 'emit');
+    const selectionSpy = vi.spyOn(component.selectionChange, 'emit');
+
+    const open = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-open"]',
+    ) as HTMLButtonElement;
+    open.click();
+    fixture.detectChanges();
+
+    const preset = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-preset-TODAY"]',
+    ) as HTMLButtonElement;
+    preset.click();
+    fixture.detectChanges();
+
+    const apply = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-apply"]',
+    ) as HTMLButtonElement;
+    apply.click();
+    fixture.detectChanges();
+
+    expect(selectionSpy).toHaveBeenCalledTimes(1);
+    expect(dayRangeSpy).toHaveBeenCalledTimes(1);
+
+    const payload = dayRangeSpy.mock.calls[0]?.[0];
+    expect(Array.isArray(payload)).toBe(true);
+    if (Array.isArray(payload)) {
+      const [start, end] = payload;
+      expect(start).toBeInstanceOf(Date);
+      expect(end).toBeInstanceOf(Date);
+      const s = start as Date;
+      const e = end as Date;
+      expect(s.getFullYear()).toBe(2026);
+      expect(s.getMonth()).toBe(0);
+      expect(s.getDate()).toBe(15);
+      expect(e.getFullYear()).toBe(2026);
+      expect(e.getMonth()).toBe(0);
+      expect(e.getDate()).toBe(15);
+    }
+
+    vi.useRealTimers();
+  });
+
+  it('deve emitir invoiceMonthChange ao aplicar seleção de fatura', async () => {
+    const invoiceSpy = vi.spyOn(component.invoiceMonthChange, 'emit');
+    const selectionSpy = vi.spyOn(component.selectionChange, 'emit');
+
+    const open = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-open"]',
+    ) as HTMLButtonElement;
+    open.click();
+    fixture.detectChanges();
+
+    const invoiceMode = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-mode-invoice"]',
+    ) as HTMLButtonElement;
+    invoiceMode.click();
+    fixture.detectChanges();
+
+    (
+      component as unknown as { suppressInvoiceMonthModelChange: boolean }
+    ).suppressInvoiceMonthModelChange = false;
+    (
+      component as unknown as { onInvoiceMonthModelChange: (v: unknown) => void }
+    ).onInvoiceMonthModelChange(new Date(2026, 3, 15, 12, 0, 0));
+    fixture.detectChanges();
+
+    const apply = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-apply"]',
+    ) as HTMLButtonElement;
+    apply.click();
+    fixture.detectChanges();
+
+    expect(selectionSpy).toHaveBeenCalledTimes(1);
+    expect(invoiceSpy).toHaveBeenCalledTimes(1);
+
+    const emitted = invoiceSpy.mock.calls[0]?.[0] ?? null;
+    expect(emitted).toBeInstanceOf(Date);
+    const d = emitted as Date;
+    expect(d.getFullYear()).toBe(2026);
+    expect(d.getMonth()).toBe(3);
+    expect(d.getDate()).toBe(1);
+  });
+
+  it('não deve renderizar tabs de modo quando allowInvoiceLens estiver desabilitado', () => {
+    component.allowInvoiceLens = false;
+    fixture.detectChanges();
+
+    const open = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-open"]',
+    ) as HTMLButtonElement;
+    open.click();
+    fixture.detectChanges();
+
+    const tabs = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-modes"]',
+    ) as HTMLElement | null;
+    expect(tabs).toBeFalsy();
+
+    const rangePicker = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-range-picker"]',
+    ) as HTMLElement | null;
+    expect(rangePicker).toBeTruthy();
+  });
 });

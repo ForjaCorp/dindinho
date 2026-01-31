@@ -59,12 +59,51 @@ describe('time-filter.util', () => {
     expect(normalized.end.getDate()).toBe(10);
   });
 
+  it('deve clamp de horas ao normalizar intervalo', () => {
+    const a = new Date(2026, 0, 10, 23, 59, 59);
+    const b = new Date(2026, 0, 11, 1, 2, 3);
+    const normalized = normalizeDateRange(a, b);
+    expect(normalized.start.getHours()).toBe(0);
+    expect(normalized.start.getMinutes()).toBe(0);
+    expect(normalized.end.getHours()).toBe(0);
+    expect(normalized.end.getMinutes()).toBe(0);
+  });
+
   it('deve computar preset TODAY', () => {
     const now = new Date(2026, 0, 15, 12, 0, 0);
     const range = computeDayRangeForPreset('TODAY', now);
     expect(range).toBeTruthy();
     expect(formatIsoDayLocal(range!.start)).toBe('2026-01-15');
     expect(formatIsoDayLocal(range!.end)).toBe('2026-01-15');
+  });
+
+  it('deve computar presets de semana e mês corretamente', () => {
+    const now = new Date(2026, 0, 15, 12, 0, 0);
+
+    const yesterday = computeDayRangeForPreset('YESTERDAY', now);
+    expect(yesterday).toBeTruthy();
+    expect(formatIsoDayLocal(yesterday!.start)).toBe('2026-01-14');
+    expect(formatIsoDayLocal(yesterday!.end)).toBe('2026-01-14');
+
+    const thisWeek = computeDayRangeForPreset('THIS_WEEK', now);
+    expect(thisWeek).toBeTruthy();
+    expect(formatIsoDayLocal(thisWeek!.start)).toBe('2026-01-12');
+    expect(formatIsoDayLocal(thisWeek!.end)).toBe('2026-01-15');
+
+    const lastWeek = computeDayRangeForPreset('LAST_WEEK', now);
+    expect(lastWeek).toBeTruthy();
+    expect(formatIsoDayLocal(lastWeek!.start)).toBe('2026-01-05');
+    expect(formatIsoDayLocal(lastWeek!.end)).toBe('2026-01-11');
+
+    const thisMonth = computeDayRangeForPreset('THIS_MONTH', now);
+    expect(thisMonth).toBeTruthy();
+    expect(formatIsoDayLocal(thisMonth!.start)).toBe('2026-01-01');
+    expect(formatIsoDayLocal(thisMonth!.end)).toBe('2026-01-15');
+
+    const lastMonth = computeDayRangeForPreset('LAST_MONTH', now);
+    expect(lastMonth).toBeTruthy();
+    expect(formatIsoDayLocal(lastMonth!.start)).toBe('2025-12-01');
+    expect(formatIsoDayLocal(lastMonth!.end)).toBe('2025-12-31');
   });
 
   it('deve resolver PeriodSelection por preset', () => {
@@ -77,6 +116,13 @@ describe('time-filter.util', () => {
     expect(resolved?.startDay).toBe('2026-01-15');
     expect(resolved?.endDay).toBe('2026-01-15');
     expect(resolved?.tzOffsetMinutes).toBe(180);
+  });
+
+  it('deve assumir tzOffsetMinutes local quando não informado', () => {
+    const now = new Date(2026, 0, 15, 12, 0, 0);
+    const resolved = resolvePeriodSelectionToDayRange({ preset: 'TODAY' }, now);
+    expect(resolved).toBeTruthy();
+    expect(resolved?.tzOffsetMinutes).toBe(now.getTimezoneOffset());
   });
 
   it('deve resolver PeriodSelection custom com normalização', () => {
@@ -118,5 +164,13 @@ describe('time-filter.util', () => {
       endDay: '2026-01-15',
       tzOffsetMinutes: 120,
     });
+  });
+
+  it('deve retornar query vazia quando seleção custom estiver incompleta', () => {
+    const query = resolveTimeFilterToTransactionsQuery({
+      mode: 'DAY_RANGE',
+      period: { preset: 'CUSTOM', tzOffsetMinutes: 0 },
+    });
+    expect(query).toEqual({});
   });
 });
