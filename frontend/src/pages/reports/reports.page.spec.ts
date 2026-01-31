@@ -163,31 +163,55 @@ describe('ReportsPage', () => {
   });
 
   it('deve enviar tzOffsetMinutes ao carregar relatórios', () => {
-    const tzSpy = vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(180);
-    component.dateRange.set([new Date(2024, 0, 22), new Date(2024, 0, 22)]);
+    component.timeFilterSelection.set({
+      mode: 'DAY_RANGE',
+      period: {
+        preset: 'CUSTOM',
+        startDay: '2024-01-22',
+        endDay: '2024-01-22',
+        tzOffsetMinutes: 180,
+      },
+    });
 
-    try {
-      component.loadAllReports();
+    component.loadAllReports();
 
-      expect(reportsServiceMock.getSpendingByCategoryChart).toHaveBeenCalledWith(
-        expect.objectContaining({
-          startDay: '2024-01-22',
-          endDay: '2024-01-22',
-          tzOffsetMinutes: 180,
-          includePending: true,
-        }),
-      );
-      expect(reportsServiceMock.getCashFlowChart).toHaveBeenCalledWith(
-        expect.objectContaining({
-          startDay: '2024-01-22',
-          endDay: '2024-01-22',
-          tzOffsetMinutes: 180,
-          includePending: true,
-        }),
-      );
-    } finally {
-      tzSpy.mockRestore();
-    }
+    expect(reportsServiceMock.getSpendingByCategoryChart).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startDay: '2024-01-22',
+        endDay: '2024-01-22',
+        tzOffsetMinutes: 180,
+        includePending: true,
+      }),
+    );
+    expect(reportsServiceMock.getCashFlowChart).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startDay: '2024-01-22',
+        endDay: '2024-01-22',
+        tzOffsetMinutes: 180,
+        includePending: true,
+      }),
+    );
+  });
+
+  it('deve enviar invoiceMonth ao carregar relatórios no modo de fatura', () => {
+    component.timeFilterSelection.set({
+      mode: 'INVOICE_MONTH',
+      invoiceMonth: '2024-02',
+    });
+
+    component.loadAllReports();
+
+    const lastCall = reportsServiceMock.getSpendingByCategoryChart.mock.calls.at(-1);
+    expect(lastCall).toBeTruthy();
+    const filters = (lastCall?.[0] ?? null) as unknown;
+    expect(filters).toBeTruthy();
+
+    const obj = filters as Record<string, unknown>;
+    expect(obj['invoiceMonth']).toBe('2024-02');
+    expect(obj['includePending']).toBe(true);
+    expect('startDay' in obj).toBe(false);
+    expect('endDay' in obj).toBe(false);
+    expect('tzOffsetMinutes' in obj).toBe(false);
   });
 
   it('deve expor acessibilidade básica nos canvases de relatório', () => {
@@ -231,6 +255,14 @@ describe('ReportsPage', () => {
       fixture.nativeElement.querySelector('[data-testid="balance-history-chart"]'),
     ).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[data-testid="cashflow-chart"]')).toBeTruthy();
+  });
+
+  it('deve expor o filtro de tempo com aria-label e data-testid', () => {
+    const timeFilter = fixture.nativeElement.querySelector(
+      '[data-testid="reports-time-filter"]',
+    ) as HTMLElement | null;
+    expect(timeFilter).toBeTruthy();
+    expect(timeFilter?.getAttribute('aria-label')).toBe('Selecionar período do relatório');
   });
 
   it('deve abrir transações ao acionar Enter no gráfico de gastos por categoria', () => {
@@ -358,7 +390,15 @@ describe('ReportsPage', () => {
   });
 
   it('deve clamar o eixo X do saldo ao período selecionado', () => {
-    component.dateRange.set([new Date(2024, 0, 1), new Date(2024, 0, 31)]);
+    component.timeFilterSelection.set({
+      mode: 'DAY_RANGE',
+      period: {
+        preset: 'CUSTOM',
+        startDay: '2024-01-01',
+        endDay: '2024-01-31',
+        tzOffsetMinutes: 0,
+      },
+    });
     fixture.detectChanges();
 
     const options = component.lineChartOptions();
@@ -370,7 +410,15 @@ describe('ReportsPage', () => {
   });
 
   it('deve normalizar o período quando as datas estiverem invertidas', () => {
-    component.dateRange.set([new Date(2024, 0, 31), new Date(2024, 0, 1)]);
+    component.timeFilterSelection.set({
+      mode: 'DAY_RANGE',
+      period: {
+        preset: 'CUSTOM',
+        startDay: '2024-01-31',
+        endDay: '2024-01-01',
+        tzOffsetMinutes: 0,
+      },
+    });
     fixture.detectChanges();
 
     const options = component.lineChartOptions();
@@ -520,10 +568,16 @@ describe('ReportsPage', () => {
     });
 
     it('deve lidar com datas nulas nos filtros', () => {
-      component.dateRange.set([null as unknown as Date, null as unknown as Date]);
-      component.onDateChange();
+      const before = reportsServiceMock.getSpendingByCategoryChart.mock.calls.length;
 
-      expect(reportsServiceMock.getSpendingByCategoryChart).not.toHaveBeenCalledTimes(2); // Chamado 1x no init
+      (
+        component as unknown as { onTimeFilterSelectionChange: (s: unknown) => void }
+      ).onTimeFilterSelectionChange({
+        mode: 'DAY_RANGE',
+        period: { preset: 'CUSTOM', tzOffsetMinutes: 0 },
+      });
+
+      expect(reportsServiceMock.getSpendingByCategoryChart.mock.calls.length).toBe(before);
     });
   });
 });
