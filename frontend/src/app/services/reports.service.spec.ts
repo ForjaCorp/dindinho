@@ -75,6 +75,16 @@ describe('ReportsService', () => {
     req.flush([]);
   });
 
+  it('deve enviar invoiceMonth nos params', () => {
+    service.getSpendingByCategory({ invoiceMonth: '2026-01', includePending: true }).subscribe();
+
+    const req = httpMock.expectOne((r) => r.url.endsWith('/spending-by-category'));
+    expect(req.request.method).toBe('GET');
+    expect(req.request.params.get('invoiceMonth')).toBe('2026-01');
+    expect(req.request.params.get('includePending')).toBe('true');
+    req.flush([]);
+  });
+
   it('deve buscar fluxo de caixa com múltiplos accountIds', () => {
     const filters = { accountIds: ['acc-1', 'acc-2'], includePending: true };
 
