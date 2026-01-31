@@ -49,7 +49,7 @@ Os snapshots persistidos carregam um `calcVersion` para permitir recalcular sald
 
 - Garanta que as migrations do backend foram aplicadas antes de usar o endpoint de evolução do saldo.
 
-### TODO (Escala)
+### Planejamento (Escala)
 
 - Migrar o relatório de evolução do saldo para ter fallback sem snapshots (calcular via transações quando o cache estiver frio/incompleto).
 
