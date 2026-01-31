@@ -258,6 +258,15 @@ export class ReportsService {
     if (filters.endDate) {
       params = params.set('endDate', filters.endDate);
     }
+    if (filters.startDay) {
+      params = params.set('startDay', filters.startDay);
+    }
+    if (filters.endDay) {
+      params = params.set('endDay', filters.endDay);
+    }
+    if (typeof filters.tzOffsetMinutes === 'number') {
+      params = params.set('tzOffsetMinutes', String(filters.tzOffsetMinutes));
+    }
     if (filters.includePending) {
       params = params.set('includePending', String(filters.includePending));
     }

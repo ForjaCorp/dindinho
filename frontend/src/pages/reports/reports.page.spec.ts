@@ -162,6 +162,34 @@ describe('ReportsPage', () => {
     expect(cards[2].getAttribute('aria-label')).toBe('Relatório de fluxo de caixa mensal');
   });
 
+  it('deve enviar tzOffsetMinutes ao carregar relatórios', () => {
+    const tzSpy = vi.spyOn(Date.prototype, 'getTimezoneOffset').mockReturnValue(180);
+    component.dateRange.set([new Date(2024, 0, 22), new Date(2024, 0, 22)]);
+
+    try {
+      component.loadAllReports();
+
+      expect(reportsServiceMock.getSpendingByCategoryChart).toHaveBeenCalledWith(
+        expect.objectContaining({
+          startDay: '2024-01-22',
+          endDay: '2024-01-22',
+          tzOffsetMinutes: 180,
+          includePending: true,
+        }),
+      );
+      expect(reportsServiceMock.getCashFlowChart).toHaveBeenCalledWith(
+        expect.objectContaining({
+          startDay: '2024-01-22',
+          endDay: '2024-01-22',
+          tzOffsetMinutes: 180,
+          includePending: true,
+        }),
+      );
+    } finally {
+      tzSpy.mockRestore();
+    }
+  });
+
   it('deve expor acessibilidade básica nos canvases de relatório', () => {
     const spendingCanvas = fixture.nativeElement.querySelector(
       '[data-testid="spending-by-category-chart"]',

@@ -56,6 +56,25 @@ describe('ReportsService', () => {
     req.flush(mockData);
   });
 
+  it('deve enviar startDay/endDay e tzOffsetMinutes nos params', () => {
+    const filters = {
+      startDay: '2024-01-22',
+      endDay: '2024-01-22',
+      tzOffsetMinutes: 180,
+      includePending: true,
+    };
+
+    service.getSpendingByCategory(filters).subscribe();
+
+    const req = httpMock.expectOne((r) => r.url.endsWith('/spending-by-category'));
+    expect(req.request.method).toBe('GET');
+    expect(req.request.params.get('startDay')).toBe('2024-01-22');
+    expect(req.request.params.get('endDay')).toBe('2024-01-22');
+    expect(req.request.params.get('tzOffsetMinutes')).toBe('180');
+    expect(req.request.params.get('includePending')).toBe('true');
+    req.flush([]);
+  });
+
   it('deve buscar fluxo de caixa com múltiplos accountIds', () => {
     const filters = { accountIds: ['acc-1', 'acc-2'], includePending: true };
 
