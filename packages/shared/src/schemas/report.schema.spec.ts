@@ -57,6 +57,15 @@ describe("report.schema", () => {
         }),
       ).toThrow("Mês de fatura inválido");
     });
+
+    it("deve rejeitar invoiceMonth fora do range", () => {
+      expect(() =>
+        timeFilterSelectionSchema.parse({
+          mode: "INVOICE_MONTH",
+          invoiceMonth: "2026-13",
+        }),
+      ).toThrow("Mês de fatura inválido");
+    });
   });
 
   describe("reportFilterSchema", () => {
@@ -85,6 +94,25 @@ describe("report.schema", () => {
           startDate: "2026-01-01T00:00:00.000Z",
         }),
       ).toThrow("Não combine invoiceMonth com filtros de período");
+    });
+
+    it("deve normalizar accountIds string para array", () => {
+      const id = "123e4567-e89b-12d3-a456-426614174000";
+      expect(
+        reportFilterSchema.parse({
+          startDay: "2026-01-01",
+          endDay: "2026-01-10",
+          tzOffsetMinutes: 180,
+          accountIds: id,
+          includePending: true,
+        }),
+      ).toEqual({
+        startDay: "2026-01-01",
+        endDay: "2026-01-10",
+        tzOffsetMinutes: 180,
+        accountIds: [id],
+        includePending: true,
+      });
     });
   });
 });

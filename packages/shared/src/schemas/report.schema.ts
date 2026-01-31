@@ -1,22 +1,5 @@
 import { z } from "zod";
-import { invoiceMonthSchema } from "./transaction.schema";
-
-export const isoDaySchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida")
-  .refine((value) => {
-    const [y, m, d] = value.split("-").map((v) => Number(v));
-    if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d))
-      return false;
-    if (m < 1 || m > 12) return false;
-    if (d < 1 || d > 31) return false;
-    const dt = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
-    return (
-      dt.getUTCFullYear() === y &&
-      dt.getUTCMonth() === m - 1 &&
-      dt.getUTCDate() === d
-    );
-  }, "Data inválida");
+import { invoiceMonthSchema, isoDaySchema } from "./general.schema";
 
 export const periodPresetSchema = z.enum([
   "TODAY",
@@ -108,7 +91,13 @@ export const reportFilterSchema = z
     endDay: isoDaySchema.optional(),
     tzOffsetMinutes: z.coerce.number().int().min(-840).max(840).optional(),
     invoiceMonth: invoiceMonthSchema.optional(),
-    accountIds: z.array(z.string().uuid()).optional(),
+    accountIds: z
+      .union([z.string().uuid(), z.array(z.string().uuid())])
+      .optional()
+      .transform((value) => {
+        if (value === undefined) return undefined;
+        return typeof value === "string" ? [value] : value;
+      }),
     includePending: z.coerce.boolean().default(false),
     granularity: balanceHistoryGranularitySchema.optional(),
     changeOnly: z.coerce.boolean().optional(),

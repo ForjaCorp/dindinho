@@ -15,6 +15,12 @@ describe("transaction.schema", () => {
         "Mês de fatura inválido",
       );
     });
+
+    it("deve rejeitar mês fora do range", () => {
+      expect(() => invoiceMonthSchema.parse("2026-13")).toThrow(
+        "Mês de fatura inválido",
+      );
+    });
   });
 
   describe("listTransactionsQuerySchema", () => {

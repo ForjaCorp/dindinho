@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { invoiceMonthSchema, isoDaySchema } from "./general.schema";
 
 export const TransactionTypeEnum = z.enum(["INCOME", "EXPENSE", "TRANSFER"]);
 
@@ -9,26 +10,7 @@ export const RecurrenceFrequencyEnum = z.enum([
   "CUSTOM",
 ]);
 
-const isoDaySchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida")
-  .refine((value) => {
-    const [y, m, d] = value.split("-").map((v) => Number(v));
-    if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d))
-      return false;
-    if (m < 1 || m > 12) return false;
-    if (d < 1 || d > 31) return false;
-    const dt = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
-    return (
-      dt.getUTCFullYear() === y &&
-      dt.getUTCMonth() === m - 1 &&
-      dt.getUTCDate() === d
-    );
-  }, "Data inválida");
-
-export const invoiceMonthSchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}$/, "Mês de fatura inválido");
+export { invoiceMonthSchema };
 
 export const transactionRecurrenceSchema = z
   .object({
