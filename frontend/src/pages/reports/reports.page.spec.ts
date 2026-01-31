@@ -7,7 +7,7 @@ import { ReportsPage, AppBaseChartDirective } from './reports.page';
 import { ReportsService } from '../../app/services/reports.service';
 import { AccountService } from '../../app/services/account.service';
 import { Component, Directive, Input } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { PageHeaderComponent } from '../../app/components/page-header.component';
 import { ReportChartCardComponent } from '../../app/components/report-chart-card.component';
 import { ChartEvent, ActiveElement, ChartData, ChartOptions, ChartType } from 'chart.js';
@@ -114,6 +114,7 @@ describe('ReportsPage', () => {
       providers: [
         { provide: ReportsService, useValue: reportsServiceMock },
         { provide: AccountService, useValue: accountServiceMock },
+        provideRouter([]),
       ],
     })
       .overrideComponent(ReportsPage, {
@@ -159,6 +160,173 @@ describe('ReportsPage', () => {
     expect(cards[0].getAttribute('aria-label')).toBe('Relatório de gastos por categoria');
     expect(cards[1].getAttribute('aria-label')).toBe('Relatório de evolução de saldo');
     expect(cards[2].getAttribute('aria-label')).toBe('Relatório de fluxo de caixa mensal');
+  });
+
+  it('deve expor acessibilidade básica nos canvases de relatório', () => {
+    const spendingCanvas = fixture.nativeElement.querySelector(
+      '[data-testid="spending-by-category-chart"]',
+    ) as HTMLElement | null;
+    const balanceCanvas = fixture.nativeElement.querySelector(
+      '[data-testid="balance-history-chart"]',
+    ) as HTMLElement | null;
+    const cashFlowCanvas = fixture.nativeElement.querySelector(
+      '[data-testid="cashflow-chart"]',
+    ) as HTMLElement | null;
+
+    expect(spendingCanvas).toBeTruthy();
+    expect(balanceCanvas).toBeTruthy();
+    expect(cashFlowCanvas).toBeTruthy();
+
+    expect(spendingCanvas?.getAttribute('role')).toBe('button');
+    expect(spendingCanvas?.getAttribute('tabindex')).toBe('0');
+    expect(spendingCanvas?.getAttribute('aria-label')).toBe('Gráfico de gastos por categoria');
+    expect(spendingCanvas?.getAttribute('aria-describedby')).toBe('spending-chart-help');
+    expect(fixture.nativeElement.querySelector('#spending-chart-help')).toBeTruthy();
+
+    expect(balanceCanvas?.getAttribute('role')).toBe('img');
+    expect(balanceCanvas?.getAttribute('aria-label')).toBe('Gráfico de evolução do saldo');
+    expect(balanceCanvas?.getAttribute('aria-describedby')).toBe('balance-history-chart-help');
+    expect(fixture.nativeElement.querySelector('#balance-history-chart-help')).toBeTruthy();
+
+    expect(cashFlowCanvas?.getAttribute('role')).toBe('button');
+    expect(cashFlowCanvas?.getAttribute('tabindex')).toBe('0');
+    expect(cashFlowCanvas?.getAttribute('aria-label')).toBe('Gráfico de fluxo de caixa mensal');
+    expect(cashFlowCanvas?.getAttribute('aria-describedby')).toBe('cashflow-chart-help');
+    expect(fixture.nativeElement.querySelector('#cashflow-chart-help')).toBeTruthy();
+  });
+
+  it('deve expor data-testid nos canvases dos gráficos', () => {
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="spending-by-category-chart"]'),
+    ).toBeTruthy();
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="balance-history-chart"]'),
+    ).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="cashflow-chart"]')).toBeTruthy();
+  });
+
+  it('deve abrir transações ao acionar Enter no gráfico de gastos por categoria', () => {
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate');
+
+    const canvas = fixture.nativeElement.querySelector(
+      '[data-testid="spending-by-category-chart"]',
+    ) as HTMLCanvasElement | null;
+    expect(canvas).toBeTruthy();
+
+    canvas?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    expect(router.navigate).toHaveBeenCalledWith(['/transactions'], {
+      queryParams: expect.objectContaining({ type: 'EXPENSE', openFilters: 1 }),
+    });
+  });
+
+  it('deve abrir transações ao acionar Espaço no gráfico de gastos por categoria', () => {
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate');
+
+    const canvas = fixture.nativeElement.querySelector(
+      '[data-testid="spending-by-category-chart"]',
+    ) as HTMLCanvasElement | null;
+    expect(canvas).toBeTruthy();
+
+    canvas?.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true }));
+    expect(router.navigate).toHaveBeenCalledWith(['/transactions'], {
+      queryParams: expect.objectContaining({ type: 'EXPENSE', openFilters: 1 }),
+    });
+  });
+
+  it('deve abrir transações ao acionar Enter no gráfico de fluxo de caixa', () => {
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate');
+
+    const canvas = fixture.nativeElement.querySelector(
+      '[data-testid="cashflow-chart"]',
+    ) as HTMLCanvasElement | null;
+    expect(canvas).toBeTruthy();
+
+    canvas?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    expect(router.navigate).toHaveBeenCalledWith(['/transactions'], {
+      queryParams: expect.objectContaining({ openFilters: 1 }),
+    });
+  });
+
+  it('deve abrir transações ao acionar Espaço no gráfico de fluxo de caixa', () => {
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate');
+
+    const canvas = fixture.nativeElement.querySelector(
+      '[data-testid="cashflow-chart"]',
+    ) as HTMLCanvasElement | null;
+    expect(canvas).toBeTruthy();
+
+    canvas?.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true }));
+    expect(router.navigate).toHaveBeenCalledWith(['/transactions'], {
+      queryParams: expect.objectContaining({ openFilters: 1 }),
+    });
+  });
+
+  it('deve descrever o histórico de saldo com resumo acessível do período', () => {
+    component.balanceData.set({
+      datasets: [
+        {
+          data: [
+            { x: Date.UTC(2024, 0, 1), y: 1000, label: '2024-01-01' },
+            { x: Date.UTC(2024, 0, 30), y: 1200, label: '2024-01-30' },
+          ],
+        },
+      ],
+    } as unknown as ChartData<'line'>);
+
+    fixture.detectChanges();
+
+    const help = fixture.nativeElement.querySelector(
+      '#balance-history-chart-help',
+    ) as HTMLElement | null;
+    expect(help).toBeTruthy();
+
+    const text = help?.textContent ?? '';
+    expect(text).toContain('Período: 01/01 - 30/01');
+    expect(text).toContain('Saldo inicial');
+    expect(text).toMatch(/R\$\s*1\.000,00/);
+    expect(text).toContain('Saldo final');
+    expect(text).toMatch(/R\$\s*1\.200,00/);
+    expect(text).toMatch(/Variação:\s*\+R\$\s*200,00/);
+  });
+
+  it('deve configurar o eixo X do saldo como linear para respeitar o tempo', () => {
+    const options = component.lineChartOptions;
+    const scales = options.scales as unknown as Record<
+      string,
+      { type?: unknown; ticks?: { callback?: unknown } }
+    >;
+    const x = scales?.['x'];
+
+    expect(x?.type).toBe('linear');
+
+    const tickCallback = x?.ticks?.callback;
+    expect(typeof tickCallback).toBe('function');
+    if (typeof tickCallback === 'function') {
+      expect(tickCallback(Date.UTC(2024, 0, 1), 0, [] as never)).toBe('01/01');
+    }
+  });
+
+  it('deve mostrar tooltip de intervalo no saldo quando houver período', () => {
+    const options = component.lineChartOptions;
+    const tooltip = options.plugins?.tooltip as unknown as {
+      callbacks?: { title?: unknown };
+    };
+
+    const titleCallback = tooltip.callbacks?.title;
+    expect(typeof titleCallback).toBe('function');
+
+    if (typeof titleCallback === 'function') {
+      const title = titleCallback([
+        {
+          raw: { periodStart: '2024-01-01', periodEnd: '2024-01-07' },
+        } as unknown as never,
+      ]);
+      expect(title).toBe('01/01 - 07/01');
+    }
   });
 
   it('deve mostrar skeletons durante o carregamento', () => {
