@@ -98,6 +98,41 @@ describe("ReportsService", () => {
         }),
       );
     });
+
+    it("deve aplicar filtro por dia com timezone", async () => {
+      const userId = "user-1";
+      const filters = {
+        startDay: "2024-01-22",
+        endDay: "2024-01-22",
+        tzOffsetMinutes: 180,
+        includePending: true,
+      };
+
+      const expectedStart = new Date(
+        Date.UTC(2024, 0, 22, 0, 0, 0, 0) + 180 * 60 * 1000,
+      );
+      const expectedEndExclusive = new Date(
+        Date.UTC(2024, 0, 23, 0, 0, 0, 0) + 180 * 60 * 1000,
+      );
+
+      vi.mocked(mockPrisma.transaction.groupBy).mockResolvedValue(
+        [] as unknown as [],
+      );
+      mockPrisma.category.findMany.mockResolvedValue([]);
+
+      await service.getSpendingByCategory(userId, filters);
+
+      expect(mockPrisma.transaction.groupBy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            date: {
+              gte: expectedStart,
+              lt: expectedEndExclusive,
+            },
+          }),
+        }),
+      );
+    });
   });
 
   describe("getCashFlow", () => {

@@ -23,6 +23,17 @@ A funcionalidade de Drill-down permite que o usuário clique em elementos dos gr
 - **Gráfico de Pizza**: Filtra transações pela Categoria e Período selecionado.
 - **Gráfico de Barras**: Filtra transações pelo Tipo (Receita/Despesa) e Mês específico da barra clicada.
 
+## Filtros de período (Dia vs DateTime)
+
+Para evitar inconsistências quando o usuário filtra um único dia (ex.: 22→22), os endpoints de relatórios suportam filtros por dia (sem horário) no formato `YYYY-MM-DD`.
+
+- `startDay` / `endDay`: representam o dia selecionado na UI.
+- `tzOffsetMinutes`: deve ser enviado como `Date#getTimezoneOffset()` para que o backend converta o intervalo do dia local corretamente.
+
+Na prática, o backend aplica o período como um intervalo **[start, endExclusive)** em UTC para incluir o dia inteiro do usuário, sem depender do horário exato das transações.
+
+> Observação: `startDate/endDate` (DateTime) continuam sendo aceitos por compatibilidade, mas o recomendado para a UI é `startDay/endDay`.
+
 ## Evolução do Saldo (Snapshots)
 
 Atualmente, o histórico de saldo é alimentado por `DailySnapshot` (saldo diário materializado) para evitar recalcular toda a linha do tempo a partir das transações em cada request.

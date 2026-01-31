@@ -23,6 +23,129 @@ export class ReportsService {
     return d;
   }
 
+  /**
+   * Soma dias usando milissegundos para preservar o offset aplicado no Date.
+   */
+  private addDaysByMs(date: Date, days: number): Date {
+    return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+  }
+
+  /**
+   * Converte um ISO day (YYYY-MM-DD) no início do dia em UTC,
+   * ajustando para que o intervalo represente o dia local do usuário.
+   */
+  private parseIsoDayToUtcStartOfDay(
+    value: string,
+    tzOffsetMinutes: number | null,
+  ): Date | null {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return null;
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+
+    if (
+      !Number.isFinite(year) ||
+      !Number.isFinite(month) ||
+      !Number.isFinite(day)
+    )
+      return null;
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+
+    const utcStartMs = Date.UTC(year, month - 1, day, 0, 0, 0, 0);
+    const offsetMs =
+      typeof tzOffsetMinutes === "number" && Number.isFinite(tzOffsetMinutes)
+        ? tzOffsetMinutes * 60 * 1000
+        : 0;
+    return new Date(utcStartMs + offsetMs);
+  }
+
+  /**
+   * Normaliza filtros de período.
+   *
+   * - Se vier `startDay/endDay`, converte para o intervalo [start, endExclusive)
+   *   considerando `tzOffsetMinutes`.
+   * - Caso contrário, preserva `startDate/endDate` (DateTime) para compatibilidade.
+   */
+  private normalizeReportUtcDayRange(filters: ReportFilterDTO): {
+    start: Date | null;
+    end: Date | null;
+    endExclusive: Date | null;
+  } {
+    const startDayRaw =
+      typeof filters.startDay === "string" ? filters.startDay : null;
+    const endDayRaw =
+      typeof filters.endDay === "string" ? filters.endDay : null;
+
+    const tzOffsetMinutes =
+      typeof filters.tzOffsetMinutes === "number" &&
+      Number.isFinite(filters.tzOffsetMinutes)
+        ? filters.tzOffsetMinutes
+        : null;
+
+    const startDay = startDayRaw
+      ? this.parseIsoDayToUtcStartOfDay(startDayRaw, tzOffsetMinutes)
+      : null;
+    const endDay = endDayRaw
+      ? this.parseIsoDayToUtcStartOfDay(endDayRaw, tzOffsetMinutes)
+      : null;
+
+    const normalizedStartDay = startDay ?? endDay;
+    const normalizedEndDay = endDay ?? startDay;
+
+    if (normalizedStartDay && normalizedEndDay) {
+      if (normalizedStartDay.getTime() <= normalizedEndDay.getTime()) {
+        return {
+          start: normalizedStartDay,
+          end: normalizedEndDay,
+          endExclusive: this.addDaysByMs(normalizedEndDay, 1),
+        };
+      }
+
+      return {
+        start: normalizedEndDay,
+        end: normalizedStartDay,
+        endExclusive: this.addDaysByMs(normalizedStartDay, 1),
+      };
+    }
+
+    const startDate =
+      typeof filters.startDate === "string"
+        ? new Date(filters.startDate)
+        : null;
+    const endDate =
+      typeof filters.endDate === "string" ? new Date(filters.endDate) : null;
+
+    const hasStartDate = !!startDate && Number.isFinite(startDate.getTime());
+    const hasEndDate = !!endDate && Number.isFinite(endDate.getTime());
+
+    if (!hasStartDate && !hasEndDate) {
+      return { start: null, end: null, endExclusive: null };
+    }
+
+    const startInstant = hasStartDate ? startDate! : null;
+    const endInstant = hasEndDate ? endDate! : null;
+
+    if (
+      endInstant &&
+      endInstant.getUTCHours() === 0 &&
+      endInstant.getUTCMinutes() === 0 &&
+      endInstant.getUTCSeconds() === 0 &&
+      endInstant.getUTCMilliseconds() === 0
+    ) {
+      const endDayStart = this.toUtcStartOfDay(endInstant);
+      const start = startInstant ? startInstant : null;
+      return {
+        start,
+        end: endDayStart,
+        endExclusive: this.addUtcDays(endDayStart, 1),
+      };
+    }
+
+    return { start: startInstant, end: endInstant, endExclusive: null };
+  }
+
   private daysBetweenUtcInclusive(start: Date, end: Date): number {
     const startUtc = Date.UTC(
       start.getUTCFullYear(),
@@ -278,12 +401,14 @@ export class ReportsService {
     userId: string,
     filters: ReportFilterDTO,
   ): Promise<BalanceHistoryDTO> {
-    const { startDate, endDate, accountIds, granularity, changeOnly } = filters;
-
     const today = this.toUtcStartOfDay(new Date());
-    const rangeEnd = endDate ? this.toUtcStartOfDay(new Date(endDate)) : today;
-    const rangeStart = startDate
-      ? this.toUtcStartOfDay(new Date(startDate))
+    const normalized = this.normalizeReportUtcDayRange(filters);
+
+    const rangeEnd = normalized.end
+      ? this.toUtcStartOfDay(normalized.end)
+      : today;
+    const rangeStart = normalized.start
+      ? this.toUtcStartOfDay(normalized.start)
       : this.toUtcStartOfDay(
           new Date(
             Date.UTC(
@@ -293,6 +418,8 @@ export class ReportsService {
             ),
           ),
         );
+
+    const { accountIds, granularity, changeOnly } = filters;
 
     const effectiveGranularity =
       granularity ?? this.inferBalanceHistoryGranularity(rangeStart, rangeEnd);
@@ -474,11 +601,19 @@ export class ReportsService {
       },
     };
 
-    if (startDate || endDate) {
-      where.date = {
-        ...(startDate ? { gte: new Date(startDate) } : {}),
-        ...(endDate ? { lte: new Date(endDate) } : {}),
-      };
+    const normalized = this.normalizeReportUtcDayRange(filters);
+    if (normalized.start || normalized.endExclusive || normalized.end) {
+      if (normalized.endExclusive) {
+        where.date = {
+          ...(normalized.start ? { gte: normalized.start } : {}),
+          lt: normalized.endExclusive,
+        };
+      } else {
+        where.date = {
+          ...(startDate ? { gte: new Date(startDate) } : {}),
+          ...(endDate ? { lte: new Date(endDate) } : {}),
+        };
+      }
     }
 
     if (accountIds?.length) {
