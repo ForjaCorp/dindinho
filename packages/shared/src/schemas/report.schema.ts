@@ -8,9 +8,19 @@ export type BalanceHistoryGranularity = z.infer<
   typeof balanceHistoryGranularitySchema
 >;
 
+/**
+ * Filtros de relatórios.
+ *
+ * - `startDay/endDay`: dia no formato YYYY-MM-DD (sem horário), pensado para o período do seletor.
+ * - `tzOffsetMinutes`: offset em minutos (ex.: `Date#getTimezoneOffset`) para interpretar o dia local.
+ * - `startDate/endDate`: compatibilidade com filtros DateTime legados.
+ */
 export const reportFilterSchema = z.object({
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
+  startDay: isoDaySchema.optional(),
+  endDay: isoDaySchema.optional(),
+  tzOffsetMinutes: z.coerce.number().int().min(-840).max(840).optional(),
   accountIds: z.array(z.string().uuid()).optional(),
   includePending: z.coerce.boolean().default(false),
   granularity: balanceHistoryGranularitySchema.optional(),
