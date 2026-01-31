@@ -51,6 +51,9 @@ const addDays = (date: Date, daysToAdd: number) => {
   return d;
 };
 
+const addDaysByMs = (date: Date, daysToAdd: number) =>
+  new Date(date.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
+
 const addYears = (date: Date, yearsToAdd: number) => {
   const d = new Date(date);
   d.setFullYear(d.getFullYear() + yearsToAdd);
@@ -66,6 +69,40 @@ const formatInvoiceMonth = (date: Date) => {
 const parseInvoiceMonthToDate = (invoiceMonth: string) => {
   const [y, m] = invoiceMonth.split("-").map((v) => Number(v));
   return new Date(Date.UTC(y, m - 1, 1, 0, 0, 0));
+};
+
+const parseIsoDayToUtcStartOfDay = (
+  value: string,
+  tzOffsetMinutes: number | null,
+): Date | null => {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day)
+  )
+    return null;
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+
+  const utcStartMs = Date.UTC(year, month - 1, day, 0, 0, 0, 0);
+  const utcCandidate = new Date(utcStartMs);
+  if (
+    utcCandidate.getUTCFullYear() !== year ||
+    utcCandidate.getUTCMonth() !== month - 1 ||
+    utcCandidate.getUTCDate() !== day
+  )
+    return null;
+  const offsetMs =
+    typeof tzOffsetMinutes === "number" && Number.isFinite(tzOffsetMinutes)
+      ? tzOffsetMinutes * 60 * 1000
+      : 0;
+  return new Date(utcStartMs + offsetMs);
 };
 
 const addInvoiceMonths = (invoiceMonth: string, monthsToAdd: number) => {
@@ -540,6 +577,9 @@ export class TransactionsService {
       categoryId?: string;
       from?: string;
       to?: string;
+      startDay?: string;
+      endDay?: string;
+      tzOffsetMinutes?: number;
       invoiceMonth?: string;
       q?: string;
       type?: "INCOME" | "EXPENSE" | "TRANSFER";
@@ -553,8 +593,26 @@ export class TransactionsService {
       typeof input.categoryId === "string" ? input.categoryId : undefined;
     const invoiceMonth =
       typeof input.invoiceMonth === "string" ? input.invoiceMonth : undefined;
-    const from = !invoiceMonth && input.from ? new Date(input.from) : undefined;
-    const to = !invoiceMonth && input.to ? new Date(input.to) : undefined;
+    const startDayRaw =
+      typeof input.startDay === "string" ? input.startDay : undefined;
+    const endDayRaw =
+      typeof input.endDay === "string" ? input.endDay : undefined;
+    const tzOffsetMinutes =
+      typeof input.tzOffsetMinutes === "number" &&
+      Number.isFinite(input.tzOffsetMinutes)
+        ? input.tzOffsetMinutes
+        : null;
+
+    const hasDayRange = !!startDayRaw || !!endDayRaw;
+
+    const from =
+      !invoiceMonth && !hasDayRange && input.from
+        ? new Date(input.from)
+        : undefined;
+    const to =
+      !invoiceMonth && !hasDayRange && input.to
+        ? new Date(input.to)
+        : undefined;
     const limit = typeof input.limit === "number" ? input.limit : 30;
     const cursorId =
       typeof input.cursorId === "string" ? input.cursorId : undefined;
@@ -565,8 +623,35 @@ export class TransactionsService {
       await this.assertCanReadAccount(userId, accountId);
     }
 
-    const dateFilter =
-      from || to
+    const startDay = startDayRaw
+      ? parseIsoDayToUtcStartOfDay(startDayRaw, tzOffsetMinutes)
+      : null;
+    const endDay = endDayRaw
+      ? parseIsoDayToUtcStartOfDay(endDayRaw, tzOffsetMinutes)
+      : null;
+
+    const normalizedStartDay = startDay ?? endDay;
+    const normalizedEndDay = endDay ?? startDay;
+
+    const dayRangeFilter: Prisma.TransactionWhereInput =
+      !invoiceMonth && normalizedStartDay && normalizedEndDay
+        ? normalizedStartDay.getTime() <= normalizedEndDay.getTime()
+          ? {
+              date: {
+                gte: normalizedStartDay,
+                lt: addDaysByMs(normalizedEndDay, 1),
+              },
+            }
+          : {
+              date: {
+                gte: normalizedEndDay,
+                lt: addDaysByMs(normalizedStartDay, 1),
+              },
+            }
+        : {};
+
+    const legacyRangeFilter: Prisma.TransactionWhereInput =
+      !invoiceMonth && (from || to)
         ? {
             date: {
               ...(from ? { gte: from } : {}),
@@ -636,7 +721,8 @@ export class TransactionsService {
         : {}),
       ...(type ? { type: type as TransactionType } : {}),
       ...invoiceMonthFilter,
-      ...dateFilter,
+      ...dayRangeFilter,
+      ...legacyRangeFilter,
     };
 
     const txs = await this.prisma.transaction.findMany({

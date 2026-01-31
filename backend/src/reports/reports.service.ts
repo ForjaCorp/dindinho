@@ -54,6 +54,13 @@ export class ReportsService {
     if (month < 1 || month > 12 || day < 1 || day > 31) return null;
 
     const utcStartMs = Date.UTC(year, month - 1, day, 0, 0, 0, 0);
+    const utcCandidate = new Date(utcStartMs);
+    if (
+      utcCandidate.getUTCFullYear() !== year ||
+      utcCandidate.getUTCMonth() !== month - 1 ||
+      utcCandidate.getUTCDate() !== day
+    )
+      return null;
     const offsetMs =
       typeof tzOffsetMinutes === "number" && Number.isFinite(tzOffsetMinutes)
         ? tzOffsetMinutes * 60 * 1000
@@ -73,6 +80,13 @@ export class ReportsService {
     end: Date | null;
     endExclusive: Date | null;
   } {
+    if (typeof filters.invoiceMonth === "string") {
+      const [y, m] = filters.invoiceMonth.split("-").map((v) => Number(v));
+      const start = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0, 0));
+      const end = new Date(Date.UTC(y, m, 0, 0, 0, 0, 0));
+      return { start, end, endExclusive: null };
+    }
+
     const startDayRaw =
       typeof filters.startDay === "string" ? filters.startDay : null;
     const endDayRaw =
@@ -593,7 +607,8 @@ export class ReportsService {
     userId: string,
     filters: ReportFilterDTO,
   ): Prisma.TransactionWhereInput {
-    const { startDate, endDate, accountIds, includePending } = filters;
+    const { startDate, endDate, accountIds, includePending, invoiceMonth } =
+      filters;
 
     const where: Prisma.TransactionWhereInput = {
       account: {
@@ -601,18 +616,39 @@ export class ReportsService {
       },
     };
 
-    const normalized = this.normalizeReportUtcDayRange(filters);
-    if (normalized.start || normalized.endExclusive || normalized.end) {
-      if (normalized.endExclusive) {
-        where.date = {
-          ...(normalized.start ? { gte: normalized.start } : {}),
-          lt: normalized.endExclusive,
-        };
-      } else {
-        where.date = {
-          ...(startDate ? { gte: new Date(startDate) } : {}),
-          ...(endDate ? { lte: new Date(endDate) } : {}),
-        };
+    if (typeof invoiceMonth === "string") {
+      const [y, m] = invoiceMonth.split("-").map((v) => Number(v));
+      const invoiceMonthStart = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0, 0));
+      const invoiceMonthEndExclusive = new Date(Date.UTC(y, m, 1, 0, 0, 0, 0));
+
+      where.OR = [
+        { invoiceMonth },
+        {
+          AND: [
+            { invoiceMonth: null },
+            {
+              date: {
+                gte: invoiceMonthStart,
+                lt: invoiceMonthEndExclusive,
+              },
+            },
+          ],
+        },
+      ];
+    } else {
+      const normalized = this.normalizeReportUtcDayRange(filters);
+      if (normalized.start || normalized.endExclusive || normalized.end) {
+        if (normalized.endExclusive) {
+          where.date = {
+            ...(normalized.start ? { gte: normalized.start } : {}),
+            lt: normalized.endExclusive,
+          };
+        } else {
+          where.date = {
+            ...(startDate ? { gte: new Date(startDate) } : {}),
+            ...(endDate ? { lte: new Date(endDate) } : {}),
+          };
+        }
       }
     }
 
