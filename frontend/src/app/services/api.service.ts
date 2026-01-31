@@ -177,11 +177,22 @@ export class ApiService {
     return this.http.post<TransactionDTO | TransactionDTO[]>(`${this.baseUrl}/transactions`, data);
   }
 
+  /**
+   * Lista transações com filtros opcionais.
+   *
+   * @description
+   * Suporta paginação via `cursorId` e `limit`.
+   * Para filtro temporal, use `invoiceMonth` (YYYY-MM) ou `startDay/endDay` (YYYY-MM-DD)
+   * com `tzOffsetMinutes` para interpretar o “dia local”.
+   */
   getTransactions(params: {
     accountId?: string;
     categoryId?: string;
     from?: string;
     to?: string;
+    startDay?: string;
+    endDay?: string;
+    tzOffsetMinutes?: number;
     invoiceMonth?: string;
     q?: string;
     type?: TransactionDTO['type'];
@@ -193,6 +204,11 @@ export class ApiService {
       ...(params.categoryId ? { categoryId: params.categoryId } : {}),
       ...(params.from ? { from: params.from } : {}),
       ...(params.to ? { to: params.to } : {}),
+      ...(params.startDay ? { startDay: params.startDay } : {}),
+      ...(params.endDay ? { endDay: params.endDay } : {}),
+      ...(typeof params.tzOffsetMinutes === 'number'
+        ? { tzOffsetMinutes: String(params.tzOffsetMinutes) }
+        : {}),
       ...(params.invoiceMonth ? { invoiceMonth: params.invoiceMonth } : {}),
       ...(params.q ? { q: params.q } : {}),
       ...(params.type ? { type: params.type } : {}),
