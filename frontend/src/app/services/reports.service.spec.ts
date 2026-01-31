@@ -5,7 +5,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 import { ReportsService } from './reports.service';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { CashFlowDTO, SpendingByCategoryDTO } from '@dindinho/shared';
+import { BalanceHistoryDTO, CashFlowDTO, SpendingByCategoryDTO } from '@dindinho/shared';
 
 const testBed = getTestBed();
 if (!testBed.platform) {
@@ -92,6 +92,79 @@ describe('ReportsService', () => {
     const req = httpMock.expectOne((r) => r.url.endsWith('/balance-history'));
     expect(req.request.method).toBe('GET');
     req.flush([]);
+  });
+
+  it('deve mapear histórico de saldo com eixo X proporcional ao tempo', async () => {
+    const mockData: BalanceHistoryDTO = [
+      {
+        date: '2024-01-02',
+        t: Date.UTC(2024, 0, 2),
+        label: '2024-01-02',
+        periodStart: '2024-01-02',
+        periodEnd: '2024-01-02',
+        balance: 1100,
+        changed: false,
+      },
+      {
+        date: '2024-01-01',
+        t: Date.UTC(2024, 0, 1),
+        label: '2024-01-01',
+        periodStart: '2024-01-01',
+        periodEnd: '2024-01-01',
+        balance: 1000,
+        changed: true,
+      },
+      {
+        date: '2024-01-03',
+        t: Date.UTC(2024, 0, 3),
+        label: '2024-01-03',
+        periodStart: '2024-01-03',
+        periodEnd: '2024-01-03',
+        balance: 1100,
+        changed: false,
+      },
+    ];
+
+    const resultPromise = new Promise<void>((resolve) => {
+      service.getBalanceHistoryChart({ includePending: true }).subscribe((result) => {
+        const dataset = result.datasets[0];
+        const points = dataset.data as unknown as {
+          x: number;
+          y: number;
+          label?: string;
+          periodStart?: string;
+          periodEnd?: string;
+        }[];
+
+        expect(points.map((p) => p.x)).toEqual([
+          Date.UTC(2024, 0, 1),
+          Date.UTC(2024, 0, 2),
+          Date.UTC(2024, 0, 3),
+        ]);
+        expect(points.map((p) => p.y)).toEqual([1000, 1100, 1100]);
+        expect(points[0]).toEqual(
+          expect.objectContaining({
+            label: '2024-01-01',
+            periodStart: '2024-01-01',
+            periodEnd: '2024-01-01',
+          }),
+        );
+
+        const pointRadius = dataset.pointRadius;
+        expect(typeof pointRadius).toBe('function');
+        if (typeof pointRadius === 'function') {
+          expect(pointRadius({ dataIndex: 0 } as never, {} as never)).toBe(3);
+          expect(pointRadius({ dataIndex: 1 } as never, {} as never)).toBe(0);
+          expect(pointRadius({ dataIndex: 2 } as never, {} as never)).toBe(3);
+        }
+
+        resolve();
+      });
+    });
+
+    const req = httpMock.expectOne((r) => r.url.endsWith('/balance-history'));
+    req.flush(mockData);
+    await resultPromise;
   });
 
   it('deve exportar transações para CSV', () => {

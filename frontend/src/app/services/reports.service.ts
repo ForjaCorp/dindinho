@@ -11,15 +11,6 @@ import {
 import { ChartData } from 'chart.js';
 import { CATEGORY_PALETTE, CHART_COLORS } from '../utils/chart.util';
 
-/**
- * Serviço responsável por buscar dados de relatórios e estatísticas.
- *
- * @description
- * Este serviço integra com os endpoints de reports do backend para fornecer
- * dados estruturados para os gráficos e dashboards.
- *
- * @since 1.0.0
- */
 @Injectable({
   providedIn: 'root',
 })
@@ -69,9 +60,37 @@ export class ReportsService {
     return period;
   }
 
-  /**
-   * Busca gastos agrupados por categoria e mapeia para o formato do Chart.js.
-   */
+  private formatBalanceHistoryLabel(label: string): string {
+    const dayMatch = label.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (dayMatch) {
+      const day = Number(dayMatch[3]);
+      const month = Number(dayMatch[2]);
+      if (!Number.isFinite(day) || !Number.isFinite(month)) return label;
+      return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}`;
+    }
+
+    const monthMatch = label.match(/^(\d{4})-(\d{2})$/);
+    if (monthMatch) {
+      return this.formatPeriodLabel(label);
+    }
+
+    return label;
+  }
+
+  private parseIsoDayToUtcMs(value: string): number | null {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return null;
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+
+    if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return null;
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+
+    return Date.UTC(year, month - 1, day);
+  }
+
   getSpendingByCategoryChart(filters: ReportFilterDTO): Observable<{
     data: ChartData<'doughnut'>;
     categoryIds: string[];
@@ -98,9 +117,6 @@ export class ReportsService {
     );
   }
 
-  /**
-   * Busca fluxo de caixa e mapeia para o formato do Chart.js.
-   */
   getCashFlowChart(filters: ReportFilterDTO): Observable<{
     data: ChartData<'bar'>;
     periodKeys: string[];
@@ -135,35 +151,57 @@ export class ReportsService {
     );
   }
 
-  /**
-   * Busca histórico de saldo e mapeia para o formato do Chart.js.
-   */
   getBalanceHistoryChart(filters: ReportFilterDTO): Observable<ChartData<'line'>> {
     return this.getBalanceHistory(filters).pipe(
-      map((data) => ({
-        labels: data.map((d) => d.date),
-        datasets: [
-          {
-            label: 'Saldo',
-            data: data.map((d) => d.balance),
-            borderColor: CHART_COLORS.indigo.base,
-            backgroundColor: CHART_COLORS.indigo.light + '33', // 20% opacity
-            fill: true,
-            tension: 0.4,
-            pointRadius: 4,
-            pointHoverRadius: 6,
-          },
-        ],
-      })),
+      map((data) => {
+        const ordered = [...data]
+          .map((d) => {
+            const x = typeof d.t === 'number' ? d.t : this.parseIsoDayToUtcMs(d.date);
+            return { ...d, t: x };
+          })
+          .filter((d) => typeof d.t === 'number' && Number.isFinite(d.t))
+          .sort((a, b) => (a.t ?? 0) - (b.t ?? 0));
+
+        const balances = ordered.map((d) => d.balance);
+
+        const showPoint = balances.map((b, i) => {
+          if (i === 0) return true;
+
+          const changed = ordered[i]?.changed;
+          if (typeof changed === 'boolean') return changed;
+
+          const prev = balances[i - 1];
+          return b !== prev;
+        });
+        if (showPoint.length > 1) showPoint[showPoint.length - 1] = true;
+
+        const points = ordered.map((d) => ({
+          x: d.t as number,
+          y: d.balance,
+          label: d.label ?? d.date,
+          periodStart: d.periodStart,
+          periodEnd: d.periodEnd,
+        }));
+
+        return {
+          datasets: [
+            {
+              label: 'Saldo',
+              data: points,
+              borderColor: CHART_COLORS.indigo.base,
+              backgroundColor: CHART_COLORS.indigo.light + '33',
+              fill: true,
+              stepped: true,
+              pointRadius: (ctx) => (showPoint[ctx.dataIndex] ? 3 : 0),
+              pointHoverRadius: 6,
+              pointHitRadius: 14,
+            },
+          ],
+        };
+      }),
     );
   }
 
-  /**
-   * Obtém o relatório de gastos agrupados por categoria.
-   *
-   * @param filters Filtros de data e contas
-   * @returns Observable com a lista de gastos por categoria
-   */
   getSpendingByCategory(filters: ReportFilterDTO): Observable<SpendingByCategoryDTO> {
     const params = this.buildParams(filters);
     return this.http.get<SpendingByCategoryDTO>(`${this.baseUrl}/spending-by-category`, { params });
@@ -227,6 +265,13 @@ export class ReportsService {
       filters.accountIds.forEach((id) => {
         params = params.append('accountIds', id);
       });
+    }
+
+    if (filters.granularity) {
+      params = params.set('granularity', filters.granularity);
+    }
+    if (typeof filters.changeOnly === 'boolean') {
+      params = params.set('changeOnly', String(filters.changeOnly));
     }
 
     return params;
