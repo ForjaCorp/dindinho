@@ -56,6 +56,33 @@
 
 ## Convenções de Código
 
+## Regras de projeto (TypeScript + Angular)
+
+### TypeScript
+
+- Usar tipagem estrita
+- Preferir inferência quando o tipo é óbvio
+- Evitar `any`; usar `unknown` quando o tipo é incerto
+
+### Angular
+
+- Preferir componentes standalone
+- Usar Signals para estado
+- Preferir lazy loading de rotas
+- Não usar `@HostBinding`/`@HostListener`; usar `host` no decorator
+- Preferir `input()`/`output()` em vez de decorators
+- Preferir `computed()` para estado derivado
+- Evitar `mutate` em Signals; usar `set`/`update`
+- Evitar `ngClass`/`ngStyle`; usar bindings de `class`/`style`
+- Preferir control flow nativo (`@if`, `@for`, `@switch`) em vez de `*ngIf/*ngFor/*ngSwitch`
+- Evitar arrow functions em templates
+- Para imagens estáticas, preferir `NgOptimizedImage`
+
+### Acessibilidade
+
+- Passar em checks AXE
+- Seguir WCAG AA (foco, contraste, ARIA)
+
 ### Frontend
 
 - **Componentes**: Usar a sintaxe de componentes standalone do Angular
@@ -120,8 +147,8 @@ describe("Componente", () => {
 
 ### Framework de testes
 
-- Frontend: `ng test --watch=false` (Vitest via builder) e specs em `vitest`
-- Backend: Vitest (`vitest run` no workspace)
+- Frontend: `ng test --watch=false` (Angular CLI com runner Vitest)
+- Backend/Shared: Vitest (`vitest run` no workspace)
 
 ### Console nos testes
 
@@ -134,6 +161,23 @@ describe("Componente", () => {
 - Ser específico: `submit-button` em vez de apenas `button`
 
 ## Documentação
+
+### Localização
+
+- Visão geral e links: `README.md` (root)
+- Documentos de domínio: `docs/`
+- Documentação por workspace: `backend/README.md`, `frontend/README.md`, `packages/*/CHANGELOG.md`
+- Documentação por módulo (quando útil): `backend/src/**/README.md`
+
+### Planejamento e atualização
+
+- Planejamento de documentação e backlog: `docs/planning/documentation.md`
+- Backlog de engenharia (contratos em runtime): seção “Backlog de engenharia — contratos em runtime” em `docs/planning/documentation.md`
+- Ao adicionar/alterar um fluxo crítico, atualizar sempre o ponto de entrada mais próximo:
+  - Visão geral e links: `README.md` (root)
+  - Como rodar e operar: `backend/README.md` e/ou `frontend/README.md`
+  - Contratos compartilhados: schemas/DTOs em `packages/shared`
+- Evitar duplicação: preferir links entre documentos e uma única fonte de verdade por assunto
 
 ### JSDoc
 
