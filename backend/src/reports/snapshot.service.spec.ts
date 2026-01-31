@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { PrismaClient, Account, Transaction } from "@prisma/client";
+import {
+  PrismaClient,
+  Account,
+  TransactionType,
+  Transaction,
+} from "@prisma/client";
 import { SnapshotService } from "./snapshot.service";
 import { mockDeep, mockReset } from "vitest-mock-extended";
 
@@ -18,12 +23,18 @@ describe("SnapshotService", () => {
       const accountId = "acc-1";
       const startDate = new Date("2024-01-01T00:00:00Z");
 
+      const mockToday = new Date("2024-01-03T00:00:00Z");
+      vi.useFakeTimers();
+      vi.setSystemTime(mockToday);
+
       mockPrisma.account.findUnique.mockResolvedValue({
         initialBalance: 1000,
       } as unknown as Account);
       mockPrisma.transaction.findMany.mockResolvedValue([]);
 
       await service.updateSnapshots(accountId, startDate);
+
+      expect(mockPrisma.dailySnapshot.upsert).toHaveBeenCalledTimes(3);
 
       expect(mockPrisma.dailySnapshot.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -35,9 +46,42 @@ describe("SnapshotService", () => {
           },
           create: expect.objectContaining({
             balance: 1000,
+            calcVersion: SnapshotService.CALC_VERSION,
           }),
         }),
       );
+
+      expect(mockPrisma.dailySnapshot.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            accountId_date: {
+              accountId,
+              date: new Date("2024-01-02T00:00:00Z"),
+            },
+          },
+          update: expect.objectContaining({
+            balance: 1000,
+            calcVersion: SnapshotService.CALC_VERSION,
+          }),
+        }),
+      );
+
+      expect(mockPrisma.dailySnapshot.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            accountId_date: {
+              accountId,
+              date: new Date("2024-01-03T00:00:00Z"),
+            },
+          },
+          update: expect.objectContaining({
+            balance: 1000,
+            calcVersion: SnapshotService.CALC_VERSION,
+          }),
+        }),
+      );
+
+      vi.useRealTimers();
     });
 
     it("deve calcular saldo acumulado corretamente e atualizar snapshots", async () => {
@@ -49,8 +93,16 @@ describe("SnapshotService", () => {
       } as unknown as Account);
 
       const transactions = [
-        { amount: 500, date: new Date("2024-01-01T10:00:00Z") }, // Saldo: 1500
-        { amount: -200, date: new Date("2024-01-02T15:00:00Z") }, // Saldo: 1300
+        {
+          amount: 500,
+          date: new Date("2024-01-01T10:00:00Z"),
+          type: TransactionType.INCOME,
+        }, // Saldo: 1500
+        {
+          amount: 200,
+          date: new Date("2024-01-02T15:00:00Z"),
+          type: TransactionType.EXPENSE,
+        }, // Saldo: 1300
       ];
 
       mockPrisma.transaction.findMany.mockResolvedValue(
@@ -76,7 +128,7 @@ describe("SnapshotService", () => {
               date: new Date("2024-01-01T00:00:00Z"),
             },
           },
-          update: { balance: 1500 },
+          update: { balance: 1500, calcVersion: SnapshotService.CALC_VERSION },
         }),
       );
 
@@ -89,7 +141,7 @@ describe("SnapshotService", () => {
               date: new Date("2024-01-02T00:00:00Z"),
             },
           },
-          update: { balance: 1300 },
+          update: { balance: 1300, calcVersion: SnapshotService.CALC_VERSION },
         }),
       );
 
@@ -102,7 +154,79 @@ describe("SnapshotService", () => {
               date: new Date("2024-01-03T00:00:00Z"),
             },
           },
-          update: { balance: 1300 },
+          update: { balance: 1300, calcVersion: SnapshotService.CALC_VERSION },
+        }),
+      );
+
+      vi.useRealTimers();
+    });
+
+    it("deve respeitar o sinal em transações de transferência", async () => {
+      const accountId = "acc-1";
+      const startDate = new Date("2024-01-01T00:00:00Z");
+
+      mockPrisma.account.findUnique.mockResolvedValue({
+        initialBalance: 1000,
+      } as unknown as Account);
+
+      const transactions = [
+        {
+          amount: -200,
+          date: new Date("2024-01-01T10:00:00Z"),
+          type: TransactionType.TRANSFER,
+        },
+        {
+          amount: 50,
+          date: new Date("2024-01-02T10:00:00Z"),
+          type: TransactionType.TRANSFER,
+        },
+      ];
+
+      mockPrisma.transaction.findMany.mockResolvedValue(
+        transactions as unknown as Transaction[],
+      );
+
+      const mockToday = new Date("2024-01-03T00:00:00Z");
+      vi.useFakeTimers();
+      vi.setSystemTime(mockToday);
+
+      await service.updateSnapshots(accountId, startDate);
+
+      expect(mockPrisma.dailySnapshot.upsert).toHaveBeenCalledTimes(3);
+
+      expect(mockPrisma.dailySnapshot.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            accountId_date: {
+              accountId,
+              date: new Date("2024-01-01T00:00:00Z"),
+            },
+          },
+          update: { balance: 800, calcVersion: SnapshotService.CALC_VERSION },
+        }),
+      );
+
+      expect(mockPrisma.dailySnapshot.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            accountId_date: {
+              accountId,
+              date: new Date("2024-01-02T00:00:00Z"),
+            },
+          },
+          update: { balance: 850, calcVersion: SnapshotService.CALC_VERSION },
+        }),
+      );
+
+      expect(mockPrisma.dailySnapshot.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            accountId_date: {
+              accountId,
+              date: new Date("2024-01-03T00:00:00Z"),
+            },
+          },
+          update: { balance: 850, calcVersion: SnapshotService.CALC_VERSION },
         }),
       );
 
@@ -118,7 +242,11 @@ describe("SnapshotService", () => {
       } as unknown as Account);
 
       const transactions = [
-        { amount: 500, date: new Date("2024-01-01T10:00:00Z") }, // Saldo: 1500
+        {
+          amount: 500,
+          date: new Date("2024-01-01T10:00:00Z"),
+          type: TransactionType.INCOME,
+        }, // Saldo: 1500
       ];
 
       mockPrisma.transaction.findMany.mockResolvedValue(
@@ -141,7 +269,7 @@ describe("SnapshotService", () => {
               date: new Date("2024-01-02T00:00:00Z"),
             },
           },
-          update: { balance: 1500 },
+          update: { balance: 1500, calcVersion: SnapshotService.CALC_VERSION },
         }),
       );
 

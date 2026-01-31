@@ -1,17 +1,24 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient, TransactionType } from "@prisma/client";
 
 /**
  * Serviço responsável por gerenciar snapshots diários de saldo das contas
  */
 export class SnapshotService {
+  static readonly CALC_VERSION = 2;
+
   constructor(private prisma: PrismaClient) {}
 
   /**
    * Atualiza os snapshots de uma conta a partir de uma data específica
    * @param accountId ID da conta
    * @param startDate Data de início da atualização (snapshots desta data em diante serão recalculados)
+   * @param endDate Data final da atualização (padrão: hoje em UTC)
    */
-  async updateSnapshots(accountId: string, startDate: Date): Promise<void> {
+  async updateSnapshots(
+    accountId: string,
+    startDate: Date,
+    endDate?: Date,
+  ): Promise<void> {
     const startOfDate = new Date(startDate);
     startOfDate.setUTCHours(0, 0, 0, 0);
 
@@ -32,7 +39,7 @@ export class SnapshotService {
           isPaid: true,
         },
         orderBy: { date: "asc" },
-        select: { amount: true, date: true },
+        select: { amount: true, date: true, type: true },
       })) || [];
 
     // 3. Calcular saldos acumulados por dia
@@ -42,22 +49,41 @@ export class SnapshotService {
     // Precisamos iterar por todas as transações para garantir o saldo correto
     // mas só atualizaremos os snapshots a partir de startDate no banco
     for (const tx of transactions) {
-      currentBalance += Number(tx.amount);
+      const rawAmount = Number(tx.amount);
+      const magnitude = Math.abs(rawAmount);
+      const delta =
+        tx.type === TransactionType.INCOME
+          ? magnitude
+          : tx.type === TransactionType.EXPENSE
+            ? -magnitude
+            : rawAmount;
+
+      currentBalance += delta;
       const dateKey = tx.date.toISOString().split("T")[0];
       dailyBalances.set(dateKey, currentBalance);
     }
 
-    // 4. Determinar o range de datas a atualizar
-    // Se não houver transações, o saldo é o inicial
+    const lastDate = endDate ? new Date(endDate) : new Date();
+    lastDate.setUTCHours(0, 0, 0, 0);
+
     if (dailyBalances.size === 0) {
-      await this.upsertSnapshot(accountId, startOfDate, account.initialBalance);
+      const currentDate = new Date(startOfDate);
+      while (currentDate <= lastDate) {
+        await this.upsertSnapshot(
+          accountId,
+          new Date(currentDate),
+          account.initialBalance,
+        );
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+      }
       return;
     }
 
     const sortedDates = Array.from(dailyBalances.keys()).sort();
-    const firstDate = new Date(sortedDates[0]);
-    const lastDate = new Date(); // Snapshots até hoje
-    lastDate.setUTCHours(0, 0, 0, 0);
+    const firstTxDate = new Date(sortedDates[0]);
+    const firstDate = new Date(
+      Math.min(firstTxDate.getTime(), startOfDate.getTime()),
+    );
 
     let runningBalance = Number(account.initialBalance);
     const currentDate = new Date(firstDate);
@@ -95,11 +121,12 @@ export class SnapshotService {
           date,
         },
       },
-      update: { balance },
+      update: { balance, calcVersion: SnapshotService.CALC_VERSION },
       create: {
         accountId,
         date,
         balance,
+        calcVersion: SnapshotService.CALC_VERSION,
       },
     });
   }
