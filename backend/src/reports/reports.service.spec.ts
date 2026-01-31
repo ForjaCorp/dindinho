@@ -133,6 +133,45 @@ describe("ReportsService", () => {
         }),
       );
     });
+
+    it("deve aplicar filtro por invoiceMonth (cartão + não-cartão)", async () => {
+      const userId = "user-1";
+      const filters = {
+        invoiceMonth: "2024-02",
+        includePending: true,
+      };
+
+      const expectedStart = new Date(Date.UTC(2024, 1, 1, 0, 0, 0, 0));
+      const expectedEndExclusive = new Date(Date.UTC(2024, 2, 1, 0, 0, 0, 0));
+
+      vi.mocked(mockPrisma.transaction.groupBy).mockResolvedValue(
+        [] as unknown as [],
+      );
+      mockPrisma.category.findMany.mockResolvedValue([]);
+
+      await service.getSpendingByCategory(userId, filters);
+
+      expect(mockPrisma.transaction.groupBy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            OR: [
+              { invoiceMonth: "2024-02" },
+              {
+                AND: [
+                  { invoiceMonth: null },
+                  {
+                    date: {
+                      gte: expectedStart,
+                      lt: expectedEndExclusive,
+                    },
+                  },
+                ],
+              },
+            ],
+          }),
+        }),
+      );
+    });
   });
 
   describe("getCashFlow", () => {
@@ -354,6 +393,44 @@ describe("ReportsService", () => {
       );
       expect(lines[2]).toBe(
         "2024-01-02,Receita,Sem Categoria,Banco,INCOME,500,Não",
+      );
+    });
+
+    it("deve aplicar filtro por invoiceMonth ao exportar CSV", async () => {
+      const userId = "user-1";
+      const filters = {
+        invoiceMonth: "2024-02",
+        includePending: true,
+      };
+
+      const expectedStart = new Date(Date.UTC(2024, 1, 1, 0, 0, 0, 0));
+      const expectedEndExclusive = new Date(Date.UTC(2024, 2, 1, 0, 0, 0, 0));
+
+      mockPrisma.transaction.findMany.mockResolvedValue(
+        [] as unknown as Transaction[],
+      );
+
+      await service.exportTransactionsCsv(userId, filters);
+
+      expect(mockPrisma.transaction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            OR: [
+              { invoiceMonth: "2024-02" },
+              {
+                AND: [
+                  { invoiceMonth: null },
+                  {
+                    date: {
+                      gte: expectedStart,
+                      lt: expectedEndExclusive,
+                    },
+                  },
+                ],
+              },
+            ],
+          }),
+        }),
       );
     });
   });

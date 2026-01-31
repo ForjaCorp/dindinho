@@ -60,4 +60,93 @@ describe("TransactionsService", () => {
     expect(prisma.transaction.create).toHaveBeenCalled();
     expect(result).toHaveProperty("id", "tx-1");
   });
+
+  describe("list", () => {
+    it("deve aplicar filtro por startDay/endDay com timezone e endExclusive", async () => {
+      const userId = "user-1";
+
+      prisma.transaction.findMany.mockResolvedValue(
+        [] as unknown as Transaction[],
+      );
+
+      await service.list(userId, {
+        startDay: "2024-01-22",
+        endDay: "2024-01-22",
+        tzOffsetMinutes: 180,
+      });
+
+      const expectedStart = new Date(
+        Date.UTC(2024, 0, 22, 0, 0, 0, 0) + 180 * 60 * 1000,
+      );
+      const expectedEndExclusive = new Date(
+        Date.UTC(2024, 0, 23, 0, 0, 0, 0) + 180 * 60 * 1000,
+      );
+
+      expect(prisma.transaction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            date: {
+              gte: expectedStart,
+              lt: expectedEndExclusive,
+            },
+          }),
+        }),
+      );
+    });
+
+    it("deve inverter startDay/endDay quando vierem trocados", async () => {
+      const userId = "user-1";
+
+      prisma.transaction.findMany.mockResolvedValue(
+        [] as unknown as Transaction[],
+      );
+
+      await service.list(userId, {
+        startDay: "2024-01-30",
+        endDay: "2024-01-22",
+        tzOffsetMinutes: 0,
+      });
+
+      const expectedStart = new Date(Date.UTC(2024, 0, 22, 0, 0, 0, 0));
+      const expectedEndExclusive = new Date(Date.UTC(2024, 0, 31, 0, 0, 0, 0));
+
+      expect(prisma.transaction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            date: {
+              gte: expectedStart,
+              lt: expectedEndExclusive,
+            },
+          }),
+        }),
+      );
+    });
+
+    it("deve tratar apenas startDay como um dia único", async () => {
+      const userId = "user-1";
+
+      prisma.transaction.findMany.mockResolvedValue(
+        [] as unknown as Transaction[],
+      );
+
+      await service.list(userId, {
+        startDay: "2024-01-22",
+        tzOffsetMinutes: 0,
+      });
+
+      const expectedStart = new Date(Date.UTC(2024, 0, 22, 0, 0, 0, 0));
+      const expectedEndExclusive = new Date(Date.UTC(2024, 0, 23, 0, 0, 0, 0));
+
+      expect(prisma.transaction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            date: {
+              gte: expectedStart,
+              lt: expectedEndExclusive,
+            },
+          }),
+        }),
+      );
+    });
+  });
 });
