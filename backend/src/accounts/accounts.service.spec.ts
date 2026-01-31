@@ -1,31 +1,18 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { PrismaClient, AccountType, Prisma } from "@prisma/client";
+import { PrismaClient, AccountType, Prisma, Account } from "@prisma/client";
 import { AccountsService } from "./accounts.service";
 import { CreateAccountDTO, UpdateAccountDTO } from "@dindinho/shared";
+import { mockDeep, mockReset } from "vitest-mock-extended";
 
 // Mock do PrismaClient
-const mockPrisma = {
-  account: {
-    create: vi.fn(),
-    findMany: vi.fn(),
-    findUnique: vi.fn(),
-    findFirst: vi.fn(),
-    update: vi.fn(),
-  },
-  accountAccess: {
-    findUnique: vi.fn(),
-  },
-  transaction: {
-    groupBy: vi.fn(),
-  },
-} as unknown as PrismaClient;
+const mockPrisma = mockDeep<PrismaClient>();
 
 describe("AccountsService", () => {
   let service: AccountsService;
 
   beforeEach(() => {
+    mockReset(mockPrisma);
     service = new AccountsService(mockPrisma);
-    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -71,13 +58,13 @@ describe("AccountsService", () => {
         creditCardInfo: null,
       };
 
-      vi.mocked((mockPrisma as any).account.create).mockResolvedValue(
-        mockAccount as any,
+      mockPrisma.account.create.mockResolvedValue(
+        mockAccount as unknown as Account,
       );
 
       const result = await service.create(userId, standardAccountData);
 
-      expect((mockPrisma as any).account.create).toHaveBeenCalledWith({
+      expect(mockPrisma.account.create).toHaveBeenCalledWith({
         data: {
           ...standardAccountData,
           type: "STANDARD" as AccountType,
@@ -127,13 +114,13 @@ describe("AccountsService", () => {
         },
       };
 
-      vi.mocked((mockPrisma as any).account.create).mockResolvedValue(
-        mockAccount as any,
+      mockPrisma.account.create.mockResolvedValue(
+        mockAccount as unknown as Account,
       );
 
       const result = await service.create(userId, validAccountData);
 
-      expect((mockPrisma as any).account.create).toHaveBeenCalledWith({
+      expect(mockPrisma.account.create).toHaveBeenCalledWith({
         data: {
           name: validAccountData.name,
           color: validAccountData.color,
@@ -178,7 +165,7 @@ describe("AccountsService", () => {
      */
     it("deve lançar erro de nome duplicado", async () => {
       const error = new Error("Unique constraint failed");
-      vi.mocked((mockPrisma as any).account.create).mockRejectedValue(error);
+      mockPrisma.account.create.mockRejectedValue(error);
 
       await expect(service.create(userId, validAccountData)).rejects.toThrow(
         'Já existe uma conta com nome "Cartão Nubank" para este usuário',
@@ -190,7 +177,7 @@ describe("AccountsService", () => {
      */
     it("deve lançar erro de usuário não encontrado", async () => {
       const error = new Error("Foreign key constraint failed");
-      vi.mocked((mockPrisma as any).account.create).mockRejectedValue(error);
+      mockPrisma.account.create.mockRejectedValue(error);
 
       await expect(service.create(userId, validAccountData)).rejects.toThrow(
         "Usuário não encontrado",
@@ -202,7 +189,7 @@ describe("AccountsService", () => {
      */
     it("deve lançar erro de dados inválidos", async () => {
       const error = new Error("Argument validation failed");
-      vi.mocked((mockPrisma as any).account.create).mockRejectedValue(error);
+      mockPrisma.account.create.mockRejectedValue(error);
 
       await expect(service.create(userId, validAccountData)).rejects.toThrow(
         "Dados inválidos fornecidos para criação da conta",
@@ -214,7 +201,7 @@ describe("AccountsService", () => {
      */
     it("deve lançar erro genérico para falhas desconhecidas", async () => {
       const error = new Error("Unknown database error");
-      vi.mocked((mockPrisma as any).account.create).mockRejectedValue(error);
+      mockPrisma.account.create.mockRejectedValue(error);
 
       await expect(service.create(userId, validAccountData)).rejects.toThrow(
         "Erro inesperado ao criar conta",
@@ -263,11 +250,11 @@ describe("AccountsService", () => {
         },
       ];
 
-      vi.mocked((mockPrisma as any).account.findMany).mockResolvedValue(
-        mockAccounts as any,
+      mockPrisma.account.findMany.mockResolvedValue(
+        mockAccounts as unknown as Account[],
       );
 
-      vi.mocked((mockPrisma as any).transaction.groupBy)
+      vi.mocked(mockPrisma.transaction.groupBy)
         .mockResolvedValueOnce([
           {
             accountId: "account-1",
@@ -279,14 +266,17 @@ describe("AccountsService", () => {
             type: "EXPENSE",
             _sum: { amount: { toNumber: () => 20 } },
           },
-        ] as any)
+        ] as unknown as [])
         .mockResolvedValueOnce([
-          { accountId: "account-2", _sum: { amount: { toNumber: () => 200 } } },
-        ] as any);
+          {
+            accountId: "account-2",
+            _sum: { amount: { toNumber: () => 200 } },
+          },
+        ] as unknown as []);
 
       const result = await service.findAllByUserId(userId);
 
-      expect((mockPrisma as any).account.findMany).toHaveBeenCalledWith({
+      expect(mockPrisma.account.findMany).toHaveBeenCalledWith({
         where: { ownerId: userId },
         include: { creditCardInfo: true },
         orderBy: { createdAt: "asc" },
@@ -328,7 +318,7 @@ describe("AccountsService", () => {
      */
     it("deve lançar erro de conexão com banco", async () => {
       const error = new Error("Database connection failed");
-      vi.mocked((mockPrisma as any).account.findMany).mockRejectedValue(error);
+      mockPrisma.account.findMany.mockRejectedValue(error);
 
       await expect(service.findAllByUserId(userId)).rejects.toThrow(
         "Erro de conexão com o banco de dados",
@@ -340,7 +330,7 @@ describe("AccountsService", () => {
      */
     it("deve lançar erro de permissão", async () => {
       const error = new Error("permission denied");
-      vi.mocked((mockPrisma as any).account.findMany).mockRejectedValue(error);
+      mockPrisma.account.findMany.mockRejectedValue(error);
 
       await expect(service.findAllByUserId(userId)).rejects.toThrow(
         "Sem permissão para acessar as contas",
@@ -352,7 +342,7 @@ describe("AccountsService", () => {
      */
     it("deve lançar erro genérico para falhas desconhecidas", async () => {
       const error = new Error("Unknown database error");
-      vi.mocked((mockPrisma as any).account.findMany).mockRejectedValue(error);
+      mockPrisma.account.findMany.mockRejectedValue(error);
 
       await expect(service.findAllByUserId(userId)).rejects.toThrow(
         "Erro inesperado ao buscar conta",
@@ -370,19 +360,22 @@ describe("AccountsService", () => {
         color: "#111111",
       };
 
-      vi.mocked((mockPrisma as any).account.findUnique)
-        .mockResolvedValueOnce({ id: accountId, ownerId: userId } as any)
+      mockPrisma.account.findUnique
+        .mockResolvedValueOnce({
+          id: accountId,
+          ownerId: userId,
+        } as unknown as Account)
         .mockResolvedValueOnce({
           id: accountId,
           type: "STANDARD" as AccountType,
           creditCardInfo: null,
-        } as any);
+        } as unknown as Account);
 
-      vi.mocked((mockPrisma as any).account.update).mockResolvedValue({
+      mockPrisma.account.update.mockResolvedValue({
         id: accountId,
-      } as any);
+      } as unknown as Account);
 
-      vi.mocked((mockPrisma as any).account.findFirst).mockResolvedValue({
+      mockPrisma.account.findFirst.mockResolvedValue({
         id: accountId,
         name: payload.name,
         color: payload.color,
@@ -393,16 +386,16 @@ describe("AccountsService", () => {
         creditCardInfo: null,
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
         updatedAt: new Date("2026-01-02T00:00:00.000Z"),
-      } as any);
+      } as unknown as Account);
 
-      vi.mocked((mockPrisma as any).transaction.groupBy).mockResolvedValue([
+      vi.mocked(mockPrisma.transaction.groupBy).mockResolvedValue([
         { type: "INCOME", _sum: { amount: { toNumber: () => 50 } } },
         { type: "EXPENSE", _sum: { amount: { toNumber: () => 20 } } },
-      ] as any);
+      ] as unknown as []);
 
       const result = await service.update(userId, accountId, payload);
 
-      expect((mockPrisma as any).account.update).toHaveBeenCalledWith({
+      expect(mockPrisma.account.update).toHaveBeenCalledWith({
         where: { id: accountId },
         data: {
           name: payload.name,
@@ -429,19 +422,22 @@ describe("AccountsService", () => {
         limit: 5000,
       };
 
-      vi.mocked((mockPrisma as any).account.findUnique)
-        .mockResolvedValueOnce({ id: accountId, ownerId: userId } as any)
+      mockPrisma.account.findUnique
+        .mockResolvedValueOnce({
+          id: accountId,
+          ownerId: userId,
+        } as unknown as Account)
         .mockResolvedValueOnce({
           id: accountId,
           type: "CREDIT" as AccountType,
           creditCardInfo: { closingDay: 10, dueDay: 15 },
-        } as any);
+        } as unknown as Account);
 
-      vi.mocked((mockPrisma as any).account.update).mockResolvedValue({
+      mockPrisma.account.update.mockResolvedValue({
         id: accountId,
-      } as any);
+      } as unknown as Account);
 
-      vi.mocked((mockPrisma as any).account.findFirst).mockResolvedValue({
+      mockPrisma.account.findFirst.mockResolvedValue({
         id: accountId,
         name: "Cartão",
         color: "#222222",
@@ -459,17 +455,17 @@ describe("AccountsService", () => {
         },
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
         updatedAt: new Date("2026-01-02T00:00:00.000Z"),
-      } as any);
+      } as unknown as Account);
 
-      vi.mocked((mockPrisma as any).transaction.groupBy)
-        .mockResolvedValueOnce([] as any)
+      vi.mocked(mockPrisma.transaction.groupBy)
+        .mockResolvedValueOnce([] as unknown as [])
         .mockResolvedValueOnce([
           { accountId, _sum: { amount: { toNumber: () => 200 } } },
-        ] as any);
+        ] as unknown as []);
 
       const result = await service.update(userId, accountId, payload);
 
-      expect((mockPrisma as any).account.update).toHaveBeenCalledWith({
+      expect(mockPrisma.account.update).toHaveBeenCalledWith({
         where: { id: accountId },
         data: {
           creditCardInfo: {
@@ -487,13 +483,16 @@ describe("AccountsService", () => {
     it("deve falhar ao atualizar campos de cartão em conta padrão", async () => {
       const payload: UpdateAccountDTO = { limit: 1000 };
 
-      vi.mocked((mockPrisma as any).account.findUnique)
-        .mockResolvedValueOnce({ id: accountId, ownerId: userId } as any)
+      mockPrisma.account.findUnique
+        .mockResolvedValueOnce({
+          id: accountId,
+          ownerId: userId,
+        } as unknown as Account)
         .mockResolvedValueOnce({
           id: accountId,
           type: "STANDARD" as AccountType,
           creditCardInfo: null,
-        } as any);
+        } as unknown as Account);
 
       await expect(service.update(userId, accountId, payload)).rejects.toThrow(
         "Campos de cartão só podem ser atualizados em contas do tipo crédito",
@@ -502,9 +501,7 @@ describe("AccountsService", () => {
 
     it("deve retornar 404 quando conta não existe", async () => {
       const payload: UpdateAccountDTO = { name: "X" };
-      vi.mocked((mockPrisma as any).account.findUnique).mockResolvedValueOnce(
-        null,
-      );
+      mockPrisma.account.findUnique.mockResolvedValueOnce(null);
 
       await expect(service.update(userId, accountId, payload)).rejects.toThrow(
         "Conta não encontrada",

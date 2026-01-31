@@ -18,17 +18,12 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { TransactionDTO, AccountDTO } from '@dindinho/shared';
 import { ApiService } from '../../app/services/api.service';
 import { AccountService } from '../../app/services/account.service';
+import { CategoryService } from '../../app/services/category.service';
 import { EmptyStateComponent } from '../../app/components/empty-state.component';
 import { PageHeaderComponent } from '../../app/components/page-header.component';
 import { TransactionDrawerComponent } from '../../app/components/transaction-drawer.component';
 
 type TransactionTypeFilter = '' | TransactionDTO['type'];
-
-const utcStartOfMonthIso = (year: number, month: number) =>
-  new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0)).toISOString();
-
-const utcEndOfMonthIso = (year: number, month: number) =>
-  new Date(Date.UTC(year, month, 0, 23, 59, 59, 999)).toISOString();
 
 @Component({
   selector: 'app-transactions-page',
@@ -46,7 +41,7 @@ const utcEndOfMonthIso = (year: number, month: number) =>
     TransactionDrawerComponent,
   ],
   template: `
-    <div data-testid="transactions-page" class="p-4 pb-24 max-w-3xl mx-auto flex flex-col gap-4">
+    <div data-testid="transactions-page" class="flex flex-col gap-6 w-full">
       <app-page-header
         title="Transações"
         subtitle="Todas as transações, da mais nova pra mais velha"
@@ -126,6 +121,24 @@ const utcEndOfMonthIso = (year: number, month: number) =>
                 @for (a of accounts(); track a.id) {
                   <option [value]="a.id" [selected]="a.id === accountFilterId()">
                     {{ a.name }}
+                  </option>
+                }
+              </select>
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="sr-only" for="categoryId">Categoria</label>
+              <select
+                data-testid="transactions-category-select"
+                id="categoryId"
+                class="h-10 rounded-xl border border-slate-200 px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                (change)="onCategoryFilterChange($event)"
+                aria-label="Categoria"
+              >
+                <option value="" [selected]="!categoryFilterId()">Todas as categorias</option>
+                @for (c of categories(); track c.id) {
+                  <option [value]="c.id" [selected]="c.id === categoryFilterId()">
+                    {{ c.name }}
                   </option>
                 }
               </select>
@@ -224,16 +237,19 @@ const utcEndOfMonthIso = (year: number, month: number) =>
 export class TransactionsPage {
   private api = inject(ApiService);
   private accountService = inject(AccountService);
+  private categoryService = inject(CategoryService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private destroyRef = inject(DestroyRef);
   private host = inject(ElementRef<HTMLElement>);
 
   protected readonly accounts = this.accountService.accounts;
+  protected readonly categories = this.categoryService.categories;
 
   protected readonly searchDraft = signal('');
   protected readonly searchQuery = signal('');
   protected readonly accountFilterId = signal<string>('');
+  protected readonly categoryFilterId = signal<string>('');
   protected readonly typeFilter = signal<TransactionTypeFilter>('');
 
   protected readonly monthYearControl = new FormControl<Date | null>(null);
@@ -282,16 +298,18 @@ export class TransactionsPage {
 
   private syncQueryParams(partial: {
     accountId?: string | null;
+    categoryId?: string | null;
     type?: TransactionTypeFilter | null;
-    month?: string | null;
+    invoiceMonth?: string | null;
     openFilters?: 0 | 1;
   }) {
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: {
         accountId: partial.accountId,
+        categoryId: partial.categoryId,
         type: partial.type,
-        month: partial.month,
+        invoiceMonth: partial.invoiceMonth,
         openFilters: partial.openFilters,
       },
       queryParamsHandling: 'merge',
@@ -309,11 +327,17 @@ export class TransactionsPage {
 
   constructor() {
     this.accountService.loadAccounts();
+    this.categoryService.loadCategories();
 
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
       const accountId = params.get('accountId') ?? '';
       if (this.accountFilterId() !== accountId) {
         this.accountFilterId.set(accountId);
+      }
+
+      const categoryId = params.get('categoryId') ?? '';
+      if (this.categoryFilterId() !== categoryId) {
+        this.categoryFilterId.set(categoryId);
       }
 
       const typeRaw = params.get('type') ?? '';
@@ -323,7 +347,7 @@ export class TransactionsPage {
         this.typeFilter.set(type);
       }
 
-      const month = this.parseMonthParam(params.get('month'));
+      const month = this.parseMonthParam(params.get('invoiceMonth') ?? params.get('month'));
       const currentMonth = this.monthYearFilter();
       const nextMonthParam = this.toMonthParam(month);
       const currentMonthParam = this.toMonthParam(currentMonth);
@@ -340,7 +364,7 @@ export class TransactionsPage {
             ? false
             : null;
 
-      const hasAnyFilter = !!accountId || !!type || !!nextMonthParam;
+      const hasAnyFilter = !!accountId || !!categoryId || !!type || !!nextMonthParam;
       const shouldOpenFilters = explicitOpenFilters ?? hasAnyFilter;
 
       if (shouldOpenFilters !== this.filtersOpen()) {
@@ -352,7 +376,7 @@ export class TransactionsPage {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((value) => {
         this.monthYearFilter.set(value);
-        this.syncQueryParams({ month: this.toMonthParam(value), openFilters: 1 });
+        this.syncQueryParams({ invoiceMonth: this.toMonthParam(value), openFilters: 1 });
       });
 
     effect(() => {
@@ -372,20 +396,23 @@ export class TransactionsPage {
     effect(() => {
       const q = this.searchQuery();
       const accountId = this.accountFilterId();
+      const categoryId = this.categoryFilterId();
       const type = this.typeFilter();
 
-      const range = this.dateRangeFilters(this.monthYearFilter());
+      const invoiceMonth = this.toMonthParam(this.monthYearFilter());
 
       const filters: {
         q?: string;
         accountId?: string;
+        categoryId?: string;
         type?: TransactionDTO['type'];
-        from?: string;
-        to?: string;
-      } = { ...range };
+        invoiceMonth?: string;
+      } = {};
       if (q) filters.q = q;
       if (accountId) filters.accountId = accountId;
+      if (categoryId) filters.categoryId = categoryId;
       if (type) filters.type = type;
+      if (invoiceMonth) filters.invoiceMonth = invoiceMonth;
       this.resetAndLoad(filters);
     });
 
@@ -417,6 +444,12 @@ export class TransactionsPage {
     const value = (event.target as HTMLSelectElement | null)?.value ?? '';
     this.accountFilterId.set(value);
     this.syncQueryParams({ accountId: value ? value : null, openFilters: 1 });
+  }
+
+  protected onCategoryFilterChange(event: Event) {
+    const value = (event.target as HTMLSelectElement | null)?.value ?? '';
+    this.categoryFilterId.set(value);
+    this.syncQueryParams({ categoryId: value ? value : null, openFilters: 1 });
   }
 
   protected onTypeFilterChange(event: Event) {
@@ -458,9 +491,9 @@ export class TransactionsPage {
   private resetAndLoad(filters: {
     q?: string;
     accountId?: string;
+    categoryId?: string;
     type?: TransactionDTO['type'];
-    from?: string;
-    to?: string;
+    invoiceMonth?: string;
   }) {
     const seq = ++this.initialLoadSeq;
     this.error.set(null);
@@ -497,23 +530,24 @@ export class TransactionsPage {
 
     const q = this.searchQuery();
     const accountId = this.accountFilterId();
+    const categoryId = this.categoryFilterId();
     const type = this.typeFilter();
-    const range = this.dateRangeFilters(this.monthYearFilter());
+    const invoiceMonth = this.toMonthParam(this.monthYearFilter());
 
     const filters: {
       cursorId: string;
       limit: number;
       q?: string;
       accountId?: string;
+      categoryId?: string;
       type?: TransactionDTO['type'];
-      from?: string;
-      to?: string;
+      invoiceMonth?: string;
     } = { cursorId, limit: 30 };
     if (q) filters.q = q;
     if (accountId) filters.accountId = accountId;
+    if (categoryId) filters.categoryId = categoryId;
     if (type) filters.type = type;
-    if (range.from) filters.from = range.from;
-    if (range.to) filters.to = range.to;
+    if (invoiceMonth) filters.invoiceMonth = invoiceMonth;
 
     this.loadingMore.set(true);
     this.api
@@ -575,17 +609,5 @@ export class TransactionsPage {
         this.observedEl = null;
       }
     });
-  }
-
-  private dateRangeFilters(monthYear: Date | null): { from?: string; to?: string } {
-    if (!monthYear) return {};
-    const year = monthYear.getFullYear();
-    const month = monthYear.getMonth() + 1;
-    if (!Number.isFinite(year) || year < 1970 || year > 2100) return {};
-    if (!Number.isFinite(month) || month < 1 || month > 12) return {};
-    return {
-      from: utcStartOfMonthIso(year, month),
-      to: utcEndOfMonthIso(year, month),
-    };
   }
 }

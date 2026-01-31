@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { WaitlistService } from "./waitlist.service";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Waitlist } from "@prisma/client";
 
 describe("WaitlistService", () => {
   let service: WaitlistService;
@@ -31,7 +31,9 @@ describe("WaitlistService", () => {
     };
 
     vi.mocked(prisma.waitlist.findUnique).mockResolvedValue(null);
-    vi.mocked(prisma.waitlist.create).mockResolvedValue(expectedResult as any);
+    vi.mocked(prisma.waitlist.create).mockResolvedValue(
+      expectedResult as unknown as Waitlist,
+    );
 
     const result = await service.join(input);
 
@@ -51,7 +53,9 @@ describe("WaitlistService", () => {
       phone: "11999999999",
     };
 
-    vi.mocked(prisma.waitlist.findUnique).mockResolvedValue({ id: "1" } as any);
+    vi.mocked(prisma.waitlist.findUnique).mockResolvedValue({
+      id: "1",
+    } as unknown as Waitlist);
 
     await expect(service.join(input)).rejects.toThrow(
       "Email já está na lista de espera.",

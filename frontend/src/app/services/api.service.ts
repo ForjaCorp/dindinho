@@ -179,8 +179,10 @@ export class ApiService {
 
   getTransactions(params: {
     accountId?: string;
+    categoryId?: string;
     from?: string;
     to?: string;
+    invoiceMonth?: string;
     q?: string;
     type?: TransactionDTO['type'];
     limit?: number;
@@ -188,8 +190,10 @@ export class ApiService {
   }): Observable<{ items: TransactionDTO[]; nextCursorId: string | null }> {
     const queryParams: Record<string, string> = {
       ...(params.accountId ? { accountId: params.accountId } : {}),
+      ...(params.categoryId ? { categoryId: params.categoryId } : {}),
       ...(params.from ? { from: params.from } : {}),
       ...(params.to ? { to: params.to } : {}),
+      ...(params.invoiceMonth ? { invoiceMonth: params.invoiceMonth } : {}),
       ...(params.q ? { q: params.q } : {}),
       ...(params.type ? { type: params.type } : {}),
       ...(typeof params.limit === 'number' ? { limit: String(params.limit) } : {}),

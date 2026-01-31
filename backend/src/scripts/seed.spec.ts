@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Category, User } from "@prisma/client";
 import { DeepMockProxy, mockReset } from "vitest-mock-extended";
 
 vi.mock("../lib/prisma", async () => {
@@ -25,12 +25,14 @@ describe("Seed de Usuário Dev", () => {
   beforeEach(() => {
     mockReset(prismaMock);
     prismaMock.category.findFirst.mockResolvedValue(null);
-    prismaMock.category.create.mockResolvedValue({ id: "cat" } as any);
+    prismaMock.category.create.mockResolvedValue({
+      id: "cat",
+    } as unknown as Category);
     prismaMock.user.findUnique.mockResolvedValue(null);
     prismaMock.user.create.mockResolvedValue({
       id: "dev-user",
       email: "dev@dindinho.com",
-    } as any);
+    } as unknown as User);
   });
 
   afterEach(() => {

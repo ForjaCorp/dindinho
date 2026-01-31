@@ -59,3 +59,7 @@ ngsw/
 
 # TypeScript incremental
 *.tsbuildinfo
+
+# Trae
+.trae/
+

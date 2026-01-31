@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import Fastify, { FastifyInstance } from "fastify";
 import { waitlistRoutes } from "./waitlist.routes";
 import { prisma } from "../lib/prisma";
+import { Waitlist } from "@prisma/client";
 import {
-  ZodTypeProvider,
   serializerCompiler,
   validatorCompiler,
 } from "fastify-type-provider-zod";
@@ -47,7 +47,7 @@ describe("WaitlistRoutes", () => {
       ...payload,
       status: "PENDING",
       createdAt: new Date(),
-    } as any);
+    } as unknown as Waitlist);
 
     const response = await app.inject({
       method: "POST",
@@ -69,7 +69,9 @@ describe("WaitlistRoutes", () => {
       phone: "+5511999999999",
     };
 
-    vi.mocked(prisma.waitlist.findUnique).mockResolvedValue({ id: "1" } as any);
+    vi.mocked(prisma.waitlist.findUnique).mockResolvedValue({
+      id: "1",
+    } as unknown as Waitlist);
 
     const response = await app.inject({
       method: "POST",

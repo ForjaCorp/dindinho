@@ -48,22 +48,23 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         loadComponent: () => import('../pages/dashboard.page').then((m) => m.DashboardComponent),
+        data: { maxWidth: '5xl' },
       },
       {
         path: 'accounts',
         loadComponent: () => import('../pages/accounts/accounts.page').then((m) => m.AccountsPage),
-        data: { title: 'Contas' },
+        data: { title: 'Contas', maxWidth: '7xl' },
       },
       {
         path: 'cards',
         loadComponent: () => import('../pages/cards/cards.page').then((m) => m.CardsPage),
-        data: { title: 'Cartões' },
+        data: { title: 'Cartões', maxWidth: '7xl' },
       },
       {
         path: 'transactions',
         loadComponent: () =>
           import('../pages/transactions/transactions.page').then((m) => m.TransactionsPage),
-        data: { title: 'Transações' },
+        data: { title: 'Transações', maxWidth: '5xl' },
       },
       {
         path: 'transactions/new',
@@ -71,17 +72,22 @@ export const routes: Routes = [
           import('../pages/transactions/create-transaction.page').then(
             (m) => m.CreateTransactionPage,
           ),
-        data: { title: 'Nova transação' },
+        data: { title: 'Nova transação', maxWidth: '3xl' },
       },
       {
         path: 'admin/allowlist',
         loadComponent: () => import('../pages/admin/allowlist.page').then((m) => m.AllowlistPage),
-        data: { title: 'Allowlist', requiredRole: 'ADMIN' },
+        data: { title: 'Allowlist', requiredRole: 'ADMIN', maxWidth: '7xl' },
       },
       {
         path: 'profile',
         loadComponent: () => import('../pages/profile.page').then((m) => m.ProfilePage),
-        data: { title: 'Meu Perfil' },
+        data: { title: 'Meu Perfil', maxWidth: '3xl' },
+      },
+      {
+        path: 'reports',
+        loadComponent: () => import('../pages/reports/reports.page').then((m) => m.ReportsPage),
+        data: { title: 'Relatórios', maxWidth: '5xl' },
       },
       // Outras rotas autenticadas virão aqui (accounts, reports, profile)
     ],

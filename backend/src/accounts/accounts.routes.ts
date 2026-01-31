@@ -40,7 +40,7 @@ export async function accountsRoutes(app: FastifyInstance) {
   app.addHook("onRequest", async (request) => {
     try {
       await request.jwtVerify();
-    } catch (err) {
+    } catch {
       throw { statusCode: 401, message: "Token inválido ou expirado" };
     }
   });

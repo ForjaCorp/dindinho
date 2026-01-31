@@ -24,18 +24,11 @@ export default defineConfig([
     extends: [eslint.configs.recommended, ...tseslint.configs.recommended],
     rules: {
       "@typescript-eslint/no-deprecated": "error",
-      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-unused-vars": [
-        "warn",
+        "error",
         { argsIgnorePattern: "^_" },
       ],
-    },
-  },
-  {
-    files: ["**/*.spec.ts"],
-    rules: {
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-unused-vars": "off",
     },
   },
 ]);

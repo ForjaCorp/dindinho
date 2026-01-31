@@ -21,7 +21,7 @@ abstract class AccountError extends Error {
 
   constructor(
     message: string,
-    public readonly details?: any,
+    public readonly details?: unknown,
   ) {
     super(message);
     this.name = this.constructor.name;
@@ -69,7 +69,7 @@ class AccountValidationError extends AccountError {
   readonly statusCode = 400;
   readonly isOperational = true;
 
-  constructor(message: string, validationErrors?: any) {
+  constructor(message: string, validationErrors?: unknown) {
     super(`Dados inválidos: ${message}`, {
       validationErrors,
       code: "VALIDATION_ERROR",
@@ -169,16 +169,16 @@ export class AccountsService {
       value &&
       typeof value === "object" &&
       "toNumber" in value &&
-      typeof (value as any).toNumber === "function"
+      typeof (value as { toNumber: () => unknown }).toNumber === "function"
     ) {
-      const n = (value as any).toNumber();
+      const n = (value as { toNumber: () => number }).toNumber();
       return typeof n === "number" && Number.isFinite(n) ? n : 0;
     }
     return 0;
   }
 
   private async assertCanWriteAccount(userId: string, accountId: string) {
-    const account = await (this.prisma as any).account.findUnique({
+    const account = await this.prisma.account.findUnique({
       where: { id: accountId },
       select: { id: true, ownerId: true },
     });
@@ -189,7 +189,7 @@ export class AccountsService {
 
     if (account.ownerId === userId) return;
 
-    const access = await (this.prisma as any).accountAccess.findUnique({
+    const access = await this.prisma.accountAccess.findUnique({
       where: {
         accountId_userId: {
           accountId,
@@ -211,7 +211,7 @@ export class AccountsService {
     userId: string,
     accountId: string,
   ): Promise<AccountDTO> {
-    const account = (await (this.prisma as any).account.findFirst({
+    const account = await this.prisma.account.findFirst({
       where: {
         id: accountId,
         OR: [
@@ -224,13 +224,13 @@ export class AccountsService {
         ],
       },
       include: { creditCardInfo: true },
-    })) as any;
+    });
 
     if (!account) {
       throw new PermissionDeniedError("acessar");
     }
 
-    const paidSums = (await (this.prisma as any).transaction.groupBy({
+    const paidSums = await this.prisma.transaction.groupBy({
       by: ["type"],
       where: {
         accountId,
@@ -239,7 +239,7 @@ export class AccountsService {
       _sum: {
         amount: true,
       },
-    } as any)) as any[];
+    });
 
     const sums = { income: 0, expense: 0, transfer: 0 };
     for (const row of paidSums) {
@@ -258,7 +258,7 @@ export class AccountsService {
     const used =
       account.type === AccountType.CREDIT
         ? (() => {
-            const rows = (this.prisma as any).transaction.groupBy({
+            const rows = this.prisma.transaction.groupBy({
               by: ["accountId"],
               where: {
                 accountId,
@@ -266,7 +266,7 @@ export class AccountsService {
                 isPaid: false,
               },
               _sum: { amount: true },
-            } as any) as Promise<any[]>;
+            });
             return rows.then((r) =>
               r.length ? Math.abs(this.toNumber(r[0]?._sum?.amount)) : 0,
             );
@@ -282,7 +282,7 @@ export class AccountsService {
         ? Math.max(0, limit - usedAmount)
         : null;
 
-    const initialBalance = this.toNumber((account as any).initialBalance);
+    const initialBalance = this.toNumber(account.initialBalance);
     const balance =
       account.type === AccountType.STANDARD
         ? initialBalance + sums.income - sums.expense + sums.transfer
@@ -345,7 +345,7 @@ export class AccountsService {
       const initialBalance =
         data.type === "STANDARD" ? this.toNumber(data.initialBalance) : 0;
 
-      const account = await (this.prisma as any).account.create({
+      const account = await this.prisma.account.create({
         data: {
           name: data.name,
           color: data.color,
@@ -403,20 +403,20 @@ export class AccountsService {
    */
   async findAllByUserId(userId: string): Promise<AccountDTO[]> {
     try {
-      const accounts = (await (this.prisma as any).account.findMany({
+      const accounts = await this.prisma.account.findMany({
         where: { ownerId: userId },
         include: { creditCardInfo: true },
         orderBy: { createdAt: "asc" },
-      })) as any[];
+      });
 
       if (!accounts.length) return [];
 
-      const accountIds = accounts.map((a: any) => a.id);
+      const accountIds = accounts.map((a) => a.id);
       const creditAccountIds = accounts
-        .filter((w: any) => w.type === AccountType.CREDIT)
-        .map((w: any) => w.id);
+        .filter((w) => w.type === AccountType.CREDIT)
+        .map((w) => w.id);
 
-      const paidSums = await (this.prisma as any).transaction.groupBy({
+      const paidSums = await this.prisma.transaction.groupBy({
         by: ["accountId", "type"],
         where: {
           accountId: { in: accountIds },
@@ -425,15 +425,15 @@ export class AccountsService {
         _sum: {
           amount: true,
         },
-      } as any);
+      });
 
       const paidByAccount = new Map<
         string,
         { income: number; expense: number; transfer: number }
       >();
 
-      for (const row of paidSums as any[]) {
-        const accountId = row.accountId as string;
+      for (const row of paidSums) {
+        const accountId = row.accountId;
         const type = row.type as TransactionType;
         const amount = this.toNumber(row._sum?.amount);
 
@@ -452,7 +452,7 @@ export class AccountsService {
       }
 
       const unpaidCreditExpenses = creditAccountIds.length
-        ? await (this.prisma as any).transaction.groupBy({
+        ? await this.prisma.transaction.groupBy({
             by: ["accountId"],
             where: {
               accountId: { in: creditAccountIds },
@@ -460,18 +460,18 @@ export class AccountsService {
               isPaid: false,
             },
             _sum: { amount: true },
-          } as any)
+          })
         : [];
 
       const unpaidByCreditAccount = new Map<string, number>();
-      for (const row of unpaidCreditExpenses as any[]) {
+      for (const row of unpaidCreditExpenses) {
         unpaidByCreditAccount.set(
-          row.accountId as string,
+          row.accountId,
           Math.abs(this.toNumber(row._sum?.amount)),
         );
       }
 
-      return accounts.map((a: any) => ({
+      return accounts.map((a) => ({
         id: a.id,
         name: a.name,
         color: a.color,
@@ -499,7 +499,7 @@ export class AccountsService {
         balance:
           a.type === AccountType.STANDARD
             ? (() => {
-                const initialBalance = this.toNumber((a as any).initialBalance);
+                const initialBalance = this.toNumber(a.initialBalance);
                 const sums = paidByAccount.get(a.id) ?? {
                   income: 0,
                   expense: 0,
@@ -526,10 +526,10 @@ export class AccountsService {
     try {
       await this.assertCanWriteAccount(userId, accountId);
 
-      const existing = (await (this.prisma as any).account.findUnique({
+      const existing = await this.prisma.account.findUnique({
         where: { id: accountId },
         include: { creditCardInfo: true },
-      })) as any;
+      });
 
       if (!existing) throw new AccountNotFoundError(accountId);
 
@@ -567,7 +567,7 @@ export class AccountsService {
           );
         }
 
-        (updateData as any).creditCardInfo = {
+        updateData.creditCardInfo = {
           upsert: {
             create: {
               closingDay,
@@ -587,7 +587,7 @@ export class AccountsService {
         };
       }
 
-      await (this.prisma as any).account.update({
+      await this.prisma.account.update({
         where: { id: accountId },
         data: updateData,
       });
@@ -598,7 +598,10 @@ export class AccountsService {
     }
   }
 
-  private handleUpdateAccountError(error: any, accountName?: string): never {
+  private handleUpdateAccountError(
+    error: unknown,
+    accountName?: string,
+  ): never {
     if (error instanceof AccountError) {
       throw error;
     }
@@ -640,7 +643,7 @@ export class AccountsService {
    * @param accountName - Nome da conta para contexto
    * @private
    */
-  private handleCreateAccountError(error: any, accountName: string): never {
+  private handleCreateAccountError(error: unknown, accountName: string): never {
     if (error instanceof AccountError) {
       throw error;
     }
@@ -692,7 +695,7 @@ export class AccountsService {
    * @param error - Erro capturado
    * @private
    */
-  private handleFindAccountsError(error: any): never {
+  private handleFindAccountsError(error: unknown): never {
     if (error instanceof AccountError) {
       throw error;
     }

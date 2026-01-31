@@ -211,8 +211,7 @@ describe('AuthService', () => {
 
   describe('isAuthenticated', () => {
     it('should return true if user is authenticated', () => {
-      // eslint-disable-next-line
-      (service.currentUser as any).set({
+      service.currentUser.set({
         id: '1',
         name: 'User',
         email: 'user@test.com',
@@ -222,8 +221,7 @@ describe('AuthService', () => {
     });
 
     it('should return false if user is not authenticated', () => {
-      // eslint-disable-next-line
-      (service.currentUser as any).set(null);
+      service.currentUser.set(null);
       expect(service.isAuthenticated()).toBe(false);
     });
   });

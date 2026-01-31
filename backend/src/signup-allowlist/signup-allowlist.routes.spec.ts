@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { DeepMockProxy, mockReset } from "vitest-mock-extended";
-import { PrismaClient, Role } from "@prisma/client";
+import {
+  PrismaClient,
+  Role,
+  SignupAllowlist,
+  User,
+  Prisma,
+} from "@prisma/client";
 
 vi.mock("../lib/prisma", async () => {
   const { mockDeep } = await import("vitest-mock-extended");
@@ -48,7 +54,7 @@ describe("Rotas de allowlist de cadastro", () => {
       id: "123e4567-e89b-12d3-a456-426614174000",
       email: "user@example.com",
       createdAt: new Date("2026-01-01T00:00:00.000Z"),
-    } as any);
+    } as unknown as SignupAllowlist);
 
     const response = await app.inject({
       method: "POST",
@@ -70,12 +76,14 @@ describe("Rotas de allowlist de cadastro", () => {
   });
 
   it("deve adicionar email na allowlist com JWT admin", async () => {
-    prismaMock.user.findUnique.mockResolvedValue({ role: Role.ADMIN } as any);
+    prismaMock.user.findUnique.mockResolvedValue({
+      role: Role.ADMIN,
+    } as unknown as User);
     prismaMock.signupAllowlist.upsert.mockResolvedValue({
       id: "123e4567-e89b-12d3-a456-426614174001",
       email: "admin@example.com",
       createdAt: new Date("2026-01-01T00:00:00.000Z"),
-    } as any);
+    } as unknown as SignupAllowlist);
 
     const response = await app.inject({
       method: "POST",
@@ -97,7 +105,9 @@ describe("Rotas de allowlist de cadastro", () => {
   });
 
   it("deve negar acesso com JWT sem role admin", async () => {
-    prismaMock.user.findUnique.mockResolvedValue({ role: Role.VIEWER } as any);
+    prismaMock.user.findUnique.mockResolvedValue({
+      role: Role.VIEWER,
+    } as unknown as User);
 
     const response = await app.inject({
       method: "GET",
@@ -113,7 +123,7 @@ describe("Rotas de allowlist de cadastro", () => {
   it("deve remover email da allowlist", async () => {
     prismaMock.signupAllowlist.deleteMany.mockResolvedValue({
       count: 1,
-    } as any);
+    } as unknown as Prisma.BatchPayload);
 
     const response = await app.inject({
       method: "DELETE",

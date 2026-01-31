@@ -109,7 +109,9 @@ describe("Rotas de Contas", () => {
 
   describe("GET /api/accounts", () => {
     it("deve listar contas", async () => {
-      (prismaMock.transaction.groupBy as any).mockResolvedValue([] as any);
+      vi.mocked(prismaMock.transaction.groupBy).mockResolvedValue(
+        [] as unknown as [],
+      );
 
       prismaMock.account.findMany.mockResolvedValue([
         {
@@ -166,14 +168,19 @@ describe("Rotas de Contas", () => {
       };
 
       prismaMock.account.findUnique
-        .mockResolvedValueOnce({ id: accountId, ownerId: userId } as any)
+        .mockResolvedValueOnce({
+          id: accountId,
+          ownerId: userId,
+        } as unknown as Account)
         .mockResolvedValueOnce({
           id: accountId,
           type: "STANDARD",
           creditCardInfo: null,
-        } as any);
+        } as unknown as Account);
 
-      prismaMock.account.update.mockResolvedValue({ id: accountId } as any);
+      prismaMock.account.update.mockResolvedValue({
+        id: accountId,
+      } as unknown as Account);
 
       prismaMock.account.findFirst.mockResolvedValue({
         id: accountId,
@@ -186,9 +193,11 @@ describe("Rotas de Contas", () => {
         creditCardInfo: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-      } as any);
+      } as unknown as Account);
 
-      (prismaMock.transaction.groupBy as any).mockResolvedValue([] as any);
+      vi.mocked(prismaMock.transaction.groupBy).mockResolvedValue(
+        [] as unknown as [],
+      );
 
       const response = await app.inject({
         method: "PATCH",

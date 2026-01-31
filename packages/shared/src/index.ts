@@ -10,3 +10,4 @@ export * from "./schemas/general.schema";
 export * from "./schemas/account.schema";
 export * from "./schemas/transaction.schema";
 export * from "./schemas/waitlist.schema";
+export * from "./schemas/report.schema";
