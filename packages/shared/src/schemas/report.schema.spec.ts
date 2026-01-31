@@ -27,6 +27,16 @@ describe("report.schema", () => {
         }),
       ).toThrow("Data final é obrigatória no preset CUSTOM");
     });
+
+    it("deve rejeitar startDay inválido no preset CUSTOM", () => {
+      expect(() =>
+        periodSelectionSchema.parse({
+          preset: "CUSTOM",
+          startDay: "2024-02-31",
+          endDay: "2024-03-01",
+        }),
+      ).toThrow("Data inválida");
+    });
   });
 
   describe("timeFilterSelectionSchema", () => {

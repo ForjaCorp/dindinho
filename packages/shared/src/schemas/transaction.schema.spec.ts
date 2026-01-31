@@ -60,5 +60,14 @@ describe("transaction.schema", () => {
         limit: 30,
       });
     });
+
+    it("deve rejeitar startDay inválido", () => {
+      expect(() =>
+        listTransactionsQuerySchema.parse({
+          startDay: "2024-02-31",
+          endDay: "2024-03-01",
+        }),
+      ).toThrow("Data inválida");
+    });
   });
 });
