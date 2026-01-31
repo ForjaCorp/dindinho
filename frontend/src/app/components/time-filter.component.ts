@@ -34,7 +34,7 @@ import {
 
       <button
         type="button"
-        class="w-full min-h-[46px] rounded-xl border border-slate-200 bg-white px-3 flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+        class="w-full min-h-[46px] rounded-xl border border-slate-200 bg-white px-3 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-emerald-200"
         (click)="openEditor()"
         data-testid="time-filter-open"
         aria-haspopup="dialog"
@@ -42,7 +42,7 @@ import {
         [attr.aria-controls]="sheetId"
       >
         <span
-          class="shrink-0 h-7 px-3 rounded-lg text-xs font-semibold flex items-center"
+          class="shrink-0 h-7 px-2.5 rounded-lg text-xs font-semibold leading-none flex items-center"
           [class]="
             sel.mode === 'INVOICE_MONTH'
               ? 'bg-slate-100 text-slate-700'
@@ -272,6 +272,9 @@ export class TimeFilterComponent {
   protected readonly dayRangeModel = signal<[Date | null, Date | null]>([null, null]);
   protected readonly invoiceMonthModel = signal<Date | null>(null);
 
+  private suppressDayRangeModelChange = false;
+  private suppressInvoiceMonthModelChange = false;
+
   private readonly lastDayRangeSelection = signal<TimeFilterSelectionDTO & { mode: 'DAY_RANGE' }>({
     mode: 'DAY_RANGE',
     period: { preset: 'THIS_MONTH', tzOffsetMinutes: new Date().getTimezoneOffset() },
@@ -283,6 +286,14 @@ export class TimeFilterComponent {
     mode: 'INVOICE_MONTH',
     invoiceMonth: formatIsoMonthLocal(new Date()),
   });
+
+  private readonly lastDraftDayRangeSelection = signal<
+    TimeFilterSelectionDTO & { mode: 'DAY_RANGE' }
+  >(this.lastDayRangeSelection());
+
+  private readonly lastDraftInvoiceSelection = signal<
+    TimeFilterSelectionDTO & { mode: 'INVOICE_MONTH' }
+  >(this.lastInvoiceSelection());
 
   protected readonly presets: { label: string; value: PeriodPreset }[] = [
     { label: 'Hoje', value: 'TODAY' },
@@ -356,42 +367,71 @@ export class TimeFilterComponent {
       const sel = this.draftSelectionSig();
 
       if (sel.mode === 'INVOICE_MONTH') {
+        this.suppressInvoiceMonthModelChange = true;
         this.invoiceMonthModel.set(parseIsoMonthToLocalDate(sel.invoiceMonth));
         return;
       }
 
       const resolved = resolvePeriodSelectionToDayRange(sel.period);
       if (!resolved) return;
+      this.suppressDayRangeModelChange = true;
       this.dayRangeModel.set([resolved.start, resolved.end]);
+    });
+
+    effect(() => {
+      if (!this.editorOpenSig()) return;
+
+      const draft = this.draftSelectionSig();
+      if (draft.mode === 'INVOICE_MONTH') {
+        this.lastDraftInvoiceSelection.set(draft);
+      } else {
+        this.lastDraftDayRangeSelection.set(draft);
+      }
     });
   }
 
   protected openEditor() {
-    this.draftSelectionSig.set(this.selectionSig());
+    const current = this.selectionSig();
+    if (current.mode === 'INVOICE_MONTH') {
+      this.lastDraftInvoiceSelection.set(current);
+    } else {
+      this.lastDraftDayRangeSelection.set(current);
+    }
+
+    this.draftSelectionSig.set(current);
     this.editorOpenSig.set(true);
   }
 
   protected closeEditor() {
-    this.draftSelectionSig.set(this.selectionSig());
+    const draft = this.draftSelectionSig();
+    const current = this.selectionSig();
+
+    if (!this.sameSelection(current, draft)) {
+      this.applyDraft();
+      return;
+    }
+
+    this.draftSelectionSig.set(current);
     this.editorOpenSig.set(false);
-    queueMicrotask(() => {
-      const openButton = this.host.nativeElement.querySelector(
-        '[data-testid="time-filter-open"]',
-      ) as HTMLButtonElement | null;
-      openButton?.focus();
-    });
+    this.focusOpenButton();
   }
 
   protected setDraftMode(mode: TimeFilterSelectionDTO['mode']) {
     const current = this.draftSelectionSig();
     if (mode === current.mode) return;
 
+    if (current.mode === 'INVOICE_MONTH') {
+      this.lastDraftInvoiceSelection.set(current);
+    } else {
+      this.lastDraftDayRangeSelection.set(current);
+    }
+
     if (mode === 'INVOICE_MONTH') {
-      this.draftSelectionSig.set(this.lastInvoiceSelection());
+      this.draftSelectionSig.set(this.lastDraftInvoiceSelection());
       return;
     }
 
-    this.draftSelectionSig.set(this.lastDayRangeSelection());
+    this.draftSelectionSig.set(this.lastDraftDayRangeSelection());
   }
 
   protected setDraftPreset(preset: PeriodPreset) {
@@ -403,6 +443,11 @@ export class TimeFilterComponent {
 
   protected onDayRangeModelChange(value: unknown) {
     if (!Array.isArray(value) || value.length !== 2) return;
+
+    if (this.suppressDayRangeModelChange) {
+      this.suppressDayRangeModelChange = false;
+      return;
+    }
 
     const start = value[0] instanceof Date ? (value[0] as Date) : null;
     const end = value[1] instanceof Date ? (value[1] as Date) : null;
@@ -416,8 +461,25 @@ export class TimeFilterComponent {
       return;
     }
 
-    const startDay = formatIsoDayLocal(start);
-    const endDay = formatIsoDayLocal(end);
+    const normalized =
+      start.getTime() <= end.getTime() ? { start, end } : { start: end, end: start };
+    const startDay = formatIsoDayLocal(normalized.start);
+    const endDay = formatIsoDayLocal(normalized.end);
+
+    const draft = this.draftSelectionSig();
+    if (draft.mode === 'DAY_RANGE' && draft.period.preset && draft.period.preset !== 'CUSTOM') {
+      const resolved = resolvePeriodSelectionToDayRange(draft.period);
+      if (resolved && resolved.startDay === startDay && resolved.endDay === endDay) {
+        this.draftSelectionSig.set({
+          mode: 'DAY_RANGE',
+          period: {
+            preset: draft.period.preset,
+            tzOffsetMinutes: normalized.start.getTimezoneOffset(),
+          },
+        });
+        return;
+      }
+    }
 
     this.draftSelectionSig.set({
       mode: 'DAY_RANGE',
@@ -425,12 +487,17 @@ export class TimeFilterComponent {
         preset: 'CUSTOM',
         startDay,
         endDay,
-        tzOffsetMinutes: start.getTimezoneOffset(),
+        tzOffsetMinutes: normalized.start.getTimezoneOffset(),
       },
     });
   }
 
   protected onInvoiceMonthModelChange(value: unknown) {
+    if (this.suppressInvoiceMonthModelChange) {
+      this.suppressInvoiceMonthModelChange = false;
+      return;
+    }
+
     const date = value instanceof Date ? value : null;
     this.invoiceMonthModel.set(date);
 
@@ -472,6 +539,33 @@ export class TimeFilterComponent {
     }
 
     this.editorOpenSig.set(false);
+    this.focusOpenButton();
+  }
+
+  private focusOpenButton() {
+    queueMicrotask(() => {
+      const openButton = this.host.nativeElement.querySelector(
+        '[data-testid="time-filter-open"]',
+      ) as HTMLButtonElement | null;
+      openButton?.focus();
+    });
+  }
+
+  private sameSelection(a: TimeFilterSelectionDTO, b: TimeFilterSelectionDTO): boolean {
+    if (a.mode !== b.mode) return false;
+
+    if (a.mode === 'INVOICE_MONTH' && b.mode === 'INVOICE_MONTH') {
+      return a.invoiceMonth === b.invoiceMonth;
+    }
+
+    if (a.mode === 'DAY_RANGE' && b.mode === 'DAY_RANGE') {
+      if (a.period.preset !== b.period.preset) return false;
+      if (a.period.tzOffsetMinutes !== b.period.tzOffsetMinutes) return false;
+      if (a.period.preset !== 'CUSTOM') return true;
+      return a.period.startDay === b.period.startDay && a.period.endDay === b.period.endDay;
+    }
+
+    return false;
   }
 
   protected timeFilterSummary(): string {
@@ -480,6 +574,11 @@ export class TimeFilterComponent {
       const parsed = parseIsoMonthToLocalDate(selection.invoiceMonth);
       if (!parsed) return 'Selecione o mês';
       return this.formatLocalMonthYear(parsed);
+    }
+
+    if (selection.period.preset !== 'CUSTOM') {
+      const presetLabel = this.presetLabel(selection.period.preset);
+      if (presetLabel) return presetLabel;
     }
 
     const resolved = resolvePeriodSelectionToDayRange(selection.period);
@@ -496,7 +595,11 @@ export class TimeFilterComponent {
 
     const resolved = resolvePeriodSelectionToDayRange(selection.period);
     if (!resolved) return 'Selecionar período';
-    return `Período de ${this.formatLocalDay(resolved.start)} até ${this.formatLocalDay(resolved.end)}`;
+
+    const presetLabel =
+      selection.period.preset !== 'CUSTOM' ? this.presetLabel(selection.period.preset) : '';
+    const range = `de ${this.formatLocalDay(resolved.start)} até ${this.formatLocalDay(resolved.end)}`;
+    return presetLabel ? `Período ${presetLabel}, ${range}` : `Período ${range}`;
   }
 
   protected draftSummary(): string {
