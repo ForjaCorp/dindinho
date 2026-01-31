@@ -9,7 +9,9 @@ export const RecurrenceFrequencyEnum = z.enum([
   "CUSTOM",
 ]);
 
-const invoiceMonthSchema = z
+const isoDaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida");
+
+export const invoiceMonthSchema = z
   .string()
   .regex(/^\d{4}-\d{2}$/, "Mês de fatura inválido");
 
@@ -168,17 +170,59 @@ export type DeleteTransactionResponseDTO = z.infer<
   typeof deleteTransactionResponseSchema
 >;
 
-export const listTransactionsQuerySchema = z.object({
-  accountId: z.string().uuid().optional(),
-  categoryId: z.string().uuid().optional(),
-  from: z.string().datetime().optional(),
-  to: z.string().datetime().optional(),
-  invoiceMonth: invoiceMonthSchema.optional(),
-  q: z.string().trim().min(1).max(120).optional(),
-  type: TransactionTypeEnum.optional(),
-  limit: z.coerce.number().int().min(1).max(100).optional(),
-  cursorId: z.string().uuid().optional(),
-});
+export const listTransactionsQuerySchema = z
+  .object({
+    accountId: z.string().uuid().optional(),
+    categoryId: z.string().uuid().optional(),
+    from: z.string().datetime().optional(),
+    to: z.string().datetime().optional(),
+    /** Período por dia (YYYY-MM-DD), alternativa a `from/to`. */
+    startDay: isoDaySchema.optional(),
+    /** Período por dia (YYYY-MM-DD), alternativa a `from/to`. */
+    endDay: isoDaySchema.optional(),
+    /** Offset em minutos para interpretar `startDay/endDay` no dia local. */
+    tzOffsetMinutes: z.coerce.number().int().min(-840).max(840).optional(),
+    invoiceMonth: invoiceMonthSchema.optional(),
+    q: z.string().trim().min(1).max(120).optional(),
+    type: TransactionTypeEnum.optional(),
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+    cursorId: z.string().uuid().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (typeof data.invoiceMonth === "string") {
+      const conflictingKeys: Array<"from" | "to" | "startDay" | "endDay"> = [
+        "from",
+        "to",
+        "startDay",
+        "endDay",
+      ];
+
+      for (const key of conflictingKeys) {
+        if (data[key] !== undefined) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [key],
+            message: "Não combine invoiceMonth com filtros de período",
+          });
+        }
+      }
+
+      return;
+    }
+
+    if (data.startDay !== undefined || data.endDay !== undefined) {
+      const conflictingKeys: Array<"from" | "to"> = ["from", "to"];
+      for (const key of conflictingKeys) {
+        if (data[key] !== undefined) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [key],
+            message: "Não combine startDay/endDay com from/to",
+          });
+        }
+      }
+    }
+  });
 
 export type ListTransactionsQueryDTO = z.infer<
   typeof listTransactionsQuerySchema
