@@ -267,6 +267,9 @@ export class ReportsService {
     if (typeof filters.tzOffsetMinutes === 'number') {
       params = params.set('tzOffsetMinutes', String(filters.tzOffsetMinutes));
     }
+    if (filters.invoiceMonth) {
+      params = params.set('invoiceMonth', filters.invoiceMonth);
+    }
     if (filters.includePending) {
       params = params.set('includePending', String(filters.includePending));
     }
