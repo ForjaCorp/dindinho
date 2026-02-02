@@ -312,6 +312,8 @@ export class TransactionsPage {
     if (!value) return null;
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) return null;
+    if (parsed < -840) return -840;
+    if (parsed > 840) return 840;
     return parsed;
   }
 
@@ -412,7 +414,7 @@ export class TransactionsPage {
               mode: 'DAY_RANGE',
               period: { preset: periodPreset, tzOffsetMinutes },
             }
-          : startDay || endDay || periodPreset === 'CUSTOM'
+          : startDay || endDay || (periodPreset === 'CUSTOM' && startDay && endDay)
             ? {
                 mode: 'DAY_RANGE',
                 period: {

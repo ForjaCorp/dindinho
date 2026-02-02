@@ -565,4 +565,92 @@ describe('TransactionsPage', () => {
     expect(observeSpy).toHaveBeenCalledTimes(1);
     expect(observeSpy).toHaveBeenCalledWith(loadMoreEl);
   });
+
+  it('deve limitar tzOffsetMinutes para -840 quando menor que o limite', () => {
+    const api = TestBed.inject(ApiService) as unknown as {
+      getTransactions: ReturnType<typeof vi.fn>;
+    };
+
+    queryParamMap$.next(
+      convertToParamMap({
+        periodPreset: 'TODAY',
+        tzOffsetMinutes: '-1000',
+        openFilters: '1',
+      }),
+    );
+    fixture.detectChanges();
+
+    const lastCall = api.getTransactions.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(lastCall).toMatchObject({
+      tzOffsetMinutes: -840,
+    });
+  });
+
+  it('deve limitar tzOffsetMinutes para 840 quando maior que o limite', () => {
+    const api = TestBed.inject(ApiService) as unknown as {
+      getTransactions: ReturnType<typeof vi.fn>;
+    };
+
+    queryParamMap$.next(
+      convertToParamMap({
+        periodPreset: 'TODAY',
+        tzOffsetMinutes: '1000',
+        openFilters: '1',
+      }),
+    );
+    fixture.detectChanges();
+
+    const lastCall = api.getTransactions.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(lastCall).toMatchObject({
+      tzOffsetMinutes: 840,
+    });
+  });
+
+  it('deve cair no filtro padrão se periodPreset=CUSTOM mas datas ausentes', () => {
+    const component = fixture.componentInstance as unknown as {
+      timeFilterSelection: () => TimeFilterSelectionDTO;
+    };
+
+    // Sem startDay nem endDay
+    queryParamMap$.next(
+      convertToParamMap({
+        periodPreset: 'CUSTOM',
+        openFilters: '1',
+      }),
+    );
+    fixture.detectChanges();
+
+    const selection = component.timeFilterSelection();
+    if (selection.mode !== 'DAY_RANGE') {
+      throw new Error('Expected DAY_RANGE mode');
+    }
+    expect(selection.period).toMatchObject({
+      preset: 'THIS_MONTH',
+    });
+  });
+
+  it('deve aceitar CUSTOM se ao menos uma data estiver presente (range implícito)', () => {
+    const component = fixture.componentInstance as unknown as {
+      timeFilterSelection: () => TimeFilterSelectionDTO;
+    };
+
+    queryParamMap$.next(
+      convertToParamMap({
+        periodPreset: 'CUSTOM',
+        startDay: '2026-01-01',
+        openFilters: '1',
+      }),
+    );
+    fixture.detectChanges();
+
+    const selection = component.timeFilterSelection();
+    if (selection.mode !== 'DAY_RANGE') {
+      throw new Error('Expected DAY_RANGE mode');
+    }
+    expect(selection.period).toMatchObject({
+      preset: 'CUSTOM',
+      startDay: '2026-01-01',
+      endDay: '2026-01-01',
+    });
+  });
 });
