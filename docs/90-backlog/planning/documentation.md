@@ -11,7 +11,7 @@ mvp: true
 createdAt: "2026-02-02"
 ---
 
-# Documentação — plano de execução (portal + contratos + API)
+## Documentação — plano de execução (portal + contratos + API)
 
 ## Contexto atual
 
@@ -193,27 +193,27 @@ export type BacklogItemDTO = z.infer<typeof backlogItemSchema>;
 
 ## Plano em fases (pequenas e incrementais)
 
-### Fase D0 — Inventário e pontos de entrada (1 PR)
+### Fase D0 — Inventário e pontos de entrada (1 PR) (CONCLUÍDO)
 
-- Consolidar links entre `README.md` (root), `backend/README.md`, `frontend/README.md` e `docs/`
-- Definir a árvore alvo do `docs/` (taxonomia) e mover documentos existentes sem perder links
-- Definir o que será público vs interno (visibilidade)
-
-Critério de aceite:
-
-- Qualquer pessoa consegue: rodar local, entender MVP e achar Auth/Reports/Transactions
-
-### Fase D1 — Padrões de contrato e compatibilidade (1 PR)
-
-- Formalizar e estabilizar o envelope de erro (`ApiErrorResponseDTO`) como contrato central
-- Definir guideline de versionamento do `@dindinho/shared` para mudanças incompatíveis
-- Formalizar convenções de validação:
-  - `body/querystring/params/response` sempre em Zod
-  - coerções (`z.coerce`) e `.transform` devem ser previsíveis
+- [x] Consolidar links entre `README.md` (root), `backend/README.md`, `frontend/README.md` e `docs/`
+- [x] Definir a árvore alvo do `docs/` (taxonomia) e mover documentos existentes sem perder links
+- [x] Definir o que será público vs interno (visibilidade)
 
 Critério de aceite:
 
-- Uma página em `docs/30-api/` referencia o contrato de erro e validações
+- [x] Qualquer pessoa consegue: rodar local, entender MVP e achar Auth/Reports/Transactions
+
+### Fase D1 — Padrões de contrato e compatibilidade (1 PR) (CONCLUÍDO)
+
+- [x] Formalizar e estabilizar o envelope de erro (`ApiErrorResponseDTO`) como contrato central
+- [x] Definir guideline de versionamento do `@dindinho/shared` para mudanças incompatíveis
+- [x] Formalizar convenções de validação:
+  - [x] `body/querystring/params/response` sempre em Zod
+  - [x] coerções (`z.coerce`) e `.transform` devem ser previsíveis
+
+Critério de aceite:
+
+- [x] Uma página em `docs/30-api/` referencia o contrato de erro e validações
 
 ### Fase D2 — Metadados de docs e backlog estruturado (1 PR) (CONCLUÍDO)
 
@@ -228,99 +228,99 @@ Critério de aceite:
 
 PR A (infra):
 
-- Adicionar plugin Swagger ao backend
-- Configurar transformação Zod → JSON Schema para Swagger
-- Expor rota interna de spec (ex.: `/internal/openapi.json`) ou gerar arquivo em build
+- [x] Adicionar plugin Swagger ao backend
+- [x] Configurar transformação Zod → JSON Schema para Swagger
+- [x] Expor rota interna de spec (ex.: `/internal/openapi.json`) ou gerar arquivo em build
 
 PR B (governança):
 
-- Padronizar `summary/tags` em todas as rotas
-- Padronizar respostas de erro por status (401/403/404/409/422)
+- [ ] Padronizar `summary/tags` em todas as rotas
+- [ ] Padronizar respostas de erro por status (401/403/404/409/422)
 
 Critério de aceite:
 
-- Spec gera sem erros e cobre rotas principais (auth/accounts/transactions/reports)
+- [ ] Spec gera sem erros e cobre rotas principais (auth/accounts/transactions/reports)
 
 ### Fase D4 — Portal de docs (3 PRs)
 
 PR A (skeleton):
 
-- Criar um app de docs no monorepo (site estático)
-- Integrar conteúdo de `docs/` como fonte
+- [ ] Criar um app de docs no monorepo (site estático)
+- [ ] Integrar conteúdo de `docs/` como fonte
 
 PR B (API):
 
-- Renderizar `openapi.json` dentro do portal
+- [ ] Renderizar `openapi.json` dentro do portal
 
 PR C (qualidade):
 
-- Checagem de links internos
-- Validação de frontmatter com Zod
+- [ ] Checagem de links internos
+- [ ] Validação de frontmatter com Zod
 
 Critério de aceite:
 
-- Portal roda localmente e a navegação cobre os fluxos críticos
+- [ ] Portal roda localmente e a navegação cobre os fluxos críticos
 
 ### Fase D5 — Deploy no Coolify (1 PR)
 
-- Adicionar um serviço `docs` no `docker-compose.coolify.yml` ou incorporar ao container do frontend como rota `/docs`
-- Definir variáveis/URLs e healthcheck do serviço de docs
+- [ ] Adicionar um serviço `docs` no `docker-compose.coolify.yml` ou incorporar ao container do frontend como rota `/docs`
+- [ ] Definir variáveis/URLs e healthcheck do serviço de docs
 
 Critério de aceite:
 
-- Portal disponível em produção (ex.: `https://app.seudominio.com/docs` ou `https://docs.seudominio.com/`)
+- [ ] Portal disponível em produção (ex.: `https://app.seudominio.com/docs` ou `https://docs.seudominio.com/`)
 
 ### Fase D6 — Separação “público vs interno” (1 PR)
 
-- Definir subconjunto público (ex.: política, onboarding, FAQ, pricing)
-- Restringir o conteúdo interno (Coolify auth, rede privada, ou build separado)
+- [ ] Definir subconjunto público (ex.: política, onboarding, FAQ, pricing)
+- [ ] Restringir o conteúdo interno (Coolify auth, rede privada, ou build separado)
 
 Critério de aceite:
 
-- Conteúdo público não vaza detalhes operacionais (infra, endpoints internos, decisões sensíveis)
+- [ ] Conteúdo público não vaza detalhes operacionais (infra, endpoints internos, decisões sensíveis)
 
 ### Fase D7 — Domínios do backend (iterativo por módulo)
 
-- Auth (login/refresh/logout, tokens, allowlist, rate limiting)
-- Accounts (tipos STANDARD/CREDIT, campos relevantes)
-- Transactions (filtros, paginação, recorrência/parcelamento, invoiceMonth)
-- Reports (endpoints, filtros e drill-down)
-- Categories e Waitlist
+- [ ] Auth (login/refresh/logout, tokens, allowlist, rate limiting)
+- [ ] Accounts (tipos STANDARD/CREDIT, campos relevantes)
+- [ ] Transactions (filtros, paginação, recorrência/parcelamento, invoiceMonth)
+- [ ] Reports (endpoints, filtros e drill-down)
+- [ ] Categories e Waitlist
 
 Critério de aceite:
 
-- Cada domínio tem uma página “como funciona” e links para contratos/endpoints
+- [ ] Cada domínio tem uma página “como funciona” e links para contratos/endpoints
 
 ### Fase D8 — Operações e persistência (iterativo)
 
-- Prisma: migrations, generate, deploy e ambientes
-- Seed e dados de desenvolvimento
-- Deploy: Coolify, docker-compose e healthchecks
-- Jobs: limpeza de refresh tokens (in-process vs cron externo)
+- [ ] Prisma: migrations, generate, deploy e ambientes
+- [ ] Seed e dados de desenvolvimento
+- [ ] Deploy: Coolify, docker-compose e healthchecks
+- [ ] Jobs: limpeza de refresh tokens (in-process vs cron externo)
 
 Critério de aceite:
 
-- Operar o sistema sem ler código: como subir, migrar, debugar healthcheck e rollback básico
+- [ ] Operar o sistema sem ler código: como subir, migrar, debugar healthcheck e rollback básico
 
 ## Backlog de engenharia — contratos em runtime
 
 ### E1 — Envelope de erro consistente (backend)
 
-- Definir envelope único para erros HTTP, incluindo `requestId` e `code` quando aplicável
-- Não vazar detalhes internos (stack/SQL) em ambientes não locais
+- [ ] Definir envelope único para erros HTTP, incluindo `requestId` e `code` quando aplicável
+- [ ] Não vazar detalhes internos (stack/SQL) em ambientes não locais
 
 ### E2 — Erros operacionais por domínio (backend)
 
-- Padronizar erros de domínio com `statusCode` e `code` estáveis
-- Converter erros Prisma comuns para códigos de domínio
+- [ ] Padronizar erros de domínio com `statusCode` e `code` estáveis
+- [ ] Converter erros Prisma comuns para códigos de domínio
 
 ### E3 — Parse defensivo de erro (frontend)
 
-- Ao receber `HttpErrorResponse`, fazer parse defensivo do payload de erro para extrair `message`, `code`, `requestId` e `issues`
-- Manter fallback para formatos legados e erros de rede
+- [ ] Ao receber `HttpErrorResponse`, fazer parse defensivo do payload de erro para extrair `message`, `code`, `requestId` e `issues`
+- [ ] Manter fallback para formatos legados e erros de rede
 
 ## Critérios de aceite globais
 
-- Todo documento tem “por que existe” e links de entrada/saída
-- Nenhum fluxo crítico fica sem referência (setup/auth/transactions/reports/prisma)
-- Documentos de ferramenta apontam para uma única fonte
+- [ ] Todo documento tem “por que existe” e links de entrada/saída
+- [ ] Nenhum fluxo crítico fica sem referência (setup/auth/transactions/reports/prisma)
+- [ ] Documentos de ferramenta apontam para uma única fonte
