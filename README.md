@@ -72,6 +72,14 @@ Para otimizar a geração de relatórios mensais e evitar cálculos complexos em
 - Permite edições em lote (ex: "Alterar esta e as próximas")
 - Torna a consulta de "Gastos do Mês X" uma soma simples no banco de dados
 
+### Gestão de Estado e URL
+
+Para garantir uma experiência de usuário consistente e compartilhável:
+
+- O estado dos filtros (período, contas selecionadas) é sincronizado unidirecionalmente com a URL (Query Params).
+- Utilizamos um serviço centralizado `UrlSyncService` e utilitários puros para converter o estado complexo da aplicação em parâmetros de URL e vice-versa.
+- Isso permite que qualquer visualização (Transações ou Relatórios) seja compartilhada via link mantendo o mesmo contexto.
+
 ## 🛠️ Configuração do Ambiente
 
 ### Pré-requisitos
@@ -149,7 +157,7 @@ Referência de orquestração: `docker-compose.coolify.yml` demonstra a configur
 
 - [TimeFilter — Iteração de melhorias (Concluído)](docs/planning/time-filter.md)
 - [Filtro por conta unificado (Relatórios + Transações) (Concluído)](docs/planning/account-filter.md)
-- [Refatoração: Sincronização de URL](docs/planning/refactor-url-sync.md)
+- [Refatoração: Sincronização de URL (Concluído)](docs/planning/refactor-url-sync.md)
 - [Documentação — backlog](docs/planning/documentation.md)
 
 ## 🤝 Contribuição

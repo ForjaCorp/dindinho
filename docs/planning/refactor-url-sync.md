@@ -122,3 +122,7 @@ export function accountSelectionToParams(ids: string[]): Params {
 - [x] Navegação na `TransactionsPage` continua atualizando URL corretamente.
 - [x] Navegação na `ReportsPage` continua atualizando URL corretamente.
 - [x] Reload da página (F5) mantém o estado dos filtros (já garantido pela leitura dos params no `ngOnInit`, mas a escrita deve ser compatível).
+
+## 6. Conclusão
+
+Refatoração concluída com sucesso. O `UrlSyncService` agora centraliza a lógica de navegação e atualização de parâmetros, enquanto `query-params.util.ts` contém a lógica pura de conversão de estado para parâmetros de URL. Ambas as páginas `TransactionsPage` e `ReportsPage` foram migradas para usar a nova arquitetura, eliminando duplicação de código e melhorando a testabilidade.
