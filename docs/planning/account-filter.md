@@ -18,28 +18,28 @@ Hipótese mais provável do bug:
 
 ## Fases
 
-### Fase A1 — Contratos e serialização
+### Fase A1 — Contratos e serialização (CONCLUÍDO)
 
-- Padronizar o contrato de request:
-  - Preferencial: `accountIds: string[]` (multi) para ambas as páginas.
-  - Compatibilidade: aceitar `accountId: string` legado onde necessário.
-- Definir estratégia de serialização consistente no frontend:
-  - Enviar `accountIds` como array sempre (mesmo com 1 item), via repetição de chave (`accountIds=...&accountIds=...`) ou `accountIds[]`.
-  - Evitar enviar `accountIds` como string simples.
-- Tornar backend defensivo:
-  - Aceitar `accountIds` como `string | string[]` e normalizar para `string[]`.
+- [x] Padronizar o contrato de request:
+  - [x] Preferencial: `accountIds: string[]` (multi) para ambas as páginas.
+  - [x] Compatibilidade: aceitar `accountId: string` legado onde necessário.
+- [x] Definir estratégia de serialização consistente no frontend:
+  - [x] Enviar `accountIds` como array sempre (mesmo com 1 item), via repetição de chave (`accountIds=...&accountIds=...`) ou `accountIds[]`.
+  - [x] Evitar enviar `accountIds` como string simples.
+- [x] Tornar backend defensivo:
+  - [x] Aceitar `accountIds` como `string | string[]` e normalizar para `string[]`.
 
 Critério:
 
-- O caso “1 conta selecionada” funciona idêntico a “N contas selecionadas”.
+- [x] O caso “1 conta selecionada” funciona idêntico a “N contas selecionadas”.
 
-### Fase A2 — Backend
+### Fase A2 — Backend (CONCLUÍDO)
 
 - Relatórios:
-  - Normalizar `accountIds` para array antes de montar `where.accountId in (...)`.
+  - [x] Normalizar `accountIds` para array antes de montar `where.accountId in (...)`.
 - Transações:
-  - Evoluir `GET /api/transactions` para aceitar `accountIds` (multi) além de `accountId` (single).
-  - Regra: se `accountIds` vier, tem precedência sobre `accountId`.
+  - [x] Evoluir `GET /api/transactions` para aceitar `accountIds` (multi) além de `accountId` (single).
+  - [x] Regra: se `accountIds` vier, tem precedência sobre `accountId`.
 
 Arquivos-alvo:
 
@@ -48,22 +48,35 @@ Arquivos-alvo:
 - [transactions.routes.ts](../../backend/src/transactions/transactions.routes.ts)
 - [transactions.service.ts](../../backend/src/transactions/transactions.service.ts)
 
-### Fase A3 — Frontend
+### Fase A3 — Frontend (PARCIAL - Lógica implementada, componentização adiada)
 
-- Componentizar filtro por conta com seleção configurável (single/multi) e visual consistente.
-- Integrar em Relatórios e Transações, com sincronização por query params.
-- Preferir `accountIds` sempre; manter `accountId` apenas para compatibilidade de deep-link quando necessário.
+- [x] Integrar em Relatórios e Transações, com sincronização por query params.
+- [x] Implementar lógica de seleção múltipla (PrimeNG MultiSelect) diretamente nas páginas.
+- [x] Preferir `accountIds` sempre; manter `accountId` apenas para compatibilidade de deep-link quando necessário.
+- [ ] ~~Componentizar filtro por conta~~ (Adiado para Fase A5).
 
 Arquivos-alvo:
 
 - [reports.page.ts](../../frontend/src/pages/reports/reports.page.ts)
 - [transactions.page.ts](../../frontend/src/pages/transactions/transactions.page.ts)
 
-### Fase A4 — Testes e critérios de aceite
+### Fase A4 — Testes e critérios de aceite (CONCLUÍDO)
 
-- Cobrir casos: vazio, 1 item, N itens; e persistência via query params.
+- [x] Cobrir casos: vazio, 1 item, N itens; e persistência via query params.
 
 Critérios:
 
-- UX de filtro por conta é a mesma em Relatórios e Transações.
-- Bug de “1 conta selecionada” deixa de existir.
+- [x] UX de filtro por conta é a mesma em Relatórios e Transações.
+- [x] Bug de “1 conta selecionada” deixa de existir.
+
+### Fase A5 — Refatoração e Componentização (PENDENTE)
+
+Objetivo: Extrair a lógica duplicada de `ReportsPage` e `TransactionsPage` para um componente Angular reutilizável.
+
+- [ ] Criar componente `AccountFilterComponent` (`shared` ou `components`).
+  - [ ] Inputs: `selectedAccountIds` (Signal ou Input normal).
+  - [ ] Outputs: `selectionChange` (Emite array de strings).
+  - [ ] Lógica interna: Carregar contas via `AccountService`, gerenciar estado do `p-multiSelect`.
+- [ ] Refatorar `ReportsPage` para usar o novo componente.
+- [ ] Refatorar `TransactionsPage` para usar o novo componente.
+- [ ] Garantir que a sincronização com URL (query params) continue funcionando via página pai.
