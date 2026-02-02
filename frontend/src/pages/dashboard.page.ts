@@ -50,7 +50,7 @@ import { AuthService } from '../app/services/auth.service';
     TransactionDrawerComponent,
   ],
   template: `
-    <div class="flex flex-col gap-4 p-4 pb-24">
+    <div class="flex flex-col gap-6">
       <app-dashboard-balance-card [totalBalance]="totalBalance()" (quickAdd)="onQuickAdd($event)" />
 
       <app-dashboard-accounts-section

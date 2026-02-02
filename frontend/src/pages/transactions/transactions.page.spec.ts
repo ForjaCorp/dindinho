@@ -1,3 +1,5 @@
+/** @vitest-environment jsdom */
+import { Component, signal, input, Input, Output, EventEmitter } from '@angular/core';
 import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -12,7 +14,59 @@ import { BehaviorSubject, of } from 'rxjs';
 import { TransactionsPage } from './transactions.page';
 import { ApiService } from '../../app/services/api.service';
 import { AccountService } from '../../app/services/account.service';
-import { TransactionDTO, AccountDTO } from '@dindinho/shared';
+import { CategoryService } from '../../app/services/category.service';
+import { UrlSyncService } from '../../app/services/url-sync.service';
+import { TransactionDTO, AccountDTO, TimeFilterSelectionDTO } from '@dindinho/shared';
+import { PageHeaderComponent } from '../../app/components/page-header.component';
+import { TransactionDrawerComponent } from '../../app/components/transaction-drawer.component';
+import { EmptyStateComponent } from '../../app/components/empty-state.component';
+import { AccountFilterComponent } from '../../app/components/account-filter.component';
+
+@Component({
+  selector: 'app-page-header',
+  standalone: true,
+  template: '<ng-content select="[page-header-actions]"></ng-content>',
+})
+class MockPageHeaderComponent {
+  title = input<string>();
+  subtitle = input<string>();
+}
+
+@Component({
+  selector: 'app-account-filter',
+  standalone: true,
+  template: '',
+})
+class MockAccountFilterComponent {
+  @Input() selected: string[] = [];
+  @Output() selectionChange = new EventEmitter<string[]>();
+}
+
+@Component({
+  selector: 'app-transaction-drawer',
+  standalone: true,
+  template: '',
+})
+class MockTransactionDrawerComponent {
+  show(id: string) {
+    return id;
+  }
+}
+
+@Component({
+  selector: 'app-empty-state',
+  standalone: true,
+  template: '',
+  host: {
+    '[attr.data-testid]': 'testId',
+  },
+})
+class MockEmptyStateComponent {
+  @Input() testId = '';
+  icon = input<string>();
+  title = input<string>();
+  description = input<string>();
+}
 
 const testBed = getTestBed();
 if (!testBed.platform) {
@@ -23,6 +77,7 @@ describe('TransactionsPage', () => {
   let fixture: ComponentFixture<TransactionsPage>;
   let queryParamMap$: BehaviorSubject<ParamMap>;
   let router: Router;
+  let urlSync: { updateParams: ReturnType<typeof vi.fn> };
 
   interface TransactionsPageHarness {
     onTransactionUpdated: (t: TransactionDTO) => void;
@@ -94,8 +149,19 @@ describe('TransactionsPage', () => {
     };
 
     const accountServiceMock = {
-      accounts: vi.fn(() => [account]),
+      accounts: signal([account]),
       loadAccounts: vi.fn(),
+      totalBalance: signal(100),
+    };
+
+    const categoryServiceMock = {
+      list: vi.fn(() => of([])),
+      loadCategories: vi.fn(),
+      categories: signal([]),
+    };
+
+    const urlSyncServiceMock = {
+      updateParams: vi.fn(),
     };
 
     await TestBed.configureTestingModule({
@@ -110,17 +176,40 @@ describe('TransactionsPage', () => {
         },
         { provide: ApiService, useValue: apiServiceMock },
         { provide: AccountService, useValue: accountServiceMock },
+        { provide: CategoryService, useValue: categoryServiceMock },
+        { provide: UrlSyncService, useValue: urlSyncServiceMock },
       ],
-    }).compileComponents();
+    })
+      .overrideComponent(TransactionsPage, {
+        remove: {
+          imports: [
+            PageHeaderComponent,
+            TransactionDrawerComponent,
+            EmptyStateComponent,
+            AccountFilterComponent,
+          ],
+        },
+        add: {
+          imports: [
+            MockPageHeaderComponent,
+            MockTransactionDrawerComponent,
+            MockEmptyStateComponent,
+            MockAccountFilterComponent,
+          ],
+        },
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(TransactionsPage);
     router = TestBed.inject(Router);
+    urlSync = TestBed.inject(UrlSyncService) as unknown as typeof urlSync;
     vi.spyOn(router, 'navigate').mockResolvedValue(true);
     fixture.detectChanges();
   });
 
   afterEach(() => {
     globalThis.IntersectionObserver = originalIntersectionObserver;
+    TestBed.resetTestingModule();
   });
 
   it('deve renderizar a página', () => {
@@ -158,7 +247,11 @@ describe('TransactionsPage', () => {
 
     const list = fixture.nativeElement.querySelector('[data-testid="transactions-list"]');
     expect(list).toBeFalsy();
-    expect(fixture.nativeElement.querySelector('[data-testid="transactions-empty"]')).toBeTruthy();
+
+    // Check if empty state is rendered
+    const emptyState = fixture.nativeElement.querySelector('app-empty-state');
+    expect(emptyState).toBeTruthy();
+    expect(emptyState.getAttribute('data-testid')).toBe('transactions-empty');
   });
 
   it('deve navegar para nova transação ao acionar ação', () => {
@@ -192,36 +285,160 @@ describe('TransactionsPage', () => {
     expect(btn?.getAttribute('aria-label')).toBeTruthy();
   });
 
-  it('deve exibir filtros de mês e ano ao abrir filtros avançados', () => {
+  it('deve exibir filtro de período ao abrir filtros avançados', () => {
     const component = fixture.componentInstance as unknown as { toggleFilters: () => void };
     component.toggleFilters();
     fixture.detectChanges();
 
     expect(
-      fixture.nativeElement.querySelector('[data-testid="transactions-month-year-picker"]'),
+      fixture.nativeElement.querySelector('[data-testid="transactions-time-filter"]'),
     ).toBeTruthy();
   });
 
-  it('deve aplicar filtro de mês e ano ao carregar transações', () => {
+  it('deve aplicar filtro de invoiceMonth ao carregar transações', () => {
     const api = TestBed.inject(ApiService) as unknown as {
       getTransactions: ReturnType<typeof vi.fn>;
     };
 
-    const component = fixture.componentInstance as unknown as { toggleFilters: () => void };
+    const component = fixture.componentInstance as unknown as {
+      toggleFilters: () => void;
+      onTimeFilterSelectionChange: (s: TimeFilterSelectionDTO) => void;
+    };
     component.toggleFilters();
     fixture.detectChanges();
 
-    (
-      fixture.componentInstance as unknown as { monthYearControl: { setValue: (v: Date) => void } }
-    ).monthYearControl.setValue(new Date(2026, 0, 1));
+    component.onTimeFilterSelectionChange({ mode: 'INVOICE_MONTH', invoiceMonth: '2026-01' });
     fixture.detectChanges();
 
     const lastCall = api.getTransactions.mock.calls.at(-1)?.[0] as Record<string, unknown>;
     expect(lastCall).toMatchObject({
       limit: 30,
-      from: '2026-01-01T00:00:00.000Z',
-      to: '2026-01-31T23:59:59.999Z',
+      invoiceMonth: '2026-01',
     });
+
+    expect(urlSync.updateParams).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        invoiceMonth: '2026-01',
+        month: null,
+        periodPreset: null,
+        startDay: null,
+        endDay: null,
+      }),
+      expect.objectContaining({ openFilters: true }),
+    );
+  });
+
+  it('deve aplicar filtro de startDay/endDay ao carregar transações', () => {
+    const api = TestBed.inject(ApiService) as unknown as {
+      getTransactions: ReturnType<typeof vi.fn>;
+    };
+
+    queryParamMap$.next(
+      convertToParamMap({
+        startDay: '2026-01-10',
+        endDay: '2026-01-15',
+        tzOffsetMinutes: '180',
+        openFilters: '1',
+      }),
+    );
+    fixture.detectChanges();
+
+    const lastCall = api.getTransactions.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(lastCall).toMatchObject({
+      limit: 30,
+      startDay: '2026-01-10',
+      endDay: '2026-01-15',
+      tzOffsetMinutes: 180,
+    });
+  });
+
+  it('deve aplicar preset via query param e manter label por extenso', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 0, 30, 12, 0, 0));
+
+    const api = TestBed.inject(ApiService) as unknown as {
+      getTransactions: ReturnType<typeof vi.fn>;
+    };
+
+    queryParamMap$.next(
+      convertToParamMap({
+        periodPreset: 'TODAY',
+        tzOffsetMinutes: '180',
+        openFilters: '1',
+      }),
+    );
+    fixture.detectChanges();
+
+    const lastCall = api.getTransactions.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(lastCall).toMatchObject({
+      limit: 30,
+      tzOffsetMinutes: 180,
+    });
+    expect(typeof lastCall['startDay']).toBe('string');
+    expect(typeof lastCall['endDay']).toBe('string');
+
+    const summary = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-summary"]',
+    ) as HTMLElement | null;
+    expect(summary).toBeTruthy();
+    expect((summary?.textContent ?? '').trim()).toBe('Hoje');
+
+    vi.useRealTimers();
+  });
+
+  it('deve sincronizar periodPreset ao selecionar preset no filtro', () => {
+    const component = fixture.componentInstance as unknown as {
+      toggleFilters: () => void;
+      onTimeFilterSelectionChange: (s: TimeFilterSelectionDTO) => void;
+    };
+
+    component.toggleFilters();
+    fixture.detectChanges();
+
+    component.onTimeFilterSelectionChange({
+      mode: 'DAY_RANGE',
+      period: { preset: 'TODAY', tzOffsetMinutes: 180 },
+    });
+
+    expect(urlSync.updateParams).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        periodPreset: 'TODAY',
+        invoiceMonth: null,
+        month: null,
+        startDay: null,
+        endDay: null,
+      }),
+      expect.objectContaining({ openFilters: true }),
+    );
+  });
+
+  it('deve limpar query param legado month ao trocar para preset', () => {
+    queryParamMap$.next(convertToParamMap({ month: '2026-01', openFilters: '1' }));
+    fixture.detectChanges();
+
+    const component = fixture.componentInstance as unknown as {
+      toggleFilters: () => void;
+      onTimeFilterSelectionChange: (s: TimeFilterSelectionDTO) => void;
+    };
+    component.toggleFilters();
+    fixture.detectChanges();
+
+    component.onTimeFilterSelectionChange({
+      mode: 'DAY_RANGE',
+      period: { preset: 'TODAY', tzOffsetMinutes: 180 },
+    });
+
+    expect(urlSync.updateParams).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        month: null,
+        invoiceMonth: null,
+        periodPreset: 'TODAY',
+      }),
+      expect.objectContaining({ openFilters: true }),
+    );
   });
 
   it('deve aplicar filtro de conta via query param', () => {
@@ -233,16 +450,33 @@ describe('TransactionsPage', () => {
     fixture.detectChanges();
 
     const lastCall = api.getTransactions.mock.calls.at(-1)?.[0] as Record<string, unknown>;
-    expect(lastCall).toMatchObject({ limit: 30, accountId: 'account-1' });
+    expect(lastCall).toMatchObject({ limit: 30, accountIds: ['account-1'] });
 
     expect(
       fixture.nativeElement.querySelector('[data-testid="transactions-filters"]'),
     ).toBeTruthy();
-    const select = fixture.nativeElement.querySelector(
-      '[data-testid="transactions-account-select"]',
-    ) as HTMLSelectElement;
-    expect(select).toBeTruthy();
-    expect(select.value).toBe('account-1');
+    // p-multiselect is more complex to query by value, so checking presence is enough for now
+    // or check component instance state
+    const component = fixture.componentInstance as unknown as {
+      accountFilterIds: () => string[];
+    };
+    expect(component.accountFilterIds()).toEqual(['account-1']);
+  });
+
+  it('deve aplicar filtro de categoria via query param', () => {
+    const api = TestBed.inject(ApiService) as unknown as {
+      getTransactions: ReturnType<typeof vi.fn>;
+    };
+
+    queryParamMap$.next(convertToParamMap({ categoryId: 'cat-1', openFilters: '1' }));
+    fixture.detectChanges();
+
+    const lastCall = api.getTransactions.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(lastCall).toMatchObject({ limit: 30, categoryId: 'cat-1' });
+
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="transactions-filters"]'),
+    ).toBeTruthy();
   });
 
   it('deve aplicar filtro de tipo via query param', () => {
@@ -264,22 +498,41 @@ describe('TransactionsPage', () => {
   it('deve sincronizar query params ao mudar filtro de conta', () => {
     const component = fixture.componentInstance as unknown as {
       toggleFilters: () => void;
-      onAccountFilterChange: (e: Event) => void;
+      onAccountFilterChange: (ids: string[]) => void;
     };
 
     component.toggleFilters();
     fixture.detectChanges();
 
-    component.onAccountFilterChange({
-      target: { value: 'account-1' },
+    component.onAccountFilterChange(['account-1']);
+
+    expect(urlSync.updateParams).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        accountIds: ['account-1'],
+        accountId: null,
+      }),
+      expect.objectContaining({ openFilters: true }),
+    );
+  });
+
+  it('deve sincronizar query params ao mudar filtro de categoria', () => {
+    const component = fixture.componentInstance as unknown as {
+      toggleFilters: () => void;
+      onCategoryFilterChange: (e: Event) => void;
+    };
+
+    component.toggleFilters();
+    fixture.detectChanges();
+
+    component.onCategoryFilterChange({
+      target: { value: 'cat-1' },
     } as unknown as Event);
 
-    expect(router.navigate).toHaveBeenCalledWith(
-      [],
-      expect.objectContaining({
-        queryParamsHandling: 'merge',
-        queryParams: expect.objectContaining({ accountId: 'account-1', openFilters: 1 }),
-      }),
+    expect(urlSync.updateParams).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ categoryId: 'cat-1' }),
+      expect.objectContaining({ openFilters: true }),
     );
   });
 
@@ -296,12 +549,10 @@ describe('TransactionsPage', () => {
       target: { value: 'EXPENSE' },
     } as unknown as Event);
 
-    expect(router.navigate).toHaveBeenCalledWith(
-      [],
-      expect.objectContaining({
-        queryParamsHandling: 'merge',
-        queryParams: expect.objectContaining({ type: 'EXPENSE', openFilters: 1 }),
-      }),
+    expect(urlSync.updateParams).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ type: 'EXPENSE' }),
+      expect.objectContaining({ openFilters: true }),
     );
   });
 
@@ -311,12 +562,10 @@ describe('TransactionsPage', () => {
     fixture.detectChanges();
     component.toggleFilters();
 
-    expect(router.navigate).toHaveBeenCalledWith(
-      [],
-      expect.objectContaining({
-        queryParamsHandling: 'merge',
-        queryParams: expect.objectContaining({ openFilters: 0 }),
-      }),
+    expect(urlSync.updateParams).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ openFilters: false }),
     );
   });
 
@@ -330,5 +579,93 @@ describe('TransactionsPage', () => {
     expect(loadMoreEl).toBeTruthy();
     expect(observeSpy).toHaveBeenCalledTimes(1);
     expect(observeSpy).toHaveBeenCalledWith(loadMoreEl);
+  });
+
+  it('deve limitar tzOffsetMinutes para -840 quando menor que o limite', () => {
+    const api = TestBed.inject(ApiService) as unknown as {
+      getTransactions: ReturnType<typeof vi.fn>;
+    };
+
+    queryParamMap$.next(
+      convertToParamMap({
+        periodPreset: 'TODAY',
+        tzOffsetMinutes: '-1000',
+        openFilters: '1',
+      }),
+    );
+    fixture.detectChanges();
+
+    const lastCall = api.getTransactions.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(lastCall).toMatchObject({
+      tzOffsetMinutes: -840,
+    });
+  });
+
+  it('deve limitar tzOffsetMinutes para 840 quando maior que o limite', () => {
+    const api = TestBed.inject(ApiService) as unknown as {
+      getTransactions: ReturnType<typeof vi.fn>;
+    };
+
+    queryParamMap$.next(
+      convertToParamMap({
+        periodPreset: 'TODAY',
+        tzOffsetMinutes: '1000',
+        openFilters: '1',
+      }),
+    );
+    fixture.detectChanges();
+
+    const lastCall = api.getTransactions.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(lastCall).toMatchObject({
+      tzOffsetMinutes: 840,
+    });
+  });
+
+  it('deve cair no filtro padrão se periodPreset=CUSTOM mas datas ausentes', () => {
+    const component = fixture.componentInstance as unknown as {
+      timeFilterSelection: () => TimeFilterSelectionDTO;
+    };
+
+    // Sem startDay nem endDay
+    queryParamMap$.next(
+      convertToParamMap({
+        periodPreset: 'CUSTOM',
+        openFilters: '1',
+      }),
+    );
+    fixture.detectChanges();
+
+    const selection = component.timeFilterSelection();
+    if (selection.mode !== 'DAY_RANGE') {
+      throw new Error('Expected DAY_RANGE mode');
+    }
+    expect(selection.period).toMatchObject({
+      preset: 'THIS_MONTH',
+    });
+  });
+
+  it('deve aceitar CUSTOM se ao menos uma data estiver presente (range implícito)', () => {
+    const component = fixture.componentInstance as unknown as {
+      timeFilterSelection: () => TimeFilterSelectionDTO;
+    };
+
+    queryParamMap$.next(
+      convertToParamMap({
+        periodPreset: 'CUSTOM',
+        startDay: '2026-01-01',
+        openFilters: '1',
+      }),
+    );
+    fixture.detectChanges();
+
+    const selection = component.timeFilterSelection();
+    if (selection.mode !== 'DAY_RANGE') {
+      throw new Error('Expected DAY_RANGE mode');
+    }
+    expect(selection.period).toMatchObject({
+      preset: 'CUSTOM',
+      startDay: '2026-01-01',
+      endDay: '2026-01-01',
+    });
   });
 });

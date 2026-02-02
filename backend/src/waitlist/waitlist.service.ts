@@ -47,9 +47,14 @@ export class WaitlistService {
           phone: data.phone,
         },
       });
-    } catch (error: any) {
+    } catch (error) {
       // P2002: Unique constraint failed
-      if (error.code === "P2002") {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        (error as { code: string }).code === "P2002"
+      ) {
         throw new Error("Email já está na lista de espera.");
       }
       throw error;

@@ -2,9 +2,9 @@ import { PrismaClient, Prisma } from "@prisma/client";
 import { randomBytes, createHash } from "crypto";
 
 type Logger = {
-  info: (...args: any[]) => void;
-  warn?: (...args: any[]) => void;
-  error?: (...args: any[]) => void;
+  info: (...args: unknown[]) => void;
+  warn?: (...args: unknown[]) => void;
+  error?: (...args: unknown[]) => void;
 };
 
 /**

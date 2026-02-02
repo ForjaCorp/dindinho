@@ -9,6 +9,13 @@ import {
   createCategorySchema,
 } from "@dindinho/shared";
 
+class UnauthorizedError extends Error {
+  readonly statusCode = 401;
+  constructor(message = "Token inválido ou expirado") {
+    super(message);
+  }
+}
+
 class ForbiddenError extends Error {
   readonly statusCode = 403;
   constructor(message = "Sem permissão") {
@@ -80,7 +87,7 @@ export async function categoriesRoutes(app: FastifyInstance) {
     try {
       await request.jwtVerify();
     } catch {
-      throw { statusCode: 401, message: "Token inválido ou expirado" };
+      throw new UnauthorizedError();
     }
   });
 

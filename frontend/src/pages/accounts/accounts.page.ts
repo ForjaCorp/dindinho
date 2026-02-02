@@ -24,7 +24,7 @@ import { AccountDTO } from '@dindinho/shared';
     SkeletonModule,
   ],
   template: `
-    <div data-testid="accounts-page" class="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+    <div data-testid="accounts-page" class="space-y-6">
       <!-- Header -->
       <app-page-header title="Minhas Contas" subtitle="Gerencie suas contas">
         <p-button

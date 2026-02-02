@@ -26,33 +26,25 @@ Como rodar (desenvolvimento)
 npm install
 
 # iniciar backend em outro terminal (porta 3333 por padrão)
-cd backend
-npm run start:dev
+npm --prefix backend run dev
 
 # iniciar frontend
-cd frontend
-ng serve --open
+npm --prefix frontend run dev -- --open
 ```
 
 Testes
 
-- Unitários (Angular/Jasmine/Karma):
-  ```bash
-  cd frontend
-  ng test --watch=false
-  ```
-- Os testes de integração e e2e ainda não estão configurados; usar mocks e testes unitários durante desenvolvimento.
+- Unitários (Angular CLI + Vitest):
+
+```bash
+npm --prefix frontend run test
+```
+
+- Integração/e2e ainda não estão configurados.
 
 Campo `refreshToken`
 
 - Observação: a API de autenticação pode retornar `refreshToken` no momento do login. Em desenvolvimento, os mocks e testes do frontend já foram adaptados para receber esse campo quando aplicável.
-
-Foco atual e próximos passos (MVP)
-
-- Prioridade de desenvolvimento para o frontend:
-  - Implementar telas e serviços para `Categorias` (CRUD simples).
-  - Implementar telas e serviços para `Transações` (registro, listagem e parcelamento básico).
-  - Conectar as rotas e integrar o fluxo de autenticação com rotação de refresh tokens (`/refresh`) quando o backend estiver integrado.
 
 Contribuição
 

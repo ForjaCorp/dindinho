@@ -1,0 +1,668 @@
+/** @vitest-environment jsdom */
+import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
+import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
+import { of, throwError } from 'rxjs';
+import { ReportsPage, AppBaseChartDirective } from './reports.page';
+import { ReportsService } from '../../app/services/reports.service';
+import { AccountService } from '../../app/services/account.service';
+import { UrlSyncService } from '../../app/services/url-sync.service';
+import { Component, Directive, Input, Output, EventEmitter } from '@angular/core';
+import { Router, provideRouter } from '@angular/router';
+import { PageHeaderComponent } from '../../app/components/page-header.component';
+import { ReportChartCardComponent } from '../../app/components/report-chart-card.component';
+import { AccountFilterComponent } from '../../app/components/account-filter.component';
+import { ChartEvent, ActiveElement, ChartData, ChartOptions, ChartType } from 'chart.js';
+
+@Component({
+  selector: 'app-page-header',
+  standalone: true,
+  template: '<div>{{ title }}</div>',
+})
+class MockPageHeaderComponent {
+  @Input() title = '';
+  @Input() subtitle: string | null = null;
+}
+
+@Component({
+  selector: 'app-account-filter',
+  standalone: true,
+  template: '',
+})
+class MockAccountFilterComponent {
+  @Input() selected: string[] = [];
+  @Output() selectionChange = new EventEmitter<string[]>();
+}
+
+@Directive({
+  selector: '[appBaseChart]',
+  standalone: true,
+})
+class MockBaseChartDirective {
+  @Input() data: ChartData | null = null;
+  @Input() options: ChartOptions | null = null;
+  @Input() type: ChartType | null = null;
+}
+
+@Component({
+  selector: 'app-report-chart-card',
+  standalone: true,
+  template: `
+    <div [attr.aria-label]="ariaLabel" class="mock-card">
+      @if (loading) {
+        <div class="mock-skeleton"></div>
+      } @else if (isEmpty) {
+        <div role="status">{{ emptyMessage }}</div>
+      }
+      <ng-content></ng-content>
+    </div>
+  `,
+})
+class MockReportChartCardComponent {
+  @Input() title = '';
+  @Input() ariaLabel = '';
+  @Input() loading = false;
+  @Input() loadingType: 'circle' | 'rect' = 'rect';
+  @Input() isEmpty = false;
+  @Input() emptyMessage = 'Nenhum dado encontrado';
+  @Input() emptyIcon = 'pi-inbox';
+  @Input() styleClass = '';
+  @Input() contentClass = '';
+}
+
+const testBed = getTestBed();
+if (!testBed.platform) {
+  testBed.initTestEnvironment(BrowserTestingModule, platformBrowserTesting());
+}
+
+describe('ReportsPage', () => {
+  let fixture: ComponentFixture<ReportsPage>;
+  let component: ReportsPage;
+  let reportsServiceMock: {
+    getSpendingByCategory: Mock;
+    getSpendingByCategoryChart: Mock;
+    getCashFlow: Mock;
+    getCashFlowChart: Mock;
+    getBalanceHistory: Mock;
+    getBalanceHistoryChart: Mock;
+    exportTransactionsCsv: Mock;
+  };
+  let accountServiceMock: {
+    accounts: Mock;
+    loadAccounts: Mock;
+  };
+  let urlSyncMock: {
+    updateParams: Mock;
+  };
+
+  beforeEach(async () => {
+    reportsServiceMock = {
+      getSpendingByCategory: vi.fn(() => of([])),
+      getSpendingByCategoryChart: vi.fn(() =>
+        of({ data: { labels: [], datasets: [{ data: [] }] }, categoryIds: [] }),
+      ),
+      getCashFlow: vi.fn(() => of([])),
+      getCashFlowChart: vi.fn(() =>
+        of({
+          periodKeys: [],
+          data: { labels: [], datasets: [{ data: [] }, { data: [] }] },
+        }),
+      ),
+      getBalanceHistory: vi.fn(() => of([])),
+      getBalanceHistoryChart: vi.fn(() => of({ labels: [], datasets: [{ data: [] }] })),
+      exportTransactionsCsv: vi.fn(() => of(new Blob())),
+    };
+
+    accountServiceMock = {
+      accounts: vi.fn(() => []),
+      loadAccounts: vi.fn(),
+    };
+
+    urlSyncMock = {
+      updateParams: vi.fn(),
+    };
+
+    TestBed.resetTestingModule();
+    await TestBed.configureTestingModule({
+      imports: [
+        ReportsPage,
+        MockPageHeaderComponent,
+        MockBaseChartDirective,
+        MockReportChartCardComponent,
+      ],
+      providers: [
+        { provide: ReportsService, useValue: reportsServiceMock },
+        { provide: AccountService, useValue: accountServiceMock },
+        { provide: UrlSyncService, useValue: urlSyncMock },
+        provideRouter([]),
+      ],
+    })
+      .overrideComponent(ReportsPage, {
+        remove: {
+          imports: [
+            PageHeaderComponent,
+            AppBaseChartDirective,
+            ReportChartCardComponent,
+            AccountFilterComponent,
+          ],
+        },
+        add: {
+          imports: [
+            MockPageHeaderComponent,
+            MockBaseChartDirective,
+            MockReportChartCardComponent,
+            MockAccountFilterComponent,
+          ],
+        },
+      })
+      .compileComponents();
+
+    fixture = TestBed.createComponent(ReportsPage);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  it('deve manter cards alinhados com o título no mobile', () => {
+    const root = fixture.nativeElement.querySelector('[data-testid="reports-page"]');
+    const filters = fixture.nativeElement.querySelector('[data-testid="reports-filters"]');
+    const charts = fixture.nativeElement.querySelector('[data-testid="reports-charts"]');
+
+    expect(root).toBeTruthy();
+    expect(filters).toBeTruthy();
+    expect(charts).toBeTruthy();
+
+    const filtersClass = (filters as HTMLElement).className;
+    const chartsClass = (charts as HTMLElement).className;
+
+    expect(filtersClass).not.toContain('mx-4');
+    expect(chartsClass).not.toContain('px-4');
+  });
+
+  it('deve renderizar os filtros com acessibilidade', () => {
+    const filters = fixture.nativeElement.querySelector('[data-testid="reports-filters"]');
+    expect(filters).toBeTruthy();
+    expect(filters.getAttribute('aria-label')).toBe('Filtros de relatório');
+  });
+
+  it('deve renderizar os cards de gráficos com ARIA labels', () => {
+    const cards = fixture.nativeElement.querySelectorAll('.mock-card');
+    expect(cards.length).toBe(3);
+    expect(cards[0].getAttribute('aria-label')).toBe('Relatório de gastos por categoria');
+    expect(cards[1].getAttribute('aria-label')).toBe('Relatório de evolução de saldo');
+    expect(cards[2].getAttribute('aria-label')).toBe('Relatório de fluxo de caixa mensal');
+  });
+
+  it('deve enviar tzOffsetMinutes ao carregar relatórios', () => {
+    component.timeFilterSelection.set({
+      mode: 'DAY_RANGE',
+      period: {
+        preset: 'CUSTOM',
+        startDay: '2024-01-22',
+        endDay: '2024-01-22',
+        tzOffsetMinutes: 180,
+      },
+    });
+
+    component.loadAllReports();
+
+    expect(reportsServiceMock.getSpendingByCategoryChart).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startDay: '2024-01-22',
+        endDay: '2024-01-22',
+        tzOffsetMinutes: 180,
+        includePending: true,
+      }),
+    );
+    expect(reportsServiceMock.getCashFlowChart).toHaveBeenCalledWith(
+      expect.objectContaining({
+        startDay: '2024-01-22',
+        endDay: '2024-01-22',
+        tzOffsetMinutes: 180,
+        includePending: true,
+      }),
+    );
+  });
+
+  it('deve enviar accountIds como array mesmo se apenas 1 conta selecionada', () => {
+    component.selectedAccountIds.set(['acc-1']);
+    component.loadAllReports();
+
+    expect(reportsServiceMock.getSpendingByCategoryChart).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountIds: ['acc-1'],
+      }),
+    );
+  });
+
+  it('deve enviar invoiceMonth ao carregar relatórios no modo de fatura', () => {
+    component.timeFilterSelection.set({
+      mode: 'INVOICE_MONTH',
+      invoiceMonth: '2024-02',
+    });
+
+    component.loadAllReports();
+
+    const lastCall = reportsServiceMock.getSpendingByCategoryChart.mock.calls.at(-1);
+    expect(lastCall).toBeTruthy();
+    const filters = (lastCall?.[0] ?? null) as unknown;
+    expect(filters).toBeTruthy();
+
+    const obj = filters as Record<string, unknown>;
+    expect(obj['invoiceMonth']).toBe('2024-02');
+    expect(obj['includePending']).toBe(true);
+    expect('startDay' in obj).toBe(false);
+    expect('endDay' in obj).toBe(false);
+    expect('tzOffsetMinutes' in obj).toBe(false);
+  });
+
+  it('deve expor acessibilidade básica nos canvases de relatório', () => {
+    const spendingCanvas = fixture.nativeElement.querySelector(
+      '[data-testid="spending-by-category-chart"]',
+    ) as HTMLElement | null;
+    const balanceCanvas = fixture.nativeElement.querySelector(
+      '[data-testid="balance-history-chart"]',
+    ) as HTMLElement | null;
+    const cashFlowCanvas = fixture.nativeElement.querySelector(
+      '[data-testid="cashflow-chart"]',
+    ) as HTMLElement | null;
+
+    expect(spendingCanvas).toBeTruthy();
+    expect(balanceCanvas).toBeTruthy();
+    expect(cashFlowCanvas).toBeTruthy();
+
+    expect(spendingCanvas?.getAttribute('role')).toBe('button');
+    expect(spendingCanvas?.getAttribute('tabindex')).toBe('0');
+    expect(spendingCanvas?.getAttribute('aria-label')).toBe('Gráfico de gastos por categoria');
+    expect(spendingCanvas?.getAttribute('aria-describedby')).toBe('spending-chart-help');
+    expect(fixture.nativeElement.querySelector('#spending-chart-help')).toBeTruthy();
+
+    expect(balanceCanvas?.getAttribute('role')).toBe('img');
+    expect(balanceCanvas?.getAttribute('aria-label')).toBe('Gráfico de evolução do saldo');
+    expect(balanceCanvas?.getAttribute('aria-describedby')).toBe('balance-history-chart-help');
+    expect(fixture.nativeElement.querySelector('#balance-history-chart-help')).toBeTruthy();
+
+    expect(cashFlowCanvas?.getAttribute('role')).toBe('button');
+    expect(cashFlowCanvas?.getAttribute('tabindex')).toBe('0');
+    expect(cashFlowCanvas?.getAttribute('aria-label')).toBe('Gráfico de fluxo de caixa mensal');
+    expect(cashFlowCanvas?.getAttribute('aria-describedby')).toBe('cashflow-chart-help');
+    expect(fixture.nativeElement.querySelector('#cashflow-chart-help')).toBeTruthy();
+  });
+
+  it('deve expor data-testid nos canvases dos gráficos', () => {
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="spending-by-category-chart"]'),
+    ).toBeTruthy();
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="balance-history-chart"]'),
+    ).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="cashflow-chart"]')).toBeTruthy();
+  });
+
+  it('deve expor o filtro de tempo com aria-label e data-testid', () => {
+    const timeFilter = fixture.nativeElement.querySelector(
+      '[data-testid="reports-time-filter"]',
+    ) as HTMLElement | null;
+    expect(timeFilter).toBeTruthy();
+    expect(timeFilter?.getAttribute('aria-label')).toBe('Selecionar período do relatório');
+  });
+
+  it('deve abrir transações ao acionar Enter no gráfico de gastos por categoria', () => {
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate');
+
+    const canvas = fixture.nativeElement.querySelector(
+      '[data-testid="spending-by-category-chart"]',
+    ) as HTMLCanvasElement | null;
+    expect(canvas).toBeTruthy();
+
+    canvas?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    expect(router.navigate).toHaveBeenCalledWith(['/transactions'], {
+      queryParams: expect.objectContaining({ type: 'EXPENSE', openFilters: 1 }),
+    });
+  });
+
+  it('deve abrir transações ao acionar Espaço no gráfico de gastos por categoria', () => {
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate');
+
+    const canvas = fixture.nativeElement.querySelector(
+      '[data-testid="spending-by-category-chart"]',
+    ) as HTMLCanvasElement | null;
+    expect(canvas).toBeTruthy();
+
+    canvas?.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true }));
+    expect(router.navigate).toHaveBeenCalledWith(['/transactions'], {
+      queryParams: expect.objectContaining({ type: 'EXPENSE', openFilters: 1 }),
+    });
+  });
+
+  it('deve abrir transações ao acionar Enter no gráfico de fluxo de caixa', () => {
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate');
+
+    const canvas = fixture.nativeElement.querySelector(
+      '[data-testid="cashflow-chart"]',
+    ) as HTMLCanvasElement | null;
+    expect(canvas).toBeTruthy();
+
+    canvas?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    expect(router.navigate).toHaveBeenCalledWith(['/transactions'], {
+      queryParams: expect.objectContaining({ openFilters: 1 }),
+    });
+  });
+
+  it('deve abrir transações ao acionar Espaço no gráfico de fluxo de caixa', () => {
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, 'navigate');
+
+    const canvas = fixture.nativeElement.querySelector(
+      '[data-testid="cashflow-chart"]',
+    ) as HTMLCanvasElement | null;
+    expect(canvas).toBeTruthy();
+
+    canvas?.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true }));
+    expect(router.navigate).toHaveBeenCalledWith(['/transactions'], {
+      queryParams: expect.objectContaining({ openFilters: 1 }),
+    });
+  });
+
+  it('deve descrever o histórico de saldo com resumo acessível do período', () => {
+    component.balanceData.set({
+      datasets: [
+        {
+          data: [
+            { x: Date.UTC(2024, 0, 1), y: 1000, label: '2024-01-01' },
+            { x: Date.UTC(2024, 0, 30), y: 1200, label: '2024-01-30' },
+          ],
+        },
+      ],
+    } as unknown as ChartData<'line'>);
+
+    fixture.detectChanges();
+
+    const help = fixture.nativeElement.querySelector(
+      '#balance-history-chart-help',
+    ) as HTMLElement | null;
+    expect(help).toBeTruthy();
+
+    const text = help?.textContent ?? '';
+    expect(text).toContain('Período: 01/01 - 30/01');
+    expect(text).toContain('Saldo inicial');
+    expect(text).toMatch(/R\$\s*1\.000,00/);
+    expect(text).toContain('Saldo final');
+    expect(text).toMatch(/R\$\s*1\.200,00/);
+    expect(text).toMatch(/Variação:\s*\+R\$\s*200,00/);
+  });
+
+  it('deve configurar o eixo X do saldo como linear para respeitar o tempo', () => {
+    const options = component.lineChartOptions();
+    const scales = options.scales as unknown as Record<
+      string,
+      { type?: unknown; ticks?: { callback?: unknown } }
+    >;
+    const x = scales?.['x'];
+
+    expect(x?.type).toBe('linear');
+
+    const tickCallback = x?.ticks?.callback;
+    expect(typeof tickCallback).toBe('function');
+    if (typeof tickCallback === 'function') {
+      expect(tickCallback(Date.UTC(2024, 0, 1), 0, [] as never)).toBe('01/01');
+    }
+  });
+
+  it('deve mostrar tooltip de intervalo no saldo quando houver período', () => {
+    const options = component.lineChartOptions();
+    const tooltip = options.plugins?.tooltip as unknown as {
+      callbacks?: { title?: unknown };
+    };
+
+    const titleCallback = tooltip.callbacks?.title;
+    expect(typeof titleCallback).toBe('function');
+
+    if (typeof titleCallback === 'function') {
+      const title = titleCallback([
+        {
+          raw: { periodStart: '2024-01-01', periodEnd: '2024-01-07' },
+        } as unknown as never,
+      ]);
+      expect(title).toBe('01/01 - 07/01');
+    }
+  });
+
+  it('deve clamar o eixo X do saldo ao período selecionado', () => {
+    component.timeFilterSelection.set({
+      mode: 'DAY_RANGE',
+      period: {
+        preset: 'CUSTOM',
+        startDay: '2024-01-01',
+        endDay: '2024-01-31',
+        tzOffsetMinutes: 0,
+      },
+    });
+    fixture.detectChanges();
+
+    const options = component.lineChartOptions();
+    const scales = options.scales as unknown as Record<string, { min?: unknown; max?: unknown }>;
+    const x = scales?.['x'];
+
+    expect(x?.min).toBe(Date.UTC(2024, 0, 1));
+    expect(x?.max).toBe(Date.UTC(2024, 0, 31));
+  });
+
+  it('deve normalizar o período quando as datas estiverem invertidas', () => {
+    component.timeFilterSelection.set({
+      mode: 'DAY_RANGE',
+      period: {
+        preset: 'CUSTOM',
+        startDay: '2024-01-31',
+        endDay: '2024-01-01',
+        tzOffsetMinutes: 0,
+      },
+    });
+    fixture.detectChanges();
+
+    const options = component.lineChartOptions();
+    const scales = options.scales as unknown as Record<string, { min?: unknown; max?: unknown }>;
+    const x = scales?.['x'];
+
+    expect(x?.min).toBe(Date.UTC(2024, 0, 1));
+    expect(x?.max).toBe(Date.UTC(2024, 0, 31));
+  });
+
+  it('deve mostrar skeletons durante o carregamento', () => {
+    component.loadingSpending.set(true);
+    fixture.detectChanges();
+    const skeletons = fixture.nativeElement.querySelectorAll('.mock-skeleton');
+    expect(skeletons.length).toBeGreaterThan(0);
+  });
+
+  it('deve mostrar mensagem de estado vazio quando não há dados', () => {
+    component.loadingSpending.set(false);
+    component.spendingData.set({
+      labels: [],
+      datasets: [{ data: [] }],
+    });
+    fixture.detectChanges();
+    const emptyState = fixture.nativeElement.querySelector('[role="status"]');
+    expect(emptyState).toBeTruthy();
+    expect(emptyState.textContent).toContain('Nenhum gasto registrado');
+  });
+
+  describe('Drill-down', () => {
+    let router: Router;
+
+    beforeEach(() => {
+      router = TestBed.inject(Router);
+      vi.spyOn(router, 'navigate');
+    });
+
+    it('deve navegar para transações ao clicar em uma categoria no gráfico de rosca', () => {
+      (component as unknown as { categoryIds: string[] }).categoryIds = ['cat-1', 'cat-2'];
+
+      const options = component.doughnutChartOptions;
+      if (options?.onClick) {
+        const event = {} as ChartEvent;
+        const elements: ActiveElement[] = [
+          { index: 0, datasetIndex: 0, element: {} as ActiveElement['element'] },
+        ];
+        options.onClick(event, elements, {} as never);
+      }
+
+      expect(router.navigate).toHaveBeenCalledWith(['/transactions'], {
+        queryParams: expect.objectContaining({
+          type: 'EXPENSE',
+          categoryId: 'cat-1',
+          openFilters: 1,
+        }),
+      });
+    });
+
+    it('deve navegar para transações ao clicar em uma barra no gráfico de fluxo de caixa', () => {
+      component.cashFlowPeriodKeys.set(['2024-01', '2024-02']);
+      component.cashFlowData.set({
+        labels: ['2024-01', '2024-02'],
+        datasets: [
+          { label: 'Receitas', data: [100, 200] },
+          { label: 'Despesas', data: [50, 150] },
+        ],
+      });
+
+      const options = component.barChartOptions;
+      if (options?.onClick) {
+        const event = {} as ChartEvent;
+        const elements: ActiveElement[] = [
+          { index: 0, datasetIndex: 0, element: {} as ActiveElement['element'] },
+        ];
+        options.onClick(event, elements, {} as never);
+      }
+
+      expect(router.navigate).toHaveBeenCalledWith(['/transactions'], {
+        queryParams: expect.objectContaining({
+          type: 'INCOME',
+          invoiceMonth: '2024-01',
+          openFilters: 1,
+        }),
+      });
+    });
+
+    it('deve incluir accountId na navegação se apenas uma conta estiver selecionada', () => {
+      component.selectedAccountIds.set(['acc-123']);
+      component.cashFlowPeriodKeys.set(['2024-01', '2024-02']);
+      component.cashFlowData.set({
+        labels: ['2024-01', '2024-02'],
+        datasets: [
+          { label: 'Receitas', data: [100, 200] },
+          { label: 'Despesas', data: [50, 150] },
+        ],
+      });
+
+      const options = component.barChartOptions;
+      if (options?.onClick) {
+        const event = {} as ChartEvent;
+        const elements: ActiveElement[] = [
+          { index: 1, datasetIndex: 1, element: {} as ActiveElement['element'] },
+        ];
+        options.onClick(event, elements, {} as never);
+      }
+
+      expect(router.navigate).toHaveBeenCalledWith(['/transactions'], {
+        queryParams: expect.objectContaining({
+          type: 'EXPENSE',
+          invoiceMonth: '2024-02',
+          accountIds: ['acc-123'],
+          openFilters: 1,
+        }),
+      });
+    });
+  });
+
+  describe('Tratamento de Erros e Casos de Borda', () => {
+    it('deve lidar com erro na API de gastos por categoria', () => {
+      reportsServiceMock.getSpendingByCategoryChart.mockReturnValue(
+        throwError(() => new Error('Erro API')),
+      );
+
+      component.loadAllReports();
+
+      expect(component.loadingSpending()).toBe(false);
+      expect(component.spendingData().labels?.length).toBe(0);
+    });
+
+    it('deve exportar CSV ao clicar no botão de exportação', () => {
+      const mockBlob = new Blob(['csv content'], { type: 'text/csv' });
+      reportsServiceMock.exportTransactionsCsv.mockReturnValue(of(mockBlob));
+
+      // Simular window.URL.createObjectURL e link.click
+      const createObjectURLSpy = vi
+        .spyOn(window.URL, 'createObjectURL')
+        .mockReturnValue('blob:url');
+      const revokeObjectURLSpy = vi.spyOn(window.URL, 'revokeObjectURL').mockImplementation(() => {
+        /* mock */
+      });
+
+      component.exportCsv();
+
+      expect(reportsServiceMock.exportTransactionsCsv).toHaveBeenCalled();
+      expect(createObjectURLSpy).toHaveBeenCalledWith(mockBlob);
+      expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:url');
+    });
+
+    it('deve lidar com datas nulas nos filtros', () => {
+      const before = reportsServiceMock.getSpendingByCategoryChart.mock.calls.length;
+
+      (
+        component as unknown as { onTimeFilterSelectionChange: (s: unknown) => void }
+      ).onTimeFilterSelectionChange({
+        mode: 'DAY_RANGE',
+        period: { preset: 'CUSTOM', tzOffsetMinutes: 0 },
+      });
+
+      expect(reportsServiceMock.getSpendingByCategoryChart.mock.calls.length).toBe(before);
+    });
+
+    it('deve aplicar changeOnly=true quando o intervalo for maior que 120 dias', () => {
+      // 121 dias: 2024-01-01 a 2024-05-01 (bissexto)
+      // Jan(31) + Feb(29) + Mar(31) + Apr(30) + May(1) = 122 dias > 120
+      component.timeFilterSelection.set({
+        mode: 'DAY_RANGE',
+        period: {
+          preset: 'CUSTOM',
+          startDay: '2024-01-01',
+          endDay: '2024-05-01',
+          tzOffsetMinutes: 0,
+        },
+      });
+
+      component.loadAllReports();
+
+      expect(reportsServiceMock.getBalanceHistoryChart).toHaveBeenCalledWith(
+        expect.objectContaining({
+          changeOnly: true,
+        }),
+      );
+    });
+
+    it('deve aplicar changeOnly=false quando o intervalo for menor ou igual a 120 dias', () => {
+      // 120 dias: 2024-01-01 a 2024-04-29
+      // Jan(31) + Feb(29) + Mar(31) + Apr(29) = 120 dias
+      component.timeFilterSelection.set({
+        mode: 'DAY_RANGE',
+        period: {
+          preset: 'CUSTOM',
+          startDay: '2024-01-01',
+          endDay: '2024-04-29',
+          tzOffsetMinutes: 0,
+        },
+      });
+
+      component.loadAllReports();
+
+      expect(reportsServiceMock.getBalanceHistoryChart).toHaveBeenCalledWith(
+        expect.objectContaining({
+          changeOnly: false,
+        }),
+      );
+    });
+  });
+});

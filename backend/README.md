@@ -1,5 +1,7 @@
 # Backend - Dindinho API
 
+Para instruções de setup do monorepo (DB, Turbo, etc.), veja o [README principal](../README.md).
+
 Variáveis de ambiente relevantes para Refresh Tokens
 
 - `REFRESH_TOKEN_DAYS` (opcional): número de dias que um refresh token é válido. Default: `7`.
@@ -9,20 +11,38 @@ Variáveis de ambiente relevantes para Refresh Tokens
 Exemplo `.env`:
 
 ```
+DATABASE_URL=mysql://root:root@localhost:3306/dindinho_dev
 JWT_SECRET=super-secret
 REFRESH_TOKEN_DAYS=7
 ENABLE_REFRESH_CLEANUP=true
 REFRESH_CLEANUP_INTERVAL_MINUTES=60
 FRONTEND_URL=https://app.example.com
+PORT=3333
 ```
 
-Como rodar testes (local):
+Como rodar (local):
 
 ```bash
-cd backend
-npm install
-npm test
+# no root do monorepo
+npm --prefix backend run prisma:migrate
+npm --prefix backend run dev
 ```
+
+Testes (local):
+
+```bash
+# no root do monorepo
+npm --prefix backend run test
+```
+
+Scripts úteis:
+
+- `npm --prefix backend run dev`
+- `npm --prefix backend run build`
+- `npm --prefix backend run lint`
+- `npm --prefix backend run typecheck`
+- `npm --prefix backend run prisma:generate`
+- `npm --prefix backend run prisma:migrate`
 
 Observações de segurança
 

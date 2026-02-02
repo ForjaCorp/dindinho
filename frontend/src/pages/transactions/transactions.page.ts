@@ -9,26 +9,25 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ButtonModule } from 'primeng/button';
-import { DatePickerModule } from 'primeng/datepicker';
-import { TransactionDTO, AccountDTO } from '@dindinho/shared';
+import { TransactionDTO, AccountDTO, PeriodPreset, TimeFilterSelectionDTO } from '@dindinho/shared';
 import { ApiService } from '../../app/services/api.service';
 import { AccountService } from '../../app/services/account.service';
+import { CategoryService } from '../../app/services/category.service';
 import { EmptyStateComponent } from '../../app/components/empty-state.component';
 import { PageHeaderComponent } from '../../app/components/page-header.component';
 import { TransactionDrawerComponent } from '../../app/components/transaction-drawer.component';
+import { TimeFilterComponent } from '../../app/components/time-filter.component';
+import { AccountFilterComponent } from '../../app/components/account-filter.component';
+import { resolveTimeFilterToTransactionsQuery } from '../../app/utils/time-filter.util';
+import { accountSelectionToParams, timeSelectionToParams } from '../../app/utils/query-params.util';
+import { UrlSyncService } from '../../app/services/url-sync.service';
 
 type TransactionTypeFilter = '' | TransactionDTO['type'];
-
-const utcStartOfMonthIso = (year: number, month: number) =>
-  new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0)).toISOString();
-
-const utcEndOfMonthIso = (year: number, month: number) =>
-  new Date(Date.UTC(year, month, 0, 23, 59, 59, 999)).toISOString();
 
 @Component({
   selector: 'app-transactions-page',
@@ -36,17 +35,18 @@ const utcEndOfMonthIso = (year: number, month: number) =>
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule,
-    ReactiveFormsModule,
     ButtonModule,
-    DatePickerModule,
     CurrencyPipe,
     DatePipe,
     EmptyStateComponent,
     PageHeaderComponent,
     TransactionDrawerComponent,
+    TimeFilterComponent,
+    AccountFilterComponent,
+    FormsModule,
   ],
   template: `
-    <div data-testid="transactions-page" class="p-4 pb-24 max-w-3xl mx-auto flex flex-col gap-4">
+    <div data-testid="transactions-page" class="flex flex-col gap-6 w-full">
       <app-page-header
         title="Transações"
         subtitle="Todas as transações, da mais nova pra mais velha"
@@ -114,40 +114,35 @@ const utcEndOfMonthIso = (year: number, month: number) =>
             </div>
 
             <div class="flex flex-col gap-1">
-              <label class="sr-only" for="accountId">Conta</label>
+              <label class="sr-only" for="accountIds">Contas</label>
+              <app-account-filter
+                [selected]="accountFilterIds()"
+                (selectionChange)="onAccountFilterChange($event)"
+              />
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <label class="sr-only" for="categoryId">Categoria</label>
               <select
-                data-testid="transactions-account-select"
-                id="accountId"
+                data-testid="transactions-category-select"
+                id="categoryId"
                 class="h-10 rounded-xl border border-slate-200 px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                (change)="onAccountFilterChange($event)"
-                aria-label="Conta"
+                (change)="onCategoryFilterChange($event)"
+                aria-label="Categoria"
               >
-                <option value="" [selected]="!accountFilterId()">Todas as contas</option>
-                @for (a of accounts(); track a.id) {
-                  <option [value]="a.id" [selected]="a.id === accountFilterId()">
-                    {{ a.name }}
+                <option value="" [selected]="!categoryFilterId()">Todas as categorias</option>
+                @for (c of categories(); track c.id) {
+                  <option [value]="c.id" [selected]="c.id === categoryFilterId()">
+                    {{ c.name }}
                   </option>
                 }
               </select>
             </div>
 
-            <div
-              class="flex flex-col gap-1 col-span-2"
-              data-testid="transactions-month-year-filter"
-            >
-              <label class="sr-only" for="monthYear">Mês e ano</label>
-              <p-datepicker
-                data-testid="transactions-month-year-picker"
-                inputId="monthYear"
-                [formControl]="monthYearControl"
-                view="month"
-                dateFormat="mm/yy"
-                [showIcon]="true"
-                [showClear]="true"
-                [readonlyInput]="true"
-                [styleClass]="'w-full'"
-                inputStyleClass="h-10 w-full rounded-xl border border-slate-200 px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                aria-label="Mês e ano"
+            <div class="flex flex-col gap-1 col-span-2" data-testid="transactions-time-filter">
+              <app-time-filter
+                [selection]="timeFilterSelection()"
+                (selectionChange)="onTimeFilterSelectionChange($event)"
               />
             </div>
           </div>
@@ -224,20 +219,28 @@ const utcEndOfMonthIso = (year: number, month: number) =>
 export class TransactionsPage {
   private api = inject(ApiService);
   private accountService = inject(AccountService);
+  private categoryService = inject(CategoryService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private urlSync = inject(UrlSyncService);
   private destroyRef = inject(DestroyRef);
   private host = inject(ElementRef<HTMLElement>);
 
   protected readonly accounts = this.accountService.accounts;
+  protected readonly categories = this.categoryService.categories;
 
   protected readonly searchDraft = signal('');
   protected readonly searchQuery = signal('');
-  protected readonly accountFilterId = signal<string>('');
+  protected readonly accountFilterIds = signal<string[]>([]);
+  protected readonly categoryFilterId = signal<string>('');
   protected readonly typeFilter = signal<TransactionTypeFilter>('');
 
-  protected readonly monthYearControl = new FormControl<Date | null>(null);
-  protected readonly monthYearFilter = signal<Date | null>(null);
+  protected readonly timeFilterSelection = signal<TimeFilterSelectionDTO>({
+    mode: 'DAY_RANGE',
+    period: { preset: 'THIS_MONTH', tzOffsetMinutes: new Date().getTimezoneOffset() },
+  });
+
+  protected readonly timeFilterActive = signal(false);
 
   protected readonly items = signal<TransactionDTO[]>([]);
   protected readonly nextCursorId = signal<string | null>(null);
@@ -260,16 +263,7 @@ export class TransactionsPage {
 
   protected readonly filtersOpen = signal(false);
 
-  private toMonthParam(value: Date | null): string | null {
-    if (!value) return null;
-    const year = value.getFullYear();
-    const month = value.getMonth() + 1;
-    if (!Number.isFinite(year) || year < 1970 || year > 2100) return null;
-    if (!Number.isFinite(month) || month < 1 || month > 12) return null;
-    return `${year}-${String(month).padStart(2, '0')}`;
-  }
-
-  private parseMonthParam(value: string | null): Date | null {
+  private parseInvoiceMonthParam(value: string | null): string | null {
     if (!value) return null;
     const normalized = value.trim();
     if (!/^\d{4}-\d{2}$/.test(normalized)) return null;
@@ -277,25 +271,140 @@ export class TransactionsPage {
     const month = Number(normalized.slice(5, 7));
     if (!Number.isFinite(year) || year < 1970 || year > 2100) return null;
     if (!Number.isFinite(month) || month < 1 || month > 12) return null;
-    return new Date(year, month - 1, 1);
+    return `${year}-${String(month).padStart(2, '0')}`;
+  }
+
+  private parseIsoDayParam(value: string | null): string | null {
+    if (!value) return null;
+    const normalized = value.trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return null;
+
+    const [y, m, d] = normalized.split('-').map((v) => Number(v));
+    if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return null;
+    if (m < 1 || m > 12) return null;
+    if (d < 1 || d > 31) return null;
+    const dt = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
+    if (dt.getUTCFullYear() !== y) return null;
+    if (dt.getUTCMonth() !== m - 1) return null;
+    if (dt.getUTCDate() !== d) return null;
+    return normalized;
+  }
+
+  private parsePeriodPresetParam(value: string | null): PeriodPreset | null {
+    if (!value) return null;
+    const normalized = value.trim();
+    const allowed: PeriodPreset[] = [
+      'TODAY',
+      'YESTERDAY',
+      'THIS_WEEK',
+      'LAST_WEEK',
+      'THIS_MONTH',
+      'LAST_MONTH',
+      'CUSTOM',
+    ];
+    return (allowed as string[]).includes(normalized) ? (normalized as PeriodPreset) : null;
+  }
+
+  private parseTzOffsetMinutesParam(value: string | null): number | null {
+    if (!value) return null;
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return null;
+    if (parsed < -840) return -840;
+    if (parsed > 840) return 840;
+    return parsed;
+  }
+
+  private sameTimeFilterSelection(a: TimeFilterSelectionDTO, b: TimeFilterSelectionDTO): boolean {
+    if (a.mode !== b.mode) return false;
+
+    if (a.mode === 'INVOICE_MONTH' && b.mode === 'INVOICE_MONTH') {
+      return a.invoiceMonth === b.invoiceMonth;
+    }
+
+    if (a.mode === 'DAY_RANGE' && b.mode === 'DAY_RANGE') {
+      if (a.period.preset !== b.period.preset) return false;
+      if (a.period.tzOffsetMinutes !== b.period.tzOffsetMinutes) return false;
+      if (a.period.preset !== 'CUSTOM') return true;
+      return a.period.startDay === b.period.startDay && a.period.endDay === b.period.endDay;
+    }
+
+    return false;
   }
 
   private syncQueryParams(partial: {
-    accountId?: string | null;
+    accountIds?: string[] | null;
+    categoryId?: string | null;
     type?: TransactionTypeFilter | null;
+    invoiceMonth?: string | null;
     month?: string | null;
+    periodPreset?: PeriodPreset | null;
+    startDay?: string | null;
+    endDay?: string | null;
+    tzOffsetMinutes?: number | null;
     openFilters?: 0 | 1;
   }) {
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: {
-        accountId: partial.accountId,
-        type: partial.type,
-        month: partial.month,
-        openFilters: partial.openFilters,
+    // 1. Resolver filtros simples (se undefined no partial, usa valor atual do signal)
+    const accountIds =
+      partial.accountIds !== undefined ? partial.accountIds : this.accountFilterIds();
+    const categoryId =
+      partial.categoryId !== undefined ? partial.categoryId : this.categoryFilterId();
+    const type = partial.type !== undefined ? partial.type : this.typeFilter();
+
+    // 2. Resolver filtros de tempo
+    // Se algum parâmetro de tempo foi passado no partial, usamos o partial.
+    // Caso contrário, usamos o signal atual.
+    const timeKeys = [
+      'invoiceMonth',
+      'month',
+      'periodPreset',
+      'startDay',
+      'endDay',
+      'tzOffsetMinutes',
+    ] as const;
+    const hasTimePartial = timeKeys.some((k) => partial[k] !== undefined);
+
+    let timeParams: Record<string, string | number | null | undefined> = {};
+
+    if (hasTimePartial) {
+      // Se partial tem tempo, usamos ele (assumindo que quem chamou já limpou o que precisava)
+      // Porém, o padrão agora é usar timeSelectionToParams se não tiver partial
+      // Como o método syncQueryParams é chamado com objetos "crus" de query params em alguns lugares,
+      // precisamos manter a lógica de merge manual se o partial vier de uma manipulação direta.
+      // MAS, idealmente, deveríamos converter tudo para usar os utilitários.
+      // Para manter compatibilidade com chamadas existentes que passam pedaços:
+
+      timeParams = {
+        invoiceMonth: partial.invoiceMonth ?? undefined,
+        month: partial.month ?? undefined,
+        periodPreset: partial.periodPreset ?? undefined,
+        startDay: partial.startDay ?? undefined,
+        endDay: partial.endDay ?? undefined,
+        tzOffsetMinutes: partial.tzOffsetMinutes ?? undefined,
+      };
+
+      if (partial.invoiceMonth === null) timeParams['invoiceMonth'] = null;
+      if (partial.month === null) timeParams['month'] = null;
+      if (partial.periodPreset === null) timeParams['periodPreset'] = null;
+      if (partial.startDay === null) timeParams['startDay'] = null;
+      if (partial.endDay === null) timeParams['endDay'] = null;
+      if (partial.tzOffsetMinutes === null) timeParams['tzOffsetMinutes'] = null;
+    } else {
+      // Reconstruir do signal atual usando o novo utilitário
+      timeParams = timeSelectionToParams(this.timeFilterSelection());
+    }
+
+    const accountParams = accountSelectionToParams(accountIds ?? []);
+
+    this.urlSync.updateParams(
+      this.route,
+      {
+        ...accountParams,
+        categoryId: categoryId || null,
+        type: type || null,
+        ...timeParams,
       },
-      queryParamsHandling: 'merge',
-    });
+      { openFilters: partial.openFilters === 1 },
+    );
   }
 
   protected onTransactionUpdated(updated: TransactionDTO) {
@@ -309,11 +418,26 @@ export class TransactionsPage {
 
   constructor() {
     this.accountService.loadAccounts();
+    this.categoryService.loadCategories();
 
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
-      const accountId = params.get('accountId') ?? '';
-      if (this.accountFilterId() !== accountId) {
-        this.accountFilterId.set(accountId);
+      const accountIds = params.getAll('accountIds');
+      const legacyAccountId = params.get('accountId');
+      const finalAccountIds =
+        accountIds.length > 0 ? accountIds : legacyAccountId ? [legacyAccountId] : [];
+
+      const current = this.accountFilterIds();
+      const changed =
+        current.length !== finalAccountIds.length ||
+        current.some((id, i) => id !== finalAccountIds[i]);
+
+      if (changed) {
+        this.accountFilterIds.set(finalAccountIds);
+      }
+
+      const categoryId = params.get('categoryId') ?? '';
+      if (this.categoryFilterId() !== categoryId) {
+        this.categoryFilterId.set(categoryId);
       }
 
       const typeRaw = params.get('type') ?? '';
@@ -323,13 +447,47 @@ export class TransactionsPage {
         this.typeFilter.set(type);
       }
 
-      const month = this.parseMonthParam(params.get('month'));
-      const currentMonth = this.monthYearFilter();
-      const nextMonthParam = this.toMonthParam(month);
-      const currentMonthParam = this.toMonthParam(currentMonth);
-      if (nextMonthParam !== currentMonthParam) {
-        this.monthYearControl.setValue(month, { emitEvent: false });
-        this.monthYearFilter.set(month);
+      const invoiceMonth = this.parseInvoiceMonthParam(
+        params.get('invoiceMonth') ?? params.get('month'),
+      );
+
+      const periodPreset = this.parsePeriodPresetParam(params.get('periodPreset'));
+
+      const startDay = this.parseIsoDayParam(params.get('startDay'));
+      const endDay = this.parseIsoDayParam(params.get('endDay'));
+      const tzOffsetMinutes =
+        this.parseTzOffsetMinutesParam(params.get('tzOffsetMinutes')) ??
+        new Date().getTimezoneOffset();
+
+      const nextTimeSelection: TimeFilterSelectionDTO = invoiceMonth
+        ? { mode: 'INVOICE_MONTH', invoiceMonth }
+        : periodPreset && periodPreset !== 'CUSTOM'
+          ? {
+              mode: 'DAY_RANGE',
+              period: { preset: periodPreset, tzOffsetMinutes },
+            }
+          : startDay || endDay || (periodPreset === 'CUSTOM' && startDay && endDay)
+            ? {
+                mode: 'DAY_RANGE',
+                period: {
+                  preset: 'CUSTOM',
+                  startDay: startDay ?? endDay ?? '1970-01-01',
+                  endDay: endDay ?? startDay ?? '1970-01-01',
+                  tzOffsetMinutes,
+                },
+              }
+            : {
+                mode: 'DAY_RANGE',
+                period: { preset: 'THIS_MONTH', tzOffsetMinutes },
+              };
+
+      if (!this.sameTimeFilterSelection(this.timeFilterSelection(), nextTimeSelection)) {
+        this.timeFilterSelection.set(nextTimeSelection);
+      }
+
+      const hasTimeFilter = !!invoiceMonth || !!periodPreset || !!startDay || !!endDay;
+      if (this.timeFilterActive() !== hasTimeFilter) {
+        this.timeFilterActive.set(hasTimeFilter);
       }
 
       const openFiltersRaw = params.get('openFilters');
@@ -340,20 +498,20 @@ export class TransactionsPage {
             ? false
             : null;
 
-      const hasAnyFilter = !!accountId || !!type || !!nextMonthParam;
+      const hasAnyFilter =
+        finalAccountIds.length > 0 ||
+        !!categoryId ||
+        !!type ||
+        !!invoiceMonth ||
+        !!periodPreset ||
+        !!startDay ||
+        !!endDay;
       const shouldOpenFilters = explicitOpenFilters ?? hasAnyFilter;
 
       if (shouldOpenFilters !== this.filtersOpen()) {
         this.filtersOpen.set(shouldOpenFilters);
       }
     });
-
-    this.monthYearControl.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((value) => {
-        this.monthYearFilter.set(value);
-        this.syncQueryParams({ month: this.toMonthParam(value), openFilters: 1 });
-      });
 
     effect(() => {
       const draft = this.searchDraft();
@@ -371,21 +529,33 @@ export class TransactionsPage {
 
     effect(() => {
       const q = this.searchQuery();
-      const accountId = this.accountFilterId();
+      const accountIds = this.accountFilterIds();
+      const categoryId = this.categoryFilterId();
       const type = this.typeFilter();
-
-      const range = this.dateRangeFilters(this.monthYearFilter());
+      const timeQuery = resolveTimeFilterToTransactionsQuery(this.timeFilterSelection());
 
       const filters: {
         q?: string;
-        accountId?: string;
+        accountIds?: string[];
+        categoryId?: string;
         type?: TransactionDTO['type'];
-        from?: string;
-        to?: string;
-      } = { ...range };
+        invoiceMonth?: string;
+        startDay?: string;
+        endDay?: string;
+        tzOffsetMinutes?: number;
+      } = {};
       if (q) filters.q = q;
-      if (accountId) filters.accountId = accountId;
+      if (accountIds.length > 0) filters.accountIds = accountIds;
+      if (categoryId) filters.categoryId = categoryId;
       if (type) filters.type = type;
+      if (this.timeFilterActive()) {
+        if (timeQuery.invoiceMonth) filters.invoiceMonth = timeQuery.invoiceMonth;
+        if (timeQuery.startDay) filters.startDay = timeQuery.startDay;
+        if (timeQuery.endDay) filters.endDay = timeQuery.endDay;
+        if (typeof timeQuery.tzOffsetMinutes === 'number') {
+          filters.tzOffsetMinutes = timeQuery.tzOffsetMinutes;
+        }
+      }
       this.resetAndLoad(filters);
     });
 
@@ -413,16 +583,66 @@ export class TransactionsPage {
     this.searchDraft.set(value);
   }
 
-  protected onAccountFilterChange(event: Event) {
+  protected onAccountFilterChange(value: string[]) {
+    this.accountFilterIds.set(value);
+    this.syncQueryParams({ accountIds: value.length ? value : null, openFilters: 1 });
+  }
+
+  protected onCategoryFilterChange(event: Event) {
     const value = (event.target as HTMLSelectElement | null)?.value ?? '';
-    this.accountFilterId.set(value);
-    this.syncQueryParams({ accountId: value ? value : null, openFilters: 1 });
+    this.categoryFilterId.set(value);
+    this.syncQueryParams({ categoryId: value ? value : null, openFilters: 1 });
   }
 
   protected onTypeFilterChange(event: Event) {
     const value = (event.target as HTMLSelectElement | null)?.value ?? '';
     this.typeFilter.set(value as TransactionTypeFilter);
     this.syncQueryParams({ type: value ? (value as TransactionTypeFilter) : null, openFilters: 1 });
+  }
+
+  protected onTimeFilterSelectionChange(selection: TimeFilterSelectionDTO) {
+    this.timeFilterSelection.set(selection);
+    this.timeFilterActive.set(true);
+    const query = resolveTimeFilterToTransactionsQuery(selection);
+
+    if (selection.mode === 'INVOICE_MONTH') {
+      this.syncQueryParams({
+        invoiceMonth: query.invoiceMonth ?? null,
+        month: null,
+        periodPreset: null,
+        startDay: null,
+        endDay: null,
+        tzOffsetMinutes: null,
+        openFilters: 1,
+      });
+      return;
+    }
+
+    if (selection.period.preset !== 'CUSTOM') {
+      this.syncQueryParams({
+        invoiceMonth: null,
+        month: null,
+        periodPreset: selection.period.preset,
+        startDay: null,
+        endDay: null,
+        tzOffsetMinutes:
+          typeof selection.period.tzOffsetMinutes === 'number'
+            ? selection.period.tzOffsetMinutes
+            : null,
+        openFilters: 1,
+      });
+      return;
+    }
+
+    this.syncQueryParams({
+      invoiceMonth: null,
+      month: null,
+      periodPreset: 'CUSTOM',
+      startDay: query.startDay ?? null,
+      endDay: query.endDay ?? null,
+      tzOffsetMinutes: typeof query.tzOffsetMinutes === 'number' ? query.tzOffsetMinutes : null,
+      openFilters: 1,
+    });
   }
 
   protected signedAmount(t: TransactionDTO): number {
@@ -457,10 +677,13 @@ export class TransactionsPage {
 
   private resetAndLoad(filters: {
     q?: string;
-    accountId?: string;
+    accountIds?: string[];
+    categoryId?: string;
     type?: TransactionDTO['type'];
-    from?: string;
-    to?: string;
+    invoiceMonth?: string;
+    startDay?: string;
+    endDay?: string;
+    tzOffsetMinutes?: number;
   }) {
     const seq = ++this.initialLoadSeq;
     this.error.set(null);
@@ -496,24 +719,35 @@ export class TransactionsPage {
     const seq = this.initialLoadSeq;
 
     const q = this.searchQuery();
-    const accountId = this.accountFilterId();
+    const accountIds = this.accountFilterIds();
+    const categoryId = this.categoryFilterId();
     const type = this.typeFilter();
-    const range = this.dateRangeFilters(this.monthYearFilter());
+    const timeQuery = resolveTimeFilterToTransactionsQuery(this.timeFilterSelection());
 
     const filters: {
       cursorId: string;
       limit: number;
       q?: string;
-      accountId?: string;
+      accountIds?: string[];
+      categoryId?: string;
       type?: TransactionDTO['type'];
-      from?: string;
-      to?: string;
+      invoiceMonth?: string;
+      startDay?: string;
+      endDay?: string;
+      tzOffsetMinutes?: number;
     } = { cursorId, limit: 30 };
     if (q) filters.q = q;
-    if (accountId) filters.accountId = accountId;
+    if (accountIds.length) filters.accountIds = accountIds;
+    if (categoryId) filters.categoryId = categoryId;
     if (type) filters.type = type;
-    if (range.from) filters.from = range.from;
-    if (range.to) filters.to = range.to;
+    if (this.timeFilterActive()) {
+      if (timeQuery.invoiceMonth) filters.invoiceMonth = timeQuery.invoiceMonth;
+      if (timeQuery.startDay) filters.startDay = timeQuery.startDay;
+      if (timeQuery.endDay) filters.endDay = timeQuery.endDay;
+      if (typeof timeQuery.tzOffsetMinutes === 'number') {
+        filters.tzOffsetMinutes = timeQuery.tzOffsetMinutes;
+      }
+    }
 
     this.loadingMore.set(true);
     this.api
@@ -575,17 +809,5 @@ export class TransactionsPage {
         this.observedEl = null;
       }
     });
-  }
-
-  private dateRangeFilters(monthYear: Date | null): { from?: string; to?: string } {
-    if (!monthYear) return {};
-    const year = monthYear.getFullYear();
-    const month = monthYear.getMonth() + 1;
-    if (!Number.isFinite(year) || year < 1970 || year > 2100) return {};
-    if (!Number.isFinite(month) || month < 1 || month > 12) return {};
-    return {
-      from: utcStartOfMonthIso(year, month),
-      to: utcEndOfMonthIso(year, month),
-    };
   }
 }

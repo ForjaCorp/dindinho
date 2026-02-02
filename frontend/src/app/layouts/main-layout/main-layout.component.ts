@@ -10,10 +10,10 @@ import { filter } from 'rxjs/operators';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   template: `
-    <div class="flex flex-col h-screen bg-slate-50 font-sans">
+    <div class="flex flex-col h-dvh bg-slate-50 font-sans">
       <!-- Cabeçalho -->
       <header
-        class="bg-white/80 backdrop-blur-md px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 z-50 shadow-sm"
+        class="bg-white/80 backdrop-blur-md px-4 md:px-6 py-4 border-b border-slate-100 flex items-center justify-between sticky top-0 z-50 shadow-sm"
       >
         <div class="flex items-center gap-3">
           <div
@@ -40,15 +40,23 @@ import { filter } from 'rxjs/operators';
       <!-- Conteúdo Principal -->
       <main
         data-testid="main-content"
-        class="flex-1 overflow-y-auto scroll-smooth overscroll-contain pb-[calc(4.5rem+env(safe-area-inset-bottom))]"
+        class="flex-1 overflow-y-auto scroll-smooth overscroll-contain"
       >
-        <router-outlet></router-outlet>
+        <div
+          data-testid="page-container"
+          [class]="
+            'w-full mx-auto px-4 md:px-6 pt-4 md:pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] ' +
+            maxWidthClass()
+          "
+        >
+          <router-outlet></router-outlet>
+        </div>
       </main>
 
       <!-- Navegação Inferior -->
       <nav
         data-testid="bottom-navigation"
-        class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-2 flex justify-between items-end z-50 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.02)]"
+        class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 md:px-6 py-2 flex justify-between items-end z-50 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.02)]"
       >
         <!-- Botão para acessar a página de início -->
         <a
@@ -114,11 +122,15 @@ export class MainLayoutComponent {
   private destroyRef = inject(DestroyRef);
 
   protected readonly title = signal('Dindinho');
+  protected readonly maxWidthClass = signal('max-w-5xl');
 
   constructor() {
-    const updateTitle = () => {
-      const title = this.getDeepestRouteTitle();
-      this.title.set(title ?? 'Dindinho');
+    const updateRouteData = () => {
+      const title = this.getDeepestRouteData('title');
+      this.title.set((title as string) ?? 'Dindinho');
+
+      const maxWidth = this.getDeepestRouteData('maxWidth');
+      this.maxWidthClass.set(maxWidth ? `max-w-${maxWidth}` : 'max-w-5xl');
     };
 
     this.router.events
@@ -126,10 +138,10 @@ export class MainLayoutComponent {
         filter((e): e is NavigationEnd => e instanceof NavigationEnd),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe(() => updateTitle());
+      .subscribe(() => updateRouteData());
   }
 
-  private getDeepestRouteTitle(): string | null {
+  private getDeepestRouteData(key: string): unknown {
     const root = this.router.routerState.snapshot.root;
 
     let current: typeof root | null = root;
@@ -137,11 +149,6 @@ export class MainLayoutComponent {
       current = current.firstChild;
     }
 
-    const value = (current as unknown as { data?: Record<string, unknown> } | null)?.data?.[
-      'title'
-    ];
-    if (typeof value !== 'string') return null;
-    const normalized = value.trim();
-    return normalized.length > 0 ? normalized : null;
+    return (current as unknown as { data?: Record<string, unknown> } | null)?.data?.[key] ?? null;
   }
 }

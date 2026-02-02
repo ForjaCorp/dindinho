@@ -47,7 +47,7 @@ describe("Rotas de Categorias", () => {
       const userCategoryId = "11111111-1111-1111-1111-111111111111";
       const globalCategoryId = "22222222-2222-2222-2222-222222222222";
 
-      prismaMock.category.count.mockResolvedValue(11 as any);
+      prismaMock.category.count.mockResolvedValue(2);
 
       prismaMock.category.findMany.mockResolvedValue([
         {
@@ -64,7 +64,7 @@ describe("Rotas de Categorias", () => {
           parentId: null,
           userId: null,
         },
-      ] as any);
+      ]);
 
       const response = await app.inject({
         method: "GET",
@@ -106,7 +106,7 @@ describe("Rotas de Categorias", () => {
 
     it("deve criar categoria do usuário", async () => {
       const createdCategoryId = "33333333-3333-3333-3333-333333333333";
-      const created: Partial<Category> = {
+      const created: Category = {
         id: createdCategoryId,
         name: "Mercado",
         icon: "pi-shopping-cart",
@@ -114,7 +114,7 @@ describe("Rotas de Categorias", () => {
         userId,
       };
 
-      prismaMock.category.create.mockResolvedValue(created as any);
+      prismaMock.category.create.mockResolvedValue(created);
 
       const response = await app.inject({
         method: "POST",
@@ -125,7 +125,16 @@ describe("Rotas de Categorias", () => {
 
       expect(response.statusCode).toBe(201);
       const body = JSON.parse(response.body);
-      expect(body).toEqual(created);
+
+      const expectedDTO = {
+        id: createdCategoryId,
+        name: "Mercado",
+        icon: "pi-shopping-cart",
+        parentId: null,
+        userId,
+      };
+
+      expect(body).toEqual(expectedDTO);
       expect(prismaMock.category.create).toHaveBeenCalledTimes(1);
     });
   });

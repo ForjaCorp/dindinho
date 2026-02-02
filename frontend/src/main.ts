@@ -17,18 +17,10 @@ import { App } from './app/app';
 /**
  * Inicializa a aplicação Angular com as configurações fornecidas.
  *
- * @function
- * @name bootstrap
- * @param {Type<any>} App - O componente raiz da aplicação
- * @param {ApplicationConfig} appConfig - Configurações da aplicação
- * @returns {Promise<ApplicationRef>} Referência à aplicação inicializada
- *
  * @example
  * bootstrapApplication(App, appConfig)
  *   .catch(err => {});
  */
 bootstrapApplication(App, appConfig).catch((err) => {
-  // Falha crítica na inicialização da aplicação.
-  // Como o LoggerService ainda não está injetado, usamos console.error.
-  console.error('[FATAL] Falha na inicialização da aplicação:', err);
+  throw err;
 });

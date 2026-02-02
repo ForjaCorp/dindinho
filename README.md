@@ -2,7 +2,7 @@
 
 [![Angular](https://img.shields.io/badge/Angular-DD0031?style=for-the-badge&logo=angular&logoColor=white)](https://angular.io/)
 [![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
-[![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=for-for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 [![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io/)
 [![MySQL](https://img.shields.io/badge/MySQL-005C84?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/)
 
@@ -20,15 +20,14 @@ O Dindinho é um PWA (Progressive Web App) focado em organização financeira pe
 ### Backend
 
 - **Runtime**: Node.js
-- **Framework**: Express/Fastify
+- **Framework**: Fastify
 - **ORM**: Prisma
 - **Banco de Dados**: MySQL
 
 ### Infraestrutura
 
 - **Containerização**: Docker
-- **Orquestração**: Kubernetes
-- **Orquestração**: Coolify (Apps Docker)
+- **Orquestração/Deploy**: Coolify (Apps Docker)
 
 ## 🌟 Funcionalidades Principais (MVP)
 
@@ -73,15 +72,23 @@ Para otimizar a geração de relatórios mensais e evitar cálculos complexos em
 - Permite edições em lote (ex: "Alterar esta e as próximas")
 - Torna a consulta de "Gastos do Mês X" uma soma simples no banco de dados
 
+### Gestão de Estado e URL
+
+Para garantir uma experiência de usuário consistente e compartilhável:
+
+- O estado dos filtros (período, contas selecionadas) é sincronizado unidirecionalmente com a URL (Query Params).
+- Utilizamos um serviço centralizado `UrlSyncService` e utilitários puros para converter o estado complexo da aplicação em parâmetros de URL e vice-versa.
+- Isso permite que qualquer visualização (Transações ou Relatórios) seja compartilhada via link mantendo o mesmo contexto.
+
 ## 🛠️ Configuração do Ambiente
 
 ### Pré-requisitos
 
 - Node.js (LTS v20+)
 - Docker & Docker Compose
-- npm ou yarn
+- npm (workspaces)
 
-### Variáveis de Ambiente
+### Variáveis de Ambiente (Backend)
 
 Crie um arquivo `.env` na raiz do backend:
 
@@ -93,62 +100,41 @@ DATABASE_URL="mysql://usuario:senha@localhost:3306/dindinho_dev"
 JWT_SECRET="segredo_para_gerar_tokens_de_autenticacao"
 
 # Configuração do Servidor
-PORT=3000
+PORT=3333
 ```
 
 ## 🚀 Iniciando o Projeto
 
 ### Instalação
 
-1. Clone o repositório:
-
-   ```bash
-   git clone [URL_DO_REPOSITÓRIO]
-   cd dindinho
-   ```
-
-2. Instale as dependências do backend:
-
-   ```bash
-   cd backend
-   npm install
-   ```
-
-3. Instale as dependências do frontend:
-   ```bash
-   cd ../frontend
-   npm install
-   ```
+```bash
+npm install
+```
 
 ### Executando Localmente
 
 1. Inicie o banco de dados com Docker:
 
    ```bash
-   docker-compose up -d
+   npm run db:up
    ```
 
 2. Execute as migrações do Prisma:
 
    ```bash
-   cd ../backend
-   npx prisma migrate dev
+   npm --prefix backend run prisma:migrate
    ```
 
-3. Inicie o servidor de desenvolvimento do backend:
+3. Inicie backend + frontend (Turbo):
 
    ```bash
-   npm run start:dev
+   npm run dev
    ```
 
-4. Em outro terminal, inicie o frontend:
+4. Acesse:
 
-   ```bash
-   cd ../frontend
-   ng serve
-   ```
-
-5. Acesse a aplicação em [http://localhost:4200](http://localhost:4200)
+- Frontend: [http://localhost:4200](http://localhost:4200)
+- Backend: [http://localhost:3333](http://localhost:3333)
 
 ## 📦 Deploy e Infraestrutura
 
@@ -159,6 +145,20 @@ O projeto é entregue via aplicações Docker organizadas pelo Coolify, separand
 - Banco de dados MySQL persistente (serviço gerenciado ou container dedicado)
 
 Referência de orquestração: `docker-compose.coolify.yml` demonstra a configuração de serviços e healthchecks para ambientes gerenciados pelo Coolify.
+
+## 📚 Documentação
+
+- [Padrões de Código](CODING_STANDARDS.md)
+- [Autenticação](docs/AUTHENTICATION.md)
+- [Relatórios (módulo)](backend/src/reports/README.md)
+- [Design: Página de Relatórios (Frontend)](docs/design/reports-frontend.md)
+
+## 📅 Planejamentos
+
+- [TimeFilter — Iteração de melhorias (Concluído)](docs/planning/time-filter.md)
+- [Filtro por conta unificado (Relatórios + Transações) (Concluído)](docs/planning/account-filter.md)
+- [Refatoração: Sincronização de URL (Concluído)](docs/planning/refactor-url-sync.md)
+- [Documentação — backlog](docs/planning/documentation.md)
 
 ## 🤝 Contribuição
 

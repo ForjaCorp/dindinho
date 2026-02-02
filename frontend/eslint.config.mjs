@@ -24,6 +24,8 @@ export default defineConfig([
     processor: angular.processInlineTemplates,
     rules: {
       '@typescript-eslint/no-deprecated': 'error',
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@angular-eslint/directive-selector': [
         'error',
         {

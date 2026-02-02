@@ -5,6 +5,8 @@ import {
   TransactionType,
   AccountType,
   RecurrenceFrequency,
+  Transaction,
+  CreditCardInfo,
 } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import {
@@ -14,6 +16,7 @@ import {
   UpdateTransactionDTO,
   UpdateTransactionScopeDTO,
 } from "@dindinho/shared";
+import { SnapshotService } from "../reports/snapshot.service";
 
 class ForbiddenError extends Error {
   readonly statusCode = 403;
@@ -48,6 +51,9 @@ const addDays = (date: Date, daysToAdd: number) => {
   return d;
 };
 
+const addDaysByMs = (date: Date, daysToAdd: number) =>
+  new Date(date.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
+
 const addYears = (date: Date, yearsToAdd: number) => {
   const d = new Date(date);
   d.setFullYear(d.getFullYear() + yearsToAdd);
@@ -63,6 +69,40 @@ const formatInvoiceMonth = (date: Date) => {
 const parseInvoiceMonthToDate = (invoiceMonth: string) => {
   const [y, m] = invoiceMonth.split("-").map((v) => Number(v));
   return new Date(Date.UTC(y, m - 1, 1, 0, 0, 0));
+};
+
+const parseIsoDayToUtcStartOfDay = (
+  value: string,
+  tzOffsetMinutes: number | null,
+): Date | null => {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day)
+  )
+    return null;
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+
+  const utcStartMs = Date.UTC(year, month - 1, day, 0, 0, 0, 0);
+  const utcCandidate = new Date(utcStartMs);
+  if (
+    utcCandidate.getUTCFullYear() !== year ||
+    utcCandidate.getUTCMonth() !== month - 1 ||
+    utcCandidate.getUTCDate() !== day
+  )
+    return null;
+  const offsetMs =
+    typeof tzOffsetMinutes === "number" && Number.isFinite(tzOffsetMinutes)
+      ? tzOffsetMinutes * 60 * 1000
+      : 0;
+  return new Date(utcStartMs + offsetMs);
 };
 
 const addInvoiceMonths = (invoiceMonth: string, monthsToAdd: number) => {
@@ -85,12 +125,11 @@ const computeInvoiceMonth = (purchaseDate: Date, closingDay: number) => {
   return formatInvoiceMonth(utcDay > closingDay ? addMonths(base, 1) : base);
 };
 
-const toTransactionDTO = (t: any): TransactionDTO => ({
+const toTransactionDTO = (t: Transaction): TransactionDTO => ({
   id: t.id,
   accountId: t.accountId,
   categoryId: t.categoryId ?? null,
-  amount:
-    typeof t.amount?.toNumber === "function" ? t.amount.toNumber() : t.amount,
+  amount: t.amount.toNumber(),
   description: t.description ?? null,
   date: new Date(t.date).toISOString(),
   type: t.type,
@@ -101,7 +140,7 @@ const toTransactionDTO = (t: any): TransactionDTO => ({
   recurrenceIntervalDays: t.recurrenceIntervalDays ?? null,
   installmentNumber: t.installmentNumber ?? null,
   totalInstallments: t.totalInstallments ?? null,
-  tags: Array.isArray(t.tags) ? t.tags : (t.tags ?? null),
+  tags: Array.isArray(t.tags) ? (t.tags as string[]) : null,
   purchaseDate: t.purchaseDate ? new Date(t.purchaseDate).toISOString() : null,
   invoiceMonth: t.invoiceMonth ?? null,
   createdAt: new Date(t.createdAt).toISOString(),
@@ -109,11 +148,14 @@ const toTransactionDTO = (t: any): TransactionDTO => ({
 });
 
 export class TransactionsService {
-  constructor(private prisma: PrismaClient) {}
+  private snapshotService: SnapshotService;
+  constructor(private prisma: PrismaClient) {
+    this.snapshotService = new SnapshotService(prisma);
+  }
 
   private ensureCreditCardInfo(account: {
     type: AccountType;
-    creditCardInfo: any | null;
+    creditCardInfo: CreditCardInfo | null;
   }) {
     if (account.type !== AccountType.CREDIT) return;
     if (
@@ -132,8 +174,8 @@ export class TransactionsService {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2003") {
         const field =
-          typeof (error as any).meta?.field_name === "string"
-            ? (error as any).meta.field_name
+          error.meta && typeof error.meta.field_name === "string"
+            ? error.meta.field_name
             : "";
         const normalized = field.toLowerCase();
         if (normalized.includes("category")) {
@@ -332,6 +374,12 @@ export class TransactionsService {
           return [outTx, inTx];
         });
 
+        await this.snapshotService.updateSnapshots(originAccount.id, baseDate);
+        await this.snapshotService.updateSnapshots(
+          destinationAccount.id,
+          baseDate,
+        );
+
         return created.map(toTransactionDTO);
       }
 
@@ -356,7 +404,7 @@ export class TransactionsService {
             : null;
 
         const created = await this.prisma.$transaction(async (tx) => {
-          const results: any[] = [];
+          const results: Transaction[] = [];
 
           for (let i = 1; i <= count; i++) {
             const date =
@@ -391,6 +439,8 @@ export class TransactionsService {
           return results;
         });
 
+        await this.snapshotService.updateSnapshots(originAccount.id, baseDate);
+
         return created.map(toTransactionDTO);
       }
 
@@ -421,6 +471,9 @@ export class TransactionsService {
               : {}),
           },
         });
+
+        await this.snapshotService.updateSnapshots(originAccount.id, baseDate);
+
         return toTransactionDTO(created);
       }
 
@@ -438,7 +491,7 @@ export class TransactionsService {
           : null;
 
       const created = await this.prisma.$transaction(async (tx) => {
-        const results: any[] = [];
+        const results: Transaction[] = [];
         for (let i = 1; i <= totalInstallments; i++) {
           const cents =
             i < totalInstallments
@@ -478,6 +531,8 @@ export class TransactionsService {
         }
         return results;
       });
+
+      await this.snapshotService.updateSnapshots(originAccount.id, baseDate);
 
       return created.map(toTransactionDTO);
     } catch (error) {
@@ -519,8 +574,14 @@ export class TransactionsService {
     userId: string,
     input: {
       accountId?: string;
+      accountIds?: string[];
+      categoryId?: string;
       from?: string;
       to?: string;
+      startDay?: string;
+      endDay?: string;
+      tzOffsetMinutes?: number;
+      invoiceMonth?: string;
       q?: string;
       type?: "INCOME" | "EXPENSE" | "TRANSFER";
       limit?: number;
@@ -529,20 +590,86 @@ export class TransactionsService {
   ): Promise<{ items: TransactionDTO[]; nextCursorId: string | null }> {
     const accountId =
       typeof input.accountId === "string" ? input.accountId : undefined;
-    const from = input.from ? new Date(input.from) : undefined;
-    const to = input.to ? new Date(input.to) : undefined;
+    const categoryId =
+      typeof input.categoryId === "string" ? input.categoryId : undefined;
+    const accountIds =
+      Array.isArray(input.accountIds) && input.accountIds.length > 0
+        ? input.accountIds
+        : undefined;
+    const targetAccountIds =
+      accountIds ?? (accountId ? [accountId] : undefined);
+
+    if (targetAccountIds) {
+      const count = await this.prisma.account.count({
+        where: {
+          id: { in: targetAccountIds },
+          OR: [{ ownerId: userId }, { accessList: { some: { userId } } }],
+        },
+      });
+
+      if (count !== targetAccountIds.length) {
+        throw new ForbiddenError(
+          "Sem permissão para acessar uma ou mais contas solicitadas",
+        );
+      }
+    }
+    const invoiceMonth =
+      typeof input.invoiceMonth === "string" ? input.invoiceMonth : undefined;
+    const startDayRaw =
+      typeof input.startDay === "string" ? input.startDay : undefined;
+    const endDayRaw =
+      typeof input.endDay === "string" ? input.endDay : undefined;
+    const tzOffsetMinutes =
+      typeof input.tzOffsetMinutes === "number" &&
+      Number.isFinite(input.tzOffsetMinutes)
+        ? input.tzOffsetMinutes
+        : null;
+
+    const hasDayRange = !!startDayRaw || !!endDayRaw;
+
+    const from =
+      !invoiceMonth && !hasDayRange && input.from
+        ? new Date(input.from)
+        : undefined;
+    const to =
+      !invoiceMonth && !hasDayRange && input.to
+        ? new Date(input.to)
+        : undefined;
     const limit = typeof input.limit === "number" ? input.limit : 30;
     const cursorId =
       typeof input.cursorId === "string" ? input.cursorId : undefined;
     const q = typeof input.q === "string" ? input.q.trim() : "";
     const type = input.type;
 
-    if (accountId) {
-      await this.assertCanReadAccount(userId, accountId);
-    }
+    const startDay = startDayRaw
+      ? parseIsoDayToUtcStartOfDay(startDayRaw, tzOffsetMinutes)
+      : null;
+    const endDay = endDayRaw
+      ? parseIsoDayToUtcStartOfDay(endDayRaw, tzOffsetMinutes)
+      : null;
 
-    const dateFilter =
-      from || to
+    const normalizedStartDay = startDay ?? endDay;
+    const normalizedEndDay = endDay ?? startDay;
+
+    const dayRangeFilter: Prisma.TransactionWhereInput =
+      !invoiceMonth && normalizedStartDay && normalizedEndDay
+        ? normalizedStartDay.getTime() <= normalizedEndDay.getTime()
+          ? {
+              date: {
+                gte: normalizedStartDay,
+                lt: addDaysByMs(normalizedEndDay, 1),
+              },
+            }
+          : {
+              date: {
+                gte: normalizedEndDay,
+                lt: addDaysByMs(normalizedStartDay, 1),
+              },
+            }
+        : {};
+
+    const legacyRangeFilter: Prisma.TransactionWhereInput =
+      !invoiceMonth && (from || to)
         ? {
             date: {
               ...(from ? { gte: from } : {}),
@@ -551,9 +678,45 @@ export class TransactionsService {
           }
         : {};
 
+    const invoiceMonthStart = invoiceMonth
+      ? parseInvoiceMonthToDate(invoiceMonth)
+      : null;
+    const invoiceMonthEnd = invoiceMonthStart
+      ? new Date(
+          Date.UTC(
+            invoiceMonthStart.getUTCFullYear(),
+            invoiceMonthStart.getUTCMonth() + 1,
+            1,
+            0,
+            0,
+            0,
+            0,
+          ),
+        )
+      : null;
+
+    const invoiceMonthFilter: Prisma.TransactionWhereInput = invoiceMonth
+      ? {
+          OR: [
+            { invoiceMonth },
+            {
+              AND: [
+                { invoiceMonth: null },
+                {
+                  date: {
+                    gte: invoiceMonthStart!,
+                    lt: invoiceMonthEnd!,
+                  },
+                },
+              ],
+            },
+          ],
+        }
+      : {};
+
     const where: Prisma.TransactionWhereInput = {
-      ...(accountId
-        ? { accountId }
+      ...(targetAccountIds
+        ? { accountId: { in: targetAccountIds } }
         : {
             account: {
               OR: [
@@ -566,6 +729,7 @@ export class TransactionsService {
               ],
             },
           }),
+      ...(categoryId ? { categoryId } : {}),
       ...(q
         ? {
             description: {
@@ -573,8 +737,10 @@ export class TransactionsService {
             },
           }
         : {}),
-      ...(type ? { type: type as any } : {}),
-      ...dateFilter,
+      ...(type ? { type: type as TransactionType } : {}),
+      ...invoiceMonthFilter,
+      ...dayRangeFilter,
+      ...legacyRangeFilter,
     };
 
     const txs = await this.prisma.transaction.findMany({
@@ -708,6 +874,17 @@ export class TransactionsService {
         }
       });
 
+      // Recalcula snapshots para ambas as contas envolvidas na transferência
+      const affectedDates = [existing.date];
+      if (nextDate) affectedDates.push(nextDate);
+      const minDate = new Date(
+        Math.min(...affectedDates.filter(Boolean).map((d) => d!.getTime())),
+      );
+
+      for (const accId of accountIds) {
+        await this.snapshotService.updateSnapshots(accId, minDate);
+      }
+
       return this.getById(userId, id);
     }
 
@@ -773,6 +950,13 @@ export class TransactionsService {
         }
       });
 
+      const affectedDates = [existing.date, ...affected.map((a) => a.date)];
+      if (nextDate) affectedDates.push(nextDate);
+      const minDate = new Date(
+        Math.min(...affectedDates.filter(Boolean).map((d) => d!.getTime())),
+      );
+      await this.snapshotService.updateSnapshots(existing.accountId, minDate);
+
       return this.getById(userId, id);
     }
 
@@ -797,6 +981,13 @@ export class TransactionsService {
       where: { id },
       data: baseUpdate,
     });
+
+    const affectedDates = [existing.date];
+    if (nextDate) affectedDates.push(nextDate);
+    const minDate = new Date(
+      Math.min(...affectedDates.filter(Boolean).map((d) => d!.getTime())),
+    );
+    await this.snapshotService.updateSnapshots(existing.accountId, minDate);
 
     return toTransactionDTO(updated);
   }
@@ -823,12 +1014,18 @@ export class TransactionsService {
     if (tx.transferId) {
       const toDelete = await this.prisma.transaction.findMany({
         where: { transferId: tx.transferId },
-        select: { id: true },
+        select: { id: true, accountId: true, date: true },
       });
       const deletedIds = toDelete.map((t) => t.id);
       await this.prisma.transaction.deleteMany({
         where: { transferId: tx.transferId },
       });
+
+      // Atualiza snapshots para cada conta afetada
+      for (const item of toDelete) {
+        await this.snapshotService.updateSnapshots(item.accountId, item.date);
+      }
+
       return { deletedIds };
     }
 
@@ -837,19 +1034,35 @@ export class TransactionsService {
       typeof tx.installmentNumber === "number";
 
     if (!hasSeries || scope === "ONE") {
+      const deleted = await this.prisma.transaction.findUnique({
+        where: { id: tx.id },
+        select: { date: true },
+      });
       await this.prisma.transaction.delete({ where: { id: tx.id } });
+      if (deleted) {
+        await this.snapshotService.updateSnapshots(tx.accountId, deleted.date);
+      }
       return { deletedIds: [tx.id] };
     }
 
     if (scope === "ALL") {
       const toDelete = await this.prisma.transaction.findMany({
         where: { recurrenceId: tx.recurrenceId as string },
-        select: { id: true },
+        select: { id: true, date: true },
       });
       const deletedIds = toDelete.map((t) => t.id);
+      const minDate = new Date(
+        Math.min(
+          ...toDelete.filter((d) => d.date).map((d) => d.date.getTime()),
+        ),
+      );
+
       await this.prisma.transaction.deleteMany({
         where: { recurrenceId: tx.recurrenceId as string },
       });
+
+      await this.snapshotService.updateSnapshots(tx.accountId, minDate);
+
       return { deletedIds };
     }
 
@@ -858,15 +1071,22 @@ export class TransactionsService {
         recurrenceId: tx.recurrenceId as string,
         installmentNumber: { gte: tx.installmentNumber as number },
       },
-      select: { id: true },
+      select: { id: true, date: true },
     });
     const deletedIds = toDelete.map((t) => t.id);
+    const minDate = new Date(
+      Math.min(...toDelete.filter((d) => d.date).map((d) => d.date.getTime())),
+    );
+
     await this.prisma.transaction.deleteMany({
       where: {
         recurrenceId: tx.recurrenceId as string,
         installmentNumber: { gte: tx.installmentNumber as number },
       },
     });
+
+    await this.snapshotService.updateSnapshots(tx.accountId, minDate);
+
     return { deletedIds };
   }
 }

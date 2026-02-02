@@ -23,6 +23,47 @@ import {
 export async function transactionsRoutes(app: FastifyInstance) {
   const service = new TransactionsService(prisma);
 
+  const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === "object" && value !== null && !Array.isArray(value);
+
+  const normalizeQuery = (value: unknown): Record<string, unknown> => {
+    if (value instanceof URLSearchParams) {
+      const result: Record<string, unknown> = {};
+      value.forEach((val, key) => {
+        const current = result[key];
+        if (current === undefined) {
+          result[key] = val;
+        } else if (Array.isArray(current)) {
+          (current as unknown[]).push(val);
+        } else {
+          result[key] = [current, val];
+        }
+      });
+      return result;
+    }
+    if (!isRecord(value)) return {};
+    return value;
+  };
+
+  const parseQueryFromUrl = (
+    url: string | undefined,
+  ): Record<string, unknown> => {
+    if (!url) return {};
+    const parsedUrl = new URL(url, "http://localhost");
+    const result: Record<string, unknown> = {};
+    parsedUrl.searchParams.forEach((val, key) => {
+      const current = result[key];
+      if (current === undefined) {
+        result[key] = val;
+      } else if (Array.isArray(current)) {
+        (current as unknown[]).push(val);
+      } else {
+        result[key] = [current, val];
+      }
+    });
+    return result;
+  };
+
   const paramsSchema = z.object({
     id: z.string().uuid(),
   });
@@ -76,8 +117,31 @@ export async function transactionsRoutes(app: FastifyInstance) {
     },
     async (request) => {
       const { sub: userId } = request.user as { sub: string };
-      const parsed = listTransactionsQuerySchema.parse(request.query);
-      return service.list(userId, parsed);
+      const queryFromRequest = normalizeQuery(request.query);
+      const queryFromUrl = parseQueryFromUrl(request.raw.url ?? request.url);
+      const mergedQuery = { ...queryFromRequest, ...queryFromUrl };
+
+      const monthFallback =
+        typeof mergedQuery.month === "string" ? mergedQuery.month : undefined;
+
+      const normalizedMergedQuery =
+        typeof mergedQuery.invoiceMonth !== "string" &&
+        typeof monthFallback === "string" &&
+        /^\d{4}-\d{2}$/.test(monthFallback)
+          ? { ...mergedQuery, invoiceMonth: monthFallback }
+          : mergedQuery;
+
+      const parsed = listTransactionsQuerySchema.parse(normalizedMergedQuery);
+      const categoryIdFallback =
+        typeof mergedQuery.categoryId === "string"
+          ? mergedQuery.categoryId
+          : typeof mergedQuery.categoryid === "string"
+            ? mergedQuery.categoryid
+            : undefined;
+      const normalizedQuery = categoryIdFallback
+        ? { ...parsed, categoryId: categoryIdFallback }
+        : parsed;
+      return service.list(userId, normalizedQuery);
     },
   );
 

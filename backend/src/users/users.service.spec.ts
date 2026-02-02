@@ -10,8 +10,7 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { DeepMockProxy, mockReset } from "vitest-mock-extended";
-import { PrismaClient, Role, User } from "@prisma/client";
-import { hash } from "bcryptjs";
+import { PrismaClient, Role, User, SignupAllowlist } from "@prisma/client";
 
 import { SignupNotAllowedError, UsersService } from "./users.service";
 
@@ -182,7 +181,9 @@ describe("UsersService", () => {
 
   it("deve permitir criação quando email está na allowlist", async () => {
     process.env.SIGNUP_ALLOWLIST_ENABLED = "true";
-    prismaMock.signupAllowlist.findUnique.mockResolvedValue({ id: "1" } as any);
+    prismaMock.signupAllowlist.findUnique.mockResolvedValue({
+      id: "1",
+    } as unknown as SignupAllowlist);
     prismaMock.user.findUnique.mockResolvedValue(null);
     prismaMock.user.create.mockResolvedValue({
       id: "uuid",
