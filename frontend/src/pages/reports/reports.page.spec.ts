@@ -6,10 +6,11 @@ import { of, throwError } from 'rxjs';
 import { ReportsPage, AppBaseChartDirective } from './reports.page';
 import { ReportsService } from '../../app/services/reports.service';
 import { AccountService } from '../../app/services/account.service';
-import { Component, Directive, Input } from '@angular/core';
+import { Component, Directive, Input, Output, EventEmitter } from '@angular/core';
 import { Router, provideRouter } from '@angular/router';
 import { PageHeaderComponent } from '../../app/components/page-header.component';
 import { ReportChartCardComponent } from '../../app/components/report-chart-card.component';
+import { AccountFilterComponent } from '../../app/components/account-filter.component';
 import { ChartEvent, ActiveElement, ChartData, ChartOptions, ChartType } from 'chart.js';
 
 @Component({
@@ -20,6 +21,16 @@ import { ChartEvent, ActiveElement, ChartData, ChartOptions, ChartType } from 'c
 class MockPageHeaderComponent {
   @Input() title = '';
   @Input() subtitle: string | null = null;
+}
+
+@Component({
+  selector: 'app-account-filter',
+  standalone: true,
+  template: '',
+})
+class MockAccountFilterComponent {
+  @Input() selected: string[] = [];
+  @Output() selectionChange = new EventEmitter<string[]>();
 }
 
 @Directive({
@@ -119,10 +130,20 @@ describe('ReportsPage', () => {
     })
       .overrideComponent(ReportsPage, {
         remove: {
-          imports: [PageHeaderComponent, AppBaseChartDirective, ReportChartCardComponent],
+          imports: [
+            PageHeaderComponent,
+            AppBaseChartDirective,
+            ReportChartCardComponent,
+            AccountFilterComponent,
+          ],
         },
         add: {
-          imports: [MockPageHeaderComponent, MockBaseChartDirective, MockReportChartCardComponent],
+          imports: [
+            MockPageHeaderComponent,
+            MockBaseChartDirective,
+            MockReportChartCardComponent,
+            MockAccountFilterComponent,
+          ],
         },
       })
       .compileComponents();

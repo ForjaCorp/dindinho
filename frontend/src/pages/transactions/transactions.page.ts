@@ -14,7 +14,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ButtonModule } from 'primeng/button';
-import { MultiSelectModule } from 'primeng/multiselect';
 import { TransactionDTO, AccountDTO, PeriodPreset, TimeFilterSelectionDTO } from '@dindinho/shared';
 import { ApiService } from '../../app/services/api.service';
 import { AccountService } from '../../app/services/account.service';
@@ -23,6 +22,7 @@ import { EmptyStateComponent } from '../../app/components/empty-state.component'
 import { PageHeaderComponent } from '../../app/components/page-header.component';
 import { TransactionDrawerComponent } from '../../app/components/transaction-drawer.component';
 import { TimeFilterComponent } from '../../app/components/time-filter.component';
+import { AccountFilterComponent } from '../../app/components/account-filter.component';
 import { resolveTimeFilterToTransactionsQuery } from '../../app/utils/time-filter.util';
 
 type TransactionTypeFilter = '' | TransactionDTO['type'];
@@ -40,7 +40,7 @@ type TransactionTypeFilter = '' | TransactionDTO['type'];
     PageHeaderComponent,
     TransactionDrawerComponent,
     TimeFilterComponent,
-    MultiSelectModule,
+    AccountFilterComponent,
     FormsModule,
   ],
   template: `
@@ -113,18 +113,9 @@ type TransactionTypeFilter = '' | TransactionDTO['type'];
 
             <div class="flex flex-col gap-1">
               <label class="sr-only" for="accountIds">Contas</label>
-              <p-multiselect
-                inputId="accountIds"
-                [ngModel]="accountFilterIds()"
-                (ngModelChange)="onAccountFilterChange($event)"
-                [options]="accounts()"
-                optionLabel="name"
-                optionValue="id"
-                placeholder="Todas as contas"
-                styleClass="w-full !bg-white !border-slate-200 !rounded-xl !min-h-[40px]"
-                display="chip"
-                [maxSelectedLabels]="1"
-                aria-label="Contas"
+              <app-account-filter
+                [selected]="accountFilterIds()"
+                (selectionChange)="onAccountFilterChange($event)"
               />
             </div>
 

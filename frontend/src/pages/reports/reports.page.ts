@@ -18,7 +18,6 @@ import { AccountService } from '../../app/services/account.service';
 import { PageHeaderComponent } from '../../app/components/page-header.component';
 import { ChartData, ActiveElement, ChartOptions, TooltipItem } from 'chart.js';
 import { BaseChartDirective, provideCharts, withDefaultRegisterables } from 'ng2-charts';
-import { MultiSelectModule } from 'primeng/multiselect';
 import { ButtonModule } from 'primeng/button';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { SelectButtonModule } from 'primeng/selectbutton';
@@ -35,6 +34,7 @@ import { DownloadUtil } from '../../app/utils/download.util';
 import { COMMON_CHART_OPTIONS } from '../../app/utils/chart.util';
 import { ReportChartCardComponent } from '../../app/components/report-chart-card.component';
 import { TimeFilterComponent } from '../../app/components/time-filter.component';
+import { AccountFilterComponent } from '../../app/components/account-filter.component';
 import {
   formatIsoDayLocal,
   parseIsoMonthToLocalDate,
@@ -71,7 +71,7 @@ export class AppBaseChartDirective {}
     AppBaseChartDirective,
     ReportChartCardComponent,
     TimeFilterComponent,
-    MultiSelectModule,
+    AccountFilterComponent,
     SelectButtonModule,
     ButtonModule,
     ProgressSpinnerModule,
@@ -120,18 +120,9 @@ export class AppBaseChartDirective {}
             class="text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1"
             >Contas</label
           >
-          <p-multiselect
-            inputId="accounts-select"
-            [ngModel]="selectedAccountIds()"
-            (ngModelChange)="onSelectedAccountIdsModelChange($event)"
-            [options]="accountService.accounts()"
-            optionLabel="name"
-            optionValue="id"
-            placeholder="Todas as contas"
-            styleClass="w-full !bg-white !border-slate-200 !rounded-xl !min-h-[46px]"
-            display="chip"
-            [maxSelectedLabels]="3"
-            aria-label="Selecionar contas para filtrar"
+          <app-account-filter
+            [selected]="selectedAccountIds()"
+            (selectionChange)="onAccountFilterChange($event)"
           />
         </div>
 
@@ -453,6 +444,11 @@ export class ReportsPage implements OnInit {
     this.balanceGranularity.set(this.readBalanceGranularityFromStorage());
     this.accountService.loadAccounts();
     // loadAllReports é chamado pelo effect
+  }
+
+  protected onAccountFilterChange(accountIds: string[]) {
+    this.selectedAccountIds.set(accountIds);
+    this.syncQueryParams({ accountIds: accountIds.length ? accountIds : null });
   }
 
   /**

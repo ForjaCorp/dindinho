@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import { Component, signal, input, Input } from '@angular/core';
+import { Component, signal, input, Input, Output, EventEmitter } from '@angular/core';
 import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -19,6 +19,7 @@ import { TransactionDTO, AccountDTO, TimeFilterSelectionDTO } from '@dindinho/sh
 import { PageHeaderComponent } from '../../app/components/page-header.component';
 import { TransactionDrawerComponent } from '../../app/components/transaction-drawer.component';
 import { EmptyStateComponent } from '../../app/components/empty-state.component';
+import { AccountFilterComponent } from '../../app/components/account-filter.component';
 
 @Component({
   selector: 'app-page-header',
@@ -28,6 +29,16 @@ import { EmptyStateComponent } from '../../app/components/empty-state.component'
 class MockPageHeaderComponent {
   title = input<string>();
   subtitle = input<string>();
+}
+
+@Component({
+  selector: 'app-account-filter',
+  standalone: true,
+  template: '',
+})
+class MockAccountFilterComponent {
+  @Input() selected: string[] = [];
+  @Output() selectionChange = new EventEmitter<string[]>();
 }
 
 @Component({
@@ -163,12 +174,20 @@ describe('TransactionsPage', () => {
       ],
     })
       .overrideComponent(TransactionsPage, {
-        remove: { imports: [PageHeaderComponent, TransactionDrawerComponent, EmptyStateComponent] },
+        remove: {
+          imports: [
+            PageHeaderComponent,
+            TransactionDrawerComponent,
+            EmptyStateComponent,
+            AccountFilterComponent,
+          ],
+        },
         add: {
           imports: [
             MockPageHeaderComponent,
             MockTransactionDrawerComponent,
             MockEmptyStateComponent,
+            MockAccountFilterComponent,
           ],
         },
       })
