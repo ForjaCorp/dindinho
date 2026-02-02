@@ -62,7 +62,7 @@ describe('TimeFilterComponent', () => {
     expect(controls).toBe(sheet?.getAttribute('id'));
   });
 
-  it('deve mover foco para o botão Fechar ao abrir', async () => {
+  it('deve mover foco para o botão Concluir ao abrir', async () => {
     const open = fixture.nativeElement.querySelector(
       '[data-testid="time-filter-open"]',
     ) as HTMLButtonElement;
@@ -75,6 +75,72 @@ describe('TimeFilterComponent', () => {
     ) as HTMLButtonElement | null;
     expect(close).toBeTruthy();
     expect(document.activeElement).toBe(close);
+  });
+
+  it('não deve permitir foco no backdrop', () => {
+    const open = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-open"]',
+    ) as HTMLButtonElement;
+    open.click();
+    fixture.detectChanges();
+
+    const backdrop = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-backdrop"]',
+    ) as HTMLElement | null;
+    expect(backdrop).toBeTruthy();
+    expect(backdrop?.tagName).toBe('DIV');
+    expect(backdrop?.getAttribute('tabindex')).toBeNull();
+    expect(backdrop?.tabIndex).toBe(-1);
+  });
+
+  it('deve refletir o modo ativo no título do sheet', () => {
+    const open = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-open"]',
+    ) as HTMLButtonElement;
+    open.click();
+    fixture.detectChanges();
+
+    const title = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-sheet"] h2',
+    ) as HTMLElement | null;
+    expect(title).toBeTruthy();
+    expect((title?.textContent ?? '').replace(/\s+/g, ' ').trim()).toBe('Período');
+
+    const invoiceMode = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-mode-invoice"]',
+    ) as HTMLButtonElement | null;
+    expect(invoiceMode).toBeTruthy();
+    invoiceMode?.click();
+    fixture.detectChanges();
+
+    const titleAfter = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-sheet"] h2',
+    ) as HTMLElement | null;
+    expect(titleAfter).toBeTruthy();
+    expect((titleAfter?.textContent ?? '').replace(/\s+/g, ' ').trim()).toBe('Fatura');
+  });
+
+  it('deve fechar ao pressionar ESC e restaurar foco no botão de abertura', async () => {
+    const open = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-open"]',
+    ) as HTMLButtonElement;
+    open.click();
+    fixture.detectChanges();
+    await flushMicrotasks();
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    fixture.detectChanges();
+    await flushMicrotasks();
+
+    const sheet = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-sheet"]',
+    ) as HTMLElement | null;
+    expect(sheet).toBeFalsy();
+
+    const openAfter = fixture.nativeElement.querySelector(
+      '[data-testid="time-filter-open"]',
+    ) as HTMLButtonElement | null;
+    expect(document.activeElement).toBe(openAfter);
   });
 
   it('deve devolver foco para o botão de abertura ao fechar', async () => {

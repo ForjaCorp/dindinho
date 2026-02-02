@@ -65,17 +65,14 @@ import {
       </button>
 
       @if (editorOpen()) {
-        <button
-          type="button"
+        <div
           class="fixed inset-0 z-40 p-0 border-0 bg-transparent"
           data-testid="time-filter-backdrop"
           (click)="closeEditor()"
-          (keydown.enter)="closeEditor()"
-          (keydown.space)="closeEditor()"
-          aria-label="Fechar filtro de período"
+          aria-hidden="true"
         >
           <div class="absolute inset-0 bg-black/40"></div>
-        </button>
+        </div>
 
         <section
           class="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-2xl border border-slate-200 shadow-xl"
@@ -89,7 +86,9 @@ import {
 
           <header class="px-4 pt-4 pb-3 flex items-center justify-between">
             <div class="flex flex-col">
-              <h2 class="text-sm font-semibold text-slate-900" [attr.id]="titleId">Período</h2>
+              <h2 class="text-sm font-semibold text-slate-900" [attr.id]="titleId">
+                {{ draft.mode === 'INVOICE_MONTH' ? 'Fatura' : 'Período' }}
+              </h2>
               <span class="text-xs text-slate-500" data-testid="time-filter-sheet-summary">
                 {{ draftSummary() }}
               </span>
@@ -100,9 +99,9 @@ import {
               class="h-9 px-3 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold"
               (click)="closeEditor()"
               data-testid="time-filter-close"
-              aria-label="Fechar edição do filtro"
+              aria-label="Concluir edição do filtro"
             >
-              Fechar
+              Concluir
             </button>
           </header>
 
