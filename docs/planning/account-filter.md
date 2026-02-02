@@ -69,14 +69,14 @@ Critérios:
 - [x] UX de filtro por conta é a mesma em Relatórios e Transações.
 - [x] Bug de “1 conta selecionada” deixa de existir.
 
-### Fase A5 — Refatoração e Componentização (PENDENTE)
+### Fase A5 — Refatoração e Componentização (CONCLUÍDO)
 
 Objetivo: Extrair a lógica duplicada de `ReportsPage` e `TransactionsPage` para um componente Angular reutilizável.
 
-- [ ] Criar componente `AccountFilterComponent` (`shared` ou `components`).
-  - [ ] Inputs: `selectedAccountIds` (Signal ou Input normal).
-  - [ ] Outputs: `selectionChange` (Emite array de strings).
-  - [ ] Lógica interna: Carregar contas via `AccountService`, gerenciar estado do `p-multiSelect`.
-- [ ] Refatorar `ReportsPage` para usar o novo componente.
-- [ ] Refatorar `TransactionsPage` para usar o novo componente.
-- [ ] Garantir que a sincronização com URL (query params) continue funcionando via página pai.
+- [x] Criar componente `AccountFilterComponent` (`shared` ou `components`).
+  - [x] Inputs: `selectedAccountIds` (Signal ou Input normal).
+  - [x] Outputs: `selectionChange` (Emite array de strings).
+  - [x] Lógica interna: Carregar contas via `AccountService`, gerenciar estado do `p-multiSelect`.
+- [x] Refatorar `ReportsPage` para usar o novo componente.
+- [x] Refatorar `TransactionsPage` para usar o novo componente.
+- [x] Garantir que a sincronização com URL (query params) continue funcionando via página pai.
