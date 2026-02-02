@@ -579,5 +579,49 @@ describe('ReportsPage', () => {
 
       expect(reportsServiceMock.getSpendingByCategoryChart.mock.calls.length).toBe(before);
     });
+
+    it('deve aplicar changeOnly=true quando o intervalo for maior que 120 dias', () => {
+      // 121 dias: 2024-01-01 a 2024-05-01 (bissexto)
+      // Jan(31) + Feb(29) + Mar(31) + Apr(30) + May(1) = 122 dias > 120
+      component.timeFilterSelection.set({
+        mode: 'DAY_RANGE',
+        period: {
+          preset: 'CUSTOM',
+          startDay: '2024-01-01',
+          endDay: '2024-05-01',
+          tzOffsetMinutes: 0,
+        },
+      });
+
+      component.loadAllReports();
+
+      expect(reportsServiceMock.getBalanceHistoryChart).toHaveBeenCalledWith(
+        expect.objectContaining({
+          changeOnly: true,
+        }),
+      );
+    });
+
+    it('deve aplicar changeOnly=false quando o intervalo for menor ou igual a 120 dias', () => {
+      // 120 dias: 2024-01-01 a 2024-04-29
+      // Jan(31) + Feb(29) + Mar(31) + Apr(29) = 120 dias
+      component.timeFilterSelection.set({
+        mode: 'DAY_RANGE',
+        period: {
+          preset: 'CUSTOM',
+          startDay: '2024-01-01',
+          endDay: '2024-04-29',
+          tzOffsetMinutes: 0,
+        },
+      });
+
+      component.loadAllReports();
+
+      expect(reportsServiceMock.getBalanceHistoryChart).toHaveBeenCalledWith(
+        expect.objectContaining({
+          changeOnly: false,
+        }),
+      );
+    });
   });
 });

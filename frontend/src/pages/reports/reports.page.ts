@@ -699,8 +699,8 @@ export class ReportsPage implements OnInit {
   private computeUtcDaysInclusive(start: Date | null, end: Date | null): number | null {
     if (!start || !end) return null;
 
-    const startUtc = Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate());
-    const endUtc = Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate());
+    const startUtc = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+    const endUtc = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
 
     const diffDays = Math.floor((endUtc - startUtc) / (24 * 60 * 60 * 1000));
     return diffDays + 1;
