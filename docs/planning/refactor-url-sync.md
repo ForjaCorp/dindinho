@@ -89,12 +89,12 @@ export function accountSelectionToParams(ids: string[]): Params {
 
 ## 3. Plano de Implementação
 
-### Fase 1: Criação dos Artefatos Compartilhados
+### Fase 1: Criação dos Artefatos Compartilhados (Concluído)
 
-1.  Criar `src/app/utils/query-params.util.ts`.
+1.  [x] Criar `src/app/utils/query-params.util.ts`.
     - Mover lógica de `resolveTimeFilterToTransactionsQuery` (e adaptar para retornar Params planos com nulls explícitos).
     - Implementar `accountSelectionToParams`.
-2.  Criar `src/app/services/url-sync.service.ts`.
+2.  [x] Criar `src/app/services/url-sync.service.ts`.
     - Implementar método genérico `setParams(params: Params)`.
 
 ### Fase 2: Refatoração da `TransactionsPage`
@@ -118,7 +118,7 @@ export function accountSelectionToParams(ids: string[]): Params {
 
 ## 5. Checklist de Validação
 
-- [ ] Testes unitários para `query-params.util.ts` cobrindo todos os modos de tempo (Invoice, Preset, Custom Range).
+- [x] Testes unitários para `query-params.util.ts` cobrindo todos os modos de tempo (Invoice, Preset, Custom Range).
 - [ ] Navegação na `TransactionsPage` continua atualizando URL corretamente.
 - [ ] Navegação na `ReportsPage` continua atualizando URL corretamente.
 - [ ] Reload da página (F5) mantém o estado dos filtros (já garantido pela leitura dos params no `ngOnInit`, mas a escrita deve ser compatível).
