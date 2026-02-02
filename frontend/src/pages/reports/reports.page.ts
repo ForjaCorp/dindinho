@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, Params } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ReportsService } from '../../app/services/reports.service';
 import { AccountService } from '../../app/services/account.service';
@@ -27,7 +27,6 @@ import {
   BalanceHistoryGranularity,
   ReportFilterDTO,
   TimeFilterSelectionDTO,
-  PeriodPreset,
 } from '@dindinho/shared';
 import { finalize } from 'rxjs';
 import { DownloadUtil } from '../../app/utils/download.util';
@@ -40,7 +39,14 @@ import {
   parseIsoMonthToLocalDate,
   resolvePeriodSelectionToDayRange,
   resolveTimeFilterToTransactionsQuery,
+  areTimeFilterSelectionsEqual,
 } from '../../app/utils/time-filter.util';
+import { UrlSyncService } from '../../app/services/url-sync.service';
+import {
+  accountSelectionToParams,
+  timeSelectionToParams,
+  paramsToTimeSelection,
+} from '../../app/utils/query-params.util';
 
 /**
  * Wrapper para o BaseChartDirective para seguir padrões de seletor.
@@ -253,6 +259,7 @@ export class ReportsPage implements OnInit {
   private route = inject(ActivatedRoute);
   private destroyRef = inject(DestroyRef);
   private messageService = inject(MessageService);
+  private urlSync = inject(UrlSyncService);
 
   private readonly balanceGranularityStorageKey = 'dindinho:reports:balance-history:granularity';
 
@@ -334,110 +341,12 @@ export class ReportsPage implements OnInit {
       }
 
       // 2. Time Filter
-      const invoiceMonth = this.parseInvoiceMonthParam(
-        params.get('invoiceMonth') ?? params.get('month'),
-      );
-      const periodPreset = this.parsePeriodPresetParam(params.get('periodPreset'));
-      const startDay = this.parseIsoDayParam(params.get('startDay'));
-      const endDay = this.parseIsoDayParam(params.get('endDay'));
-      const tzOffsetMinutes =
-        this.parseTzOffsetMinutesParam(params.get('tzOffsetMinutes')) ??
-        new Date().getTimezoneOffset();
+      const nextTimeSelection = paramsToTimeSelection(params);
 
-      const nextTimeSelection: TimeFilterSelectionDTO = invoiceMonth
-        ? { mode: 'INVOICE_MONTH', invoiceMonth }
-        : periodPreset && periodPreset !== 'CUSTOM'
-          ? {
-              mode: 'DAY_RANGE',
-              period: { preset: periodPreset, tzOffsetMinutes },
-            }
-          : startDay || endDay || (periodPreset === 'CUSTOM' && startDay && endDay)
-            ? {
-                mode: 'DAY_RANGE',
-                period: {
-                  preset: 'CUSTOM',
-                  startDay: startDay ?? endDay ?? '1970-01-01',
-                  endDay: endDay ?? startDay ?? '1970-01-01',
-                  tzOffsetMinutes,
-                },
-              }
-            : {
-                mode: 'DAY_RANGE',
-                period: { preset: 'THIS_MONTH', tzOffsetMinutes },
-              };
-
-      if (!this.sameTimeFilterSelection(this.timeFilterSelection(), nextTimeSelection)) {
+      if (!areTimeFilterSelectionsEqual(this.timeFilterSelection(), nextTimeSelection)) {
         this.timeFilterSelection.set(nextTimeSelection);
       }
     });
-  }
-
-  private parseInvoiceMonthParam(value: string | null): string | null {
-    if (!value) return null;
-    const normalized = value.trim();
-    if (!/^\d{4}-\d{2}$/.test(normalized)) return null;
-    const year = Number(normalized.slice(0, 4));
-    const month = Number(normalized.slice(5, 7));
-    if (!Number.isFinite(year) || year < 1970 || year > 2100) return null;
-    if (!Number.isFinite(month) || month < 1 || month > 12) return null;
-    return `${year}-${String(month).padStart(2, '0')}`;
-  }
-
-  private parseIsoDayParam(value: string | null): string | null {
-    if (!value) return null;
-    const normalized = value.trim();
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return null;
-
-    const [y, m, d] = normalized.split('-').map((v) => Number(v));
-    if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return null;
-    if (m < 1 || m > 12) return null;
-    if (d < 1 || d > 31) return null;
-    const dt = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
-    if (dt.getUTCFullYear() !== y) return null;
-    if (dt.getUTCMonth() !== m - 1) return null;
-    if (dt.getUTCDate() !== d) return null;
-    return normalized;
-  }
-
-  private parsePeriodPresetParam(value: string | null): PeriodPreset | null {
-    if (!value) return null;
-    const normalized = value.trim();
-    const allowed: PeriodPreset[] = [
-      'TODAY',
-      'YESTERDAY',
-      'THIS_WEEK',
-      'LAST_WEEK',
-      'THIS_MONTH',
-      'LAST_MONTH',
-      'CUSTOM',
-    ];
-    return (allowed as string[]).includes(normalized) ? (normalized as PeriodPreset) : null;
-  }
-
-  private parseTzOffsetMinutesParam(value: string | null): number | null {
-    if (!value) return null;
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed)) return null;
-    if (parsed < -840) return -840;
-    if (parsed > 840) return 840;
-    return parsed;
-  }
-
-  private sameTimeFilterSelection(a: TimeFilterSelectionDTO, b: TimeFilterSelectionDTO): boolean {
-    if (a.mode !== b.mode) return false;
-
-    if (a.mode === 'INVOICE_MONTH' && b.mode === 'INVOICE_MONTH') {
-      return a.invoiceMonth === b.invoiceMonth;
-    }
-
-    if (a.mode === 'DAY_RANGE' && b.mode === 'DAY_RANGE') {
-      if (a.period.preset !== b.period.preset) return false;
-      if (a.period.tzOffsetMinutes !== b.period.tzOffsetMinutes) return false;
-      if (a.period.preset !== 'CUSTOM') return true;
-      return a.period.startDay === b.period.startDay && a.period.endDay === b.period.endDay;
-    }
-
-    return false;
   }
 
   ngOnInit() {
@@ -447,52 +356,14 @@ export class ReportsPage implements OnInit {
   }
 
   protected onAccountFilterChange(accountIds: string[]) {
-    this.selectedAccountIds.set(accountIds);
-    this.syncQueryParams({ accountIds: accountIds.length ? accountIds : null });
+    this.urlSync.updateParams(this.route, accountSelectionToParams(accountIds));
   }
 
   /**
    * Aplica a seleção do filtro temporal quando o usuário confirma no editor.
    */
   protected onTimeFilterSelectionChange(selection: TimeFilterSelectionDTO) {
-    // Sincronizar Estado -> URL
-    const query = resolveTimeFilterToTransactionsQuery(selection);
-
-    if (selection.mode === 'INVOICE_MONTH') {
-      this.syncQueryParams({
-        invoiceMonth: query.invoiceMonth ?? null,
-        month: null,
-        periodPreset: null,
-        startDay: null,
-        endDay: null,
-        tzOffsetMinutes: null,
-      });
-      return;
-    }
-
-    if (selection.period.preset !== 'CUSTOM') {
-      this.syncQueryParams({
-        invoiceMonth: null,
-        month: null,
-        periodPreset: selection.period.preset,
-        startDay: null,
-        endDay: null,
-        tzOffsetMinutes:
-          typeof selection.period.tzOffsetMinutes === 'number'
-            ? selection.period.tzOffsetMinutes
-            : null,
-      });
-      return;
-    }
-
-    this.syncQueryParams({
-      invoiceMonth: null,
-      month: null,
-      periodPreset: 'CUSTOM',
-      startDay: query.startDay ?? null,
-      endDay: query.endDay ?? null,
-      tzOffsetMinutes: typeof query.tzOffsetMinutes === 'number' ? query.tzOffsetMinutes : null,
-    });
+    this.urlSync.updateParams(this.route, timeSelectionToParams(selection));
   }
 
   private createDoughnutOptions(): ChartOptions<'doughnut'> {
@@ -778,85 +649,6 @@ export class ReportsPage implements OnInit {
     this.fetchBalanceHistory(filters);
   }
 
-  protected onSelectedAccountIdsModelChange(value: unknown) {
-    const normalized = this.normalizeAccountIds(value);
-    if (!normalized) return;
-    this.selectedAccountIds.set(normalized);
-    this.syncQueryParams({
-      accountIds: normalized.length > 0 ? normalized : null,
-    });
-  }
-
-  private syncQueryParams(partial: {
-    accountIds?: string[] | null;
-    invoiceMonth?: string | null;
-    month?: string | null;
-    periodPreset?: string | null;
-    startDay?: string | null;
-    endDay?: string | null;
-    tzOffsetMinutes?: number | null;
-  }) {
-    // 1. Account IDs
-    const accountIds =
-      partial.accountIds !== undefined ? partial.accountIds : this.selectedAccountIds();
-
-    // 2. Time Filter
-    const timeKeys = [
-      'invoiceMonth',
-      'month',
-      'periodPreset',
-      'startDay',
-      'endDay',
-      'tzOffsetMinutes',
-    ] as const;
-    const hasTimePartial = timeKeys.some((k) => partial[k] !== undefined);
-
-    let timeParams: Record<string, string | number | null | undefined> = {};
-
-    if (hasTimePartial) {
-      timeParams = {
-        invoiceMonth: partial.invoiceMonth,
-        month: partial.month,
-        periodPreset: partial.periodPreset,
-        startDay: partial.startDay,
-        endDay: partial.endDay,
-        tzOffsetMinutes: partial.tzOffsetMinutes,
-      };
-    } else {
-      // Reconstruir do signal atual
-      const currentSelection = this.timeFilterSelection();
-      const query = resolveTimeFilterToTransactionsQuery(currentSelection);
-
-      if (currentSelection.mode === 'INVOICE_MONTH') {
-        timeParams['invoiceMonth'] = query.invoiceMonth ?? null;
-      } else {
-        if (currentSelection.period.preset && currentSelection.period.preset !== 'CUSTOM') {
-          timeParams['periodPreset'] = currentSelection.period.preset;
-          timeParams['tzOffsetMinutes'] =
-            typeof currentSelection.period.tzOffsetMinutes === 'number'
-              ? currentSelection.period.tzOffsetMinutes
-              : null;
-        } else {
-          timeParams['periodPreset'] = 'CUSTOM';
-          timeParams['startDay'] = query.startDay ?? null;
-          timeParams['endDay'] = query.endDay ?? null;
-          timeParams['tzOffsetMinutes'] =
-            typeof query.tzOffsetMinutes === 'number' ? query.tzOffsetMinutes : null;
-        }
-      }
-    }
-
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: {
-        accountIds: accountIds?.length ? accountIds : null,
-        accountId: null,
-        ...timeParams,
-      },
-      queryParamsHandling: 'merge',
-    });
-  }
-
   /**
    * Converte a seleção do filtro temporal em `ReportFilterDTO`.
    *
@@ -1074,7 +866,7 @@ export class ReportsPage implements OnInit {
     categoryId?: string,
     invoiceMonth?: string,
   ) {
-    const queryParams: Record<string, string | number | string[] | undefined> = {
+    const queryParams: Params = {
       type,
       openFilters: 1,
     };
@@ -1086,28 +878,12 @@ export class ReportsPage implements OnInit {
     if (invoiceMonth) {
       queryParams['invoiceMonth'] = invoiceMonth;
     } else {
-      const selection = this.timeFilterSelection();
-      if (selection.mode === 'INVOICE_MONTH') {
-        queryParams['invoiceMonth'] = selection.invoiceMonth;
-      } else if (selection.period.preset && selection.period.preset !== 'CUSTOM') {
-        queryParams['periodPreset'] = selection.period.preset;
-        if (typeof selection.period.tzOffsetMinutes === 'number') {
-          queryParams['tzOffsetMinutes'] = selection.period.tzOffsetMinutes;
-        }
-      } else {
-        const resolved = resolvePeriodSelectionToDayRange(selection.period);
-        if (resolved) {
-          queryParams['periodPreset'] = 'CUSTOM';
-          queryParams['startDay'] = resolved.startDay;
-          queryParams['endDay'] = resolved.endDay;
-          queryParams['tzOffsetMinutes'] = resolved.tzOffsetMinutes;
-        }
-      }
+      const timeParams = timeSelectionToParams(this.timeFilterSelection());
+      Object.assign(queryParams, timeParams);
     }
 
-    if (this.selectedAccountIds().length > 0) {
-      queryParams['accountIds'] = this.selectedAccountIds();
-    }
+    const accountParams = accountSelectionToParams(this.selectedAccountIds());
+    Object.assign(queryParams, accountParams);
 
     this.router.navigate(['/transactions'], { queryParams });
   }

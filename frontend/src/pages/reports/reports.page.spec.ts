@@ -6,6 +6,7 @@ import { of, throwError } from 'rxjs';
 import { ReportsPage, AppBaseChartDirective } from './reports.page';
 import { ReportsService } from '../../app/services/reports.service';
 import { AccountService } from '../../app/services/account.service';
+import { UrlSyncService } from '../../app/services/url-sync.service';
 import { Component, Directive, Input, Output, EventEmitter } from '@angular/core';
 import { Router, provideRouter } from '@angular/router';
 import { PageHeaderComponent } from '../../app/components/page-header.component';
@@ -90,6 +91,9 @@ describe('ReportsPage', () => {
     accounts: Mock;
     loadAccounts: Mock;
   };
+  let urlSyncMock: {
+    updateParams: Mock;
+  };
 
   beforeEach(async () => {
     reportsServiceMock = {
@@ -114,6 +118,10 @@ describe('ReportsPage', () => {
       loadAccounts: vi.fn(),
     };
 
+    urlSyncMock = {
+      updateParams: vi.fn(),
+    };
+
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [
@@ -125,6 +133,7 @@ describe('ReportsPage', () => {
       providers: [
         { provide: ReportsService, useValue: reportsServiceMock },
         { provide: AccountService, useValue: accountServiceMock },
+        { provide: UrlSyncService, useValue: urlSyncMock },
         provideRouter([]),
       ],
     })

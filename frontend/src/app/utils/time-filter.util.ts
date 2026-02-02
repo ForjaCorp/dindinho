@@ -182,3 +182,26 @@ export const resolveTimeFilterToTransactionsQuery = (
     tzOffsetMinutes: resolved.tzOffsetMinutes,
   };
 };
+
+/**
+ * Compara dois TimeFilterSelectionDTO para verificar igualdade.
+ */
+export const areTimeFilterSelectionsEqual = (
+  a: TimeFilterSelectionDTO,
+  b: TimeFilterSelectionDTO,
+): boolean => {
+  if (a.mode !== b.mode) return false;
+
+  if (a.mode === 'INVOICE_MONTH' && b.mode === 'INVOICE_MONTH') {
+    return a.invoiceMonth === b.invoiceMonth;
+  }
+
+  if (a.mode === 'DAY_RANGE' && b.mode === 'DAY_RANGE') {
+    if (a.period.preset !== b.period.preset) return false;
+    if (a.period.tzOffsetMinutes !== b.period.tzOffsetMinutes) return false;
+    if (a.period.preset !== 'CUSTOM') return true;
+    return a.period.startDay === b.period.startDay && a.period.endDay === b.period.endDay;
+  }
+
+  return false;
+};

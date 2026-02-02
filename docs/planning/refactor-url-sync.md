@@ -104,11 +104,11 @@ export function accountSelectionToParams(ids: string[]): Params {
     - Ex: `this.urlSync.setParams({ ...timeSelectionToParams(sel), ...accountSelectionToParams(ids) })`.
 3.  [x] Validar se o comportamento de "abrir filtros" (`openFilters=1`) é mantido.
 
-### Fase 3: Refatoração da `ReportsPage`
+### Fase 3: Refatoração da `ReportsPage` (Concluído)
 
-1.  Injetar `UrlSyncService`.
-2.  Substituir método privado `syncQueryParams`.
-3.  Remover lógicas duplicadas de tratamento de `TimeFilterSelectionDTO`.
+1.  [x] Injetar `UrlSyncService`.
+2.  [x] Substituir método privado `syncQueryParams`.
+3.  [x] Remover lógicas duplicadas de tratamento de `TimeFilterSelectionDTO`.
 
 ## 4. Benefícios Esperados
 
@@ -120,5 +120,5 @@ export function accountSelectionToParams(ids: string[]): Params {
 
 - [x] Testes unitários para `query-params.util.ts` cobrindo todos os modos de tempo (Invoice, Preset, Custom Range).
 - [x] Navegação na `TransactionsPage` continua atualizando URL corretamente.
-- [ ] Navegação na `ReportsPage` continua atualizando URL corretamente.
-- [ ] Reload da página (F5) mantém o estado dos filtros (já garantido pela leitura dos params no `ngOnInit`, mas a escrita deve ser compatível).
+- [x] Navegação na `ReportsPage` continua atualizando URL corretamente.
+- [x] Reload da página (F5) mantém o estado dos filtros (já garantido pela leitura dos params no `ngOnInit`, mas a escrita deve ser compatível).
