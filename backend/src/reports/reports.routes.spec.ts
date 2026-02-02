@@ -65,6 +65,38 @@ describe("Rotas de Relatórios", () => {
       );
     });
 
+    it("deve aceitar accountIds como string única e normalizar para array", async () => {
+      const categoryId = "123e4567-e89b-12d3-a456-426614174001";
+      const accountId = "123e4567-e89b-12d3-a456-426614174000";
+
+      vi.mocked(prismaMock.transaction.groupBy).mockResolvedValue([
+        { categoryId, _sum: { amount: 50 } },
+      ] as unknown as []);
+      prismaMock.category.findMany.mockResolvedValue([]);
+
+      const response = await app.inject({
+        method: "GET",
+        url: "/api/reports/spending-by-category",
+        headers: { authorization: `Bearer ${token}` },
+        query: {
+          startDate: "2024-01-01T00:00:00Z",
+          endDate: "2024-01-31T23:59:59Z",
+          accountIds: accountId, // Single string (simulating ?accountIds=...)
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+
+      // Verifica se o prisma foi chamado com array
+      expect(prismaMock.transaction.groupBy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            accountId: { in: [accountId] },
+          }),
+        }),
+      );
+    });
+
     it("deve retornar 401 sem token", async () => {
       const response = await app.inject({
         method: "GET",

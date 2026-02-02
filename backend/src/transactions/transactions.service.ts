@@ -574,6 +574,7 @@ export class TransactionsService {
     userId: string,
     input: {
       accountId?: string;
+      accountIds?: string[];
       categoryId?: string;
       from?: string;
       to?: string;
@@ -591,6 +592,27 @@ export class TransactionsService {
       typeof input.accountId === "string" ? input.accountId : undefined;
     const categoryId =
       typeof input.categoryId === "string" ? input.categoryId : undefined;
+    const accountIds =
+      Array.isArray(input.accountIds) && input.accountIds.length > 0
+        ? input.accountIds
+        : undefined;
+    const targetAccountIds =
+      accountIds ?? (accountId ? [accountId] : undefined);
+
+    if (targetAccountIds) {
+      const count = await this.prisma.account.count({
+        where: {
+          id: { in: targetAccountIds },
+          OR: [{ ownerId: userId }, { accessList: { some: { userId } } }],
+        },
+      });
+
+      if (count !== targetAccountIds.length) {
+        throw new ForbiddenError(
+          "Sem permissão para acessar uma ou mais contas solicitadas",
+        );
+      }
+    }
     const invoiceMonth =
       typeof input.invoiceMonth === "string" ? input.invoiceMonth : undefined;
     const startDayRaw =
@@ -618,10 +640,6 @@ export class TransactionsService {
       typeof input.cursorId === "string" ? input.cursorId : undefined;
     const q = typeof input.q === "string" ? input.q.trim() : "";
     const type = input.type;
-
-    if (accountId) {
-      await this.assertCanReadAccount(userId, accountId);
-    }
 
     const startDay = startDayRaw
       ? parseIsoDayToUtcStartOfDay(startDayRaw, tzOffsetMinutes)
@@ -697,8 +715,8 @@ export class TransactionsService {
       : {};
 
     const where: Prisma.TransactionWhereInput = {
-      ...(accountId
-        ? { accountId }
+      ...(targetAccountIds
+        ? { accountId: { in: targetAccountIds } }
         : {
             account: {
               OR: [

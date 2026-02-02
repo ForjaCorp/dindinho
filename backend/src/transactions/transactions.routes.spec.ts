@@ -276,9 +276,7 @@ describe("Rotas de Transações", () => {
 
   describe("GET /api/transactions", () => {
     it("deve listar transações da conta", async () => {
-      prismaMock.account.findFirst.mockResolvedValue({
-        id: accountId,
-      } as unknown as Account);
+      prismaMock.account.count.mockResolvedValue(1);
 
       prismaMock.transaction.findMany.mockResolvedValue([
         {

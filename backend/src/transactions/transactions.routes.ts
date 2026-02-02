@@ -28,24 +28,40 @@ export async function transactionsRoutes(app: FastifyInstance) {
 
   const normalizeQuery = (value: unknown): Record<string, unknown> => {
     if (value instanceof URLSearchParams) {
-      return Object.fromEntries(value.entries());
+      const result: Record<string, unknown> = {};
+      value.forEach((val, key) => {
+        const current = result[key];
+        if (current === undefined) {
+          result[key] = val;
+        } else if (Array.isArray(current)) {
+          (current as unknown[]).push(val);
+        } else {
+          result[key] = [current, val];
+        }
+      });
+      return result;
     }
     if (!isRecord(value)) return {};
-    return Object.fromEntries(
-      Object.entries(value).flatMap(([key, entry]) => {
-        const normalized = Array.isArray(entry) ? entry[0] : entry;
-        if (normalized === undefined) return [];
-        return [[key, normalized]];
-      }),
-    );
+    return value;
   };
 
   const parseQueryFromUrl = (
     url: string | undefined,
-  ): Record<string, string> => {
+  ): Record<string, unknown> => {
     if (!url) return {};
     const parsedUrl = new URL(url, "http://localhost");
-    return Object.fromEntries(parsedUrl.searchParams.entries());
+    const result: Record<string, unknown> = {};
+    parsedUrl.searchParams.forEach((val, key) => {
+      const current = result[key];
+      if (current === undefined) {
+        result[key] = val;
+      } else if (Array.isArray(current)) {
+        (current as unknown[]).push(val);
+      } else {
+        result[key] = [current, val];
+      }
+    });
+    return result;
   };
 
   const paramsSchema = z.object({

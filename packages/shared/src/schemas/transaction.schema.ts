@@ -170,6 +170,13 @@ export type DeleteTransactionResponseDTO = z.infer<
 export const listTransactionsQuerySchema = z
   .object({
     accountId: z.string().uuid().optional(),
+    accountIds: z
+      .union([z.string().uuid(), z.array(z.string().uuid())])
+      .optional()
+      .transform((value) => {
+        if (value === undefined) return undefined;
+        return typeof value === "string" ? [value] : value;
+      }),
     categoryId: z.string().uuid().optional(),
     from: z.string().datetime().optional(),
     to: z.string().datetime().optional(),
