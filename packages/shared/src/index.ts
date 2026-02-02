@@ -12,3 +12,5 @@ export * from "./schemas/transaction.schema";
 export * from "./schemas/waitlist.schema";
 export * from "./schemas/report.schema";
 export * from "./schemas/error.schema";
+export * from "./schemas/doc-frontmatter.schema";
+export * from "./schemas/backlog-item.schema";

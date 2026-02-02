@@ -1,3 +1,16 @@
+---
+id: doc-planning-execution
+title: "Documentação — plano de execução (portal + contratos + API)"
+description: "Plano de execução para criar um portal de documentação, gerar referência de API via OpenAPI e manter contratos de dados consistentes."
+audience: ["dev", "ops", "product"]
+visibility: "internal"
+status: "wip"
+owners: ["engineering"]
+tags: ["documentation", "planning", "openapi", "contracts"]
+mvp: true
+createdAt: "2026-02-02"
+---
+
 # Documentação — plano de execução (portal + contratos + API)
 
 ## Contexto atual
@@ -202,14 +215,14 @@ Critério de aceite:
 
 - Uma página em `docs/30-api/` referencia o contrato de erro e validações
 
-### Fase D2 — Metadados de docs e backlog estruturado (1 PR)
+### Fase D2 — Metadados de docs e backlog estruturado (1 PR) (CONCLUÍDO)
 
-- Adicionar `docFrontmatterSchema` e `backlogItemSchema` ao `@dindinho/shared`
-- Definir convenção de frontmatter para cada doc planejado
+- [x] Adicionar `docFrontmatterSchema` e `backlogItemSchema` ao `@dindinho/shared`
+- [x] Definir convenção de frontmatter para cada doc planejado
 
 Critério de aceite:
 
-- Todo doc novo tem `id/title/owners/status/visibility/audience`
+- [x] Todo doc novo tem `id/title/owners/status/visibility/audience`
 
 ### Fase D3 — Geração de OpenAPI (2 PRs)
 

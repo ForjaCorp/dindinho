@@ -1,6 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
+
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { TestBed, getTestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
@@ -76,14 +77,15 @@ describe('AuthService', () => {
 
     // Mock do router.navigate para evitar erros de rota inexistente
     vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    localStorage.clear(); // Limpa o storage antes de cada teste
     vi.clearAllMocks();
   });
 
   afterEach(() => {
+    localStorage.clear(); // Limpa o storage depois de cada teste
     TestBed.resetTestingModule();
     consoleErrorSpy.mockRestore();
     consoleWarnSpy.mockRestore();
-    localStorage.removeItem('dindinho_token');
   });
 
   it('should be created', () => {
@@ -95,7 +97,7 @@ describe('AuthService', () => {
       const credentials: LoginDTO = { email: 'test@example.com', password: 'password123' };
       vi.spyOn(apiService, 'login').mockReturnValue(of(mockLoginResponse));
 
-      const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
+      const setItemSpy = vi.spyOn(localStorage, 'setItem');
 
       await new Promise<void>((done) => {
         service.login(credentials).subscribe((response) => {
@@ -142,7 +144,12 @@ describe('AuthService', () => {
 
   describe('logout', () => {
     it('should clear token and user data on logout', () => {
-      const removeItemSpy = vi.spyOn(Storage.prototype, 'removeItem');
+      // Simula um estado de login
+      localStorage.setItem('dindinho_token', 'some-token');
+      localStorage.setItem('dindinho_refresh_token', 'some-refresh-token');
+      service.currentUser.set(mockUser);
+
+      const removeItemSpy = vi.spyOn(localStorage, 'removeItem');
       const navigateSpy = vi.spyOn(router, 'navigate');
 
       service.logout();
@@ -160,10 +167,11 @@ describe('AuthService', () => {
         token: 'new-token',
         refreshToken: 'new-refresh-token',
       };
+      // Configura o estado inicial do localStorage
+      localStorage.setItem('dindinho_refresh_token', 'old-refresh-token');
 
-      vi.spyOn(Storage.prototype, 'getItem').mockReturnValue('old-refresh-token');
       vi.spyOn(apiService, 'refresh').mockReturnValue(of(mockRefreshResponse));
-      const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
+      const setItemSpy = vi.spyOn(localStorage, 'setItem');
 
       await new Promise<void>((done) => {
         service.refreshToken().subscribe((newToken) => {
@@ -176,7 +184,8 @@ describe('AuthService', () => {
     });
 
     it('should logout if no refresh token available', async () => {
-      vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
+      // Garante que o refresh token não existe
+      localStorage.removeItem('dindinho_refresh_token');
       const logoutSpy = vi.spyOn(service, 'logout');
 
       await new Promise<void>((done) => {
@@ -191,7 +200,9 @@ describe('AuthService', () => {
     });
 
     it('should logout on refresh error', async () => {
-      vi.spyOn(Storage.prototype, 'getItem').mockReturnValue('old-refresh-token');
+      // Configura o estado inicial do localStorage
+      localStorage.setItem('dindinho_refresh_token', 'old-refresh-token');
+
       vi.spyOn(apiService, 'refresh').mockReturnValue(
         throwError(() => new Error('Refresh failed')),
       );
