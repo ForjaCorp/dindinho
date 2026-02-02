@@ -24,6 +24,8 @@ import { TransactionDrawerComponent } from '../../app/components/transaction-dra
 import { TimeFilterComponent } from '../../app/components/time-filter.component';
 import { AccountFilterComponent } from '../../app/components/account-filter.component';
 import { resolveTimeFilterToTransactionsQuery } from '../../app/utils/time-filter.util';
+import { accountSelectionToParams, timeSelectionToParams } from '../../app/utils/query-params.util';
+import { UrlSyncService } from '../../app/services/url-sync.service';
 
 type TransactionTypeFilter = '' | TransactionDTO['type'];
 
@@ -220,6 +222,7 @@ export class TransactionsPage {
   private categoryService = inject(CategoryService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private urlSync = inject(UrlSyncService);
   private destroyRef = inject(DestroyRef);
   private host = inject(ElementRef<HTMLElement>);
 
@@ -348,8 +351,8 @@ export class TransactionsPage {
     const type = partial.type !== undefined ? partial.type : this.typeFilter();
 
     // 2. Resolver filtros de tempo
-    // Se algum parâmetro de tempo foi passado no partial, usamos o partial (pois quem chamou já tratou as exclusões com null).
-    // Se nenhum parâmetro de tempo foi passado, reconstruímos a partir do signal atual para garantir persistência.
+    // Se algum parâmetro de tempo foi passado no partial, usamos o partial.
+    // Caso contrário, usamos o signal atual.
     const timeKeys = [
       'invoiceMonth',
       'month',
@@ -363,16 +366,22 @@ export class TransactionsPage {
     let timeParams: Record<string, string | number | null | undefined> = {};
 
     if (hasTimePartial) {
+      // Se partial tem tempo, usamos ele (assumindo que quem chamou já limpou o que precisava)
+      // Porém, o padrão agora é usar timeSelectionToParams se não tiver partial
+      // Como o método syncQueryParams é chamado com objetos "crus" de query params em alguns lugares,
+      // precisamos manter a lógica de merge manual se o partial vier de uma manipulação direta.
+      // MAS, idealmente, deveríamos converter tudo para usar os utilitários.
+      // Para manter compatibilidade com chamadas existentes que passam pedaços:
+
       timeParams = {
         invoiceMonth: partial.invoiceMonth ?? undefined,
-        month: partial.month ?? undefined, // month é legado, mas mantemos null se passado
+        month: partial.month ?? undefined,
         periodPreset: partial.periodPreset ?? undefined,
         startDay: partial.startDay ?? undefined,
         endDay: partial.endDay ?? undefined,
         tzOffsetMinutes: partial.tzOffsetMinutes ?? undefined,
       };
 
-      // Se o partial contém null explicitamente, garantimos que vá como null para o router limpar
       if (partial.invoiceMonth === null) timeParams['invoiceMonth'] = null;
       if (partial.month === null) timeParams['month'] = null;
       if (partial.periodPreset === null) timeParams['periodPreset'] = null;
@@ -380,42 +389,22 @@ export class TransactionsPage {
       if (partial.endDay === null) timeParams['endDay'] = null;
       if (partial.tzOffsetMinutes === null) timeParams['tzOffsetMinutes'] = null;
     } else {
-      // Reconstruir do signal atual
-      const currentSelection = this.timeFilterSelection();
-      const query = resolveTimeFilterToTransactionsQuery(currentSelection);
-
-      if (currentSelection.mode === 'INVOICE_MONTH') {
-        timeParams['invoiceMonth'] = query.invoiceMonth ?? null;
-      } else {
-        // DAY_RANGE
-        if (currentSelection.period.preset && currentSelection.period.preset !== 'CUSTOM') {
-          timeParams['periodPreset'] = currentSelection.period.preset;
-          timeParams['tzOffsetMinutes'] =
-            typeof currentSelection.period.tzOffsetMinutes === 'number'
-              ? currentSelection.period.tzOffsetMinutes
-              : null;
-        } else {
-          timeParams['periodPreset'] = 'CUSTOM';
-          timeParams['startDay'] = query.startDay ?? null;
-          timeParams['endDay'] = query.endDay ?? null;
-          timeParams['tzOffsetMinutes'] =
-            typeof query.tzOffsetMinutes === 'number' ? query.tzOffsetMinutes : null;
-        }
-      }
+      // Reconstruir do signal atual usando o novo utilitário
+      timeParams = timeSelectionToParams(this.timeFilterSelection());
     }
 
-    this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: {
-        accountIds: accountIds?.length ? accountIds : null,
-        accountId: null,
+    const accountParams = accountSelectionToParams(accountIds ?? []);
+
+    this.urlSync.updateParams(
+      this.route,
+      {
+        ...accountParams,
         categoryId: categoryId || null,
         type: type || null,
         ...timeParams,
-        openFilters: partial.openFilters,
       },
-      queryParamsHandling: 'merge',
-    });
+      { openFilters: partial.openFilters === 1 },
+    );
   }
 
   protected onTransactionUpdated(updated: TransactionDTO) {
@@ -543,7 +532,6 @@ export class TransactionsPage {
       const accountIds = this.accountFilterIds();
       const categoryId = this.categoryFilterId();
       const type = this.typeFilter();
-
       const timeQuery = resolveTimeFilterToTransactionsQuery(this.timeFilterSelection());
 
       const filters: {

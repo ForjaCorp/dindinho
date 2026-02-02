@@ -98,7 +98,6 @@ describe('query-params.util', () => {
         mode: 'DAY_RANGE',
         period: {
           preset: 'CUSTOM',
-          // @ts-expect-error - forçando estrutura incompleta para testar robustez se necessário
           // mas seguindo a tipagem correta:
           startDay: '2024-01-01',
           endDay: '2024-01-01',

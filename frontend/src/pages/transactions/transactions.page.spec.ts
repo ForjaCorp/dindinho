@@ -15,6 +15,7 @@ import { TransactionsPage } from './transactions.page';
 import { ApiService } from '../../app/services/api.service';
 import { AccountService } from '../../app/services/account.service';
 import { CategoryService } from '../../app/services/category.service';
+import { UrlSyncService } from '../../app/services/url-sync.service';
 import { TransactionDTO, AccountDTO, TimeFilterSelectionDTO } from '@dindinho/shared';
 import { PageHeaderComponent } from '../../app/components/page-header.component';
 import { TransactionDrawerComponent } from '../../app/components/transaction-drawer.component';
@@ -76,6 +77,7 @@ describe('TransactionsPage', () => {
   let fixture: ComponentFixture<TransactionsPage>;
   let queryParamMap$: BehaviorSubject<ParamMap>;
   let router: Router;
+  let urlSync: { updateParams: ReturnType<typeof vi.fn> };
 
   interface TransactionsPageHarness {
     onTransactionUpdated: (t: TransactionDTO) => void;
@@ -158,6 +160,10 @@ describe('TransactionsPage', () => {
       categories: signal([]),
     };
 
+    const urlSyncServiceMock = {
+      updateParams: vi.fn(),
+    };
+
     await TestBed.configureTestingModule({
       imports: [TransactionsPage],
       providers: [
@@ -171,6 +177,7 @@ describe('TransactionsPage', () => {
         { provide: ApiService, useValue: apiServiceMock },
         { provide: AccountService, useValue: accountServiceMock },
         { provide: CategoryService, useValue: categoryServiceMock },
+        { provide: UrlSyncService, useValue: urlSyncServiceMock },
       ],
     })
       .overrideComponent(TransactionsPage, {
@@ -195,6 +202,7 @@ describe('TransactionsPage', () => {
 
     fixture = TestBed.createComponent(TransactionsPage);
     router = TestBed.inject(Router);
+    urlSync = TestBed.inject(UrlSyncService) as unknown as typeof urlSync;
     vi.spyOn(router, 'navigate').mockResolvedValue(true);
     fixture.detectChanges();
   });
@@ -308,18 +316,16 @@ describe('TransactionsPage', () => {
       invoiceMonth: '2026-01',
     });
 
-    expect(router.navigate).toHaveBeenCalledWith(
-      [],
+    expect(urlSync.updateParams).toHaveBeenCalledWith(
+      expect.anything(),
       expect.objectContaining({
-        queryParamsHandling: 'merge',
-        queryParams: expect.objectContaining({
-          invoiceMonth: '2026-01',
-          month: null,
-          periodPreset: null,
-          startDay: null,
-          endDay: null,
-        }),
+        invoiceMonth: '2026-01',
+        month: null,
+        periodPreset: null,
+        startDay: null,
+        endDay: null,
       }),
+      expect.objectContaining({ openFilters: true }),
     );
   });
 
@@ -395,18 +401,16 @@ describe('TransactionsPage', () => {
       period: { preset: 'TODAY', tzOffsetMinutes: 180 },
     });
 
-    expect(router.navigate).toHaveBeenCalledWith(
-      [],
+    expect(urlSync.updateParams).toHaveBeenCalledWith(
+      expect.anything(),
       expect.objectContaining({
-        queryParamsHandling: 'merge',
-        queryParams: expect.objectContaining({
-          periodPreset: 'TODAY',
-          invoiceMonth: null,
-          month: null,
-          startDay: null,
-          endDay: null,
-        }),
+        periodPreset: 'TODAY',
+        invoiceMonth: null,
+        month: null,
+        startDay: null,
+        endDay: null,
       }),
+      expect.objectContaining({ openFilters: true }),
     );
   });
 
@@ -426,16 +430,14 @@ describe('TransactionsPage', () => {
       period: { preset: 'TODAY', tzOffsetMinutes: 180 },
     });
 
-    expect(router.navigate).toHaveBeenCalledWith(
-      [],
+    expect(urlSync.updateParams).toHaveBeenCalledWith(
+      expect.anything(),
       expect.objectContaining({
-        queryParamsHandling: 'merge',
-        queryParams: expect.objectContaining({
-          month: null,
-          invoiceMonth: null,
-          periodPreset: 'TODAY',
-        }),
+        month: null,
+        invoiceMonth: null,
+        periodPreset: 'TODAY',
       }),
+      expect.objectContaining({ openFilters: true }),
     );
   });
 
@@ -504,16 +506,13 @@ describe('TransactionsPage', () => {
 
     component.onAccountFilterChange(['account-1']);
 
-    expect(router.navigate).toHaveBeenCalledWith(
-      [],
+    expect(urlSync.updateParams).toHaveBeenCalledWith(
+      expect.anything(),
       expect.objectContaining({
-        queryParamsHandling: 'merge',
-        queryParams: expect.objectContaining({
-          accountIds: ['account-1'],
-          accountId: null,
-          openFilters: 1,
-        }),
+        accountIds: ['account-1'],
+        accountId: null,
       }),
+      expect.objectContaining({ openFilters: true }),
     );
   });
 
@@ -530,12 +529,10 @@ describe('TransactionsPage', () => {
       target: { value: 'cat-1' },
     } as unknown as Event);
 
-    expect(router.navigate).toHaveBeenCalledWith(
-      [],
-      expect.objectContaining({
-        queryParamsHandling: 'merge',
-        queryParams: expect.objectContaining({ categoryId: 'cat-1', openFilters: 1 }),
-      }),
+    expect(urlSync.updateParams).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ categoryId: 'cat-1' }),
+      expect.objectContaining({ openFilters: true }),
     );
   });
 
@@ -552,12 +549,10 @@ describe('TransactionsPage', () => {
       target: { value: 'EXPENSE' },
     } as unknown as Event);
 
-    expect(router.navigate).toHaveBeenCalledWith(
-      [],
-      expect.objectContaining({
-        queryParamsHandling: 'merge',
-        queryParams: expect.objectContaining({ type: 'EXPENSE', openFilters: 1 }),
-      }),
+    expect(urlSync.updateParams).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ type: 'EXPENSE' }),
+      expect.objectContaining({ openFilters: true }),
     );
   });
 
@@ -567,12 +562,10 @@ describe('TransactionsPage', () => {
     fixture.detectChanges();
     component.toggleFilters();
 
-    expect(router.navigate).toHaveBeenCalledWith(
-      [],
-      expect.objectContaining({
-        queryParamsHandling: 'merge',
-        queryParams: expect.objectContaining({ openFilters: 0 }),
-      }),
+    expect(urlSync.updateParams).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ openFilters: false }),
     );
   });
 
