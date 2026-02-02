@@ -8,6 +8,7 @@ import {
   parseIsoMonthToLocalDate,
   resolvePeriodSelectionToDayRange,
   resolveTimeFilterToTransactionsQuery,
+  areTimeFilterSelectionsEqual,
 } from './time-filter.util';
 
 describe('time-filter.util', () => {
@@ -172,5 +173,102 @@ describe('time-filter.util', () => {
       period: { preset: 'CUSTOM', tzOffsetMinutes: 0 },
     });
     expect(query).toEqual({});
+  });
+
+  describe('areTimeFilterSelectionsEqual', () => {
+    it('deve considerar seleções de invoiceMonth iguais', () => {
+      expect(
+        areTimeFilterSelectionsEqual(
+          { mode: 'INVOICE_MONTH', invoiceMonth: '2026-01' },
+          { mode: 'INVOICE_MONTH', invoiceMonth: '2026-01' },
+        ),
+      ).toBe(true);
+    });
+
+    it('deve considerar seleções de invoiceMonth diferentes', () => {
+      expect(
+        areTimeFilterSelectionsEqual(
+          { mode: 'INVOICE_MONTH', invoiceMonth: '2026-01' },
+          { mode: 'INVOICE_MONTH', invoiceMonth: '2026-02' },
+        ),
+      ).toBe(false);
+    });
+
+    it('deve considerar presets iguais com mesmo tzOffsetMinutes', () => {
+      expect(
+        areTimeFilterSelectionsEqual(
+          { mode: 'DAY_RANGE', period: { preset: 'THIS_MONTH', tzOffsetMinutes: 180 } },
+          { mode: 'DAY_RANGE', period: { preset: 'THIS_MONTH', tzOffsetMinutes: 180 } },
+        ),
+      ).toBe(true);
+    });
+
+    it('deve considerar presets diferentes', () => {
+      expect(
+        areTimeFilterSelectionsEqual(
+          { mode: 'DAY_RANGE', period: { preset: 'THIS_MONTH', tzOffsetMinutes: 180 } },
+          { mode: 'DAY_RANGE', period: { preset: 'LAST_MONTH', tzOffsetMinutes: 180 } },
+        ),
+      ).toBe(false);
+    });
+
+    it('deve considerar custom iguais quando startDay/endDay e tzOffsetMinutes iguais', () => {
+      expect(
+        areTimeFilterSelectionsEqual(
+          {
+            mode: 'DAY_RANGE',
+            period: {
+              preset: 'CUSTOM',
+              startDay: '2026-01-01',
+              endDay: '2026-01-10',
+              tzOffsetMinutes: 0,
+            },
+          },
+          {
+            mode: 'DAY_RANGE',
+            period: {
+              preset: 'CUSTOM',
+              startDay: '2026-01-01',
+              endDay: '2026-01-10',
+              tzOffsetMinutes: 0,
+            },
+          },
+        ),
+      ).toBe(true);
+    });
+
+    it('deve considerar custom diferentes quando startDay ou endDay diferem', () => {
+      expect(
+        areTimeFilterSelectionsEqual(
+          {
+            mode: 'DAY_RANGE',
+            period: {
+              preset: 'CUSTOM',
+              startDay: '2026-01-01',
+              endDay: '2026-01-10',
+              tzOffsetMinutes: 0,
+            },
+          },
+          {
+            mode: 'DAY_RANGE',
+            period: {
+              preset: 'CUSTOM',
+              startDay: '2026-01-02',
+              endDay: '2026-01-10',
+              tzOffsetMinutes: 0,
+            },
+          },
+        ),
+      ).toBe(false);
+    });
+
+    it('deve considerar diferentes quando o modo difere', () => {
+      expect(
+        areTimeFilterSelectionsEqual(
+          { mode: 'INVOICE_MONTH', invoiceMonth: '2026-01' },
+          { mode: 'DAY_RANGE', period: { preset: 'THIS_MONTH', tzOffsetMinutes: 0 } },
+        ),
+      ).toBe(false);
+    });
   });
 });
