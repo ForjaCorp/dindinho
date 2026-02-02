@@ -19,7 +19,11 @@ import {
   EmailAlreadyExistsError,
   UsersService,
 } from "./users.service";
-import { CreateUserDTO, createUserSchema } from "@dindinho/shared";
+import {
+  apiErrorResponseSchema,
+  CreateUserDTO,
+  createUserSchema,
+} from "@dindinho/shared";
 
 /**
  * Configura as rotas relacionadas a usuários
@@ -104,12 +108,9 @@ export async function usersRoutes(app: FastifyInstance) {
             phone: z.string(),
             createdAt: z.string().datetime(),
           }),
-          403: z.object({
-            message: z.string(),
-          }),
-          409: z.object({
-            message: z.string(),
-          }),
+          400: apiErrorResponseSchema,
+          403: apiErrorResponseSchema,
+          409: apiErrorResponseSchema,
         },
       },
     },
@@ -123,13 +124,20 @@ export async function usersRoutes(app: FastifyInstance) {
           createdAt: user.createdAt.toISOString(),
         });
       } catch (error) {
-        if (
-          error instanceof SignupNotAllowedError ||
-          error instanceof EmailAlreadyExistsError
-        ) {
-          return reply
-            .status(error.statusCode)
-            .send({ message: error.message });
+        if (error instanceof SignupNotAllowedError) {
+          throw {
+            statusCode: error.statusCode,
+            message: error.message,
+            code: "SIGNUP_NOT_ALLOWED",
+          };
+        }
+
+        if (error instanceof EmailAlreadyExistsError) {
+          throw {
+            statusCode: error.statusCode,
+            message: error.message,
+            code: "EMAIL_ALREADY_EXISTS",
+          };
         }
 
         throw error;

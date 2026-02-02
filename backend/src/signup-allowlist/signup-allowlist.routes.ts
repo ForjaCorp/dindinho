@@ -3,6 +3,7 @@ import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import fastifyRateLimit from "@fastify/rate-limit";
+import { apiErrorResponseSchema } from "@dindinho/shared";
 
 const emailSchema = z.string().email();
 
@@ -25,7 +26,7 @@ export async function signupAllowlistRoutes(app: FastifyInstance) {
     keyGenerator: (request: FastifyRequest) =>
       (request.headers["x-real-ip"] as string | undefined) || request.ip,
   });
-  app.addHook("onRequest", async (request, reply) => {
+  app.addHook("onRequest", async (request) => {
     const adminKey = process.env.ALLOWLIST_ADMIN_KEY;
     const providedKey = request.headers["x-admin-key"];
     const normalizedKey = Array.isArray(providedKey)
@@ -33,7 +34,11 @@ export async function signupAllowlistRoutes(app: FastifyInstance) {
       : providedKey;
 
     if (normalizedKey && !adminKey) {
-      return reply.status(503).send({ message: "Chave admin não configurada" });
+      throw {
+        statusCode: 503,
+        message: "Chave admin não configurada",
+        code: "ADMIN_KEY_NOT_CONFIGURED",
+      };
     }
 
     if (adminKey && normalizedKey === adminKey) {
@@ -44,9 +49,17 @@ export async function signupAllowlistRoutes(app: FastifyInstance) {
       await request.jwtVerify();
     } catch {
       if (normalizedKey) {
-        return reply.status(401).send({ message: "Chave admin inválida" });
+        throw {
+          statusCode: 401,
+          message: "Chave admin inválida",
+          code: "INVALID_ADMIN_KEY",
+        };
       }
-      return reply.status(401).send({ message: "Token inválido ou expirado" });
+      throw {
+        statusCode: 401,
+        message: "Token inválido ou expirado",
+        code: "INVALID_TOKEN",
+      };
     }
 
     const userId = (request.user as { sub: string }).sub;
@@ -56,9 +69,11 @@ export async function signupAllowlistRoutes(app: FastifyInstance) {
     });
 
     if (!user || user.role !== "ADMIN") {
-      return reply
-        .status(403)
-        .send({ message: "Acesso restrito a administradores" });
+      throw {
+        statusCode: 403,
+        message: "Acesso restrito a administradores",
+        code: "FORBIDDEN",
+      };
     }
   });
 
@@ -70,9 +85,10 @@ export async function signupAllowlistRoutes(app: FastifyInstance) {
         tags: ["allowlist"],
         response: {
           200: z.array(allowlistItemSchema),
-          401: z.object({ message: z.string() }),
-          403: z.object({ message: z.string() }),
-          503: z.object({ message: z.string() }),
+          400: apiErrorResponseSchema,
+          401: apiErrorResponseSchema,
+          403: apiErrorResponseSchema,
+          503: apiErrorResponseSchema,
         },
       },
     },
@@ -100,9 +116,10 @@ export async function signupAllowlistRoutes(app: FastifyInstance) {
         body: z.object({ email: emailSchema }),
         response: {
           201: allowlistItemSchema,
-          401: z.object({ message: z.string() }),
-          403: z.object({ message: z.string() }),
-          503: z.object({ message: z.string() }),
+          400: apiErrorResponseSchema,
+          401: apiErrorResponseSchema,
+          403: apiErrorResponseSchema,
+          503: apiErrorResponseSchema,
         },
       },
     },
@@ -133,9 +150,10 @@ export async function signupAllowlistRoutes(app: FastifyInstance) {
         params: z.object({ email: emailSchema }),
         response: {
           200: z.object({ deleted: z.boolean() }),
-          401: z.object({ message: z.string() }),
-          403: z.object({ message: z.string() }),
-          503: z.object({ message: z.string() }),
+          400: apiErrorResponseSchema,
+          401: apiErrorResponseSchema,
+          403: apiErrorResponseSchema,
+          503: apiErrorResponseSchema,
         },
       },
     },

@@ -7,6 +7,7 @@ import {
   CreateCategoryDTO,
   categorySchema,
   createCategorySchema,
+  apiErrorResponseSchema,
 } from "@dindinho/shared";
 
 class UnauthorizedError extends Error {
@@ -99,7 +100,7 @@ export async function categoriesRoutes(app: FastifyInstance) {
         tags: ["categories"],
         response: {
           200: z.array(categorySchema),
-          401: z.object({ message: z.string() }),
+          401: apiErrorResponseSchema,
         },
       },
     },
@@ -135,9 +136,10 @@ export async function categoriesRoutes(app: FastifyInstance) {
         body: createCategorySchema,
         response: {
           201: categorySchema,
-          401: z.object({ message: z.string() }),
-          403: z.object({ message: z.string() }),
-          404: z.object({ message: z.string() }),
+          400: apiErrorResponseSchema,
+          401: apiErrorResponseSchema,
+          403: apiErrorResponseSchema,
+          404: apiErrorResponseSchema,
         },
       },
     },

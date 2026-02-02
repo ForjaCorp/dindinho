@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
+import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { ReportsService } from "./reports.service";
 import {
@@ -7,6 +8,7 @@ import {
   spendingByCategorySchema,
   cashFlowSchema,
   balanceHistorySchema,
+  apiErrorResponseSchema,
 } from "@dindinho/shared";
 
 export async function reportsRoutes(app: FastifyInstance) {
@@ -16,7 +18,11 @@ export async function reportsRoutes(app: FastifyInstance) {
     try {
       await request.jwtVerify();
     } catch {
-      throw { statusCode: 401, message: "Token inválido ou expirado" };
+      throw {
+        statusCode: 401,
+        message: "Token inválido ou expirado",
+        code: "INVALID_TOKEN",
+      };
     }
   });
 
@@ -29,6 +35,8 @@ export async function reportsRoutes(app: FastifyInstance) {
         querystring: reportFilterSchema,
         response: {
           200: spendingByCategorySchema,
+          400: apiErrorResponseSchema,
+          401: apiErrorResponseSchema,
         },
       },
     },
@@ -47,6 +55,8 @@ export async function reportsRoutes(app: FastifyInstance) {
         querystring: reportFilterSchema,
         response: {
           200: cashFlowSchema,
+          400: apiErrorResponseSchema,
+          401: apiErrorResponseSchema,
         },
       },
     },
@@ -65,6 +75,8 @@ export async function reportsRoutes(app: FastifyInstance) {
         querystring: reportFilterSchema,
         response: {
           200: balanceHistorySchema,
+          400: apiErrorResponseSchema,
+          401: apiErrorResponseSchema,
         },
       },
     },
@@ -81,6 +93,11 @@ export async function reportsRoutes(app: FastifyInstance) {
         summary: "Exportar transações filtradas para CSV",
         tags: ["reports"],
         querystring: reportFilterSchema,
+        response: {
+          200: z.string(),
+          400: apiErrorResponseSchema,
+          401: apiErrorResponseSchema,
+        },
       },
     },
     async (request, reply) => {

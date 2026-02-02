@@ -155,7 +155,12 @@ describe("Users Routes", () => {
 
     expect(response.statusCode).toBe(400);
     const body = JSON.parse(response.body);
-    expect(body.message).toContain("Required");
+    expect(body).toMatchObject({
+      statusCode: 400,
+      error: "Bad Request",
+      message: "Dados inválidos",
+      code: "VALIDATION_ERROR",
+    });
   });
 
   /**
@@ -176,7 +181,12 @@ describe("Users Routes", () => {
 
     expect(response.statusCode).toBe(400);
     const body = JSON.parse(response.body);
-    expect(body.message).toContain("Email inválido");
+    expect(body).toMatchObject({
+      statusCode: 400,
+      error: "Bad Request",
+      message: "Dados inválidos",
+      code: "VALIDATION_ERROR",
+    });
   });
 
   /**
@@ -197,7 +207,12 @@ describe("Users Routes", () => {
 
     expect(response.statusCode).toBe(400);
     const body = JSON.parse(response.body);
-    expect(body.message).toContain("Senha deve ter pelo menos 6 caracteres");
+    expect(body).toMatchObject({
+      statusCode: 400,
+      error: "Bad Request",
+      message: "Dados inválidos",
+      code: "VALIDATION_ERROR",
+    });
   });
 
   /**

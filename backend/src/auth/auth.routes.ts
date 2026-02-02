@@ -21,6 +21,7 @@ import {
   LoginResponseDTO,
   loginSchema,
   loginResponseSchema,
+  apiErrorResponseSchema,
 } from "@dindinho/shared";
 import fastifyRateLimit from "@fastify/rate-limit";
 
@@ -109,9 +110,8 @@ export async function authRoutes(
         body: loginSchema,
         response: {
           200: loginResponseSchema,
-          401: z.object({
-            message: z.string().describe("Mensagem de erro de autenticação"),
-          }),
+          400: apiErrorResponseSchema,
+          401: apiErrorResponseSchema,
         },
       },
     },
@@ -148,7 +148,11 @@ export async function authRoutes(
           error instanceof Error &&
           error.message === "Credenciais inválidas."
         ) {
-          return reply.status(401).send({ message: error.message });
+          throw {
+            statusCode: 401,
+            message: error.message,
+            code: "INVALID_CREDENTIALS",
+          };
         }
         throw error;
       }
@@ -179,9 +183,8 @@ export async function authRoutes(
             token: z.string().describe("Novo access token JWT"),
             refreshToken: z.string().describe("Novo refresh token"),
           }),
-          401: z.object({
-            message: z.string().describe("Mensagem de erro"),
-          }),
+          400: apiErrorResponseSchema,
+          401: apiErrorResponseSchema,
         },
       },
     },
@@ -193,9 +196,11 @@ export async function authRoutes(
         const userId = await service.validateRefreshToken(refreshToken);
 
         if (!userId) {
-          return reply.status(401).send({
+          throw {
+            statusCode: 401,
             message: "Refresh token inválido ou expirado",
-          });
+            code: "INVALID_REFRESH_TOKEN",
+          };
         }
 
         // Busca dados do usuário
@@ -205,9 +210,11 @@ export async function authRoutes(
         });
 
         if (!user) {
-          return reply.status(401).send({
+          throw {
+            statusCode: 401,
             message: "Usuário não encontrado",
-          });
+            code: "USER_NOT_FOUND",
+          };
         }
 
         // Gera novo access token (15min)
@@ -227,9 +234,11 @@ export async function authRoutes(
           refreshToken: newRefreshToken,
         });
       } catch {
-        return reply.status(401).send({
+        throw {
+          statusCode: 401,
           message: "Erro ao renovar token",
-        });
+          code: "REFRESH_FAILED",
+        };
       }
     },
   );
@@ -256,6 +265,7 @@ export async function authRoutes(
           200: z.object({
             message: z.string().describe("Mensagem de sucesso"),
           }),
+          400: apiErrorResponseSchema,
         },
       },
     },

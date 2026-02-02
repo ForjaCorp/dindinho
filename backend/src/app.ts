@@ -21,8 +21,60 @@ import { signupAllowlistRoutes } from "./signup-allowlist/signup-allowlist.route
 import { waitlistRoutes } from "./waitlist/waitlist.routes";
 import { reportsRoutes } from "./reports/reports.routes";
 import { RefreshTokenService } from "./auth/refresh-token.service";
-import { ApiResponseDTO, HealthCheckDTO, DbTestDTO } from "@dindinho/shared";
+import {
+  ApiResponseDTO,
+  HealthCheckDTO,
+  DbTestDTO,
+  ApiErrorResponseDTO,
+} from "@dindinho/shared";
 import { prisma } from "./lib/prisma";
+
+const HTTP_ERROR_BY_STATUS: Record<number, string> = {
+  400: "Bad Request",
+  401: "Unauthorized",
+  403: "Forbidden",
+  404: "Not Found",
+  409: "Conflict",
+  422: "Unprocessable Entity",
+  429: "Too Many Requests",
+  500: "Internal Server Error",
+  503: "Service Unavailable",
+};
+
+const ERROR_CODE_RE = /^[A-Z0-9_]+$/;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const getHttpErrorLabel = (statusCode: number): string =>
+  HTTP_ERROR_BY_STATUS[statusCode] ?? "Error";
+
+const normalizeErrorCode = (value: unknown): string | undefined => {
+  if (typeof value !== "string") return undefined;
+  if (value.length === 0) return undefined;
+  if (!ERROR_CODE_RE.test(value)) return undefined;
+  return value;
+};
+
+const buildApiErrorResponse = (params: {
+  statusCode: number;
+  message: string;
+  requestId: string;
+  code?: string;
+  issues?: unknown;
+  details?: unknown;
+}): ApiErrorResponseDTO => {
+  const { statusCode, message, requestId, code, issues, details } = params;
+  return {
+    statusCode,
+    error: getHttpErrorLabel(statusCode),
+    message,
+    code,
+    requestId,
+    issues: Array.isArray(issues) ? issues : undefined,
+    details,
+  };
+};
 /**
  * Constrói e configura a aplicação Fastify
  * @function buildApp
@@ -148,59 +200,110 @@ export function buildApp(): FastifyInstance {
   });
   // Error Handler Global
   app.setErrorHandler((error: unknown, request, reply) => {
+    const includeDetails = process.env.NODE_ENV !== "production";
+    const requestId = request.id;
+
     // Erros de Validação Zod
     if (error instanceof ZodError) {
-      return reply.status(400).send({
+      const payload = buildApiErrorResponse({
         statusCode: 400,
-        error: "Bad Request",
-        message: error.message,
+        message: "Dados inválidos",
+        requestId,
+        code: "VALIDATION_ERROR",
         issues: error.issues,
       });
+      return reply.status(400).send(payload);
     }
 
     if (error instanceof SyntaxError) {
-      return reply.status(400).send({
+      const payload = buildApiErrorResponse({
         statusCode: 400,
-        error: "Bad Request",
         message: "JSON inválido",
+        requestId,
+        code: "INVALID_JSON",
       });
+      return reply.status(400).send(payload);
     }
 
-    // Rate limit exceeded (429)
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "statusCode" in error &&
-      (error as { statusCode: number }).statusCode === 429
-    ) {
-      return reply.status(429).send({
-        statusCode: 429,
-        error: "Too Many Requests",
-        message: "Limite de requisições excedido, tente novamente mais tarde",
+    if (isRecord(error) && "statusCode" in error) {
+      const statusCodeRaw = error.statusCode;
+      const statusCode =
+        typeof statusCodeRaw === "number" && Number.isFinite(statusCodeRaw)
+          ? statusCodeRaw
+          : 500;
+
+      const normalizedFastifyCode = normalizeErrorCode(error.code);
+      const isValidationError =
+        statusCode === 400 &&
+        (normalizedFastifyCode === "FST_ERR_VALIDATION" ||
+          normalizedFastifyCode === "VALIDATION_ERROR");
+
+      const message = isValidationError
+        ? "Dados inválidos"
+        : typeof error.message === "string" && error.message.length > 0
+          ? error.message
+          : statusCode === 429
+            ? "Limite de requisições excedido, tente novamente mais tarde"
+            : "Erro inesperado";
+
+      const code = isValidationError
+        ? "VALIDATION_ERROR"
+        : (normalizedFastifyCode ??
+          (isRecord(error.details)
+            ? normalizeErrorCode(error.details.code)
+            : undefined));
+
+      const details = includeDetails
+        ? "details" in error
+          ? (error as Record<string, unknown>).details
+          : undefined
+        : undefined;
+
+      const validationDetails =
+        includeDetails && isValidationError && "validation" in error
+          ? (error as Record<string, unknown>).validation
+          : undefined;
+
+      const payload = buildApiErrorResponse({
+        statusCode,
+        message,
+        requestId,
+        code,
+        details: validationDetails ?? details,
       });
+      return reply.status(statusCode).send(payload);
     }
 
-    // Erros com statusCode definido (ex: lançados manualmente ou pelo JWT)
-    if (typeof error === "object" && error !== null && "statusCode" in error) {
-      const e = error as {
-        statusCode: number;
-        name?: string;
-        message?: string;
-      };
-      return reply.status(e.statusCode).send({
-        statusCode: e.statusCode,
-        error: e.name || "Error",
-        message: e.message,
+    if (error instanceof Error) {
+      const code =
+        isRecord(error) && "code" in error
+          ? normalizeErrorCode((error as Record<string, unknown>).code)
+          : undefined;
+
+      const details =
+        includeDetails && isRecord(error) && "details" in error
+          ? (error as Record<string, unknown>).details
+          : undefined;
+
+      app.log.error({ err: error, reqId: requestId });
+      const payload = buildApiErrorResponse({
+        statusCode: 500,
+        message: "Erro interno do servidor",
+        requestId,
+        code,
+        details,
       });
+      return reply.status(500).send(payload);
     }
 
     // Erros não tratados
-    app.log.error({ err: error, reqId: request.id });
-    return reply.status(500).send({
+    app.log.error({ err: error, reqId: requestId });
+    const payload = buildApiErrorResponse({
       statusCode: 500,
-      error: "Internal Server Error",
       message: "Erro interno do servidor",
+      requestId,
     });
+    return reply.status(500).send(payload);
   });
   // Rotas da aplicação
   app.register(usersRoutes, { prefix: "/api" });

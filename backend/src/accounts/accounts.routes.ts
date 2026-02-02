@@ -9,6 +9,7 @@ import {
   accountSchema,
   UpdateAccountDTO,
   updateAccountSchema,
+  apiErrorResponseSchema,
 } from "@dindinho/shared";
 
 /**
@@ -74,9 +75,8 @@ export async function accountsRoutes(app: FastifyInstance) {
         body: createAccountSchema,
         response: {
           201: accountSchema,
-          401: z.object({
-            message: z.string(),
-          }),
+          400: apiErrorResponseSchema,
+          401: apiErrorResponseSchema,
         },
       },
     },
@@ -121,9 +121,7 @@ export async function accountsRoutes(app: FastifyInstance) {
         tags: ["accounts"],
         response: {
           200: z.array(accountSchema),
-          401: z.object({
-            message: z.string(),
-          }),
+          401: apiErrorResponseSchema,
         },
       },
     },
@@ -147,11 +145,11 @@ export async function accountsRoutes(app: FastifyInstance) {
         body: updateAccountSchema,
         response: {
           200: accountSchema,
-          400: z.object({ message: z.string() }).passthrough(),
-          401: z.object({ message: z.string() }),
-          403: z.object({ message: z.string() }),
-          404: z.object({ message: z.string() }),
-          409: z.object({ message: z.string() }),
+          400: apiErrorResponseSchema,
+          401: apiErrorResponseSchema,
+          403: apiErrorResponseSchema,
+          404: apiErrorResponseSchema,
+          409: apiErrorResponseSchema,
         },
       },
     },

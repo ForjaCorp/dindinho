@@ -15,6 +15,57 @@ Este documento descreve o fluxo de autenticação do Dindinho, com JWT (access t
 
 O interceptor só injeta `Authorization: Bearer ...` quando a request é interna (ex.: `/api/*` ou `localhost:3333`).
 
+## Contrato de erro (ApiErrorResponseDTO)
+
+O backend padroniza respostas de erro em um envelope único (contrato compartilhado) definido em `@dindinho/shared`.
+
+- Fonte do contrato: [error.schema.ts](../../packages/shared/src/schemas/error.schema.ts)
+- Tipo: `ApiErrorResponseDTO`
+- Schema: `apiErrorResponseSchema`
+
+Campos principais:
+
+- `statusCode`: status HTTP
+- `error`: label HTTP (ex.: `Bad Request`, `Unauthorized`)
+- `message`: mensagem humana (para UI/logs)
+- `requestId` (opcional): id da request (correlaciona logs)
+- `code` (opcional): código estável para tratamento por clientes (`^[A-Z0-9_]+$`)
+- `issues` (opcional): erros de validação (ex.: Zod)
+- `details` (opcional): detalhes adicionais (não deve vazar em produção)
+
+Exemplo (401):
+
+```json
+{
+  "statusCode": 401,
+  "error": "Unauthorized",
+  "message": "Token inválido ou expirado",
+  "code": "INVALID_TOKEN",
+  "requestId": "req-abc123"
+}
+```
+
+## Convenções de validação (Zod)
+
+O backend usa Zod como fonte de verdade para validação e para contratos em runtime.
+
+- `body`, `querystring`, `params` e `response` sempre definidos em Zod nas rotas
+- `z.coerce` só quando o valor vem como string (principalmente querystring) e a coerção é óbvia e estável
+- `.transform` deve ser puro e previsível (sem IO, sem dependência de tempo/ambiente); preferir normalizações simples (trim/lowercase)
+- Preferir schemas compartilhados em `@dindinho/shared` quando o contrato também é consumido pelo frontend
+
+## Versionamento do @dindinho/shared
+
+`@dindinho/shared` é contrato compartilhado (frontend/backend). Mudanças em schemas/DTOs devem seguir SemVer.
+
+- Patch: correções internas que não alteram o contrato público
+- Minor: adições compatíveis (campos opcionais novos, endpoints/DTOs novos)
+- Major: qualquer quebra de compatibilidade (campo removido, tipo estreitado, mudança de formato)
+
+Enquanto o pacote estiver em `0.x`, trate mudanças incompatíveis como incremento de `minor` (prática comum em pré-1.0).
+
+Registro de alterações do pacote: [CHANGELOG.md](../../packages/shared/CHANGELOG.md)
+
 ## Fluxos
 
 ### Login

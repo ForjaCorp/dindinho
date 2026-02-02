@@ -3,6 +3,7 @@ import Fastify, { FastifyInstance } from "fastify";
 import { waitlistRoutes } from "./waitlist.routes";
 import { prisma } from "../lib/prisma";
 import { Waitlist } from "@prisma/client";
+import { ZodError } from "zod";
 import {
   serializerCompiler,
   validatorCompiler,
@@ -27,6 +28,62 @@ describe("WaitlistRoutes", () => {
     // Configuração necessária para Zod provider
     app.setValidatorCompiler(validatorCompiler);
     app.setSerializerCompiler(serializerCompiler);
+
+    app.setErrorHandler((error: unknown, request, reply) => {
+      if (error instanceof ZodError) {
+        return reply.status(400).send({
+          statusCode: 400,
+          error: "Bad Request",
+          message: "Dados inválidos",
+          code: "VALIDATION_ERROR",
+          requestId: request.id,
+          issues: error.issues,
+        });
+      }
+
+      if (
+        typeof error === "object" &&
+        error !== null &&
+        "statusCode" in error
+      ) {
+        const e = error as {
+          statusCode: number;
+          message?: string;
+          code?: string;
+          validation?: unknown;
+        };
+        const statusCode =
+          typeof e.statusCode === "number" && Number.isFinite(e.statusCode)
+            ? e.statusCode
+            : 500;
+
+        const isValidationError =
+          statusCode === 400 && e.code === "FST_ERR_VALIDATION";
+        const errorLabel =
+          statusCode === 409
+            ? "Conflict"
+            : statusCode === 400
+              ? "Bad Request"
+              : "Error";
+        return reply.status(statusCode).send({
+          statusCode,
+          error: errorLabel,
+          message: isValidationError
+            ? "Dados inválidos"
+            : (e.message ?? "Erro inesperado"),
+          code: isValidationError ? "VALIDATION_ERROR" : e.code,
+          requestId: request.id,
+          details: isValidationError ? e.validation : undefined,
+        });
+      }
+
+      return reply.status(500).send({
+        statusCode: 500,
+        error: "Internal Server Error",
+        message: "Erro interno do servidor",
+        requestId: request.id,
+      });
+    });
 
     await app.register(waitlistRoutes);
     await app.ready();
@@ -80,9 +137,13 @@ describe("WaitlistRoutes", () => {
     });
 
     expect(response.statusCode).toBe(409);
-    expect(response.json()).toEqual({
-      message: "Email já está na lista de espera.",
-    });
+    expect(response.json()).toEqual(
+      expect.objectContaining({
+        statusCode: 409,
+        error: "Conflict",
+        message: "Email já está na lista de espera.",
+      }),
+    );
   });
 
   it("deve retornar 400 se os dados forem inválidos", async () => {
@@ -99,5 +160,12 @@ describe("WaitlistRoutes", () => {
     });
 
     expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual(
+      expect.objectContaining({
+        statusCode: 400,
+        error: "Bad Request",
+        message: "Dados inválidos",
+      }),
+    );
   });
 });
