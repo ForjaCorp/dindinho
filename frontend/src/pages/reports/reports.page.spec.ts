@@ -193,6 +193,17 @@ describe('ReportsPage', () => {
     );
   });
 
+  it('deve enviar accountIds como array mesmo se apenas 1 conta selecionada', () => {
+    component.selectedAccountIds.set(['acc-1']);
+    component.loadAllReports();
+
+    expect(reportsServiceMock.getSpendingByCategoryChart).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accountIds: ['acc-1'],
+      }),
+    );
+  });
+
   it('deve enviar invoiceMonth ao carregar relatórios no modo de fatura', () => {
     component.timeFilterSelection.set({
       mode: 'INVOICE_MONTH',
@@ -529,7 +540,7 @@ describe('ReportsPage', () => {
         queryParams: expect.objectContaining({
           type: 'EXPENSE',
           invoiceMonth: '2024-02',
-          accountId: 'acc-123',
+          accountIds: ['acc-123'],
           openFilters: 1,
         }),
       });

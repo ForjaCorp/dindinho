@@ -429,16 +429,17 @@ describe('TransactionsPage', () => {
     fixture.detectChanges();
 
     const lastCall = api.getTransactions.mock.calls.at(-1)?.[0] as Record<string, unknown>;
-    expect(lastCall).toMatchObject({ limit: 30, accountId: 'account-1' });
+    expect(lastCall).toMatchObject({ limit: 30, accountIds: ['account-1'] });
 
     expect(
       fixture.nativeElement.querySelector('[data-testid="transactions-filters"]'),
     ).toBeTruthy();
-    const select = fixture.nativeElement.querySelector(
-      '[data-testid="transactions-account-select"]',
-    ) as HTMLSelectElement;
-    expect(select).toBeTruthy();
-    expect(select.value).toBe('account-1');
+    // p-multiselect is more complex to query by value, so checking presence is enough for now
+    // or check component instance state
+    const component = fixture.componentInstance as unknown as {
+      accountFilterIds: () => string[];
+    };
+    expect(component.accountFilterIds()).toEqual(['account-1']);
   });
 
   it('deve aplicar filtro de categoria via query param', () => {
@@ -476,21 +477,23 @@ describe('TransactionsPage', () => {
   it('deve sincronizar query params ao mudar filtro de conta', () => {
     const component = fixture.componentInstance as unknown as {
       toggleFilters: () => void;
-      onAccountFilterChange: (e: Event) => void;
+      onAccountFilterChange: (ids: string[]) => void;
     };
 
     component.toggleFilters();
     fixture.detectChanges();
 
-    component.onAccountFilterChange({
-      target: { value: 'account-1' },
-    } as unknown as Event);
+    component.onAccountFilterChange(['account-1']);
 
     expect(router.navigate).toHaveBeenCalledWith(
       [],
       expect.objectContaining({
         queryParamsHandling: 'merge',
-        queryParams: expect.objectContaining({ accountId: 'account-1', openFilters: 1 }),
+        queryParams: expect.objectContaining({
+          accountIds: ['account-1'],
+          accountId: null,
+          openFilters: 1,
+        }),
       }),
     );
   });

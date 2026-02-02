@@ -9,10 +9,12 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs/operators';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ButtonModule } from 'primeng/button';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { TransactionDTO, AccountDTO, PeriodPreset, TimeFilterSelectionDTO } from '@dindinho/shared';
 import { ApiService } from '../../app/services/api.service';
 import { AccountService } from '../../app/services/account.service';
@@ -38,6 +40,8 @@ type TransactionTypeFilter = '' | TransactionDTO['type'];
     PageHeaderComponent,
     TransactionDrawerComponent,
     TimeFilterComponent,
+    MultiSelectModule,
+    FormsModule,
   ],
   template: `
     <div data-testid="transactions-page" class="flex flex-col gap-6 w-full">
@@ -108,21 +112,20 @@ type TransactionTypeFilter = '' | TransactionDTO['type'];
             </div>
 
             <div class="flex flex-col gap-1">
-              <label class="sr-only" for="accountId">Conta</label>
-              <select
-                data-testid="transactions-account-select"
-                id="accountId"
-                class="h-10 rounded-xl border border-slate-200 px-3 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                (change)="onAccountFilterChange($event)"
-                aria-label="Conta"
-              >
-                <option value="" [selected]="!accountFilterId()">Todas as contas</option>
-                @for (a of accounts(); track a.id) {
-                  <option [value]="a.id" [selected]="a.id === accountFilterId()">
-                    {{ a.name }}
-                  </option>
-                }
-              </select>
+              <label class="sr-only" for="accountIds">Contas</label>
+              <p-multiselect
+                inputId="accountIds"
+                [ngModel]="accountFilterIds()"
+                (ngModelChange)="onAccountFilterChange($event)"
+                [options]="accounts()"
+                optionLabel="name"
+                optionValue="id"
+                placeholder="Todas as contas"
+                styleClass="w-full !bg-white !border-slate-200 !rounded-xl !min-h-[40px]"
+                display="chip"
+                [maxSelectedLabels]="1"
+                aria-label="Contas"
+              />
             </div>
 
             <div class="flex flex-col gap-1">
@@ -234,7 +237,7 @@ export class TransactionsPage {
 
   protected readonly searchDraft = signal('');
   protected readonly searchQuery = signal('');
-  protected readonly accountFilterId = signal<string>('');
+  protected readonly accountFilterIds = signal<string[]>([]);
   protected readonly categoryFilterId = signal<string>('');
   protected readonly typeFilter = signal<TransactionTypeFilter>('');
 
@@ -335,7 +338,7 @@ export class TransactionsPage {
   }
 
   private syncQueryParams(partial: {
-    accountId?: string | null;
+    accountIds?: string[] | null;
     categoryId?: string | null;
     type?: TransactionTypeFilter | null;
     invoiceMonth?: string | null;
@@ -346,18 +349,78 @@ export class TransactionsPage {
     tzOffsetMinutes?: number | null;
     openFilters?: 0 | 1;
   }) {
+    // 1. Resolver filtros simples (se undefined no partial, usa valor atual do signal)
+    const accountIds =
+      partial.accountIds !== undefined ? partial.accountIds : this.accountFilterIds();
+    const categoryId =
+      partial.categoryId !== undefined ? partial.categoryId : this.categoryFilterId();
+    const type = partial.type !== undefined ? partial.type : this.typeFilter();
+
+    // 2. Resolver filtros de tempo
+    // Se algum parâmetro de tempo foi passado no partial, usamos o partial (pois quem chamou já tratou as exclusões com null).
+    // Se nenhum parâmetro de tempo foi passado, reconstruímos a partir do signal atual para garantir persistência.
+    const timeKeys = [
+      'invoiceMonth',
+      'month',
+      'periodPreset',
+      'startDay',
+      'endDay',
+      'tzOffsetMinutes',
+    ] as const;
+    const hasTimePartial = timeKeys.some((k) => partial[k] !== undefined);
+
+    let timeParams: Record<string, string | number | null | undefined> = {};
+
+    if (hasTimePartial) {
+      timeParams = {
+        invoiceMonth: partial.invoiceMonth ?? undefined,
+        month: partial.month ?? undefined, // month é legado, mas mantemos null se passado
+        periodPreset: partial.periodPreset ?? undefined,
+        startDay: partial.startDay ?? undefined,
+        endDay: partial.endDay ?? undefined,
+        tzOffsetMinutes: partial.tzOffsetMinutes ?? undefined,
+      };
+
+      // Se o partial contém null explicitamente, garantimos que vá como null para o router limpar
+      if (partial.invoiceMonth === null) timeParams['invoiceMonth'] = null;
+      if (partial.month === null) timeParams['month'] = null;
+      if (partial.periodPreset === null) timeParams['periodPreset'] = null;
+      if (partial.startDay === null) timeParams['startDay'] = null;
+      if (partial.endDay === null) timeParams['endDay'] = null;
+      if (partial.tzOffsetMinutes === null) timeParams['tzOffsetMinutes'] = null;
+    } else {
+      // Reconstruir do signal atual
+      const currentSelection = this.timeFilterSelection();
+      const query = resolveTimeFilterToTransactionsQuery(currentSelection);
+
+      if (currentSelection.mode === 'INVOICE_MONTH') {
+        timeParams['invoiceMonth'] = query.invoiceMonth ?? null;
+      } else {
+        // DAY_RANGE
+        if (currentSelection.period.preset && currentSelection.period.preset !== 'CUSTOM') {
+          timeParams['periodPreset'] = currentSelection.period.preset;
+          timeParams['tzOffsetMinutes'] =
+            typeof currentSelection.period.tzOffsetMinutes === 'number'
+              ? currentSelection.period.tzOffsetMinutes
+              : null;
+        } else {
+          timeParams['periodPreset'] = 'CUSTOM';
+          timeParams['startDay'] = query.startDay ?? null;
+          timeParams['endDay'] = query.endDay ?? null;
+          timeParams['tzOffsetMinutes'] =
+            typeof query.tzOffsetMinutes === 'number' ? query.tzOffsetMinutes : null;
+        }
+      }
+    }
+
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: {
-        accountId: partial.accountId,
-        categoryId: partial.categoryId,
-        type: partial.type,
-        invoiceMonth: partial.invoiceMonth,
-        month: partial.month,
-        periodPreset: partial.periodPreset,
-        startDay: partial.startDay,
-        endDay: partial.endDay,
-        tzOffsetMinutes: partial.tzOffsetMinutes,
+        accountIds: accountIds?.length ? accountIds : null,
+        accountId: null,
+        categoryId: categoryId || null,
+        type: type || null,
+        ...timeParams,
         openFilters: partial.openFilters,
       },
       queryParamsHandling: 'merge',
@@ -378,9 +441,18 @@ export class TransactionsPage {
     this.categoryService.loadCategories();
 
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
-      const accountId = params.get('accountId') ?? '';
-      if (this.accountFilterId() !== accountId) {
-        this.accountFilterId.set(accountId);
+      const accountIds = params.getAll('accountIds');
+      const legacyAccountId = params.get('accountId');
+      const finalAccountIds =
+        accountIds.length > 0 ? accountIds : legacyAccountId ? [legacyAccountId] : [];
+
+      const current = this.accountFilterIds();
+      const changed =
+        current.length !== finalAccountIds.length ||
+        current.some((id, i) => id !== finalAccountIds[i]);
+
+      if (changed) {
+        this.accountFilterIds.set(finalAccountIds);
       }
 
       const categoryId = params.get('categoryId') ?? '';
@@ -447,7 +519,7 @@ export class TransactionsPage {
             : null;
 
       const hasAnyFilter =
-        !!accountId ||
+        finalAccountIds.length > 0 ||
         !!categoryId ||
         !!type ||
         !!invoiceMonth ||
@@ -477,7 +549,7 @@ export class TransactionsPage {
 
     effect(() => {
       const q = this.searchQuery();
-      const accountId = this.accountFilterId();
+      const accountIds = this.accountFilterIds();
       const categoryId = this.categoryFilterId();
       const type = this.typeFilter();
 
@@ -485,7 +557,7 @@ export class TransactionsPage {
 
       const filters: {
         q?: string;
-        accountId?: string;
+        accountIds?: string[];
         categoryId?: string;
         type?: TransactionDTO['type'];
         invoiceMonth?: string;
@@ -494,7 +566,7 @@ export class TransactionsPage {
         tzOffsetMinutes?: number;
       } = {};
       if (q) filters.q = q;
-      if (accountId) filters.accountId = accountId;
+      if (accountIds.length > 0) filters.accountIds = accountIds;
       if (categoryId) filters.categoryId = categoryId;
       if (type) filters.type = type;
       if (this.timeFilterActive()) {
@@ -532,10 +604,9 @@ export class TransactionsPage {
     this.searchDraft.set(value);
   }
 
-  protected onAccountFilterChange(event: Event) {
-    const value = (event.target as HTMLSelectElement | null)?.value ?? '';
-    this.accountFilterId.set(value);
-    this.syncQueryParams({ accountId: value ? value : null, openFilters: 1 });
+  protected onAccountFilterChange(value: string[]) {
+    this.accountFilterIds.set(value);
+    this.syncQueryParams({ accountIds: value.length ? value : null, openFilters: 1 });
   }
 
   protected onCategoryFilterChange(event: Event) {
@@ -627,7 +698,7 @@ export class TransactionsPage {
 
   private resetAndLoad(filters: {
     q?: string;
-    accountId?: string;
+    accountIds?: string[];
     categoryId?: string;
     type?: TransactionDTO['type'];
     invoiceMonth?: string;
@@ -669,7 +740,7 @@ export class TransactionsPage {
     const seq = this.initialLoadSeq;
 
     const q = this.searchQuery();
-    const accountId = this.accountFilterId();
+    const accountIds = this.accountFilterIds();
     const categoryId = this.categoryFilterId();
     const type = this.typeFilter();
     const timeQuery = resolveTimeFilterToTransactionsQuery(this.timeFilterSelection());
@@ -678,7 +749,7 @@ export class TransactionsPage {
       cursorId: string;
       limit: number;
       q?: string;
-      accountId?: string;
+      accountIds?: string[];
       categoryId?: string;
       type?: TransactionDTO['type'];
       invoiceMonth?: string;
@@ -687,7 +758,7 @@ export class TransactionsPage {
       tzOffsetMinutes?: number;
     } = { cursorId, limit: 30 };
     if (q) filters.q = q;
-    if (accountId) filters.accountId = accountId;
+    if (accountIds.length) filters.accountIds = accountIds;
     if (categoryId) filters.categoryId = categoryId;
     if (type) filters.type = type;
     if (this.timeFilterActive()) {
