@@ -147,7 +147,7 @@ Referência de orquestração: `docker-compose.coolify.yml` demonstra a configur
 
 ## 📅 Planejamentos
 
-- [TimeFilter — Iteração de melhorias](docs/planning/time-filter.md)
+- [TimeFilter — Iteração de melhorias (Concluído)](docs/planning/time-filter.md)
 - [Filtro por conta unificado (Relatórios + Transações)](docs/planning/account-filter.md)
 - [Documentação — backlog](docs/planning/documentation.md)
 

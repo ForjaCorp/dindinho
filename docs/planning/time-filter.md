@@ -1,4 +1,4 @@
-# TimeFilter — Iteração de melhorias
+# TimeFilter — Iteração de melhorias (Concluído)
 
 ## Contexto
 
@@ -28,11 +28,11 @@ Não-escopo:
 
 ## Fases
 
-### Fase M1 — UX e semântica do editor (TimeFilterComponent)
+### Fase M1 — UX e semântica do editor (TimeFilterComponent) [Concluído]
 
-- Renomear o botão Fechar → Concluir (mantendo o comportamento atual de aplicar ao sair).
-- Ajustar o título do sheet para refletir o modo ativo (Período / Fatura).
-- Tornar o backdrop não focável (evitar tab order estranho sem quebrar click/ESC).
+- [x] Renomear o botão Fechar → Concluir (mantendo o comportamento atual de aplicar ao sair).
+- [x] Ajustar o título do sheet para refletir o modo ativo (Período / Fatura).
+- [x] Tornar o backdrop não focável (evitar tab order estranho sem quebrar click/ESC).
 
 Arquivos-alvo:
 
@@ -41,23 +41,23 @@ Arquivos-alvo:
 
 Critério:
 
-- Teclado: ESC fecha; foco inicial no botão Concluir; foco retorna ao botão de abertura.
+- [x] Teclado: ESC fecha; foco inicial no botão Concluir; foco retorna ao botão de abertura.
 
-### Fase M2 — Correção de timezone em heurísticas (Relatórios)
+### Fase M2 — Correção de timezone em heurísticas (Relatórios) [Concluído]
 
-- Corrigir `computeUtcDaysInclusive()` para não usar `getUTC*` em datas locais.
-- Garantir que a heurística `changeOnly` (ex.: range > 120 dias) não oscile por timezone.
+- [x] Corrigir `computeUtcDaysInclusive()` para não usar `getUTC*` em datas locais.
+- [x] Garantir que a heurística `changeOnly` (ex.: range > 120 dias) não oscile por timezone.
 
 Arquivos-alvo:
 
 - [reports.page.ts](../../frontend/src/pages/reports/reports.page.ts)
 - [reports.page.spec.ts](../../frontend/src/pages/reports/reports.page.spec.ts)
 
-### Fase M3 — Contratos shared (validações e deduplicação)
+### Fase M3 — Contratos shared (validações e deduplicação) [Concluído]
 
-- Endurecer `invoiceMonthSchema` para validar mês 01–12.
-- Deduplicar `isoDaySchema` (single source of truth).
-- Atualizar specs para cobrir `invoiceMonth` fora da faixa (ex.: `2026-13`).
+- [x] Endurecer `invoiceMonthSchema` para validar mês 01–12.
+- [x] Deduplicar `isoDaySchema` (single source of truth).
+- [x] Atualizar specs para cobrir `invoiceMonth` fora da faixa (ex.: `2026-13`).
 
 Arquivos-alvo:
 
@@ -66,10 +66,10 @@ Arquivos-alvo:
 - [report.schema.spec.ts](../../packages/shared/src/schemas/report.schema.spec.ts)
 - [transaction.schema.spec.ts](../../packages/shared/src/schemas/transaction.schema.spec.ts)
 
-### Fase M4 — Guardrails de query params (Transações)
+### Fase M4 — Guardrails de query params (Transações) [Concluído]
 
-- Validar/clamp de `tzOffsetMinutes` no parser de query params para o range [-840, 840].
-- Evitar ativar filtro temporal quando os params estão inválidos (degradar para estado “sem filtro”).
+- [x] Validar/clamp de `tzOffsetMinutes` no parser de query params para o range [-840, 840].
+- [x] Evitar ativar filtro temporal quando os params estão inválidos (degradar para estado “sem filtro”).
 
 Arquivos-alvo:
 
@@ -78,10 +78,10 @@ Arquivos-alvo:
 
 ## Critérios de aceite
 
-- Texto Concluir deixa claro que fechar aplica mudanças.
-- Backdrop não recebe foco via Tab/Shift+Tab; ESC continua funcionando.
-- `changeOnly` não muda comportamento por timezone.
-- `invoiceMonth` inválido (ex.: `2026-13`) é rejeitado no shared.
-- Existe um único `isoDaySchema` no shared.
-- `tzOffsetMinutes` inválido não gera request inválido nem quebra a listagem.
-- Testes unitários cobrindo os pontos acima.
+- [x] Texto Concluir deixa claro que fechar aplica mudanças.
+- [x] Backdrop não recebe foco via Tab/Shift+Tab; ESC continua funcionando.
+- [x] `changeOnly` não muda comportamento por timezone.
+- [x] `invoiceMonth` inválido (ex.: `2026-13`) é rejeitado no shared.
+- [x] Existe um único `isoDaySchema` no shared.
+- [x] `tzOffsetMinutes` inválido não gera request inválido nem quebra a listagem.
+- [x] Testes unitários cobrindo os pontos acima.
