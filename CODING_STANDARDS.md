@@ -171,8 +171,8 @@ describe("Componente", () => {
 
 ### Planejamento e atualização
 
-- Planejamento de documentação e backlog: `docs/planning/documentation.md`
-- Backlog de engenharia (contratos em runtime): seção “Backlog de engenharia — contratos em runtime” em `docs/planning/documentation.md`
+- Planejamento de documentação e backlog: `docs/90-backlog/planning/documentation.md`
+- Backlog de engenharia (contratos em runtime): seção “Backlog de engenharia — contratos em runtime” em `docs/90-backlog/planning/documentation.md`
 - Ao adicionar/alterar um fluxo crítico, atualizar sempre o ponto de entrada mais próximo:
   - Visão geral e links: `README.md` (root)
   - Como rodar e operar: `backend/README.md` e/ou `frontend/README.md`

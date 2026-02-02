@@ -2,6 +2,11 @@
 
 Para instruções de setup do monorepo (DB, Turbo, etc.), veja o [README principal](../README.md).
 
+Documentação relacionada:
+
+- Fluxo de autenticação (frontend + API): [authentication.md](../docs/30-api/authentication.md)
+- Plano de documentação (portal + contratos + API): [documentation.md](../docs/90-backlog/planning/documentation.md)
+
 Variáveis de ambiente relevantes para Refresh Tokens
 
 - `REFRESH_TOKEN_DAYS` (opcional): número de dias que um refresh token é válido. Default: `7`.

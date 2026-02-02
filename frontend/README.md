@@ -53,3 +53,5 @@ Contribuição
 Mais informações
 
 - Consulte `backend/README.md` para instruções do backend e `CHANGELOG_PTBR.md` para um resumo das mudanças recentes.
+- Fluxo de autenticação (frontend + API): [authentication.md](../docs/30-api/authentication.md)
+- Plano de documentação (portal + contratos + API): [documentation.md](../docs/90-backlog/planning/documentation.md)

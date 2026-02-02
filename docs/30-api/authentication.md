@@ -40,10 +40,10 @@ O interceptor só injeta `Authorization: Bearer ...` quando a request é interna
 ## Produção
 
 - Recomendado servir o frontend e fazer proxy da API no mesmo host, expondo a API em `/api`.
-- Variáveis de ambiente e detalhes operacionais: `backend/README.md`.
+- Variáveis de ambiente e detalhes operacionais: `../../backend/README.md`.
 
 ## Referências no código
 
-- `AuthService`: [auth.service.ts](../frontend/src/app/services/auth.service.ts)
-- Interceptor: [auth.interceptor.ts](../frontend/src/app/interceptors/auth.interceptor.ts)
-- API client: [api.service.ts](../frontend/src/app/services/api.service.ts)
+- `AuthService`: [auth.service.ts](../../frontend/src/app/services/auth.service.ts)
+- Interceptor: [auth.interceptor.ts](../../frontend/src/app/interceptors/auth.interceptor.ts)
+- API client: [api.service.ts](../../frontend/src/app/services/api.service.ts)

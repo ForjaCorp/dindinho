@@ -24,6 +24,18 @@ Manter documentação concisa, navegável e alinhada ao código, evitando duplic
 - Dois modos de consumo: interno (engenharia/ops) e público (usuário/produto)
 - Compatibilidade explícita: mudanças em contrato seguem semver do pacote `@dindinho/shared`
 
+## Visibilidade inicial (público vs interno)
+
+Estado inicial recomendado:
+
+- Padrão: tudo é **interno** até existir necessidade real de publicar
+- Público: conteúdo voltado a usuário/produto (sem detalhes operacionais)
+
+Regras práticas:
+
+- Público pode conter: visão geral, onboarding, FAQ, termos, suporte e decisões de produto
+- Interno contém: operações (infra/deploy), decisões técnicas, detalhes de endpoints e troubleshooting
+
 ## Escopo
 
 - Cobrir fluxos críticos (setup, arquitetura, contratos, domínios principais, operações)

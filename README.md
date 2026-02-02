@@ -149,16 +149,16 @@ Referência de orquestração: `docker-compose.coolify.yml` demonstra a configur
 ## 📚 Documentação
 
 - [Padrões de Código](CODING_STANDARDS.md)
-- [Autenticação](docs/AUTHENTICATION.md)
+- [Autenticação](docs/30-api/authentication.md)
 - [Relatórios (módulo)](backend/src/reports/README.md)
-- [Design: Página de Relatórios (Frontend)](docs/design/reports-frontend.md)
+- [Design: Página de Relatórios (Frontend)](docs/40-clients/pwa/reports-frontend.md)
 
 ## 📅 Planejamentos
 
-- [TimeFilter — Iteração de melhorias (Concluído)](docs/planning/time-filter.md)
-- [Filtro por conta unificado (Relatórios + Transações) (Concluído)](docs/planning/account-filter.md)
-- [Refatoração: Sincronização de URL (Concluído)](docs/planning/refactor-url-sync.md)
-- [Documentação — backlog](docs/planning/documentation.md)
+- [TimeFilter — Iteração de melhorias (Concluído)](docs/90-backlog/planning/time-filter.md)
+- [Filtro por conta unificado (Relatórios + Transações) (Concluído)](docs/90-backlog/planning/account-filter.md)
+- [Refatoração: Sincronização de URL (Concluído)](docs/90-backlog/planning/refactor-url-sync.md)
+- [Documentação — plano de execução](docs/90-backlog/planning/documentation.md)
 
 ## 🤝 Contribuição
 
