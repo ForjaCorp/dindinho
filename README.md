@@ -235,10 +235,11 @@ Referência de orquestração: `docker-compose.coolify.yml` demonstra a configur
 
 ## 📅 Planejamentos
 
+- [Documentação — Plano de execução (Em andamento)](docs/90-backlog/planning/documentation.md)
+- [Evolução de Roteamento e API (Pendente)](docs/90-backlog/planning/ROUTING_EVOLUTION_PLAN.md)
 - [TimeFilter — Iteração de melhorias (Concluído)](docs/90-backlog/planning/time-filter.md)
 - [Filtro por conta unificado (Relatórios + Transações) (Concluído)](docs/90-backlog/planning/account-filter.md)
 - [Refatoração: Sincronização de URL (Concluído)](docs/90-backlog/planning/refactor-url-sync.md)
-- [Documentação — plano de execução](docs/90-backlog/planning/documentation.md)
 
 ## 🤝 Contribuição
 
