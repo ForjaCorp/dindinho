@@ -7,6 +7,13 @@ Resumo rápido:
 - Framework: Angular 21
 - Tipo: Progressive Web App (PWA)
 - Bundler: Angular CLI
+- Reatividade: Signals exclusivo (sem RxJS para estado síncrono)
+- Componentes: Obrigatório `standalone: true`
+- Inputs/Outputs: API de Signals (`input()`, `output()`, `model()`)
+- Templates: Control Flow (`@if`, `@for`, `@switch`) - proibido `*ngIf/*ngFor`
+- Animações: CSS nativo via PrimeNG v21+ (proibido `provideAnimations()`)
+- Rotas: Lazy loading mandatório via `loadComponent`
+- Assets: Imagens estáticas devem usar diretiva `NgOptimizedImage`
 
 Visão do projeto (frontend)
 

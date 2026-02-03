@@ -224,7 +224,7 @@ Critério de aceite:
 
 - [x] Todo doc novo tem `id/title/owners/status/visibility/audience`
 
-### Fase D3 — Geração de OpenAPI (2 PRs)
+### Fase D3 — Geração de OpenAPI (2 PRs) (CONCLUÍDO)
 
 PR A (infra):
 
@@ -234,12 +234,12 @@ PR A (infra):
 
 PR B (governança):
 
-- [ ] Padronizar `summary/tags` em todas as rotas
-- [ ] Padronizar respostas de erro por status (401/403/404/409/422)
+- [x] Padronizar `summary/tags` em todas as rotas
+- [x] Padronizar respostas de erro por status (401/403/404/409/422)
 
 Critério de aceite:
 
-- [ ] Spec gera sem erros e cobre rotas principais (auth/accounts/transactions/reports)
+- [x] Spec gera sem erros e cobre rotas principais (auth/accounts/transactions/reports)
 
 ### Fase D4 — Portal de docs (3 PRs)
 
