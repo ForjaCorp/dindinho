@@ -18,6 +18,7 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/backend/node_modules ./backend/node_modules
 COPY --from=builder /app/backend/dist ./backend/dist
 COPY --from=builder /app/backend/package.json ./backend/package.json
 COPY --from=builder /app/backend/prisma.config.js ./backend/prisma.config.js
