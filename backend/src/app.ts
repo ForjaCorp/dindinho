@@ -11,7 +11,6 @@ import fastifyRateLimit from "@fastify/rate-limit";
 import underPressure from "@fastify/under-pressure";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
-import "@fastify/swagger";
 import {
   serializerCompiler,
   validatorCompiler,
@@ -105,48 +104,6 @@ export function buildApp(): FastifyInstance {
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
 
-  app.register(swagger, {
-    openapi: {
-      info: {
-        title: "Dindinho API",
-        description: "API para o app de finanças pessoais Dindinho.",
-        version: "1.0.0",
-      },
-      components: {
-        securitySchemes: {
-          bearerAuth: {
-            type: "http",
-            scheme: "bearer",
-            bearerFormat: "JWT",
-          },
-        },
-      },
-      tags: [
-        { name: "auth", description: "Autenticação de usuários" },
-        { name: "users", description: "Gestão de usuários" },
-        { name: "accounts", description: "Contas bancárias" },
-        { name: "transactions", description: "Transações financeiras" },
-        { name: "categories", description: "Categorias de transações" },
-        { name: "reports", description: "Relatórios financeiros" },
-        {
-          name: "signup-allowlist",
-          description: "Lista de permissão de cadastro",
-        },
-        { name: "waitlist", description: "Lista de espera" },
-        { name: "health", description: "Saúde da aplicação" },
-      ],
-    },
-    transform: jsonSchemaTransform,
-  });
-
-  app.register(swaggerUi, {
-    routePrefix: "/api/docs",
-    uiConfig: {
-      docExpansion: "list",
-      deepLinking: false,
-    },
-  });
-
   app.register(underPressure, {
     maxEventLoopDelay: 5000,
     maxHeapUsedBytes: 500000000,
@@ -202,13 +159,54 @@ export function buildApp(): FastifyInstance {
     },
   });
 
-  app.register(healthRoutes);
-
   app.register(
     async (api: FastifyInstance) => {
       const typedApi = api.withTypeProvider<ZodTypeProvider>();
       typedApi.setValidatorCompiler(validatorCompiler);
       typedApi.setSerializerCompiler(serializerCompiler);
+
+      // Swagger - Documentação da API
+      api.register(swagger, {
+        openapi: {
+          info: {
+            title: "Dindinho API",
+            description: "API para o app de finanças pessoais Dindinho.",
+            version: "1.0.0",
+          },
+          components: {
+            securitySchemes: {
+              bearerAuth: {
+                type: "http",
+                scheme: "bearer",
+                bearerFormat: "JWT",
+              },
+            },
+          },
+          tags: [
+            { name: "auth", description: "Autenticação de usuários" },
+            { name: "users", description: "Gestão de usuários" },
+            { name: "accounts", description: "Contas bancárias" },
+            { name: "transactions", description: "Transações financeiras" },
+            { name: "categories", description: "Categorias de transações" },
+            { name: "reports", description: "Relatórios financeiros" },
+            {
+              name: "signup-allowlist",
+              description: "Lista de permissão de cadastro",
+            },
+            { name: "waitlist", description: "Lista de espera" },
+            { name: "health", description: "Saúde da aplicação" },
+          ],
+        },
+        transform: jsonSchemaTransform,
+      });
+
+      api.register(swaggerUi, {
+        routePrefix: "/docs",
+        uiConfig: {
+          docExpansion: "list",
+          deepLinking: false,
+        },
+      });
 
       // Rotas
       api.register(healthRoutes);
