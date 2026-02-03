@@ -34,11 +34,6 @@ export const routes: Routes = [
         loadComponent: () => import('../pages/signup/signup.page').then((m) => m.SignupPage),
         canActivate: [guestGuard],
       },
-      {
-        path: 'docs',
-        loadComponent: () => import('../pages/docs/docs.page').then((m) => m.DocsPage),
-        data: { title: 'Documentação' },
-      },
     ],
   },
 
@@ -52,6 +47,11 @@ export const routes: Routes = [
         path: 'dashboard',
         loadComponent: () => import('../pages/dashboard.page').then((m) => m.DashboardComponent),
         data: { maxWidth: '5xl' },
+      },
+      {
+        path: 'docs',
+        loadComponent: () => import('../pages/docs/docs.page').then((m) => m.DocsPage),
+        data: { title: 'Documentação' },
       },
       {
         path: 'accounts',
