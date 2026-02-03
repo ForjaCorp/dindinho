@@ -159,6 +159,8 @@ export function buildApp(): FastifyInstance {
     },
   });
 
+  app.register(healthRoutes);
+
   app.register(
     async (api: FastifyInstance) => {
       const typedApi = api.withTypeProvider<ZodTypeProvider>();
