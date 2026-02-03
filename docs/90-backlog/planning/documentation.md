@@ -37,17 +37,49 @@ Manter documentação concisa, navegável e alinhada ao código, evitando duplic
 - Dois modos de consumo: interno (engenharia/ops) e público (usuário/produto)
 - Compatibilidade explícita: mudanças em contrato seguem semver do pacote `@dindinho/shared`
 
-## Visibilidade inicial (público vs interno)
+## Arquitetura de 3 Tiers de Documentação (Implementada)
 
-Estado inicial recomendado:
+A documentação do Dindinho é estruturada em três camadas de acesso, garantindo que cada público veja apenas o conteúdo relevante e seguro para seu perfil. A implementação utiliza **Angular Standalone Components**, **Signals** e **Role-Based Access Control (RBAC)**.
 
-- Padrão: tudo é **interno** até existir necessidade real de publicar
-- Público: conteúdo voltado a usuário/produto (sem detalhes operacionais)
+### 1. Nível Público (Guest)
 
-Regras práticas:
+- **Público:** Visitantes não autenticados.
+- **Layout:** `GuestDocsLayoutComponent` (Tema Slate/Neutral).
+- **Conteúdo:** Visão geral do produto, FAQ, Planos/Pricing, Termos de Uso.
+- **Acesso:** Rotas abertas via `docs/public/*`.
+- **Exemplo:** [FAQ](file:///home/vinicius/dev/dindinho/docs/00-overview/faq.md).
 
-- Público pode conter: visão geral, onboarding, FAQ, termos, suporte e decisões de produto
-- Interno contém: operações (infra/deploy), decisões técnicas, detalhes de endpoints e troubleshooting
+### 2. Nível Usuário (Authenticated)
+
+- **Público:** Usuários logados (clientes).
+- **Layout:** `UserDocsLayoutComponent` (Tema Emerald/Finance).
+- **Conteúdo:** Guia de uso das funcionalidades, tutoriais de conciliação, relatórios.
+- **Acesso:** Protegido por `authGuard`. Rotas em `docs/user/*`.
+- **Exemplo:** [Guia de Relatórios](file:///home/vinicius/dev/dindinho/docs/40-clients/pwa/reports-frontend.md).
+
+### 3. Nível Admin/Engenharia (Internal/Privileged)
+
+- **Público:** Desenvolvedores e Administradores.
+- **Layout:** `AdminDocsLayoutComponent` (Tema Indigo/Tech).
+- **Conteúdo:** Arquitetura técnica, ADRs, Infraestrutura e **Swagger UI**.
+- **Acesso:** Requer role `ADMIN`. Rotas em `docs/admin/*`.
+- **Exemplo:** [Evolução de Rotas](file:///home/vinicius/dev/dindinho/docs/90-backlog/planning/ROUTING_EVOLUTION_PLAN.md).
+
+---
+
+## Implementação Técnica
+
+### Roteamento e Slugs
+
+O sistema utiliza um mapeamento de `slugs` para caminhos físicos no diretório `docs/`. Isso permite URLs amigáveis como `/docs/admin/api-ref` que apontam para arquivos complexos como `30-api/openapi.json`.
+
+- **DocsPage:** Componente central que consome `slug` da URL.
+- **Frontmatter:** Parsing automático de `title`, `description` e `tags` via regex no frontend.
+- **Swagger Integration:** Redirecionamento seguro para a UI interativa do Swagger apenas para administradores.
+
+### DocsService
+
+O `DocsService` centraliza o carregamento de assets (Markdown e JSON). Ele implementa um mecanismo de fallback: tenta carregar a especificação OpenAPI viva do backend e, em caso de falha, utiliza o arquivo empacotado nos assets do frontend.
 
 ## Escopo
 
@@ -84,10 +116,16 @@ Proposta (novo schema em `@dindinho/shared`):
 ```ts
 import { z } from "zod";
 
-export const docAudienceSchema = z.enum(["dev", "ops", "product", "user"]);
+export const docAudienceSchema = z.enum([
+  "dev",
+  "ops",
+  "product",
+  "user",
+  "admin",
+]);
 export type DocAudienceDTO = z.infer<typeof docAudienceSchema>;
 
-export const docVisibilitySchema = z.enum(["internal", "public"]);
+export const docVisibilitySchema = z.enum(["internal", "public", "private"]);
 export type DocVisibilityDTO = z.infer<typeof docVisibilitySchema>;
 
 export const docStatusSchema = z.enum(["draft", "wip", "stable", "deprecated"]);
@@ -277,26 +315,29 @@ Critério de aceite:
 
 - [x] Portal disponível em produção no subdomínio `https://docs.dindinho.forjacorp.com/`
 
-### Fase D6 — Separação “público vs interno” (1 PR)
+### Fase D6 — Separação em 3 Tiers (Público, Usuário, Admin) (1 PR) (CONCLUÍDO)
 
-- [ ] Definir subconjunto público (ex.: política, onboarding, FAQ, pricing)
-- [ ] Restringir o conteúdo interno (Coolify auth, rede privada, ou build separado)
-
-Critério de aceite:
-
-- [ ] Conteúdo público não vaza detalhes operacionais (infra, endpoints internos, decisões sensíveis)
-
-### Fase D7 — Domínios do backend (iterativo por módulo)
-
-- [ ] Auth (login/refresh/logout, tokens, allowlist, rate limiting)
-- [ ] Accounts (tipos STANDARD/CREDIT, campos relevantes)
-- [ ] Transactions (filtros, paginação, recorrência/parcelamento, invoiceMonth)
-- [ ] Reports (endpoints, filtros e drill-down)
-- [ ] Categories e Waitlist
+- [x] Implementar Layout Público e Rotas Desprotegidas (FAQ, Pricing).
+- [x] Implementar Layout de Documentação de Usuário (Protegido por Auth).
+- [x] Implementar Portal/Seção Admin (Restrito a roles administrativas).
+- [x] Configurar visibilidade condicional do Swagger (apenas em Dev ou para Admins em Prod).
+- [x] Validar frontmatter das docs existentes para garantir `visibility` e `audience` corretos.
 
 Critério de aceite:
 
-- [ ] Cada domínio tem uma página “como funciona” e links para contratos/endpoints
+- [x] Usuários anônimos acessam apenas conteúdo público (Guest).
+- [x] Usuários logados acessam guias de uso (Authenticated) sem ver detalhes de infra/ADRs.
+- [x] Detalhes de infra e OpenAPI completo são restritos ao tier Admin/Engenharia.
+
+### Fase D7 — Domínios e Especialização de Conteúdo (iterativo)
+
+- [ ] Criar guias de usuário para cada domínio (Auth, Accounts, Transactions, Reports).
+- [ ] Criar documentação técnica (Admin) para cada domínio (esquemas de banco, fluxos de integração).
+- [ ] Links bidirecionais entre guias de usuário e referência de API (onde aplicável).
+
+Critério de aceite:
+
+- [ ] Cada domínio tem uma página “Como usar” (User) e uma página “Arquitetura” (Admin).
 
 ### Fase D8 — Operações e persistência (iterativo)
 
