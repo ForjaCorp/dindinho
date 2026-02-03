@@ -275,7 +275,7 @@ Notas de deploy (subdomínio + proxy):
 
 Critério de aceite:
 
-- [ ] Portal disponível em produção no subdomínio `https://docs.dindinho.forjacorp.com/`
+- [x] Portal disponível em produção no subdomínio `https://docs.dindinho.forjacorp.com/`
 
 ### Fase D6 — Separação “público vs interno” (1 PR)
 
