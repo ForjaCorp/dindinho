@@ -19,8 +19,12 @@ const app = buildApp();
 const start = async (): Promise<void> => {
   try {
     const port = Number(process.env.PORT) || 3333;
+
+    // Aguarda a prontidão do app (garante que todos os plugins e rotas foram registrados)
+    await app.ready();
+
     await app.listen({ port, host: "0.0.0.0" });
-    app.log.info({ port }, "Servidor online");
+    app.log.info({ port }, "Servidor online e rotas carregadas");
   } catch (err) {
     app.log.error(err);
     process.exit(1);

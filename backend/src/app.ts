@@ -213,16 +213,22 @@ export function buildApp(): FastifyInstance {
         },
       });
 
-      // Rotas
-      api.register(healthRoutes);
-      api.register(authRoutes, { prefix: "/auth" });
-      api.register(usersRoutes, { prefix: "/users" });
-      api.register(accountsRoutes, { prefix: "/accounts" });
-      api.register(transactionsRoutes, { prefix: "/transactions" });
-      api.register(categoriesRoutes, { prefix: "/categories" });
-      api.register(reportsRoutes, { prefix: "/reports" });
-      api.register(waitlistRoutes, { prefix: "/waitlist" });
-      api.register(signupAllowlistRoutes, { prefix: "/signup-allowlist" });
+      // Registro de rotas sequencial para garantir ordem de inicialização
+      api.log.debug("Iniciando registro de rotas da API...");
+
+      await api.register(healthRoutes);
+      await api.register(authRoutes, { prefix: "/auth" });
+      await api.register(usersRoutes, { prefix: "/users" });
+      await api.register(accountsRoutes, { prefix: "/accounts" });
+      await api.register(transactionsRoutes, { prefix: "/transactions" });
+      await api.register(categoriesRoutes, { prefix: "/categories" });
+      await api.register(reportsRoutes, { prefix: "/reports" });
+      await api.register(waitlistRoutes, { prefix: "/waitlist" });
+      await api.register(signupAllowlistRoutes, {
+        prefix: "/signup-allowlist",
+      });
+
+      api.log.debug("Registro de rotas da API concluído.");
     },
     { prefix: "/api" },
   );
