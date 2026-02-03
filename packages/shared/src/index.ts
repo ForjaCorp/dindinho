@@ -4,13 +4,13 @@
  * @description
  * Reexporta schemas e DTOs compartilhados entre backend e frontend.
  */
-export * from "./schemas/user.schema";
-export * from "./schemas/auth.schema";
-export * from "./schemas/general.schema";
 export * from "./schemas/account.schema";
-export * from "./schemas/transaction.schema";
-export * from "./schemas/waitlist.schema";
-export * from "./schemas/report.schema";
-export * from "./schemas/error.schema";
-export * from "./schemas/doc-frontmatter.schema";
+export * from "./schemas/auth.schema";
 export * from "./schemas/backlog-item.schema";
+export * from "./schemas/doc-frontmatter.schema";
+export * from "./schemas/error.schema";
+export * from "./schemas/general.schema";
+export * from "./schemas/report.schema";
+export * from "./schemas/transaction.schema";
+export * from "./schemas/user.schema";
+export * from "./schemas/waitlist.schema";

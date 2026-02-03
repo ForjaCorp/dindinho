@@ -241,6 +241,11 @@ export type PaginatedTransactionsDTO = z.infer<
   typeof paginatedTransactionsSchema
 >;
 
+export const transferSchema = z.object({
+  outcome: transactionSchema,
+  income: transactionSchema,
+});
+
 export const categorySchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1),

@@ -68,3 +68,40 @@ export const loginResponseSchema = z.object({
  * @property {string} user.email - Email do usuário
  */
 export type LoginResponseDTO = z.infer<typeof loginResponseSchema>;
+
+/**
+ * Esquema de validação para a solicitação de atualização de token
+ * @constant {z.ZodObject} refreshTokenSchema
+ * @property {string} refreshToken - O refresh token recebido durante o login
+ */
+export const refreshTokenSchema = z.object({
+  refreshToken: z.string().min(1, "Refresh token é obrigatório"),
+});
+
+/**
+ * Tipo TypeScript derivado do schema de atualização de token
+ * @typedef {Object} RefreshTokenDTO
+ * @property {string} refreshToken - O refresh token
+ */
+export type RefreshTokenDTO = z.infer<typeof refreshTokenSchema>;
+
+/**
+ * Esquema de validação para a resposta da atualização de token
+ * @constant {z.ZodObject} refreshTokenResponseSchema
+ * @property {string} token - O novo token JWT de acesso
+ * @property {string} refreshToken - O novo refresh token
+ */
+export const refreshTokenResponseSchema = z.object({
+  token: z.string(),
+  refreshToken: z.string(),
+});
+
+/**
+ * Tipo TypeScript para a resposta de atualização de token
+ * @typedef {Object} RefreshTokenResponseDTO
+ * @property {string} token - O novo token JWT de acesso
+ * @property {string} refreshToken - O novo refresh token
+ */
+export type RefreshTokenResponseDTO = z.infer<
+  typeof refreshTokenResponseSchema
+>;
