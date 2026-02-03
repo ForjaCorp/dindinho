@@ -59,6 +59,7 @@ export default defineConfig({
     env: {
       JWT_SECRET: "test-secret-env-vitest",
       DATABASE_URL: "mysql://root:root@localhost:3306/dindinho_test",
+      FRONTEND_URL: "http://localhost:5173",
     },
   },
 });

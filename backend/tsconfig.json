@@ -9,11 +9,10 @@
     "skipLibCheck": true,
     "incremental": true,
     "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
-    "rootDir": "./src",
     "outDir": "./dist",
-    "baseUrl": "./src",
+    "baseUrl": "./",
     "paths": {
-      "@/*": ["./*"],
+      "@/*": ["./src/*"],
       "@dindinho/shared": ["../packages/shared/src/index.ts"]
     }
   },

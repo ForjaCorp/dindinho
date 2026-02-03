@@ -5,18 +5,14 @@ import tseslint from "typescript-eslint";
 
 export default defineConfig([
   {
-    ignores: ["dist/**", "scripts/**"],
+    ignores: ["dist/**", "scripts/**", "vitest.config.ts"],
   },
   {
-    files: ["**/*.ts", "**/*.mjs"],
+    files: ["src/**/*.ts", "scripts/**/*.ts", "**/*.mjs"],
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: [
-            "*.config.mjs",
-            "vitest.config.ts",
-            "prisma.config.js",
-          ],
+          allowDefaultProject: ["*.config.mjs", "prisma.config.js"],
         },
         tsconfigRootDir: import.meta.dirname,
       },
