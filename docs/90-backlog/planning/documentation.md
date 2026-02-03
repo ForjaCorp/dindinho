@@ -329,46 +329,48 @@ Critério de aceite:
 - [x] Usuários logados acessam guias de uso (Authenticated) sem ver detalhes de infra/ADRs.
 - [x] Detalhes de infra e OpenAPI completo são restritos ao tier Admin/Engenharia.
 
-### Fase D7 — Domínios e Especialização de Conteúdo (iterativo)
+### Fase D7 — Domínios e Especialização de Conteúdo (iterativo) (CONCLUÍDO)
 
-- [/] Criar guias de usuário para cada domínio (Auth, Accounts, Transactions, Reports).
-- [/] Criar documentação técnica (Admin) para cada domínio (esquemas de banco, fluxos de integração).
+- [x] Criar guias de usuário para cada domínio (Auth, Accounts, Transactions, Reports).
+- [x] Criar documentação técnica (Admin) para cada domínio (esquemas de banco, fluxos de integração).
 - [x] Links bidirecionais entre guias de usuário e referência de API (onde aplicável).
 
 Critério de aceite:
 
 - [x] Cada domínio tem uma página “Como usar” (User) e uma página “Arquitetura” (Admin) (via mapeamento de slug compartilhado).
 
-### Fase D8 — Operações e persistência (iterativo)
+### Fase D8 — Operações e persistência (iterativo) (CONCLUÍDO)
 
-- [ ] Prisma: migrations, generate, deploy e ambientes
-- [ ] Seed e dados de desenvolvimento
-- [ ] Deploy: Coolify, docker-compose e healthchecks
-- [ ] Jobs: limpeza de refresh tokens (in-process vs cron externo)
+- [x] Prisma: migrations, generate, deploy e ambientes
+- [x] Seed e dados de desenvolvimento
+- [x] Deploy: Coolify, docker-compose e healthchecks
+- [x] Jobs: limpeza de refresh tokens (in-process vs cron externo)
+- [x] Refatoração de Erros: Padronização de envelopes e códigos de erro (Backend/Frontend)
 
 Critério de aceite:
 
-- [ ] Operar o sistema sem ler código: como subir, migrar, debugar healthcheck e rollback básico
+- [x] Operar o sistema sem ler código: como subir, migrar, debugar healthcheck e rollback básico
+- [x] Erros são reportados de forma consistente em toda a stack.
 
 ## Backlog de engenharia — contratos em runtime
 
-### E1 — Envelope de erro consistente (backend)
+### E1 — Envelope de erro consistente (backend) (CONCLUÍDO)
 
-- [ ] Definir envelope único para erros HTTP, incluindo `requestId` e `code` quando aplicável
-- [ ] Não vazar detalhes internos (stack/SQL) em ambientes não locais
+- [x] Definir envelope único para erros HTTP, incluindo `requestId` e `code` quando aplicável
+- [x] Não vazar detalhes internos (stack/SQL) em ambientes não locais
 
-### E2 — Erros operacionais por domínio (backend)
+### E2 — Erros operacionais por domínio (backend) (CONCLUÍDO)
 
-- [ ] Padronizar erros de domínio com `statusCode` e `code` estáveis
-- [ ] Converter erros Prisma comuns para códigos de domínio
+- [x] Padronizar erros de domínio com `statusCode` e `code` estáveis
+- [x] Converter erros Prisma comuns para códigos de domínio
 
-### E3 — Parse defensivo de erro (frontend)
+### E3 — Parse defensivo de erro (frontend) (CONCLUÍDO)
 
-- [ ] Ao receber `HttpErrorResponse`, fazer parse defensivo do payload de erro para extrair `message`, `code`, `requestId` e `issues`
-- [ ] Manter fallback para formatos legados e erros de rede
+- [x] Ao receber `HttpErrorResponse`, fazer parse defensivo do payload de erro para extrair `message`, `code`, `requestId` e `issues`
+- [x] Manter fallback para formatos legados e erros de rede
 
 ## Critérios de aceite globais
 
-- [ ] Todo documento tem “por que existe” e links de entrada/saída
-- [ ] Nenhum fluxo crítico fica sem referência (setup/auth/transactions/reports/prisma)
-- [ ] Documentos de ferramenta apontam para uma única fonte
+- [x] Todo documento tem “por que existe” e links de entrada/saída
+- [x] Nenhum fluxo crítico fica sem referência (setup/auth/transactions/reports/prisma)
+- [x] Documentos de ferramenta apontam para uma única fonte

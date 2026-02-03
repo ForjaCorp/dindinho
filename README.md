@@ -148,6 +148,24 @@ npm run prisma:deploy   # Deploy de migrações (prod)
 npm run cleanup:refresh-tokens # Limpa tokens expirados
 ```
 
+## 📅 Planejamento e Status
+
+O desenvolvimento do Dindinho é guiado por um plano de execução estruturado em fases.
+
+| Fase   | Descrição                                   | Status       |
+| :----- | :------------------------------------------ | :----------- |
+| **D0** | Inventário e pontos de entrada              | ✅ Concluído |
+| **D1** | Padrões de contrato e compatibilidade       | ✅ Concluído |
+| **D2** | Metadados de docs e backlog estruturado     | ✅ Concluído |
+| **D3** | Geração de OpenAPI (Zod -> Swagger)         | ✅ Concluído |
+| **D4** | Portal de documentação (Angular + Markdown) | ✅ Concluído |
+| **D5** | Deploy no Coolify e infraestrutura          | ✅ Concluído |
+| **D6** | Separação em 3 Tiers (Public/User/Admin)    | ✅ Concluído |
+| **D7** | Domínios e Especialização de Conteúdo       | ✅ Concluído |
+| **D8** | Operações, Persistência e Erros             | ✅ Concluído |
+
+Para detalhes técnicos sobre o progresso e próximos passos, consulte o [Plano de Execução de Documentação](docs/90-backlog/planning/documentation.md).
+
 ## 🚀 Iniciando o Projeto
 
 ### Instalação
