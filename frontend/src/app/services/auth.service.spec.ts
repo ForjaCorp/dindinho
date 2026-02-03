@@ -60,10 +60,10 @@ describe('AuthService', () => {
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
 
-    // Spies para localStorage usando o protótipo para maior confiabilidade
-    setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
-    getItemSpy = vi.spyOn(Storage.prototype, 'getItem');
-    removeItemSpy = vi.spyOn(Storage.prototype, 'removeItem');
+    // Spies para localStorage
+    setItemSpy = vi.spyOn(localStorage, 'setItem');
+    getItemSpy = vi.spyOn(localStorage, 'getItem');
+    removeItemSpy = vi.spyOn(localStorage, 'removeItem');
 
     const apiServiceSpy = {
       login: vi.fn(),

@@ -86,6 +86,14 @@ describe('DocsPage', () => {
     expect(docsServiceMock.getFile).toHaveBeenCalledWith('40-clients/pwa/reports-frontend.md');
   });
 
+  it('deve carregar documento de domínio via slug', () => {
+    activatedRouteMock.snapshot.paramMap = convertToParamMap({ slug: 'dominio-contas' });
+    docsServiceMock.getFile.mockReturnValue(of('# Domínio de Contas'));
+    createComponent();
+
+    expect(docsServiceMock.getFile).toHaveBeenCalledWith('10-product/dominio-contas.md');
+  });
+
   it('deve carregar api-ref via slug', () => {
     activatedRouteMock.snapshot.paramMap = convertToParamMap({ slug: 'api-ref' });
     createComponent();

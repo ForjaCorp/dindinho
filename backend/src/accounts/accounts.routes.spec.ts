@@ -141,7 +141,7 @@ describe("Rotas de Contas", () => {
 
   describe("PATCH /api/accounts/:id", () => {
     it("deve responder preflight CORS permitindo PATCH", async () => {
-      const origin = "http://localhost:5173";
+      const origin = "http://localhost:4200";
 
       const response = await app.inject({
         method: "OPTIONS",
