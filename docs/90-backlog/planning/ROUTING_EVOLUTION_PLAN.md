@@ -1,3 +1,15 @@
+---
+id: routing-evolution-plan
+title: "Planejamento de Evolução: Arquitetura de Roteamento e API"
+description: "Estratégia de evolução da arquitetura de roteamento e infraestrutura do Dindinho, focada em escalabilidade e resiliência."
+audience: ["dev", "ops"]
+visibility: "internal"
+status: "planning"
+owners: ["engineering"]
+tags: ["routing", "architecture", "nginx", "api"]
+mvp: false
+---
+
 # Planejamento de Evolução: Arquitetura de Roteamento e API
 
 Este documento detalha a estratégia de evolução da arquitetura de roteamento e infraestrutura do Dindinho, focada em escalabilidade, resiliência e manutenibilidade.
