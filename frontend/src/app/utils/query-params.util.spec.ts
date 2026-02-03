@@ -135,8 +135,8 @@ describe('query-params.util', () => {
 
       expect(result).toMatchObject({
         periodPreset: 'CUSTOM',
-        startDay: expect.any(String),
-        endDay: expect.any(String),
+        startDay: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+        endDay: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
       });
     });
   });

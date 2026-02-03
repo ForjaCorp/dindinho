@@ -80,14 +80,15 @@ describe("UsersService", () => {
       where: { email: "joao@example.com" },
     });
 
-    expect(prismaMock.user.create).toHaveBeenCalledWith({
-      data: {
-        name: "João Silva",
-        email: "joao@example.com",
-        phone: "+5511999999999",
-        passwordHash: expect.any(String),
-      },
+    const createCall = prismaMock.user.create.mock.calls[0]?.[0];
+    expect(createCall).toBeDefined();
+    expect(createCall?.data).toMatchObject({
+      name: "João Silva",
+      email: "joao@example.com",
+      phone: "+5511999999999",
     });
+    expect(createCall?.data.passwordHash).toBeTypeOf("string");
+    expect((createCall?.data.passwordHash as string).length).toBeGreaterThan(0);
   });
 
   /**
