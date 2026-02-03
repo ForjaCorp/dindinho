@@ -119,7 +119,7 @@ describe('AuthService', () => {
         status: 401,
         statusText: 'Unauthorized',
         error: { message: 'Unauthorized' },
-        url: 'http://localhost/api/login',
+        url: 'http://localhost/api/auth/login',
       });
 
       vi.spyOn(apiService, 'login').mockReturnValue(throwError(() => errorResponse));

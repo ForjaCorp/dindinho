@@ -153,7 +153,7 @@ describe('ApiService', () => {
         expect(response).toEqual(mockLoginResponse);
       });
 
-      const req = httpMock.expectOne('http://localhost:3333/api/login');
+      const req = httpMock.expectOne('http://localhost:3333/api/auth/login');
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual(mockLoginData);
       req.flush(mockLoginResponse);
@@ -168,7 +168,7 @@ describe('ApiService', () => {
         },
       });
 
-      const req = httpMock.expectOne('http://localhost:3333/api/login');
+      const req = httpMock.expectOne('http://localhost:3333/api/auth/login');
       expect(req.request.method).toBe('POST');
       req.flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
     });
@@ -182,7 +182,7 @@ describe('ApiService', () => {
         },
       });
 
-      const req = httpMock.expectOne('http://localhost:3333/api/login');
+      const req = httpMock.expectOne('http://localhost:3333/api/auth/login');
       expect(req.request.method).toBe('POST');
       req.flush('Bad request', { status: 400, statusText: 'Bad Request' });
     });
@@ -195,7 +195,7 @@ describe('ApiService', () => {
         },
       });
 
-      const req = httpMock.expectOne('http://localhost:3333/api/login');
+      const req = httpMock.expectOne('http://localhost:3333/api/auth/login');
       expect(req.request.method).toBe('POST');
       req.error(new ProgressEvent('Network error'));
     });
@@ -205,7 +205,7 @@ describe('ApiService', () => {
         expect(response).toEqual(mockLoginResponse);
       });
 
-      const req = httpMock.expectOne('http://localhost:3333/api/login');
+      const req = httpMock.expectOne('http://localhost:3333/api/auth/login');
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual(mockLoginData);
       req.flush(mockLoginResponse);
