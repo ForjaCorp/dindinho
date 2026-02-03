@@ -7,134 +7,129 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { map } from 'rxjs/operators';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
 import { DocsService, OpenApiDocument, OpenApiOperation } from '../../app/services/docs.service';
 
-interface DocNavItem {
-  label: string;
-  path: string;
-}
-
+/**
+ * Interface que representa um endpoint individual na visualização OpenAPI.
+ */
 interface OpenApiEndpointItem {
+  /** Método HTTP (GET, POST, etc) */
   method: string;
+  /** Caminho do endpoint */
   path: string;
+  /** Resumo da operação */
   summary: string;
+  /** Identificador único da operação */
   operationId: string;
 }
 
 /**
  * Página do portal de documentação.
  *
- * Renderiza o conteúdo de `docs/` como arquivos estáticos (assets) e permite navegação por links.
+ * Responsável por renderizar documentos Markdown e a especificação OpenAPI.
+ * Suporta roteamento baseado em slugs amigáveis e fallback para caminhos de arquivos.
  */
 @Component({
   selector: 'app-docs-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule],
   template: `
-    <div data-testid="docs-page" class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-      <aside
-        data-testid="docs-nav"
-        class="lg:col-span-3 bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden"
-      >
-        <div class="px-4 py-3 border-b border-slate-100">
-          <h2 class="text-sm font-semibold text-slate-800">Documentação</h2>
-          <p class="text-xs text-slate-500">Fonte: pasta docs/ do monorepo</p>
+    <div data-testid="docs-page" class="bg-white">
+      @if (isSwaggerSlug()) {
+        <div data-testid="docs-swagger-redirect" class="py-20 text-center">
+          <div
+            class="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6"
+          >
+            <i class="pi pi-external-link text-3xl"></i>
+          </div>
+          <h2 class="text-2xl font-bold text-slate-900 mb-2">Swagger UI</h2>
+          <p class="text-slate-500 mb-8 max-w-md mx-auto">
+            A interface interativa do Swagger permite testar os endpoints da API diretamente do
+            navegador.
+          </p>
+          <a
+            [href]="swaggerUrl()"
+            target="_blank"
+            class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
+          >
+            Abrir Swagger UI <i class="pi pi-arrow-right"></i>
+          </a>
         </div>
-
-        <nav class="p-2">
-          @for (item of navItems; track item.path) {
-            <a
-              data-testid="docs-nav-item"
-              [routerLink]="['/docs']"
-              [queryParams]="{ path: item.path }"
-              class="block px-3 py-2 rounded-xl text-sm transition-colors"
-              [class]="
-                selectedPath() === item.path
-                  ? 'bg-emerald-50 text-emerald-700 font-semibold'
-                  : 'text-slate-700 hover:bg-slate-50'
-              "
-            >
-              {{ item.label }}
-              <div class="text-[11px] text-slate-500 font-normal truncate">{{ item.path }}</div>
-            </a>
+      } @else {
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold text-slate-900 tracking-tight">{{ title() }}</h1>
+          @if (description()) {
+            <p class="mt-2 text-lg text-slate-500">{{ description() }}</p>
           }
-        </nav>
-      </aside>
-
-      <section
-        data-testid="docs-content"
-        class="lg:col-span-9 bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden"
-      >
-        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
-          <div class="min-w-0">
-            <h1 class="text-base font-semibold text-slate-800 truncate">{{ title() }}</h1>
-            <p class="text-xs text-slate-500 truncate">{{ selectedPath() }}</p>
-          </div>
-
-          <div class="flex items-center gap-2 shrink-0">
-            <button
-              data-testid="docs-open-raw"
-              type="button"
-              class="px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              (click)="openRaw()"
-            >
-              Abrir raw
-            </button>
-
-            <button
-              data-testid="docs-open-swagger"
-              type="button"
-              class="px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              (click)="openSwagger()"
-            >
-              Swagger
-            </button>
+          <div class="mt-4 flex flex-wrap gap-2">
+            @for (tag of tags(); track tag) {
+              <span
+                class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider"
+              >
+                {{ tag }}
+              </span>
+            }
           </div>
         </div>
 
-        <div class="p-4">
+        <div class="relative">
           @if (isLoading()) {
-            <div data-testid="docs-loading" class="text-sm text-slate-500">Carregando…</div>
+            <div data-testid="docs-loading" class="flex items-center gap-3 text-slate-400 py-10">
+              <i class="pi pi-spin pi-spinner text-xl"></i>
+              <span class="text-sm font-medium">Carregando conteúdo...</span>
+            </div>
           } @else if (error()) {
             <div
               data-testid="docs-error"
-              class="text-sm text-red-700 bg-red-50 border border-red-100 rounded-xl px-3 py-2"
+              class="p-6 rounded-2xl bg-red-50 border border-red-100 text-red-800"
             >
-              {{ error() }}
+              <div class="flex items-center gap-3 mb-2">
+                <i class="pi pi-exclamation-circle text-xl"></i>
+                <h3 class="font-bold">Erro ao carregar documento</h3>
+              </div>
+              <p class="text-sm">{{ error() }}</p>
             </div>
           } @else if (isOpenApi()) {
             @if (openApiDoc()) {
-              <div data-testid="docs-openapi" class="space-y-4">
-                <div class="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                  <div class="text-sm font-semibold text-slate-800">{{ openApiTitle() }}</div>
-                  <div class="text-xs text-slate-600">OpenAPI {{ openApiVersion() }}</div>
-                </div>
-
+              <div data-testid="docs-openapi" class="space-y-8">
                 @for (group of openApiGroups(); track group.tag) {
-                  <div class="border border-slate-100 rounded-2xl overflow-hidden">
-                    <div class="px-4 py-3 bg-white border-b border-slate-100">
-                      <div class="text-sm font-semibold text-slate-800">{{ group.tag }}</div>
-                      @if (group.description) {
-                        <div class="text-xs text-slate-500">{{ group.description }}</div>
-                      }
-                    </div>
+                  <div class="space-y-4">
+                    <h2 class="text-xl font-bold text-slate-800 border-b border-slate-100 pb-2">
+                      {{ group.tag }}
+                    </h2>
+                    @if (group.description) {
+                      <p class="text-sm text-slate-500">{{ group.description }}</p>
+                    }
 
-                    <div class="divide-y divide-slate-100 bg-white">
+                    <div class="grid gap-3">
                       @for (item of group.items; track item.operationId) {
-                        <div class="px-4 py-3 flex items-start justify-between gap-3">
-                          <div class="min-w-0">
-                            <div class="text-xs text-slate-500 font-mono">
-                              {{ item.method }} {{ item.path }}
+                        <div
+                          class="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors"
+                        >
+                          <div class="flex items-start justify-between gap-4">
+                            <div class="min-w-0">
+                              <div class="flex items-center gap-2 mb-1">
+                                <span
+                                  [class]="
+                                    'px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ' +
+                                    getMethodClass(item.method)
+                                  "
+                                >
+                                  {{ item.method }}
+                                </span>
+                                <span class="text-xs font-mono text-slate-500">{{
+                                  item.path
+                                }}</span>
+                              </div>
+                              <div class="text-sm font-semibold text-slate-800">
+                                {{ item.summary }}
+                              </div>
                             </div>
-                            <div class="text-sm text-slate-800 truncate">{{ item.summary }}</div>
-                          </div>
-
-                          <div class="text-[11px] text-slate-500 font-mono shrink-0">
-                            {{ item.operationId }}
+                            <span class="text-[10px] font-mono text-slate-400 shrink-0">
+                              {{ item.operationId }}
+                            </span>
                           </div>
                         </div>
                       }
@@ -144,14 +139,18 @@ interface OpenApiEndpointItem {
               </div>
             }
           } @else {
-            <pre
+            <div
               data-testid="docs-markdown"
-              class="text-sm text-slate-800 whitespace-pre-wrap wrap-break-word font-mono leading-relaxed"
-              >{{ markdown() }}</pre
+              class="prose prose-slate max-w-none prose-headings:font-bold prose-h1:text-3xl prose-pre:bg-slate-900 prose-pre:text-slate-50"
             >
+              <pre
+                class="whitespace-pre-wrap font-mono text-sm leading-relaxed p-6 rounded-2xl bg-slate-50 border border-slate-100 text-slate-800"
+                >{{ markdown() }}</pre
+              >
+            </div>
           }
         </div>
-      </section>
+      }
     </div>
   `,
 })
@@ -161,42 +160,33 @@ export class DocsPage {
 
   private readonly OPENAPI_PATH = '__openapi__';
 
-  protected readonly navItems: DocNavItem[] = [
-    { label: 'API (OpenAPI)', path: this.OPENAPI_PATH },
-    { label: 'Plano de documentação', path: '90-backlog/planning/documentation.md' },
-    { label: 'Autenticação (Frontend + API)', path: '30-api/authentication.md' },
-    { label: 'Relatórios (PWA)', path: '40-clients/pwa/reports-frontend.md' },
-    { label: 'AccountFilter (planejamento)', path: '90-backlog/planning/account-filter.md' },
-    { label: 'TimeFilter (planejamento)', path: '90-backlog/planning/time-filter.md' },
-    { label: 'Refactor URL Sync (planejamento)', path: '90-backlog/planning/refactor-url-sync.md' },
-  ];
-
-  private readonly defaultPath = this.navItems[0]?.path ?? '90-backlog/planning/documentation.md';
-
-  protected readonly selectedPath = signal<string>(this.defaultPath);
+  /** Caminho do arquivo selecionado para exibição */
+  protected readonly selectedPath = signal<string>('');
+  /** Slug amigável da rota atual */
+  protected readonly slug = signal<string | null>(null);
+  /** Conteúdo Markdown processado (sem frontmatter) */
   protected readonly markdown = signal<string>('');
+  /** Título do documento extraído do frontmatter ou valor padrão */
+  protected readonly title = signal<string>('');
+  /** Descrição do documento extraída do frontmatter */
+  protected readonly description = signal<string>('');
+  /** Tags associadas ao documento */
+  protected readonly tags = signal<string[]>([]);
+  /** Documento OpenAPI carregado */
   protected readonly openApiDoc = signal<OpenApiDocument | null>(null);
+  /** Indica se o conteúdo está sendo carregado */
   protected readonly isLoading = signal<boolean>(false);
+  /** Mensagem de erro caso o carregamento falhe */
   protected readonly error = signal<string | null>(null);
 
-  private readonly queryPath = toSignal(
-    this.route.queryParamMap.pipe(map((pm) => pm.get('path') ?? this.defaultPath)),
-    { initialValue: this.defaultPath },
-  );
-
-  protected readonly title = computed(() => {
-    const path = this.selectedPath();
-    if (path === this.OPENAPI_PATH) return 'API';
-    const base = path.split('/').pop() ?? path;
-    return base.endsWith('.md') ? base.slice(0, -3) : base;
-  });
-
+  /** Indica se o documento atual é uma especificação OpenAPI */
   protected readonly isOpenApi = computed(() => this.selectedPath() === this.OPENAPI_PATH);
+  /** Indica se a rota atual deve exibir o redirecionamento para o Swagger UI */
+  protected readonly isSwaggerSlug = computed(() => this.slug() === 'swagger');
+  /** URL do Swagger UI fornecida pelo serviço de documentação */
+  protected readonly swaggerUrl = signal<string>(this.docs.getSwaggerUiUrl());
 
-  protected readonly openApiTitle = computed(() => this.openApiDoc()?.info.title ?? 'API');
-
-  protected readonly openApiVersion = computed(() => this.openApiDoc()?.info.version ?? '');
-
+  /** Agrupa os endpoints OpenAPI por tags para exibição organizada */
   protected readonly openApiGroups = computed(() => {
     const doc = this.openApiDoc();
     if (!doc) return [] as { tag: string; description?: string; items: OpenApiEndpointItem[] }[];
@@ -239,44 +229,53 @@ export class DocsPage {
   });
 
   constructor() {
+    // Escuta mudanças no slug ou no queryParam 'path'
     effect(() => {
-      this.selectedPath.set(this.queryPath());
+      const slugValue = this.route.snapshot.paramMap.get('slug');
+      const queryPath = this.route.snapshot.queryParamMap.get('path');
+
+      this.slug.set(slugValue);
+
+      // Determina o caminho final (slug tem prioridade para a nova estrutura)
+      let finalPath = '';
+
+      if (slugValue) {
+        finalPath = this.mapSlugToPath(slugValue);
+      } else if (queryPath) {
+        finalPath = queryPath;
+      } else {
+        // Fallback para o doc de planejamento se nada for informado
+        finalPath = '90-backlog/planning/documentation.md';
+      }
+
+      this.selectedPath.set(finalPath);
     });
 
     effect((onCleanup) => {
       const path = this.selectedPath();
+      if (!path) return;
+
       this.isLoading.set(true);
       this.error.set(null);
 
-      if (path === this.OPENAPI_PATH) {
-        this.markdown.set('');
-        const sub = this.docs.getOpenApiDoc().subscribe({
-          next: (doc) => {
-            this.openApiDoc.set(doc);
-            this.isLoading.set(false);
-          },
-          error: () => {
+      const sub = (
+        path === this.OPENAPI_PATH ? this.docs.getOpenApi() : this.docs.getFile(path)
+      ).subscribe({
+        next: (content) => {
+          if (typeof content === 'string') {
+            this.parseMarkdown(content);
             this.openApiDoc.set(null);
-            this.isLoading.set(false);
-            this.error.set('Não foi possível carregar o OpenAPI.');
-          },
-        });
-
-        onCleanup(() => sub.unsubscribe());
-        return;
-      }
-
-      this.openApiDoc.set(null);
-
-      const sub = this.docs.getMarkdown(path).subscribe({
-        next: (text) => {
-          this.markdown.set(text);
+          } else {
+            this.openApiDoc.set(content);
+            this.title.set('API Reference');
+            this.description.set('Especificação completa dos endpoints do Dindinho.');
+            this.tags.set(['REST', 'OpenAPI', 'v1']);
+          }
           this.isLoading.set(false);
         },
-        error: () => {
-          this.markdown.set('');
+        error: (_err) => {
+          this.error.set(`Não foi possível carregar o documento: ${path}`);
           this.isLoading.set(false);
-          this.error.set('Não foi possível carregar o documento.');
         },
       });
 
@@ -284,28 +283,80 @@ export class DocsPage {
     });
   }
 
-  protected openRaw(): void {
-    const path = this.selectedPath();
-    if (path === this.OPENAPI_PATH) {
-      window.open(this.docs.getOpenApiJsonUrl(), '_blank', 'noopener');
-      return;
-    }
+  /**
+   * Mapeia um slug amigável da URL para o caminho real do arquivo na pasta de assets.
+   * @param slug - O identificador amigável da rota
+   * @returns O caminho relativo do arquivo .md ou constante especial
+   */
+  private mapSlugToPath(slug: string): string {
+    // Mapeamento de slugs amigáveis para caminhos de arquivos reais
+    const mapping: Record<string, string> = {
+      // Admin Docs
+      architecture: '90-backlog/planning/documentation.md', // Placeholder
+      adr: '90-backlog/planning/documentation.md', // Placeholder
+      openapi: this.OPENAPI_PATH,
+      deploy: '90-backlog/planning/documentation.md', // Placeholder
 
-    const raw = this.markdown();
-    if (raw.length > 0) {
-      const blob = new Blob([raw], { type: 'text/markdown;charset=utf-8' });
-      const blobUrl = URL.createObjectURL(blob);
-      window.open(blobUrl, '_blank', 'noopener');
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 10_000);
-      return;
-    }
+      // User Docs
+      intro: '90-backlog/planning/documentation.md', // Placeholder
+      accounts: '90-backlog/planning/documentation.md', // Placeholder
+      transactions: '90-backlog/planning/documentation.md', // Placeholder
+      reports: '40-clients/pwa/reports-frontend.md',
 
-    const url = this.docs.getRawDocUrl(path);
-    if (!url) return;
-    window.open(url, '_blank', 'noopener');
+      // Shared
+      auth: '30-api/authentication.md',
+    };
+
+    return mapping[slug] || slug;
   }
 
-  protected openSwagger(): void {
-    window.open(this.docs.getSwaggerUiUrl(), '_blank', 'noopener');
+  /**
+   * Realiza o parsing manual de metadados (frontmatter) no início de arquivos Markdown.
+   * Extrai título, descrição e tags.
+   * @param content - Conteúdo bruto do arquivo Markdown
+   */
+  private parseMarkdown(content: string): void {
+    // Parse manual ultra-simples de frontmatter (apenas para exibição)
+    if (content.startsWith('---')) {
+      const endIdx = content.indexOf('---', 3);
+      if (endIdx !== -1) {
+        const frontmatter = content.slice(3, endIdx);
+        const body = content.slice(endIdx + 3).trim();
+
+        // Extrair campos básicos
+        const titleMatch = frontmatter.match(/title:\s*["']?([^"'\n]+)["']?/);
+        const descMatch = frontmatter.match(/description:\s*["']?([^"'\n]+)["']?/);
+        const tagsMatch = frontmatter.match(/tags:\s*\[([^\]]+)\]/);
+
+        this.title.set(titleMatch ? titleMatch[1] : 'Documento');
+        this.description.set(descMatch ? descMatch[1] : '');
+        this.tags.set(
+          tagsMatch ? tagsMatch[1].split(',').map((t) => t.trim().replace(/['"]/g, '')) : [],
+        );
+        this.markdown.set(body);
+        return;
+      }
+    }
+
+    this.title.set('Documento');
+    this.description.set('');
+    this.tags.set([]);
+    this.markdown.set(content);
+  }
+
+  /**
+   * Retorna classes de estilo Tailwind baseadas no método HTTP.
+   * @param method - O método HTTP (GET, POST, etc)
+   * @returns String com classes CSS para estilização
+   */
+  protected getMethodClass(method: string): string {
+    const classes: Record<string, string> = {
+      GET: 'bg-blue-100 text-blue-700',
+      POST: 'bg-emerald-100 text-emerald-700',
+      PUT: 'bg-amber-100 text-amber-700',
+      DELETE: 'bg-red-100 text-red-700',
+      PATCH: 'bg-purple-100 text-purple-700',
+    };
+    return classes[method] || 'bg-slate-100 text-slate-700';
   }
 }
