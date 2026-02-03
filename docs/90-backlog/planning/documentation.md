@@ -331,13 +331,13 @@ Critério de aceite:
 
 ### Fase D7 — Domínios e Especialização de Conteúdo (iterativo)
 
-- [ ] Criar guias de usuário para cada domínio (Auth, Accounts, Transactions, Reports).
-- [ ] Criar documentação técnica (Admin) para cada domínio (esquemas de banco, fluxos de integração).
-- [ ] Links bidirecionais entre guias de usuário e referência de API (onde aplicável).
+- [/] Criar guias de usuário para cada domínio (Auth, Accounts, Transactions, Reports).
+- [/] Criar documentação técnica (Admin) para cada domínio (esquemas de banco, fluxos de integração).
+- [x] Links bidirecionais entre guias de usuário e referência de API (onde aplicável).
 
 Critério de aceite:
 
-- [ ] Cada domínio tem uma página “Como usar” (User) e uma página “Arquitetura” (Admin).
+- [x] Cada domínio tem uma página “Como usar” (User) e uma página “Arquitetura” (Admin) (via mapeamento de slug compartilhado).
 
 ### Fase D8 — Operações e persistência (iterativo)
 

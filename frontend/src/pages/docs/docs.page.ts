@@ -292,19 +292,21 @@ export class DocsPage {
     // Mapeamento de slugs amigáveis para caminhos de arquivos reais
     const mapping: Record<string, string> = {
       // Admin Docs
-      architecture: '90-backlog/planning/documentation.md', // Placeholder
-      adr: '90-backlog/planning/documentation.md', // Placeholder
+      architecture: '90-backlog/planning/documentation.md',
+      adr: '90-backlog/planning/documentation.md',
       openapi: this.OPENAPI_PATH,
       'api-ref': this.OPENAPI_PATH,
-      deploy: '90-backlog/planning/documentation.md', // Placeholder
+      deploy: '90-backlog/planning/documentation.md',
 
-      // User Docs
-      intro: '90-backlog/planning/documentation.md', // Placeholder
-      accounts: '90-backlog/planning/documentation.md', // Placeholder
-      transactions: '90-backlog/planning/documentation.md', // Placeholder
+      // User/Product Domains (Fase 7)
+      'dominio-contas': '10-product/dominio-contas.md',
+      'dominio-auth': '10-product/dominio-auth.md',
+      'dominio-transacoes': '10-product/dominio-transacoes.md',
+      'dominio-relatorios': '10-product/dominio-relatorios.md',
+
+      // Legacy/Placeholders
+      intro: '90-backlog/planning/documentation.md',
       reports: '40-clients/pwa/reports-frontend.md',
-
-      // Shared
       auth: '30-api/authentication.md',
     };
 

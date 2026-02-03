@@ -64,12 +64,21 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
             </a>
 
             <div class="pt-4 text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
-              Funcionalidades
+              Domínios do Produto
             </div>
 
             <a
+              data-testid="nav-auth"
+              routerLink="/docs/user/dominio-auth"
+              routerLinkActive="bg-emerald-50 text-emerald-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <i class="pi pi-lock"></i> Autenticação
+            </a>
+
+            <a
               data-testid="nav-accounts"
-              routerLink="/docs/user/accounts"
+              routerLink="/docs/user/dominio-contas"
               routerLinkActive="bg-emerald-50 text-emerald-700 font-semibold"
               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
             >
@@ -78,7 +87,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 
             <a
               data-testid="nav-transactions"
-              routerLink="/docs/user/transactions"
+              routerLink="/docs/user/dominio-transacoes"
               routerLinkActive="bg-emerald-50 text-emerald-700 font-semibold"
               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
             >
@@ -87,7 +96,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 
             <a
               data-testid="nav-reports"
-              routerLink="/docs/user/reports"
+              routerLink="/docs/user/dominio-relatorios"
               routerLinkActive="bg-emerald-50 text-emerald-700 font-semibold"
               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
             >
