@@ -295,6 +295,7 @@ export class DocsPage {
       architecture: '90-backlog/planning/documentation.md', // Placeholder
       adr: '90-backlog/planning/documentation.md', // Placeholder
       openapi: this.OPENAPI_PATH,
+      'api-ref': this.OPENAPI_PATH,
       deploy: '90-backlog/planning/documentation.md', // Placeholder
 
       // User Docs

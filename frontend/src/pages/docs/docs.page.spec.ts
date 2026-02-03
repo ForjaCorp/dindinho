@@ -86,6 +86,13 @@ describe('DocsPage', () => {
     expect(docsServiceMock.getFile).toHaveBeenCalledWith('40-clients/pwa/reports-frontend.md');
   });
 
+  it('deve carregar api-ref via slug', () => {
+    activatedRouteMock.snapshot.paramMap = convertToParamMap({ slug: 'api-ref' });
+    createComponent();
+
+    expect(docsServiceMock.getOpenApi).toHaveBeenCalled();
+  });
+
   it('deve carregar documento via query param path', () => {
     activatedRouteMock.snapshot.queryParamMap = convertToParamMap({
       path: '30-api/authentication.md',
