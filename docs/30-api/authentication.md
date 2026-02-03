@@ -1,3 +1,17 @@
+---
+id: doc-authentication
+title: "Autenticação (Frontend + API)"
+description: "Fluxo de autenticação com JWT, access token e refresh token."
+audience: ["dev"]
+visibility: "internal"
+status: "stable"
+owners: ["engineering"]
+tags: ["auth", "api", "frontend"]
+mvp: true
+createdAt: "2026-02-03"
+updatedAt: "2026-02-03"
+---
+
 # Autenticação (Frontend + API)
 
 Este documento descreve o fluxo de autenticação do Dindinho, com JWT (access token) e rotação de refresh token.

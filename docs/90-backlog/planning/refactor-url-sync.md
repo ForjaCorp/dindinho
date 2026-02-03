@@ -1,3 +1,17 @@
+---
+id: doc-refactor-url-sync
+title: "Refatoração da Sincronização de URL (Query Params)"
+description: "Plano para centralizar sincronização de filtros via query params em um serviço/utilitários."
+audience: ["dev"]
+visibility: "internal"
+status: "stable"
+owners: ["engineering"]
+tags: ["routing", "query-params", "refactor"]
+mvp: false
+createdAt: "2026-02-03"
+updatedAt: "2026-02-03"
+---
+
 # Planejamento: Refatoração da Sincronização de URL (Query Params)
 
 ## 1. Contexto e Problema

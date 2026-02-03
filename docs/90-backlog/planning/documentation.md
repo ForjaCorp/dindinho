@@ -11,7 +11,7 @@ mvp: true
 createdAt: "2026-02-02"
 ---
 
-## Documentação — plano de execução (portal + contratos + API)
+# Documentação — plano de execução (portal + contratos + API)
 
 ## Contexto atual
 
@@ -245,21 +245,21 @@ Critério de aceite:
 
 PR A (skeleton):
 
-- [ ] Criar um app de docs no monorepo (site estático)
-- [ ] Integrar conteúdo de `docs/` como fonte
+- [x] Criar um app de docs no monorepo (site estático)
+- [x] Integrar conteúdo de `docs/` como fonte
 
 PR B (API):
 
-- [ ] Renderizar `openapi.json` dentro do portal
+- [x] Renderizar `openapi.json` dentro do portal
 
 PR C (qualidade):
 
-- [ ] Checagem de links internos
-- [ ] Validação de frontmatter com Zod
+- [x] Checagem de links internos
+- [x] Validação de frontmatter com Zod
 
 Critério de aceite:
 
-- [ ] Portal roda localmente e a navegação cobre os fluxos críticos
+- [x] Portal roda localmente e a navegação cobre os fluxos críticos
 
 ### Fase D5 — Deploy no Coolify (1 PR)
 
