@@ -82,6 +82,30 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
             <div
               class="pt-6 text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2"
             >
+              Infraestrutura
+            </div>
+
+            <a
+              data-testid="nav-ops"
+              routerLink="/docs/admin/ops"
+              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+            >
+              <i class="pi pi-cog"></i> Operações
+            </a>
+
+            <a
+              data-testid="nav-api-ref"
+              routerLink="/docs/admin/api-ref"
+              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+            >
+              <i class="pi pi-code"></i> API Reference
+            </a>
+
+            <div
+              class="pt-6 text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2"
+            >
               Domínios (Técnico)
             </div>
 

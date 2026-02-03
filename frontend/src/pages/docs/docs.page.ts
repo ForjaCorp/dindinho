@@ -297,6 +297,7 @@ export class DocsPage {
       openapi: this.OPENAPI_PATH,
       'api-ref': this.OPENAPI_PATH,
       deploy: '90-backlog/planning/documentation.md',
+      ops: '50-ops/guia-operacoes.md',
 
       // User/Product Domains (Fase 7)
       'dominio-contas': '10-product/dominio-contas.md',
