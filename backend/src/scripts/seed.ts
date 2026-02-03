@@ -10,8 +10,8 @@ const writeOut = (message: string) => {
  * Garante a criação de categorias padrão e do usuário de desenvolvimento com permissão de ADMIN.
  */
 export async function main() {
-  const email = "dev@dindinho.com";
-  const password = "Password123!";
+  const email = process.env.SEED_ADMIN_EMAIL || "dev@dindinho.com";
+  const password = process.env.SEED_ADMIN_PASSWORD || "Password123!";
 
   const defaultCategories = [
     { name: "Salário", icon: "pi-briefcase" },
@@ -57,10 +57,11 @@ export async function main() {
   }
 
   const isDev = process.env.NODE_ENV !== "production";
+  const autoSeed = process.env.AUTO_SEED === "true";
 
-  if (!isDev) {
+  if (!isDev && !autoSeed) {
     writeOut(
-      "Seed de usuário dev ignorado fora do ambiente de desenvolvimento",
+      "Seed de usuário dev ignorado fora do ambiente de desenvolvimento (use AUTO_SEED=true para forçar)",
     );
     return;
   }

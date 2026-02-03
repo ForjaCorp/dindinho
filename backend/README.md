@@ -16,11 +16,14 @@ Padrões de Desenvolvimento:
 - **Tratamento de Erros**: Exceções de domínio capturadas por handler global e formatadas conforme `ApiErrorResponseDTO`
 - **Rotas**: Todas as rotas possuem prefixo `/api` (ex: `/api/auth/login`)
 
-Variáveis de ambiente relevantes para Refresh Tokens
+Variáveis de ambiente relevantes para Refresh Tokens e Seed
 
 - `REFRESH_TOKEN_DAYS` (opcional): número de dias que um refresh token é válido. Default: `7`.
 - `ENABLE_REFRESH_CLEANUP` (opcional): quando `true`, a aplicação agenda uma tarefa periódica para limpar tokens expirados. Default: `false`.
 - `REFRESH_CLEANUP_INTERVAL_MINUTES` (opcional): intervalo em minutos para a tarefa de cleanup. Default: `60` (uma hora).
+- `AUTO_SEED` (opcional): quando `true`, executa o script de seed automaticamente no startup (útil para staging). Default: `false`.
+- `SEED_ADMIN_EMAIL` (opcional): email do admin criado pelo seed. Default: `dev@dindinho.com`.
+- `SEED_ADMIN_PASSWORD` (opcional): senha do admin criado pelo seed. Default: `Password123!`.
 
 Exemplo `.env`:
 
@@ -30,6 +33,9 @@ JWT_SECRET=super-secret
 REFRESH_TOKEN_DAYS=7
 ENABLE_REFRESH_CLEANUP=true
 REFRESH_CLEANUP_INTERVAL_MINUTES=60
+AUTO_SEED=true
+SEED_ADMIN_EMAIL=admin@example.com
+SEED_ADMIN_PASSWORD=SenhaForteSegura123!
 FRONTEND_URL=https://app.example.com
 PORT=3333
 ```

@@ -16,6 +16,6 @@
       "@dindinho/shared": ["../packages/shared/src/index.ts"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "scripts/**/*"],
   "exclude": ["node_modules", "dist"]
 }
