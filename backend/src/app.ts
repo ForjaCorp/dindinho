@@ -204,6 +204,15 @@ export function buildApp(): FastifyInstance {
       typedApi.setValidatorCompiler(validatorCompiler);
       typedApi.setSerializerCompiler(serializerCompiler);
 
+      // Swagger UI - Documentação da API (Dentro do prefixo /api para estabilidade)
+      api.register(swaggerUi, {
+        routePrefix: "/docs",
+        uiConfig: {
+          docExpansion: "list",
+          deepLinking: false,
+        },
+      });
+
       // Rotas
       api.register(healthRoutes);
       api.register(authRoutes, { prefix: "/auth" });
@@ -217,15 +226,6 @@ export function buildApp(): FastifyInstance {
     },
     { prefix: "/api" },
   );
-
-  // Swagger UI - Documentação da API (Registrado no app principal para estabilidade)
-  app.register(swaggerUi, {
-    routePrefix: "/api/docs",
-    uiConfig: {
-      docExpansion: "list",
-      deepLinking: false,
-    },
-  });
 
   app.setErrorHandler(
     (error: FastifyError, request: FastifyRequest, reply: FastifyReply) => {
