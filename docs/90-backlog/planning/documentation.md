@@ -263,12 +263,19 @@ Critério de aceite:
 
 ### Fase D5 — Deploy no Coolify (1 PR)
 
-- [ ] Adicionar um serviço `docs` no `docker-compose.coolify.yml` ou incorporar ao container do frontend como rota `/docs`
-- [ ] Definir variáveis/URLs e healthcheck do serviço de docs
+- [x] Adicionar um serviço `docs` no `docker-compose.coolify.yml` ou incorporar ao container do frontend como rota `/docs`
+- [x] Definir variáveis/URLs e healthcheck do serviço de docs
+
+Notas de deploy (subdomínio + proxy):
+
+- O portal de docs será exposto via subdomínio: `https://docs.dindinho.forjacorp.com/`
+- No Coolify, a forma recomendada é manter `/api` funcionando no subdomínio via reverse proxy (ex.: Nginx no container do frontend) apontando para o backend interno.
+- DNS: criar `docs.dindinho.forjacorp.com` (CNAME para o host do app, ou A/AAAA para o servidor) e adicionar esse domínio ao serviço `docs`.
+- CORS do backend: `FRONTEND_URL` deve incluir ambos os origins (ex.: `https://dindinho.forjacorp.com,https://docs.dindinho.forjacorp.com`).
 
 Critério de aceite:
 
-- [ ] Portal disponível em produção (ex.: `https://app.seudominio.com/docs` ou `https://docs.seudominio.com/`)
+- [ ] Portal disponível em produção no subdomínio `https://docs.dindinho.forjacorp.com/`
 
 ### Fase D6 — Separação “público vs interno” (1 PR)
 
