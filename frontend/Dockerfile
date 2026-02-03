@@ -7,7 +7,7 @@ RUN npm ci --workspaces --include-workspace-root
 
 FROM node:20-alpine AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app ./
 COPY . .
 ENV CI=true
 RUN npm --prefix packages/shared run build
