@@ -102,6 +102,15 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
             >
               <i class="pi pi-chart-pie"></i> Relatórios
             </a>
+
+            <a
+              data-testid="nav-collab"
+              routerLink="/docs/user/dominio-colaboracao"
+              routerLinkActive="bg-emerald-50 text-emerald-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <i class="pi pi-users"></i> Colaboração
+            </a>
           </nav>
 
           <div class="p-4 border-t border-slate-100 bg-slate-50/50">

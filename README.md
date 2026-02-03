@@ -258,6 +258,7 @@ Referência de orquestração: `docker-compose.coolify.yml` demonstra a configur
 - [TimeFilter — Iteração de melhorias (Concluído)](docs/90-backlog/planning/time-filter.md)
 - [Filtro por conta unificado (Relatórios + Transações) (Concluído)](docs/90-backlog/planning/account-filter.md)
 - [Refatoração: Sincronização de URL (Concluído)](docs/90-backlog/planning/refactor-url-sync.md)
+- [Sistema de Convites (Colaboração Multi-contas) (Pendente)](docs/90-backlog/planning/sistema-convites.md)
 
 ## 🤝 Contribuição
 

@@ -18,6 +18,13 @@ enum Role {
   ADMIN
 }
 
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
 enum TransactionType {
   INCOME
   EXPENSE
@@ -46,6 +53,7 @@ model User {
   sharedAccounts AccountAccess[]
   categories    Category[]
   refreshTokens RefreshToken[]
+  sentInvites   Invite[]        @relation("SentInvites")
 }
 
 model Account {
@@ -64,6 +72,7 @@ model Account {
   transactions   Transaction[]
   snapshots      DailySnapshot[]
   creditCardInfo CreditCardInfo?
+  inviteAccounts InviteAccount[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -187,4 +196,31 @@ model DailySnapshot {
 
   @@unique([accountId, date])
   @@index([date])
+}
+
+model Invite {
+  id        String   @id @default(uuid())
+  email     String
+  senderId  String
+  sender    User     @relation("SentInvites", fields: [senderId], references: [id])
+  status    InviteStatus @default(PENDING)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts  InviteAccount[]
+
+  @@index([email])
+}
+
+model InviteAccount {
+  id        String @id @default(uuid())
+  inviteId  String
+  accountId String
+  role      Role   @default(VIEWER)
+
+  invite  Invite  @relation(fields: [inviteId], references: [id], onDelete: Cascade)
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([inviteId, accountId])
 }

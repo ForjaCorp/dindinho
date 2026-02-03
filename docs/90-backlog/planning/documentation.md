@@ -333,6 +333,7 @@ Critério de aceite:
 
 - [x] Criar guias de usuário para cada domínio (Auth, Accounts, Transactions, Reports).
 - [x] Criar documentação técnica (Admin) para cada domínio (esquemas de banco, fluxos de integração).
+- [x] Criar documentação de domínio para Colaboração.
 - [x] Links bidirecionais entre guias de usuário e referência de API (onde aplicável).
 
 Critério de aceite:

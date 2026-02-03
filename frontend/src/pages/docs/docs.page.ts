@@ -304,6 +304,7 @@ export class DocsPage {
       'dominio-auth': '10-product/dominio-auth.md',
       'dominio-transacoes': '10-product/dominio-transacoes.md',
       'dominio-relatorios': '10-product/dominio-relatorios.md',
+      'dominio-colaboracao': '10-product/dominio-colaboracao.md',
 
       // Legacy/Placeholders
       intro: '90-backlog/planning/documentation.md',
