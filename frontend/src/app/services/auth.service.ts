@@ -104,6 +104,7 @@ export class AuthService {
    * Realiza o login do usuário
    *
    * @param {LoginDTO} credentials - Credenciais do usuário (email e senha)
+   * @param {string} [returnUrl] - URL para redirecionamento após o login (padrão: '/dashboard')
    * @returns {Observable<LoginResponseDTO>} Observable com a resposta completa do login (token e usuário)
    *
    * @description
@@ -112,21 +113,18 @@ export class AuthService {
    * 2. Valida e armazena o token JWT no localStorage
    * 3. Decodifica o token para extrair dados do usuário
    * 4. Atualiza o estado reativo do usuário atual
-   * 5. Redireciona para o dashboard
+   * 5. Redireciona para o returnUrl ou dashboard
    *
    * @example
    * ```typescript
-   * this.auth.login({ email: 'user@example.com', password: 'password' }).subscribe({
+   * this.auth.login({ email: 'user@example.com', password: 'password' }, '/docs').subscribe({
    *   next: (response) => {
    *     // Redirecionamento é feito automaticamente
-   *   },
-   *   error: (error) => {
-   *     // O erro é tratado globalmente, mas pode ser capturado aqui para lógica local
    *   }
    * });
    * ```
    */
-  login(credentials: LoginDTO): Observable<LoginResponseDTO> {
+  login(credentials: LoginDTO, returnUrl?: string): Observable<LoginResponseDTO> {
     return this.api.login(credentials).pipe(
       tap((response: LoginResponseDTO) => {
         // Armazena os tokens e atualiza o estado do usuário
@@ -134,8 +132,9 @@ export class AuthService {
         this.currentUser.set(response.user);
         this.logger.info(`Usuário ${response.user.email} logado com sucesso.`);
 
-        // Redireciona para o dashboard
-        this.router.navigate(['/dashboard']);
+        // Redireciona para o returnUrl ou dashboard
+        const target = returnUrl || '/dashboard';
+        this.router.navigateByUrl(target);
       }),
       catchError((error) => {
         // Limpa estado em caso de qualquer erro de autenticação

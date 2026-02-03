@@ -7,7 +7,7 @@ import {
   FormGroup,
   FormControl,
 } from '@angular/forms';
-import { RouterLink, Router } from '@angular/router';
+import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { AppError } from '../../app/models/error.model';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -158,6 +158,7 @@ export class LoginComponent {
   private authService = inject(AuthService);
 
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   constructor() {
     const navigation = this.router.currentNavigation ? this.router.currentNavigation() : null;
@@ -166,6 +167,13 @@ export class LoginComponent {
     if (state?.email) {
       this.loginForm.controls.email.setValue(state.email);
     }
+  }
+
+  /**
+   * Obtém a URL de retorno dos parâmetros de consulta
+   */
+  private get returnUrl(): string | undefined {
+    return this.route.snapshot.queryParams['returnUrl'];
   }
 
   /** Estado de carregamento do formulário */
@@ -212,7 +220,7 @@ export class LoginComponent {
     const { email, password } = formValue;
 
     // Chama o serviço de autenticação
-    this.authService.login({ email: email!, password: password! }).subscribe({
+    this.authService.login({ email: email!, password: password! }, this.returnUrl).subscribe({
       next: () => {
         // O redirecionamento é feito no AuthService após o login bem-sucedido
         this.isLoading.set(false);

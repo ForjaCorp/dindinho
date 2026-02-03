@@ -45,7 +45,13 @@ describe('authGuard', () => {
     injector = TestBed.inject(EnvironmentInjector);
 
     mockActivatedRouteSnapshot = {} as ActivatedRouteSnapshot;
-    mockRouterStateSnapshot = {} as RouterStateSnapshot;
+    mockRouterStateSnapshot = { url: '/test-url' } as RouterStateSnapshot;
+    // Mock do RouterState
+    Object.defineProperty(router, 'routerState', {
+      get: () => ({
+        snapshot: { url: '/test-url' },
+      }),
+    });
   });
 
   afterEach(() => {
@@ -79,7 +85,9 @@ describe('authGuard', () => {
     );
 
     expect(authService.isAuthenticated).toHaveBeenCalled();
-    expect(createUrlTreeSpy).toHaveBeenCalledWith(['/login']);
+    expect(createUrlTreeSpy).toHaveBeenCalledWith(['/login'], {
+      queryParams: { returnUrl: '/test-url' },
+    });
   });
 
   it('deve criar dependências corretamente', () => {
@@ -97,7 +105,9 @@ describe('authGuard', () => {
     );
 
     expect(router.navigate).not.toHaveBeenCalled();
-    expect(router.createUrlTree).toHaveBeenCalledWith(['/login']);
+    expect(router.createUrlTree).toHaveBeenCalledWith(['/login'], {
+      queryParams: { returnUrl: '/test-url' },
+    });
   });
 
   it('deve funcionar com diferentes snapshots de rota', () => {

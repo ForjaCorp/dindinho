@@ -84,9 +84,9 @@ Registro de alterações do pacote: [CHANGELOG.md](../../packages/shared/CHANGEL
 
 ### Login
 
-1. UI chama `AuthService.login(credentials)`
+1. UI chama `AuthService.login(credentials, returnUrl?)`
 2. `ApiService.login()` chama a API
-3. `AuthService` persiste `token` e `refreshToken`, atualiza usuário atual e navega para o app
+3. `AuthService` persiste `token` e `refreshToken`, atualiza usuário atual e navega para o `returnUrl` (ou `/dashboard` por padrão)
 
 ### Requests autenticadas + rotação
 
@@ -96,6 +96,11 @@ Registro de alterações do pacote: [CHANGELOG.md](../../packages/shared/CHANGEL
    - atualiza os tokens no storage
    - reexecuta a request original com o novo token
 3. Se o refresh falhar: faz logout e propaga erro
+
+### Redirecionamento e Subdomínios
+
+- **Return URL:** O `authGuard` captura a URL de destino quando o usuário não está autenticado e a anexa como query parameter `returnUrl` na página de login.
+- **Subdomínio Docs:** Se a aplicação for acessada via subdomínio `docs.` na raiz (`/`), o componente raiz redireciona automaticamente para `/docs`.
 
 ### Logout
 
