@@ -1,3 +1,6 @@
+import { zodIssueSchema } from '@dindinho/shared';
+import { z } from 'zod';
+
 /**
  * Tipos de erro suportados pela aplicação.
  */
@@ -13,6 +16,10 @@ export interface AppError {
   message: string;
   /** Código do erro (ex: status HTTP ou código interno). */
   code?: string | number;
+  /** ID da requisição para suporte. */
+  requestId?: string;
+  /** Lista de problemas (geralmente validação). */
+  issues?: z.infer<typeof zodIssueSchema>[];
   /** Detalhes técnicos do erro (opcional). */
   details?: unknown;
   /** Erro original (opcional). */

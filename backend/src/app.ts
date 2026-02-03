@@ -32,6 +32,7 @@ import { RefreshTokenService } from "./auth/refresh-token.service";
 import { ApiErrorResponseDTO } from "@dindinho/shared";
 import { prisma } from "./lib/prisma";
 import { getHttpErrorLabel } from "./lib/get-http-error-label";
+import { AppError } from "./lib/errors";
 
 const ERROR_CODE_RE = /^[A-Z0-9_]+$/;
 
@@ -242,7 +243,9 @@ export function buildApp(): FastifyInstance {
     (error: FastifyError, request: FastifyRequest, reply: FastifyReply) => {
       const { validation, code, message, statusCode = 500 } = error;
       const { id: requestId } = request;
+      const isDev = process.env.NODE_ENV !== "production";
 
+      // Erros de validação do Zod
       if (error instanceof ZodError) {
         return reply.status(422).send(
           buildApiErrorResponse({
@@ -255,6 +258,20 @@ export function buildApp(): FastifyInstance {
         );
       }
 
+      // Erros de Domínio (AppError)
+      if (error instanceof AppError) {
+        return reply.status(error.statusCode).send(
+          buildApiErrorResponse({
+            statusCode: error.statusCode,
+            message: error.message,
+            requestId,
+            code: error.code,
+            details: error.details,
+          }),
+        );
+      }
+
+      // Erros conhecidos do Fastify ou erros com statusCode explícito
       if (isRecord(error) && "statusCode" in error) {
         const customStatusCode = error.statusCode as number;
         const customMessage =
@@ -265,25 +282,44 @@ export function buildApp(): FastifyInstance {
           "code" in error ? error.code : undefined,
         );
 
+        // Sanitização de detalhes para produção em erros 5xx
+        const details =
+          customStatusCode >= 500 && !isDev
+            ? undefined
+            : "details" in error
+              ? error.details
+              : undefined;
+
         return reply.status(customStatusCode).send(
           buildApiErrorResponse({
             statusCode: customStatusCode,
             message: customMessage,
             requestId,
             code: customCode,
-            details: "details" in error ? error.details : undefined,
+            details,
           }),
         );
       }
 
-      request.log.error(error, "Internal Server Error");
+      // Log de erro interno inesperado
+      request.log.error(
+        {
+          err: error,
+          requestId,
+          path: request.url,
+          method: request.method,
+        },
+        "Internal Server Error",
+      );
 
+      // Resposta genérica para erros 500 inesperados
       return reply.status(statusCode).send(
         buildApiErrorResponse({
           statusCode,
-          message: "Ocorreu um erro inesperado.",
+          message: isDev ? message : "Ocorreu um erro inesperado.",
           requestId,
-          code: normalizeErrorCode(code),
+          code: normalizeErrorCode(code) || "INTERNAL_SERVER_ERROR",
+          details: isDev ? error.stack : undefined,
         }),
       );
     },
@@ -294,8 +330,41 @@ export function buildApp(): FastifyInstance {
     String(process.env.ENABLE_REFRESH_CLEANUP).toLowerCase() === "true" &&
     process.env.NODE_ENV !== "test"
   ) {
-    // TODO: Implementar agendamento de limpeza de tokens (ex: node-cron)
-    refreshTokenService.cleanupExpiredTokens();
+    const intervalMinutes =
+      Number(process.env.REFRESH_CLEANUP_INTERVAL_MINUTES) || 60;
+    const intervalMs = intervalMinutes * 60 * 1000;
+
+    app.log.info(
+      { intervalMinutes },
+      "Agendando limpeza automática de refresh tokens",
+    );
+
+    const cleanupInterval = setInterval(async () => {
+      try {
+        const count = await refreshTokenService.cleanupExpiredTokens();
+        if (count > 0) {
+          app.log.info(
+            { count },
+            "Limpeza automática de refresh tokens concluída",
+          );
+        }
+      } catch (err) {
+        app.log.error({ err }, "Erro na limpeza automática de refresh tokens");
+      }
+    }, intervalMs);
+
+    cleanupInterval.unref();
+
+    app.addHook("onClose", async () => {
+      clearInterval(cleanupInterval);
+    });
+
+    // Executa uma vez na inicialização (após o servidor estar pronto)
+    app.ready().then(() => {
+      refreshTokenService.cleanupExpiredTokens().catch((err) => {
+        app.log.error({ err }, "Erro na limpeza inicial de refresh tokens");
+      });
+    });
   }
 
   return app;

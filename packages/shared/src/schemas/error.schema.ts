@@ -27,3 +27,4 @@ export const apiErrorResponseSchema = z
   .strict();
 
 export type ApiErrorResponseDTO = z.infer<typeof apiErrorResponseSchema>;
+export type ApiErrorCodeDTO = z.infer<typeof apiErrorCodeSchema>;
