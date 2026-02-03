@@ -6,7 +6,6 @@ import {
 } from "fastify-type-provider-zod";
 import { prisma } from "../lib/prisma";
 import { healthCheckSchema, HealthCheckDTO } from "@dindinho/shared";
-import "@fastify/swagger";
 
 export async function healthRoutes(app: FastifyInstance) {
   const typedApp = app.withTypeProvider<ZodTypeProvider>();
@@ -14,12 +13,10 @@ export async function healthRoutes(app: FastifyInstance) {
   typedApp.setSerializerCompiler(serializerCompiler);
 
   // Health Check
-  typedApp.get<{ Reply: HealthCheckDTO }>(
+  typedApp.get(
     "/health",
     {
       schema: {
-        summary: "Verificar saúde da aplicação",
-        tags: ["health"],
         response: {
           200: healthCheckSchema,
         },
@@ -39,10 +36,7 @@ export async function healthRoutes(app: FastifyInstance) {
   typedApp.get(
     "/test-db",
     {
-      schema: {
-        summary: "Testar conexão com banco de dados",
-        tags: ["health"],
-      },
+      schema: {},
     },
     async (_request, reply) => {
       try {

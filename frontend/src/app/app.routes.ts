@@ -19,7 +19,7 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
 
-  // Rotas de Autenticação (Sem Header/Footer)
+  // Rotas Públicas (Sem Header/Footer)
   {
     path: '',
     component: AuthLayoutComponent,
@@ -34,8 +34,11 @@ export const routes: Routes = [
         loadComponent: () => import('../pages/signup/signup.page').then((m) => m.SignupPage),
         canActivate: [guestGuard],
       },
-      // Futuro registro:
-      // { path: 'register', ... }
+      {
+        path: 'docs',
+        loadComponent: () => import('../pages/docs/docs.page').then((m) => m.DocsPage),
+        data: { title: 'Documentação' },
+      },
     ],
   },
 
@@ -88,11 +91,6 @@ export const routes: Routes = [
         path: 'reports',
         loadComponent: () => import('../pages/reports/reports.page').then((m) => m.ReportsPage),
         data: { title: 'Relatórios', maxWidth: '5xl' },
-      },
-      {
-        path: 'docs',
-        loadComponent: () => import('../pages/docs/docs.page').then((m) => m.DocsPage),
-        data: { title: 'Docs', maxWidth: '7xl' },
       },
       // Outras rotas autenticadas virão aqui (accounts, reports, profile)
     ],

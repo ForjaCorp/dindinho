@@ -16,6 +16,17 @@ declare module "fastify" {
   }
 }
 
+declare module "@fastify/jwt" {
+  interface FastifyJWT {
+    user: {
+      sub: string;
+      name: string;
+      email: string;
+      role: string;
+    };
+  }
+}
+
 const authPlugin = fastifyPlugin(async (app: FastifyInstance) => {
   const authenticate = async (request: FastifyRequest, reply: FastifyReply) => {
     try {
