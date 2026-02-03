@@ -2,8 +2,8 @@
 import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ActivatedRoute, ParamMap, convertToParamMap, provideRouter } from '@angular/router';
-import { BehaviorSubject, of, throwError } from 'rxjs';
+import { ActivatedRoute, convertToParamMap, provideRouter, type ParamMap } from '@angular/router';
+import { of, throwError, Subject } from 'rxjs';
 import { DocsPage } from './docs.page';
 import { DocsService, type OpenApiDocument } from '../../app/services/docs.service';
 
@@ -15,179 +15,161 @@ if (!testBed.platform) {
 describe('DocsPage', () => {
   let fixture: ComponentFixture<DocsPage>;
   let component: DocsPage;
-  let queryParamMap$: BehaviorSubject<ParamMap>;
   let docsServiceMock: {
-    getMarkdown: ReturnType<typeof vi.fn>;
-    getOpenApiDoc: ReturnType<typeof vi.fn>;
-    getOpenApiJsonUrl: ReturnType<typeof vi.fn>;
+    getFile: ReturnType<typeof vi.fn>;
+    getOpenApi: ReturnType<typeof vi.fn>;
     getSwaggerUiUrl: ReturnType<typeof vi.fn>;
-    getRawDocUrl: ReturnType<typeof vi.fn>;
+  };
+  let activatedRouteMock: {
+    snapshot: {
+      paramMap: ParamMap;
+      queryParamMap: ParamMap;
+    };
   };
 
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   beforeEach(async () => {
-    TestBed.resetTestingModule();
-    queryParamMap$ = new BehaviorSubject<ParamMap>(
-      convertToParamMap({ path: '90-backlog/planning/documentation.md' }),
-    );
-
     docsServiceMock = {
-      getMarkdown: vi.fn(() => of('# Plano de docs')),
-      getOpenApiDoc: vi.fn(() =>
-        of({
-          openapi: '3.0.0',
-          info: { title: 'API', version: '0.0.0' },
-          paths: {},
-        } satisfies OpenApiDocument),
+      getFile: vi.fn(() => of('')),
+      getOpenApi: vi.fn(() =>
+        of({ openapi: '3.0.0', info: { title: '', version: '' }, paths: {} }),
       ),
-      getOpenApiJsonUrl: vi.fn(() => '/api/docs/json'),
-      getSwaggerUiUrl: vi.fn(() => '/api/docs'),
-      getRawDocUrl: vi.fn((path: string) => `/assets/docs/${path}`),
+      getSwaggerUiUrl: vi.fn(() => 'https://api.dindinho.com/docs'),
+    };
+
+    activatedRouteMock = {
+      snapshot: {
+        paramMap: convertToParamMap({}),
+        queryParamMap: convertToParamMap({}),
+      },
     };
 
     await TestBed.configureTestingModule({
       imports: [DocsPage],
       providers: [
         provideRouter([]),
-        {
-          provide: ActivatedRoute,
-          useValue: {
-            queryParamMap: queryParamMap$.asObservable(),
-          },
-        },
+        { provide: ActivatedRoute, useValue: activatedRouteMock },
         { provide: DocsService, useValue: docsServiceMock },
       ],
     }).compileComponents();
+  });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+    TestBed.resetTestingModule();
+  });
+
+  const createComponent = () => {
     fixture = TestBed.createComponent(DocsPage);
     component = fixture.componentInstance;
     fixture.detectChanges();
-  });
+  };
 
-  it('deve criar', () => {
+  it('deve criar o componente', () => {
+    createComponent();
     expect(component).toBeTruthy();
   });
 
-  it('deve carregar e renderizar markdown quando path é de documento', () => {
-    expect(docsServiceMock.getMarkdown).toHaveBeenCalledWith(
-      '90-backlog/planning/documentation.md',
-    );
+  it('deve carregar markdown padrão se nenhum slug ou path for fornecido', () => {
+    docsServiceMock.getFile.mockReturnValue(of('# Documentação Padrão'));
+    createComponent();
 
-    const markdownEl: HTMLElement | null = fixture.nativeElement.querySelector(
-      '[data-testid="docs-markdown"]',
-    );
-    expect(markdownEl).toBeTruthy();
-    expect(markdownEl?.textContent ?? '').toContain('# Plano de docs');
+    expect(docsServiceMock.getFile).toHaveBeenCalledWith('90-backlog/planning/documentation.md');
+    const markdownEl = fixture.nativeElement.querySelector('[data-testid="docs-markdown"]');
+    expect(markdownEl.textContent).toContain('Documentação Padrão');
   });
 
-  it('deve renderizar OpenAPI quando path é __openapi__', () => {
-    const openApiDoc: OpenApiDocument = {
+  it('deve carregar documento via slug', () => {
+    activatedRouteMock.snapshot.paramMap = convertToParamMap({ slug: 'reports' });
+    docsServiceMock.getFile.mockReturnValue(of('# Relatórios'));
+    createComponent();
+
+    expect(docsServiceMock.getFile).toHaveBeenCalledWith('40-clients/pwa/reports-frontend.md');
+  });
+
+  it('deve carregar documento via query param path', () => {
+    activatedRouteMock.snapshot.queryParamMap = convertToParamMap({
+      path: '30-api/authentication.md',
+    });
+    docsServiceMock.getFile.mockReturnValue(of('# Auth'));
+    createComponent();
+
+    expect(docsServiceMock.getFile).toHaveBeenCalledWith('30-api/authentication.md');
+  });
+
+  it('deve processar frontmatter corretamente', () => {
+    const content = `---
+title: "Meu Título"
+description: "Minha Descrição"
+tags: ["tag1", "tag2"]
+---
+# Conteúdo`;
+    docsServiceMock.getFile.mockReturnValue(of(content));
+    createComponent();
+
+    const titleEl = fixture.nativeElement.querySelector('h1');
+    expect(titleEl.textContent).toContain('Meu Título');
+
+    const descEl = fixture.nativeElement.querySelector('p');
+    expect(descEl.textContent).toContain('Minha Descrição');
+
+    const tags = fixture.nativeElement.querySelectorAll('span');
+    expect(tags[0].textContent.toLowerCase()).toContain('tag1');
+    expect(tags[1].textContent.toLowerCase()).toContain('tag2');
+  });
+
+  it('deve exibir UI de redirecionamento do Swagger quando o slug é swagger', () => {
+    activatedRouteMock.snapshot.paramMap = convertToParamMap({ slug: 'swagger' });
+    createComponent();
+
+    const swaggerEl = fixture.nativeElement.querySelector('[data-testid="docs-swagger-redirect"]');
+    expect(swaggerEl).toBeTruthy();
+
+    const link = fixture.nativeElement.querySelector('a');
+    expect(link.getAttribute('href')).toBe('https://api.dindinho.com/docs');
+  });
+
+  it('deve renderizar OpenAPI quando o path é __openapi__', () => {
+    activatedRouteMock.snapshot.paramMap = convertToParamMap({ slug: 'openapi' });
+    const mockOpenApi: OpenApiDocument = {
       openapi: '3.0.0',
-      info: { title: 'Dindinho API', version: '1.2.3' },
-      tags: [{ name: 'auth', description: 'Autenticação' }],
+      info: { title: 'Dindinho API', version: '1.0.0' },
       paths: {
         '/auth/login': {
           post: {
-            summary: 'Login',
-            operationId: 'authLogin',
-            tags: ['auth'],
+            summary: 'Realiza login',
+            operationId: 'login',
+            tags: ['Auth'],
           },
         },
       },
     };
+    docsServiceMock.getOpenApi.mockReturnValue(of(mockOpenApi));
+    createComponent();
 
-    docsServiceMock.getOpenApiDoc.mockReturnValue(of(openApiDoc));
-    queryParamMap$.next(convertToParamMap({ path: '__openapi__' }));
-    fixture.detectChanges();
-
-    const openApiEl: HTMLElement | null = fixture.nativeElement.querySelector(
-      '[data-testid="docs-openapi"]',
-    );
+    const openApiEl = fixture.nativeElement.querySelector('[data-testid="docs-openapi"]');
     expect(openApiEl).toBeTruthy();
-
-    const text = openApiEl?.textContent ?? '';
-    expect(text).toContain('Dindinho API');
-    expect(text).toContain('1.2.3');
-    expect(text).toContain('POST /auth/login');
-    expect(text).toContain('Login');
-    expect(text).toContain('authLogin');
+    expect(openApiEl.textContent).toContain('POST');
+    expect(openApiEl.textContent).toContain('/auth/login');
+    expect(openApiEl.textContent).toContain('Realiza login');
   });
 
-  it('deve abrir o raw do markdown ao clicar em “Abrir raw”', () => {
-    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
-    if (!('createObjectURL' in URL)) {
-      Object.defineProperty(URL, 'createObjectURL', {
-        value: (_blob: Blob) => 'blob:docs-raw',
-        writable: true,
-        configurable: true,
-      });
-    }
-
-    if (!('revokeObjectURL' in URL)) {
-      Object.defineProperty(URL, 'revokeObjectURL', {
-        value: (_url: string) => undefined,
-        writable: true,
-        configurable: true,
-      });
-    }
-    const createObjectUrlSpy = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:docs-raw');
-    const revokeObjectUrlSpy = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
-
-    const btn: HTMLButtonElement | null = fixture.nativeElement.querySelector(
-      '[data-testid="docs-open-raw"]',
-    );
-    expect(btn).toBeTruthy();
-    btn?.click();
-
-    expect(createObjectUrlSpy).toHaveBeenCalledTimes(1);
-    expect(openSpy).toHaveBeenCalledWith('blob:docs-raw', '_blank', 'noopener');
-    expect(revokeObjectUrlSpy).toHaveBeenCalledTimes(0);
-  });
-
-  it('deve abrir o Swagger ao clicar no botão “Swagger”', () => {
-    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
-    docsServiceMock.getSwaggerUiUrl.mockReturnValue('https://example.com/docs');
-
-    const btn: HTMLButtonElement | null = fixture.nativeElement.querySelector(
-      '[data-testid="docs-open-swagger"]',
-    );
-    expect(btn).toBeTruthy();
-    btn?.click();
-
-    expect(openSpy).toHaveBeenCalledWith('https://example.com/docs', '_blank', 'noopener');
-  });
-
-  it('deve abrir o raw do OpenAPI ao clicar em “Abrir raw” quando path é __openapi__', () => {
-    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
-    docsServiceMock.getOpenApiJsonUrl.mockReturnValue('https://example.com/api/docs/json');
-
-    queryParamMap$.next(convertToParamMap({ path: '__openapi__' }));
+  it('deve exibir estado de carregamento', () => {
+    docsServiceMock.getFile.mockReturnValue(new Subject<string>().asObservable()); // Nunca emite automaticamente
+    fixture = TestBed.createComponent(DocsPage);
+    // @ts-expect-error - Acessando sinal protegido para teste
+    fixture.componentInstance.isLoading.set(true);
     fixture.detectChanges();
 
-    const btn: HTMLButtonElement | null = fixture.nativeElement.querySelector(
-      '[data-testid="docs-open-raw"]',
-    );
-    expect(btn).toBeTruthy();
-    btn?.click();
-
-    expect(openSpy).toHaveBeenCalledWith('https://example.com/api/docs/json', '_blank', 'noopener');
+    const loadingEl = fixture.nativeElement.querySelector('[data-testid="docs-loading"]');
+    expect(loadingEl).toBeTruthy();
   });
 
-  it('não deve abrir raw quando o caminho é inválido', () => {
-    docsServiceMock.getMarkdown.mockReturnValue(throwError(() => new Error('Caminho inválido')));
-    docsServiceMock.getRawDocUrl.mockReturnValue(null);
-    queryParamMap$.next(convertToParamMap({ path: '../segredo.md' }));
-    fixture.detectChanges();
+  it('deve exibir mensagem de erro em caso de falha', () => {
+    docsServiceMock.getFile.mockReturnValue(throwError(() => new Error('Falha')));
+    createComponent();
 
-    const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
-    const btn: HTMLButtonElement | null = fixture.nativeElement.querySelector(
-      '[data-testid="docs-open-raw"]',
-    );
-    btn?.click();
-
-    expect(openSpy).not.toHaveBeenCalled();
+    const errorEl = fixture.nativeElement.querySelector('[data-testid="docs-error"]');
+    expect(errorEl).toBeTruthy();
+    expect(errorEl.textContent).toContain('Não foi possível carregar o documento');
   });
 });

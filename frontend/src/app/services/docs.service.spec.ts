@@ -43,11 +43,11 @@ describe('DocsService', () => {
     let result: OpenApiDocument | null = null;
     let receivedError: unknown = null;
 
-    service.getOpenApiDoc().subscribe({
-      next: (doc) => {
+    service.getOpenApi().subscribe({
+      next: (doc: OpenApiDocument) => {
         result = doc;
       },
-      error: (err) => {
+      error: (err: unknown) => {
         receivedError = err;
       },
     });
@@ -67,11 +67,11 @@ describe('DocsService', () => {
     let result: OpenApiDocument | null = null;
     let receivedError: unknown = null;
 
-    service.getOpenApiDoc().subscribe({
-      next: (doc) => {
+    service.getOpenApi().subscribe({
+      next: (doc: OpenApiDocument) => {
         result = doc;
       },
-      error: (err) => {
+      error: (err: unknown) => {
         receivedError = err;
       },
     });

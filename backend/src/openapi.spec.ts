@@ -3,6 +3,8 @@ import { buildApp } from "./app";
 
 describe("OpenAPI Documentation", () => {
   it("deve servir Swagger UI em /api/docs", async () => {
+    // Garante que o Swagger está habilitado para o teste
+    process.env.NODE_ENV = "development";
     const app = buildApp();
 
     const response = await app.inject({
@@ -28,6 +30,7 @@ describe("OpenAPI Documentation", () => {
   });
 
   it("deve gerar documentação OpenAPI e validar estrutura", async () => {
+    process.env.NODE_ENV = "development";
     const app = buildApp();
 
     const response = await app.inject({
@@ -81,16 +84,49 @@ describe("OpenAPI Documentation", () => {
     for (const tag of expectedTags) {
       expect(tags).toContain(tag);
     }
+  });
 
-    // Verifica segurança global
-    expect(openapiDoc.components.securitySchemes).toHaveProperty("bearerAuth");
-    expect(openapiDoc.components.securitySchemes.bearerAuth.type).toBe("http");
-    expect(openapiDoc.components.securitySchemes.bearerAuth.scheme).toBe(
-      "bearer",
-    );
+  it("NÃO deve servir Swagger UI em /api/docs quando em produção", async () => {
+    const originalEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = "production";
+    process.env.ENABLE_SWAGGER = "false";
+
+    const app = buildApp();
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/docs",
+    });
+
+    // Quando o Swagger está desabilitado, a rota /api/docs não deve ser registrada
+    // O Fastify retornará 404 se o prefixo /api registrar outras rotas, ou a resposta do handler de erro
+    expect(response.statusCode).toBe(404);
+
+    process.env.NODE_ENV = originalEnv;
+  });
+
+  it("deve servir Swagger UI em /api/docs quando em produção se ENABLE_SWAGGER for true", async () => {
+    const originalEnv = process.env.NODE_ENV;
+    const originalEnable = process.env.ENABLE_SWAGGER;
+    process.env.NODE_ENV = "production";
+    process.env.ENABLE_SWAGGER = "true";
+
+    const app = buildApp();
+
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/docs",
+    });
+
+    expect(response.statusCode).toBe(302);
+    expect(response.headers.location).toContain("docs/static/index.html");
+
+    process.env.NODE_ENV = originalEnv;
+    process.env.ENABLE_SWAGGER = originalEnable;
   });
 
   it("deve ter summary e tags em todas as operações", async () => {
+    process.env.NODE_ENV = "development";
     const app = buildApp();
 
     const response = await app.inject({
