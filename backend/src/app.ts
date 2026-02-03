@@ -204,14 +204,19 @@ export function buildApp(): FastifyInstance {
       typedApi.setValidatorCompiler(validatorCompiler);
       typedApi.setSerializerCompiler(serializerCompiler);
 
-      // Swagger UI - Documentação da API (Dentro do prefixo /api para estabilidade)
-      api.register(swaggerUi, {
-        routePrefix: "/docs",
-        uiConfig: {
-          docExpansion: "list",
-          deepLinking: false,
-        },
-      });
+      // Swagger UI - Documentação da API (Somente em desenvolvimento ou se explicitamente habilitado)
+      if (
+        process.env.NODE_ENV !== "production" ||
+        process.env.ENABLE_SWAGGER === "true"
+      ) {
+        api.register(swaggerUi, {
+          routePrefix: "/docs",
+          uiConfig: {
+            docExpansion: "list",
+            deepLinking: false,
+          },
+        });
+      }
 
       // Registro de rotas sequencial para garantir ordem de inicialização
       api.log.debug("Iniciando registro de rotas da API...");
