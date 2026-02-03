@@ -78,7 +78,7 @@ describe("Auth Routes", () => {
 
     const response = await app.inject({
       method: "POST",
-      url: "/api/login",
+      url: "/api/auth/login",
       payload: {
         email: "teste@auth.com",
         password: password,
@@ -113,7 +113,7 @@ describe("Auth Routes", () => {
 
     const response = await app.inject({
       method: "POST",
-      url: "/api/login",
+      url: "/api/auth/login",
       payload: {
         email: "teste@auth.com",
         password: "senha-errada",

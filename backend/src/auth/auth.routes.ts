@@ -14,34 +14,25 @@ import { FastifyInstance } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
-import { AuthService } from "./auth.service";
+import {
+  AuthService,
+  InvalidCredentialsError,
+  InvalidRefreshTokenError,
+  UserNotFoundError,
+} from "./auth.service";
 import { RefreshTokenService } from "./refresh-token.service";
 import {
-  LoginDTO,
   LoginResponseDTO,
   loginSchema,
   loginResponseSchema,
   apiErrorResponseSchema,
+  refreshTokenSchema,
+  refreshTokenResponseSchema,
+  RefreshTokenResponseDTO,
 } from "@dindinho/shared";
 import fastifyRateLimit from "@fastify/rate-limit";
+import { getHttpErrorLabel } from "../lib/get-http-error-label";
 
-/**
- * Configura as rotas de autenticação da aplicação
- * @function authRoutes
- * @description Registra os endpoints de autenticação na instância do Fastify
- * @param {FastifyInstance} app - Instância do Fastify onde as rotas serão registradas
- * @returns {Promise<void>} Promise vazia após configuração das rotas
- * @throws {Error} Pode propagar erros do serviço de autenticação
- *
- * @example
- * // Uso típico no app.ts
- * import { authRoutes } from './auth/auth.routes';
- * // ...
- * await app.register(authRoutes);
- *
- * @since 1.0.0
- * @author Dindinho Team
- */
 export async function authRoutes(
   app: FastifyInstance,
   opts: { refreshTokenService?: RefreshTokenService } = {},
@@ -61,46 +52,6 @@ export async function authRoutes(
       (request.headers["x-real-ip"] as string | undefined) || request.ip,
   });
 
-  /**
-   * Rota de autenticação de usuário via login
-   * @route POST /api/login
-   * @description Autentica um usuário com email e senha, retornando um token JWT
-   * @access Public
-   * @param {Object} request.body - Dados de autenticação
-   * @param {string} request.body.email - Email do usuário (deve ser válido e existir)
-   * @param {string} request.body.password - Senha do usuário (mínimo 6 caracteres)
-   * @returns {Promise<Object>} Token JWT e dados do usuário autenticado
-   * @returns {string} returns.token - Token JWT para autenticação em requisições futuras
-   * @returns {Object} returns.user - Dados básicos do usuário (id, name, email)
-   * @throws {401} Retorna quando as credenciais são inválidas
-   * @throws {400} Retorna quando os dados de entrada são inválidos
-   * @throws {500} Retorna quando ocorre erro interno do servidor
-   *
-   * @example
-   * // Request body:
-   * {
-   *   "email": "usuario@exemplo.com",
-   *   "password": "senha123"
-   * }
-   *
-   * // Response 200:
-   * {
-   *   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-   *   "user": {
-   *     "id": "uuid-do-usuario",
-   *     "name": "Nome do Usuário",
-   *     "email": "usuario@exemplo.com"
-   *   }
-   * }
-   *
-   * // Response 401:
-   * {
-   *   "message": "Credenciais inválidas."
-   * }
-   *
-   * @since 1.0.0
-   * @see {@link https://jwt.io/} Para entender o formato do token JWT
-   */
   app.withTypeProvider<ZodTypeProvider>().post(
     "/login",
     {
@@ -110,18 +61,17 @@ export async function authRoutes(
         body: loginSchema,
         response: {
           200: loginResponseSchema,
-          400: apiErrorResponseSchema,
           401: apiErrorResponseSchema,
+          422: apiErrorResponseSchema,
         },
       },
     },
     async (request, reply) => {
-      const { email, password } = request.body as LoginDTO;
+      const { email, password } = request.body;
 
       try {
         const authResult = await service.authenticate({ email, password });
 
-        // Gera o Access Token JWT (expira em 15 minutos)
         const token = app.jwt.sign(
           {
             name: authResult.name,
@@ -145,45 +95,33 @@ export async function authRoutes(
         return reply.status(200).send(response);
       } catch (error) {
         if (
-          error instanceof Error &&
-          error.message === "Credenciais inválidas."
+          error instanceof InvalidCredentialsError ||
+          error instanceof UserNotFoundError
         ) {
-          throw {
-            statusCode: 401,
+          const statusCode = error.statusCode;
+          return reply.code(statusCode).send({
+            statusCode,
+            error: getHttpErrorLabel(statusCode),
             message: error.message,
             code: "INVALID_CREDENTIALS",
-          };
+          });
         }
         throw error;
       }
     },
   );
 
-  /**
-   * Rota de refresh token
-   * @route POST /api/refresh
-   * @description Renova o access token usando um refresh token válido
-   * @access Public
-   * @param {Object} request.body - Dados de refresh
-   * @param {string} request.body.refreshToken - Refresh token válido
-   * @returns {Promise<Object>} Novo access token e refresh token
-   * @throws {401} Retorna quando o refresh token é inválido ou expirado
-   */
   app.withTypeProvider<ZodTypeProvider>().post(
     "/refresh",
     {
       schema: {
-        summary: "Renovar token de acesso",
+        summary: "Atualizar token de acesso",
+        description:
+          "Gera um novo token de acesso e um novo refresh token a partir de um refresh token válido.",
         tags: ["auth"],
-        body: z.object({
-          refreshToken: z.string().min(1, "Refresh token é obrigatório"),
-        }),
+        body: refreshTokenSchema,
         response: {
-          200: z.object({
-            token: z.string().describe("Novo access token JWT"),
-            refreshToken: z.string().describe("Novo refresh token"),
-          }),
-          400: apiErrorResponseSchema,
+          200: refreshTokenResponseSchema,
           401: apiErrorResponseSchema,
         },
       },
@@ -192,66 +130,31 @@ export async function authRoutes(
       const { refreshToken } = request.body;
 
       try {
-        // Valida o refresh token
-        const userId = await service.validateRefreshToken(refreshToken);
+        const { newRefreshToken, newAccessToken } =
+          await service.refreshToken(refreshToken);
 
-        if (!userId) {
-          throw {
-            statusCode: 401,
-            message: "Refresh token inválido ou expirado",
-            code: "INVALID_REFRESH_TOKEN",
-          };
-        }
-
-        // Busca dados do usuário
-        const user = await prisma.user.findUnique({
-          where: { id: userId },
-          select: { id: true, name: true, email: true, role: true },
-        });
-
-        if (!user) {
-          throw {
-            statusCode: 401,
-            message: "Usuário não encontrado",
-            code: "USER_NOT_FOUND",
-          };
-        }
-
-        // Gera novo access token (15min)
-        const newToken = app.jwt.sign(
-          { name: user.name, email: user.email, role: user.role },
-          { sub: user.id, expiresIn: "15m" },
-        );
-
-        // Gera novo refresh token (rotação)
-        const newRefreshToken = await refreshTokenService.createToken(user.id);
-
-        // Revoga o token antigo
-        await service.revokeRefreshToken(refreshToken);
-
-        return reply.status(200).send({
-          token: newToken,
+        const response: RefreshTokenResponseDTO = {
+          token: newAccessToken,
           refreshToken: newRefreshToken,
-        });
-      } catch {
-        throw {
-          statusCode: 401,
-          message: "Erro ao renovar token",
-          code: "REFRESH_FAILED",
         };
+
+        return reply.status(200).send(response);
+      } catch (error) {
+        if (error instanceof InvalidRefreshTokenError) {
+          const statusCode = error.statusCode;
+          return reply.code(statusCode).send({
+            statusCode,
+            error: getHttpErrorLabel(statusCode),
+            message: error.message,
+            code: "INVALID_REFRESH_TOKEN",
+          });
+        }
+
+        throw error;
       }
     },
   );
 
-  /**
-   * Rota de logout
-   * @route POST /api/logout
-   * @description Revoga um refresh token (logout)
-   * @access Public
-   * @param {Object} request.body - Dados de logout
-   * @param {string} request.body.refreshToken - Refresh token a revogar
-   * @returns {Promise<Object>} Mensagem de sucesso
-   */
   app.withTypeProvider<ZodTypeProvider>().post(
     "/logout",
     {
@@ -262,21 +165,28 @@ export async function authRoutes(
           refreshToken: z.string().min(1, "Refresh token é obrigatório"),
         }),
         response: {
-          200: z.object({
-            message: z.string().describe("Mensagem de sucesso"),
-          }),
-          400: apiErrorResponseSchema,
+          204: z.object({}).describe("No content"),
+          401: apiErrorResponseSchema,
+          422: apiErrorResponseSchema,
         },
       },
     },
     async (request, reply) => {
       const { refreshToken } = request.body;
 
-      await service.revokeRefreshToken(refreshToken);
+      const revoked = await service.revokeRefreshToken(refreshToken);
 
-      return reply.status(200).send({
-        message: "Logout realizado com sucesso",
-      });
+      if (!revoked) {
+        const statusCode = 401;
+        return reply.code(statusCode).send({
+          statusCode,
+          error: getHttpErrorLabel(statusCode),
+          message: "Refresh token inválido.",
+          code: "INVALID_REFRESH_TOKEN",
+        });
+      }
+
+      return reply.status(204).send();
     },
   );
 }

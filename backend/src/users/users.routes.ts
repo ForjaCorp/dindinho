@@ -19,11 +19,8 @@ import {
   EmailAlreadyExistsError,
   UsersService,
 } from "./users.service";
-import {
-  apiErrorResponseSchema,
-  CreateUserDTO,
-  createUserSchema,
-} from "@dindinho/shared";
+import { apiErrorResponseSchema, createUserSchema } from "@dindinho/shared";
+import { getHttpErrorLabel } from "../lib/get-http-error-label";
 
 /**
  * Configura as rotas relacionadas a usuários
@@ -94,7 +91,7 @@ export async function usersRoutes(app: FastifyInstance) {
    * @see {@link https://www.owasp.org/index.php/Password_Storage_Cheat_Sheet} Para boas práticas de armazenamento de senhas
    */
   app.withTypeProvider<ZodTypeProvider>().post(
-    "/users",
+    "/",
     {
       schema: {
         summary: "Criar novo usuário",
@@ -108,14 +105,14 @@ export async function usersRoutes(app: FastifyInstance) {
             phone: z.string(),
             createdAt: z.string().datetime(),
           }),
-          400: apiErrorResponseSchema,
           403: apiErrorResponseSchema,
           409: apiErrorResponseSchema,
+          422: apiErrorResponseSchema,
         },
       },
     },
     async (request, reply) => {
-      const data = request.body as CreateUserDTO;
+      const data = request.body;
 
       try {
         const user = await service.create(data);
@@ -125,19 +122,23 @@ export async function usersRoutes(app: FastifyInstance) {
         });
       } catch (error) {
         if (error instanceof SignupNotAllowedError) {
-          throw {
-            statusCode: error.statusCode,
+          const statusCode = error.statusCode;
+          return reply.code(statusCode).send({
+            statusCode,
+            error: getHttpErrorLabel(statusCode),
             message: error.message,
             code: "SIGNUP_NOT_ALLOWED",
-          };
+          });
         }
 
         if (error instanceof EmailAlreadyExistsError) {
-          throw {
-            statusCode: error.statusCode,
+          const statusCode = error.statusCode;
+          return reply.code(statusCode).send({
+            statusCode,
+            error: getHttpErrorLabel(statusCode),
             message: error.message,
             code: "EMAIL_ALREADY_EXISTS",
-          };
+          });
         }
 
         throw error;

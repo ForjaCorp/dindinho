@@ -17,20 +17,7 @@ import {
   UpdateTransactionScopeDTO,
 } from "@dindinho/shared";
 import { SnapshotService } from "../reports/snapshot.service";
-
-class ForbiddenError extends Error {
-  readonly statusCode = 403;
-  constructor(message = "Sem permissão") {
-    super(message);
-  }
-}
-
-class NotFoundError extends Error {
-  readonly statusCode = 404;
-  constructor(message = "Não encontrado") {
-    super(message);
-  }
-}
+import { ForbiddenError, NotFoundError } from "../lib/domain-exceptions";
 
 class InternalError extends Error {
   readonly statusCode = 500;
@@ -1074,14 +1061,16 @@ export class TransactionsService {
       select: { id: true, date: true },
     });
     const deletedIds = toDelete.map((t) => t.id);
+    if (toDelete.length === 0) {
+      return { deletedIds: [] };
+    }
     const minDate = new Date(
-      Math.min(...toDelete.filter((d) => d.date).map((d) => d.date.getTime())),
+      Math.min(...toDelete.map((d) => d.date.getTime())),
     );
 
     await this.prisma.transaction.deleteMany({
       where: {
-        recurrenceId: tx.recurrenceId as string,
-        installmentNumber: { gte: tx.installmentNumber as number },
+        id: { in: deletedIds },
       },
     });
 

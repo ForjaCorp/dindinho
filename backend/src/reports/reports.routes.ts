@@ -14,20 +14,10 @@ import {
 export async function reportsRoutes(app: FastifyInstance) {
   const service = new ReportsService(prisma);
 
-  app.addHook("onRequest", async (request) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      throw {
-        statusCode: 401,
-        message: "Token inválido ou expirado",
-        code: "INVALID_TOKEN",
-      };
-    }
-  });
+  app.addHook("onRequest", app.authenticate);
 
   app.withTypeProvider<ZodTypeProvider>().get(
-    "/reports/spending-by-category",
+    "/spending-by-category",
     {
       schema: {
         summary: "Relatório de gastos por categoria",
@@ -35,8 +25,8 @@ export async function reportsRoutes(app: FastifyInstance) {
         querystring: reportFilterSchema,
         response: {
           200: spendingByCategorySchema,
-          400: apiErrorResponseSchema,
           401: apiErrorResponseSchema,
+          422: apiErrorResponseSchema,
         },
       },
     },
@@ -47,7 +37,7 @@ export async function reportsRoutes(app: FastifyInstance) {
   );
 
   app.withTypeProvider<ZodTypeProvider>().get(
-    "/reports/cash-flow",
+    "/cash-flow",
     {
       schema: {
         summary: "Relatório de fluxo de caixa mensal",
@@ -55,8 +45,8 @@ export async function reportsRoutes(app: FastifyInstance) {
         querystring: reportFilterSchema,
         response: {
           200: cashFlowSchema,
-          400: apiErrorResponseSchema,
           401: apiErrorResponseSchema,
+          422: apiErrorResponseSchema,
         },
       },
     },
@@ -67,7 +57,7 @@ export async function reportsRoutes(app: FastifyInstance) {
   );
 
   app.withTypeProvider<ZodTypeProvider>().get(
-    "/reports/balance-history",
+    "/balance-history",
     {
       schema: {
         summary: "Relatório de histórico de saldo",
@@ -75,8 +65,8 @@ export async function reportsRoutes(app: FastifyInstance) {
         querystring: reportFilterSchema,
         response: {
           200: balanceHistorySchema,
-          400: apiErrorResponseSchema,
           401: apiErrorResponseSchema,
+          422: apiErrorResponseSchema,
         },
       },
     },
@@ -87,7 +77,7 @@ export async function reportsRoutes(app: FastifyInstance) {
   );
 
   app.withTypeProvider<ZodTypeProvider>().get(
-    "/reports/export/csv",
+    "/export/csv",
     {
       schema: {
         summary: "Exportar transações filtradas para CSV",
@@ -95,8 +85,8 @@ export async function reportsRoutes(app: FastifyInstance) {
         querystring: reportFilterSchema,
         response: {
           200: z.string(),
-          400: apiErrorResponseSchema,
           401: apiErrorResponseSchema,
+          422: apiErrorResponseSchema,
         },
       },
     },

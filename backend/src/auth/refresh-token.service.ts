@@ -7,6 +7,10 @@ type Logger = {
   error?: (...args: unknown[]) => void;
 };
 
+const noopLogger: Logger = {
+  info: () => undefined,
+};
+
 /**
  * Serviço responsável pelo gerenciamento de Refresh Tokens
  * @class RefreshTokenService
@@ -18,7 +22,7 @@ export class RefreshTokenService {
 
   constructor(
     private prisma: PrismaClient,
-    logger: Logger = console,
+    logger: Logger = noopLogger,
     ttlDays?: number,
   ) {
     this.logger = logger;

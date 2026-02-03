@@ -18,12 +18,6 @@
  * }
  *
  * @example
- * // Exemplo com tratamento de erro:
- * try {
- *   const user = await prisma.user.create({...});
- * } catch (error) {
- *   console.error('Erro no banco:', error);
- * }
  */
 
 import { PrismaClient } from "@prisma/client";

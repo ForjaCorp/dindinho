@@ -3,92 +3,28 @@ import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import {
-  CategoryDTO,
-  CreateCategoryDTO,
-  categorySchema,
   createCategorySchema,
+  categorySchema,
   apiErrorResponseSchema,
 } from "@dindinho/shared";
-
-class UnauthorizedError extends Error {
-  readonly statusCode = 401;
-  constructor(message = "Token inválido ou expirado") {
-    super(message);
-  }
-}
-
-class ForbiddenError extends Error {
-  readonly statusCode = 403;
-  constructor(message = "Sem permissão") {
-    super(message);
-  }
-}
-
-class NotFoundError extends Error {
-  readonly statusCode = 404;
-  constructor(message = "Não encontrado") {
-    super(message);
-  }
-}
-
-const toCategoryDTO = (c: {
-  id: string;
-  name: string;
-  icon: string;
-  parentId: string | null;
-  userId: string | null;
-}): CategoryDTO => ({
-  id: c.id,
-  name: c.name,
-  icon: c.icon,
-  parentId: c.parentId,
-  userId: c.userId,
-});
-
-const defaultGlobalCategories = [
-  { name: "Salário", icon: "pi-briefcase" },
-  { name: "Investimento", icon: "pi-chart-line" },
-  { name: "Outros Rendimentos", icon: "pi-wallet" },
-  { name: "Moradia", icon: "pi-home" },
-  { name: "Transporte", icon: "pi-car" },
-  { name: "Saúde", icon: "pi-heart" },
-  { name: "Educação", icon: "pi-book" },
-  { name: "Compras", icon: "pi-shopping-cart" },
-  { name: "Lazer", icon: "pi-ticket" },
-  { name: "Pessoal", icon: "pi-user" },
-  { name: "Outros", icon: "pi-tag" },
-];
-
-async function ensureDefaultGlobalCategories() {
-  const globalCount = await prisma.category.count({ where: { userId: null } });
-  if (globalCount >= defaultGlobalCategories.length) return;
-
-  const existing = await prisma.category.findMany({
-    where: { userId: null },
-    select: { name: true },
-  });
-  const existingNames = new Set(existing.map((c) => c.name));
-
-  for (const cat of defaultGlobalCategories) {
-    if (existingNames.has(cat.name)) continue;
-    await prisma.category.create({
-      data: {
-        name: cat.name,
-        icon: cat.icon,
-        userId: null,
-        parentId: null,
-      },
-      select: { id: true },
-    });
-  }
-}
+import { CategoriesService } from "./categories.service";
+import { getHttpErrorLabel } from "../lib/get-http-error-label";
+import { ForbiddenError, NotFoundError } from "../lib/domain-exceptions";
 
 export async function categoriesRoutes(app: FastifyInstance) {
-  app.addHook("onRequest", async (request) => {
+  const service = new CategoriesService(prisma);
+
+  app.addHook("onRequest", async (request, reply) => {
     try {
       await request.jwtVerify();
     } catch {
-      throw new UnauthorizedError();
+      const statusCode = 401;
+      return reply.code(statusCode).send({
+        statusCode,
+        error: getHttpErrorLabel(statusCode),
+        message: "Token de autenticação inválido ou expirado.",
+        code: "INVALID_TOKEN",
+      });
     }
   });
 
@@ -96,7 +32,7 @@ export async function categoriesRoutes(app: FastifyInstance) {
     "/",
     {
       schema: {
-        summary: "Listar categorias",
+        summary: "Listar categorias do usuário",
         tags: ["categories"],
         response: {
           200: z.array(categorySchema),
@@ -105,25 +41,8 @@ export async function categoriesRoutes(app: FastifyInstance) {
       },
     },
     async (request) => {
-      const { sub: userId } = request.user as { sub: string };
-
-      await ensureDefaultGlobalCategories();
-
-      const categories = await prisma.category.findMany({
-        where: {
-          OR: [{ userId }, { userId: null }],
-        },
-        orderBy: [{ name: "asc" }],
-        select: {
-          id: true,
-          name: true,
-          icon: true,
-          parentId: true,
-          userId: true,
-        },
-      });
-
-      return categories.map(toCategoryDTO);
+      const { sub: userId } = request.user;
+      return service.findAllByUserId(userId);
     },
   );
 
@@ -131,54 +50,40 @@ export async function categoriesRoutes(app: FastifyInstance) {
     "/",
     {
       schema: {
-        summary: "Criar categoria",
+        summary: "Criar nova categoria",
         tags: ["categories"],
         body: createCategorySchema,
         response: {
           201: categorySchema,
-          400: apiErrorResponseSchema,
           401: apiErrorResponseSchema,
           403: apiErrorResponseSchema,
           404: apiErrorResponseSchema,
+          422: apiErrorResponseSchema,
         },
       },
     },
     async (request, reply) => {
-      const { sub: userId } = request.user as { sub: string };
-      const payload: CreateCategoryDTO = createCategorySchema.parse(
-        request.body,
-      );
+      const { sub: userId } = request.user;
+      const payload = request.body;
 
-      if (payload.parentId) {
-        const parent = await prisma.category.findUnique({
-          where: { id: payload.parentId },
-          select: { id: true, userId: true },
-        });
-        if (!parent) throw new NotFoundError("Categoria pai não encontrada");
-        if (parent.userId !== null && parent.userId !== userId) {
-          throw new ForbiddenError(
-            "Sem permissão para usar esta categoria pai",
-          );
+      try {
+        const category = await service.create(userId, payload);
+        return reply.status(201).send(category);
+      } catch (error) {
+        if (error instanceof NotFoundError || error instanceof ForbiddenError) {
+          const statusCode = error.statusCode;
+          return reply.code(statusCode).send({
+            statusCode,
+            error: getHttpErrorLabel(statusCode),
+            message: error.message,
+            code:
+              error instanceof NotFoundError
+                ? "PARENT_CATEGORY_NOT_FOUND"
+                : "FORBIDDEN_PARENT_CATEGORY",
+          });
         }
+        throw error;
       }
-
-      const created = await prisma.category.create({
-        data: {
-          name: payload.name,
-          icon: payload.icon,
-          parentId: payload.parentId ?? null,
-          userId,
-        },
-        select: {
-          id: true,
-          name: true,
-          icon: true,
-          parentId: true,
-          userId: true,
-        },
-      });
-
-      return reply.status(201).send(toCategoryDTO(created));
     },
   );
 }

@@ -1,93 +1,66 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import Fastify, { FastifyInstance } from "fastify";
-import { waitlistRoutes } from "./waitlist.routes";
-import { prisma } from "../lib/prisma";
-import { Waitlist } from "@prisma/client";
-import { ZodError } from "zod";
 import {
   serializerCompiler,
   validatorCompiler,
+  ZodTypeProvider,
 } from "fastify-type-provider-zod";
+import { Waitlist } from "@prisma/client";
+import { mockDeep, mockReset, DeepMockProxy } from "vitest-mock-extended";
 
-// Mock do prisma
+import { waitlistRoutes } from "./waitlist.routes";
+import { prisma } from "../lib/prisma";
+import { PrismaClient } from "@prisma/client";
+import { ZodError } from "zod";
+
 vi.mock("../lib/prisma", () => ({
-  prisma: {
-    waitlist: {
-      findUnique: vi.fn(),
-      create: vi.fn(),
-    },
-  },
+  __esModule: true,
+  prisma: mockDeep<PrismaClient>(),
 }));
+
+const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>;
 
 describe("WaitlistRoutes", () => {
   let app: FastifyInstance;
 
   beforeEach(async () => {
-    app = Fastify();
-
-    // Configuração necessária para Zod provider
+    mockReset(prismaMock);
+    app = Fastify().withTypeProvider<ZodTypeProvider>();
     app.setValidatorCompiler(validatorCompiler);
     app.setSerializerCompiler(serializerCompiler);
 
-    app.setErrorHandler((error: unknown, request, reply) => {
+    app.setErrorHandler((error, request, reply) => {
       if (error instanceof ZodError) {
-        return reply.status(400).send({
-          statusCode: 400,
-          error: "Bad Request",
-          message: "Dados inválidos",
+        return reply.status(422).send({
+          statusCode: 422,
+          error: "Unprocessable Entity",
+          message: "Os dados fornecidos são inválidos.",
           code: "VALIDATION_ERROR",
-          requestId: request.id,
           issues: error.issues,
         });
       }
 
-      if (
-        typeof error === "object" &&
-        error !== null &&
-        "statusCode" in error
-      ) {
-        const e = error as {
-          statusCode: number;
-          message?: string;
-          code?: string;
-          validation?: unknown;
-        };
-        const statusCode =
-          typeof e.statusCode === "number" && Number.isFinite(e.statusCode)
-            ? e.statusCode
-            : 500;
-
-        const isValidationError =
-          statusCode === 400 && e.code === "FST_ERR_VALIDATION";
-        const errorLabel =
-          statusCode === 409
-            ? "Conflict"
-            : statusCode === 400
-              ? "Bad Request"
-              : "Error";
+      if (error instanceof Error && "statusCode" in error) {
+        const statusCode = (error as { statusCode: number }).statusCode;
         return reply.status(statusCode).send({
           statusCode,
-          error: errorLabel,
-          message: isValidationError
-            ? "Dados inválidos"
-            : (e.message ?? "Erro inesperado"),
-          code: isValidationError ? "VALIDATION_ERROR" : e.code,
-          requestId: request.id,
-          details: isValidationError ? e.validation : undefined,
+          error: "Error",
+          message: error.message,
         });
       }
 
       return reply.status(500).send({
         statusCode: 500,
         error: "Internal Server Error",
-        message: "Erro interno do servidor",
-        requestId: request.id,
+        message: "Ocorreu um erro inesperado.",
       });
     });
 
-    await app.register(waitlistRoutes);
+    await app.register(waitlistRoutes, { prefix: "/" });
     await app.ready();
+  });
 
+  afterEach(() => {
     vi.clearAllMocks();
   });
 
@@ -98,8 +71,8 @@ describe("WaitlistRoutes", () => {
       phone: "+5511999999999",
     };
 
-    vi.mocked(prisma.waitlist.findUnique).mockResolvedValue(null);
-    vi.mocked(prisma.waitlist.create).mockResolvedValue({
+    prismaMock.waitlist.findUnique.mockResolvedValue(null);
+    prismaMock.waitlist.create.mockResolvedValue({
       id: "123",
       ...payload,
       status: "PENDING",
@@ -126,7 +99,7 @@ describe("WaitlistRoutes", () => {
       phone: "+5511999999999",
     };
 
-    vi.mocked(prisma.waitlist.findUnique).mockResolvedValue({
+    prismaMock.waitlist.findUnique.mockResolvedValue({
       id: "1",
     } as unknown as Waitlist);
 
@@ -142,11 +115,12 @@ describe("WaitlistRoutes", () => {
         statusCode: 409,
         error: "Conflict",
         message: "Email já está na lista de espera.",
+        code: "WAITLIST_EMAIL_ALREADY_EXISTS",
       }),
     );
   });
 
-  it("deve retornar 400 se os dados forem inválidos", async () => {
+  it("deve retornar 422 se os dados forem inválidos", async () => {
     const payload = {
       name: "A", // Muito curto
       email: "invalid-email",
@@ -159,12 +133,12 @@ describe("WaitlistRoutes", () => {
       payload,
     });
 
-    expect(response.statusCode).toBe(400);
+    expect(response.statusCode).toBe(422);
     expect(response.json()).toEqual(
       expect.objectContaining({
-        statusCode: 400,
-        error: "Bad Request",
-        message: "Dados inválidos",
+        statusCode: 422,
+        error: "Unprocessable Entity",
+        message: "Os dados fornecidos são inválidos.",
       }),
     );
   });

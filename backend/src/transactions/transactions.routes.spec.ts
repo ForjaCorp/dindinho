@@ -8,6 +8,14 @@ import {
   Category,
   Transaction,
 } from "@prisma/client";
+import Fastify, { FastifyInstance } from "fastify";
+import {
+  serializerCompiler,
+  validatorCompiler,
+  ZodTypeProvider,
+} from "fastify-type-provider-zod";
+import fastifyJwt from "@fastify/jwt";
+import { ZodError } from "zod";
 
 vi.mock("../lib/prisma", async () => {
   const { mockDeep } = await import("vitest-mock-extended");
@@ -17,13 +25,14 @@ vi.mock("../lib/prisma", async () => {
   };
 });
 
-import { buildApp } from "../app";
+import { transactionsRoutes } from "./transactions.routes";
 import { prisma } from "../lib/prisma";
+import authPlugin from "../plugins/auth";
 
 const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>;
 
 describe("Rotas de Transações", () => {
-  let app: ReturnType<typeof buildApp>;
+  let app: FastifyInstance;
   let token: string;
 
   const userId = "123e4567-e89b-12d3-a456-426614174000";
@@ -40,7 +49,41 @@ describe("Rotas de Transações", () => {
       },
     );
 
-    app = buildApp();
+    app = Fastify().withTypeProvider<ZodTypeProvider>();
+    app.setValidatorCompiler(validatorCompiler);
+    app.setSerializerCompiler(serializerCompiler);
+
+    app.setErrorHandler((error, request, reply) => {
+      if (error instanceof ZodError) {
+        return reply.status(422).send({
+          statusCode: 422,
+          error: "Unprocessable Entity",
+          message: "Os dados fornecidos são inválidos.",
+          code: "VALIDATION_ERROR",
+          issues: error.issues,
+        });
+      }
+
+      if (error instanceof Error && "statusCode" in error) {
+        const statusCode = (error as { statusCode: number }).statusCode;
+        return reply.status(statusCode).send({
+          statusCode,
+          error: "Error",
+          message: error.message,
+        });
+      }
+
+      return reply.status(500).send({
+        statusCode: 500,
+        error: "Internal Server Error",
+        message: "Ocorreu um erro inesperado.",
+      });
+    });
+
+    await app.register(fastifyJwt, { secret: "test-secret" });
+    await app.register(authPlugin);
+    await app.register(transactionsRoutes, { prefix: "/transactions" });
+
     await app.ready();
     token = app.jwt.sign({ sub: userId });
   });
@@ -49,11 +92,11 @@ describe("Rotas de Transações", () => {
     vi.restoreAllMocks();
   });
 
-  describe("POST /api/transactions", () => {
+  describe("POST /transactions", () => {
     it("deve retornar 401 sem token", async () => {
       const response = await app.inject({
         method: "POST",
-        url: "/api/transactions",
+        url: "/transactions",
         payload: {
           accountId,
           categoryId,
@@ -93,7 +136,7 @@ describe("Rotas de Transações", () => {
         id: "123e4567-e89b-12d3-a456-426614174010",
         accountId,
         categoryId,
-        amount: { toNumber: () => payload.amount },
+        amount: new Prisma.Decimal(payload.amount),
         description: payload.description,
         date: new Date(payload.date),
         type: TransactionType.EXPENSE,
@@ -113,7 +156,7 @@ describe("Rotas de Transações", () => {
 
       const response = await app.inject({
         method: "POST",
-        url: "/api/transactions",
+        url: "/transactions",
         headers: { authorization: `Bearer ${token}` },
         payload,
       });
@@ -147,20 +190,21 @@ describe("Rotas de Transações", () => {
         userId: null,
       } as unknown as Category);
 
-      const prismaError = new Prisma.PrismaClientKnownRequestError(
-        "Foreign key",
+      const error = new Prisma.PrismaClientKnownRequestError(
+        "Foreign key constraint failed",
         {
           code: "P2003",
-          clientVersion: "test",
-          meta: { field_name: "Transaction_categoryId_fkey" },
+          clientVersion: "5.14.0",
+          meta: {
+            field_name: "Transaction_categoryId_fkey (index)",
+          },
         },
       );
-
-      prismaMock.transaction.create.mockRejectedValue(prismaError);
+      prismaMock.transaction.create.mockRejectedValue(error);
 
       const response = await app.inject({
         method: "POST",
-        url: "/api/transactions",
+        url: "/transactions",
         headers: { authorization: `Bearer ${token}` },
         payload,
       });
@@ -198,7 +242,7 @@ describe("Rotas de Transações", () => {
           id: "123e4567-e89b-12d3-a456-426614174011",
           accountId,
           categoryId,
-          amount: { toNumber: () => 333.33 },
+          amount: new Prisma.Decimal(333.33),
           description: payload.description,
           date: new Date("2026-01-01T00:00:00.000Z"),
           type: TransactionType.EXPENSE,
@@ -219,7 +263,7 @@ describe("Rotas de Transações", () => {
           id: "123e4567-e89b-12d3-a456-426614174012",
           accountId,
           categoryId,
-          amount: { toNumber: () => 333.33 },
+          amount: new Prisma.Decimal(333.33),
           description: payload.description,
           date: new Date("2026-02-01T00:00:00.000Z"),
           type: TransactionType.EXPENSE,
@@ -240,7 +284,7 @@ describe("Rotas de Transações", () => {
           id: "123e4567-e89b-12d3-a456-426614174013",
           accountId,
           categoryId,
-          amount: { toNumber: () => 333.34 },
+          amount: new Prisma.Decimal(333.34),
           description: payload.description,
           date: new Date("2026-03-01T00:00:00.000Z"),
           type: TransactionType.EXPENSE,
@@ -260,7 +304,7 @@ describe("Rotas de Transações", () => {
 
       const response = await app.inject({
         method: "POST",
-        url: "/api/transactions",
+        url: "/transactions",
         headers: { authorization: `Bearer ${token}` },
         payload,
       });
@@ -274,7 +318,7 @@ describe("Rotas de Transações", () => {
     });
   });
 
-  describe("GET /api/transactions", () => {
+  describe("GET /transactions", () => {
     it("deve listar transações da conta", async () => {
       prismaMock.account.count.mockResolvedValue(1);
 
@@ -283,7 +327,7 @@ describe("Rotas de Transações", () => {
           id: "123e4567-e89b-12d3-a456-426614174014",
           accountId,
           categoryId: null,
-          amount: { toNumber: () => 10 },
+          amount: new Prisma.Decimal(10),
           description: null,
           date: new Date("2026-01-01T00:00:00.000Z"),
           type: TransactionType.INCOME,
@@ -304,7 +348,7 @@ describe("Rotas de Transações", () => {
 
       const response = await app.inject({
         method: "GET",
-        url: `/api/transactions?accountId=${accountId}`,
+        url: `/transactions?accountId=${accountId}`,
         headers: { authorization: `Bearer ${token}` },
       });
 
@@ -321,7 +365,7 @@ describe("Rotas de Transações", () => {
           id: "123e4567-e89b-12d3-a456-426614174015",
           accountId,
           categoryId,
-          amount: { toNumber: () => 10 },
+          amount: new Prisma.Decimal(10),
           description: "Café",
           date: new Date("2026-01-01T00:00:00.000Z"),
           type: TransactionType.EXPENSE,
@@ -342,7 +386,7 @@ describe("Rotas de Transações", () => {
 
       const response = await app.inject({
         method: "GET",
-        url: "/api/transactions",
+        url: "/transactions",
         query: { categoryId },
         headers: { authorization: `Bearer ${token}` },
       });
@@ -355,7 +399,12 @@ describe("Rotas de Transações", () => {
       expect(prismaMock.transaction.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            categoryId: categoryId,
+            categoryId,
+            account: expect.objectContaining({
+              OR: expect.arrayContaining([
+                expect.objectContaining({ ownerId: userId }),
+              ]),
+            }),
           }),
         }),
       );
@@ -368,7 +417,7 @@ describe("Rotas de Transações", () => {
             id: "123e4567-e89b-12d3-a456-426614174014",
             accountId,
             categoryId: null,
-            amount: { toNumber: () => 10 },
+            amount: new Prisma.Decimal(10),
             description: null,
             date: new Date("2026-01-02T00:00:00.000Z"),
             type: TransactionType.INCOME,
@@ -391,7 +440,7 @@ describe("Rotas de Transações", () => {
             id: "123e4567-e89b-12d3-a456-426614174013",
             accountId,
             categoryId: null,
-            amount: { toNumber: () => 5 },
+            amount: new Prisma.Decimal(5),
             description: null,
             date: new Date("2026-01-01T00:00:00.000Z"),
             type: TransactionType.INCOME,
@@ -412,7 +461,7 @@ describe("Rotas de Transações", () => {
 
       const response1 = await app.inject({
         method: "GET",
-        url: `/api/transactions?limit=1`,
+        url: `/transactions?limit=1`,
         headers: { authorization: `Bearer ${token}` },
       });
 
@@ -423,7 +472,7 @@ describe("Rotas de Transações", () => {
 
       const response2 = await app.inject({
         method: "GET",
-        url: `/api/transactions?limit=1&cursorId=${body1.nextCursorId}`,
+        url: `/transactions?limit=1&cursorId=${body1.nextCursorId}`,
         headers: { authorization: `Bearer ${token}` },
       });
 
@@ -434,7 +483,7 @@ describe("Rotas de Transações", () => {
     });
   });
 
-  describe("GET /api/transactions/:id", () => {
+  describe("GET /transactions/:id", () => {
     it("deve obter transação por id", async () => {
       const id = "123e4567-e89b-12d3-a456-426614174099";
 
@@ -442,7 +491,7 @@ describe("Rotas de Transações", () => {
         id,
         accountId,
         categoryId: null,
-        amount: { toNumber: () => 10 },
+        amount: new Prisma.Decimal(10),
         description: "Café",
         date: new Date("2026-01-01T00:00:00.000Z"),
         type: TransactionType.EXPENSE,
@@ -462,7 +511,7 @@ describe("Rotas de Transações", () => {
 
       const response = await app.inject({
         method: "GET",
-        url: `/api/transactions/${id}`,
+        url: `/transactions/${id}`,
         headers: { authorization: `Bearer ${token}` },
       });
 
@@ -474,7 +523,7 @@ describe("Rotas de Transações", () => {
     });
   });
 
-  describe("PATCH /api/transactions/:id", () => {
+  describe("PATCH /transactions/:id", () => {
     it("deve atualizar transação", async () => {
       const id = "123e4567-e89b-12d3-a456-426614174099";
       const payload = {
@@ -498,7 +547,7 @@ describe("Rotas de Transações", () => {
         id,
         accountId,
         categoryId: null,
-        amount: { toNumber: () => 10 },
+        amount: new Prisma.Decimal(10),
         description: payload.description,
         date: new Date("2026-01-01T00:00:00.000Z"),
         type: TransactionType.EXPENSE,
@@ -518,7 +567,7 @@ describe("Rotas de Transações", () => {
 
       const response = await app.inject({
         method: "PATCH",
-        url: `/api/transactions/${id}`,
+        url: `/transactions/${id}`,
         headers: { authorization: `Bearer ${token}` },
         payload,
       });
@@ -559,7 +608,7 @@ describe("Rotas de Transações", () => {
         id,
         accountId,
         categoryId: null,
-        amount: { toNumber: () => 10 },
+        amount: new Prisma.Decimal(10),
         description: payload.description,
         date: new Date("2026-01-02T00:00:00.000Z"),
         type: TransactionType.EXPENSE,
@@ -579,7 +628,7 @@ describe("Rotas de Transações", () => {
 
       const response = await app.inject({
         method: "PATCH",
-        url: `/api/transactions/${id}?scope=ALL`,
+        url: `/transactions/${id}?scope=ALL`,
         headers: { authorization: `Bearer ${token}` },
         payload,
       });
@@ -590,13 +639,15 @@ describe("Rotas de Transações", () => {
       expect(body.description).toBe(payload.description);
 
       expect(prismaMock.transaction.updateMany).toHaveBeenCalledWith({
-        where: { recurrenceId: "rec-1" },
+        where: {
+          recurrenceId: "rec-1",
+        },
         data: { description: payload.description },
       });
     });
   });
 
-  describe("DELETE /api/transactions/:id", () => {
+  describe("DELETE /transactions/:id", () => {
     it("deve excluir transação", async () => {
       const id = "123e4567-e89b-12d3-a456-426614174099";
 
@@ -619,7 +670,7 @@ describe("Rotas de Transações", () => {
 
       const response = await app.inject({
         method: "DELETE",
-        url: `/api/transactions/${id}?scope=ONE`,
+        url: `/transactions/${id}?scope=ONE`,
         headers: { authorization: `Bearer ${token}` },
       });
 

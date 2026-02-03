@@ -146,19 +146,19 @@ describe("Users Routes", () => {
    * Testa a validação de campos obrigatórios
    * @test {POST /users} Deve retornar 400 quando campos obrigatórios estiverem faltando
    */
-  it("deve retornar 400 quando faltar campos obrigatórios", async () => {
+  it("deve retornar 422 quando faltar campos obrigatórios", async () => {
     const response = await app.inject({
       method: "POST",
       url: "/api/users",
       payload: {},
     });
 
-    expect(response.statusCode).toBe(400);
+    expect(response.statusCode).toBe(422);
     const body = JSON.parse(response.body);
     expect(body).toMatchObject({
-      statusCode: 400,
-      error: "Bad Request",
-      message: "Dados inválidos",
+      statusCode: 422,
+      error: "Unprocessable Entity",
+      message: "Os dados fornecidos são inválidos.",
       code: "VALIDATION_ERROR",
     });
   });
@@ -167,7 +167,7 @@ describe("Users Routes", () => {
    * Testa a validação de formato de email
    * @test {POST /users} Deve retornar 400 para email inválido
    */
-  it("deve retornar 400 para email inválido", async () => {
+  it("deve retornar 422 para email inválido", async () => {
     const response = await app.inject({
       method: "POST",
       url: "/api/users",
@@ -179,12 +179,12 @@ describe("Users Routes", () => {
       },
     });
 
-    expect(response.statusCode).toBe(400);
+    expect(response.statusCode).toBe(422);
     const body = JSON.parse(response.body);
     expect(body).toMatchObject({
-      statusCode: 400,
-      error: "Bad Request",
-      message: "Dados inválidos",
+      statusCode: 422,
+      error: "Unprocessable Entity",
+      message: "Os dados fornecidos são inválidos.",
       code: "VALIDATION_ERROR",
     });
   });
@@ -193,7 +193,7 @@ describe("Users Routes", () => {
    * Testa a validação de tamanho mínimo de senha
    * @test {POST /users} Deve retornar 400 para senha muito curta
    */
-  it("deve retornar 400 para senha muito curta", async () => {
+  it("deve retornar 422 para senha muito curta", async () => {
     const response = await app.inject({
       method: "POST",
       url: "/api/users",
@@ -205,12 +205,12 @@ describe("Users Routes", () => {
       },
     });
 
-    expect(response.statusCode).toBe(400);
+    expect(response.statusCode).toBe(422);
     const body = JSON.parse(response.body);
     expect(body).toMatchObject({
-      statusCode: 400,
-      error: "Bad Request",
-      message: "Dados inválidos",
+      statusCode: 422,
+      error: "Unprocessable Entity",
+      message: "Os dados fornecidos são inválidos.",
       code: "VALIDATION_ERROR",
     });
   });

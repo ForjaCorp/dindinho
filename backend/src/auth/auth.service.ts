@@ -2,6 +2,28 @@ import { PrismaClient, Role } from "@prisma/client";
 import { compare } from "bcryptjs";
 import { LoginDTO } from "@dindinho/shared";
 import { RefreshTokenService } from "./refresh-token.service";
+import { sign } from "jsonwebtoken";
+
+export class InvalidCredentialsError extends Error {
+  readonly statusCode = 401;
+  constructor() {
+    super("Credenciais inválidas.");
+  }
+}
+
+export class InvalidRefreshTokenError extends Error {
+  readonly statusCode = 401;
+  constructor() {
+    super("Refresh token inválido ou expirado.");
+  }
+}
+
+export class UserNotFoundError extends Error {
+  readonly statusCode = 401;
+  constructor() {
+    super("Usuário não encontrado.");
+  }
+}
 
 /**
  * Interface para o resultado da autenticação
@@ -38,7 +60,7 @@ export class AuthService {
    * @async
    * @param {LoginDTO} data - Dados de login do usuário
    * @returns {Promise<AuthResult>} Dados do usuário e refresh token
-   * @throws {Error} Lança um erro se as credenciais forem inválidas
+   * @throws {InvalidCredentialsError} Lança um erro se as credenciais forem inválidas
    */
   async authenticate(data: LoginDTO): Promise<AuthResult> {
     // 1. Buscar usuário
@@ -47,14 +69,14 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new Error("Credenciais inválidas.");
+      throw new InvalidCredentialsError();
     }
 
     // 2. Verificar senha
     const isPasswordValid = await compare(data.password, user.passwordHash);
 
     if (!isPasswordValid) {
-      throw new Error("Credenciais inválidas.");
+      throw new InvalidCredentialsError();
     }
 
     // 3. Gerar refresh token
@@ -98,5 +120,42 @@ export class AuthService {
    */
   async revokeAllUserTokens(userId: string): Promise<number> {
     return this.refreshTokenService.revokeUserTokens(userId);
+  }
+
+  async refreshToken(
+    token: string,
+  ): Promise<{ newAccessToken: string; newRefreshToken: string }> {
+    const userId = await this.refreshTokenService.validateToken(token);
+
+    if (!userId) {
+      throw new InvalidRefreshTokenError();
+    }
+
+    await this.refreshTokenService.revokeToken(token);
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new UserNotFoundError();
+    }
+
+    const newAccessToken = sign(
+      {
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      process.env.JWT_SECRET as string,
+      {
+        subject: user.id,
+        expiresIn: "15m",
+      },
+    );
+
+    const newRefreshToken = await this.refreshTokenService.createToken(user.id);
+
+    return { newAccessToken, newRefreshToken };
   }
 }

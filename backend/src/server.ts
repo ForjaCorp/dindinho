@@ -20,7 +20,7 @@ const start = async (): Promise<void> => {
   try {
     const port = Number(process.env.PORT) || 3333;
     await app.listen({ port, host: "0.0.0.0" });
-    console.log(`\n🚀 SERVIDOR ONLINE em http://localhost:${port}\n`);
+    app.log.info({ port }, "Servidor online");
   } catch (err) {
     app.log.error(err);
     process.exit(1);

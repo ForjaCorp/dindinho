@@ -1,6 +1,10 @@
 import { prisma } from "../lib/prisma";
 import { hash } from "bcryptjs";
 
+const writeOut = (message: string) => {
+  process.stdout.write(`${message}\n`);
+};
+
 /**
  * Script de seed para popular o banco de dados com dados iniciais.
  * Garante a criação de categorias padrão e do usuário de desenvolvimento com permissão de ADMIN.
@@ -45,9 +49,9 @@ export async function main() {
         where: { email },
         data: { role: "ADMIN" },
       });
-      console.log(`Role do usuário ${email} atualizada para ADMIN`);
+      writeOut(`Role do usuário ${email} atualizada para ADMIN`);
     } else {
-      console.log(`Usuário de dev já existe e é ADMIN: ${email}`);
+      writeOut(`Usuário de dev já existe e é ADMIN: ${email}`);
     }
     return;
   }
@@ -55,7 +59,7 @@ export async function main() {
   const isDev = process.env.NODE_ENV !== "production";
 
   if (!isDev) {
-    console.log(
+    writeOut(
       "Seed de usuário dev ignorado fora do ambiente de desenvolvimento",
     );
     return;
@@ -72,6 +76,6 @@ export async function main() {
     },
   });
 
-  console.log(`Usuário de dev criado com sucesso: ${user.email}`);
-  console.log(`Senha: ${password}`);
+  writeOut(`Usuário de dev criado com sucesso: ${user.email}`);
+  writeOut(`Senha: ${password}`);
 }
