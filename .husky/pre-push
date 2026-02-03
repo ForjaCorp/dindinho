@@ -1,5 +1,8 @@
 #!/usr/bin/env sh
 
+# Fail-fast: Validação de documentos antes de tarefas pesadas
+npx turbo run docs:check
+
 BASE_REF="origin/main"
 
 if git rev-parse --verify "$BASE_REF" >/dev/null 2>&1; then

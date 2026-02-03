@@ -48,6 +48,13 @@ jobs:
           restore-keys: |
             turbo-${{ runner.os }}-node${{ env.NODE_VERSION }}-
 
+      - name: "Fail Fast: Documentation Validation"
+        run: |
+          # Rodar docs:check com o mínimo de dependências
+          # O script de validação só depende de 'zod' e '@dindinho/shared'
+          npm install zod gray-matter
+          npx turbo run docs:check
+
       - name: Install
         run: npm ci
 
@@ -55,14 +62,6 @@ jobs:
         run: npx turbo run prisma:generate --filter=dindinho-backend
         env:
           DATABASE_URL: "mysql://root:root@localhost:3306/dindinho" # Dummy URL for build
-
-      - name: "Validate Documentation (Affected)"
-        if: ${{ github.event_name == 'pull_request' }}
-        run: npx turbo run docs:check --filter="...[${{ github.event.pull_request.base.sha }}]"
-
-      - name: "Validate Documentation (Full)"
-        if: ${{ github.event_name != 'pull_request' }}
-        run: npx turbo run docs:check
 
       - name: "Quality (PR: affected)"
         if: ${{ github.event_name == 'pull_request' }}
