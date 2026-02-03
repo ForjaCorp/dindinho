@@ -158,20 +158,30 @@ export function buildApp(): FastifyInstance {
   });
 
   app.register(cors, {
+    /**
+     * @description Configuração de CORS que permite origens específicas baseadas no ambiente.
+     * Requisições sem o header 'Origin' (como health checks internos e ferramentas CLI) são permitidas.
+     */
     origin: (origin, cb) => {
+      // Permitir requisições sem origem (ex: health checks locais, chamadas de servidor)
+      if (!origin) {
+        cb(null, true);
+        return;
+      }
+
       if (process.env.NODE_ENV !== "production") {
         const allowedDevOrigins = [
           "http://localhost:4200",
           ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
         ];
-        if (!origin || allowedDevOrigins.includes(origin)) {
+        if (allowedDevOrigins.includes(origin)) {
           cb(null, true);
           return;
         }
       }
 
       const allowedOrigins = (process.env.FRONTEND_URL || "").split(",");
-      if (origin && allowedOrigins.includes(origin)) {
+      if (allowedOrigins.includes(origin)) {
         cb(null, true);
       } else {
         cb(new Error("Not allowed by CORS"), false);
