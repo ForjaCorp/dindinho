@@ -2,27 +2,24 @@ import { describe, it, expect } from "vitest";
 import { buildApp } from "./app";
 
 describe("OpenAPI Documentation", () => {
-  it("deve servir Swagger UI em /docs", async () => {
+  it("deve servir Swagger UI em /api/docs", async () => {
     const app = buildApp();
 
     const response = await app.inject({
       method: "GET",
-      url: "/docs",
+      url: "/api/docs",
     });
 
     expect(response.statusCode).toBe(302);
     const location = response.headers.location;
     if (typeof location !== "string") {
-      throw new Error("Header Location ausente na resposta de /docs");
+      throw new Error("Header Location ausente na resposta de /api/docs");
     }
     expect(location).toContain("docs/static/index.html");
-    const normalizedLocation = location.startsWith("./")
-      ? location.slice(1)
-      : location;
 
     const htmlResponse = await app.inject({
       method: "GET",
-      url: normalizedLocation,
+      url: "/api/docs/static/index.html",
     });
 
     expect(htmlResponse.statusCode).toBe(200);
@@ -35,7 +32,7 @@ describe("OpenAPI Documentation", () => {
 
     const response = await app.inject({
       method: "GET",
-      url: "/docs/json",
+      url: "/api/docs/json",
     });
 
     expect(response.statusCode).toBe(200);
@@ -98,7 +95,7 @@ describe("OpenAPI Documentation", () => {
 
     const response = await app.inject({
       method: "GET",
-      url: "/docs/json",
+      url: "/api/docs/json",
     });
 
     expect(response.statusCode).toBe(200);

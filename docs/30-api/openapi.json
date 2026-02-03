@@ -1,0 +1,19 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Dindinho API",
+    "version": "1.0.0"
+  },
+  "tags": [
+    { "name": "auth" },
+    { "name": "users" },
+    { "name": "accounts" },
+    { "name": "transactions" },
+    { "name": "categories" },
+    { "name": "reports" },
+    { "name": "signup-allowlist" },
+    { "name": "waitlist" },
+    { "name": "health" }
+  ],
+  "paths": {}
+}

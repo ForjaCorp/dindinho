@@ -25,6 +25,11 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "**/*",
+                "input": "../docs",
+                "output": "assets/docs"
               }
             ],
             "styles": ["src/styles.css"]

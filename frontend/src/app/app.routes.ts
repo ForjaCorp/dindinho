@@ -89,6 +89,11 @@ export const routes: Routes = [
         loadComponent: () => import('../pages/reports/reports.page').then((m) => m.ReportsPage),
         data: { title: 'Relatórios', maxWidth: '5xl' },
       },
+      {
+        path: 'docs',
+        loadComponent: () => import('../pages/docs/docs.page').then((m) => m.DocsPage),
+        data: { title: 'Docs', maxWidth: '7xl' },
+      },
       // Outras rotas autenticadas virão aqui (accounts, reports, profile)
     ],
   },
