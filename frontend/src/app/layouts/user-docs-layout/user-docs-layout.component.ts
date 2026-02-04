@@ -24,7 +24,7 @@ import {
       logoBgClass="bg-emerald-600"
       logoTextClass="text-emerald-600"
       logoSubtitle="Docs"
-      badgeText="User Guide"
+      badgeText="Guia do Usuário"
       footerText="Dindinho v1.0.0"
       activeLinkClass="bg-emerald-50 text-emerald-700 font-bold"
       [categories]="categories"

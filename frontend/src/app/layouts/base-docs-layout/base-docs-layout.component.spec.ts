@@ -169,6 +169,6 @@ describe('BaseDocsLayoutComponent', () => {
 
     const headerTexts = headers.map((h) => h.nativeElement.textContent);
     expect(headerTexts.some((t) => t.includes('Discussão (RFC)'))).toBe(true);
-    expect(headerTexts.some((t) => t.includes('Arquivado (Done)'))).toBe(true);
+    expect(headerTexts.some((t) => t.includes('Arquivado (Concluído)'))).toBe(true);
   });
 });

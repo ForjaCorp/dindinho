@@ -51,7 +51,7 @@ describe('AdminDocsLayoutComponent', () => {
   it('deve renderizar a logo administrativa', () => {
     const logoSubtitle = fixture.debugElement.query(By.css('.font-medium.text-indigo-600'));
     expect(logoSubtitle).toBeTruthy();
-    expect(logoSubtitle.nativeElement.textContent).toContain('Internal');
+    expect(logoSubtitle.nativeElement.textContent).toContain('Interno');
   });
 
   it('deve exibir as categorias principais na sidebar', () => {
@@ -82,7 +82,7 @@ describe('AdminDocsLayoutComponent', () => {
 
     expect(headerTexts.some((t) => t.includes('Ativo (WIP)'))).toBe(true);
     expect(headerTexts.some((t) => t.includes('Discussão (RFC)'))).toBe(true);
-    expect(headerTexts.some((t) => t.includes('Arquivado (Done)'))).toBe(true);
+    expect(headerTexts.some((t) => t.includes('Arquivado (Concluído)'))).toBe(true);
   });
 
   it('deve alternar a visibilidade de uma categoria ao clicar', () => {

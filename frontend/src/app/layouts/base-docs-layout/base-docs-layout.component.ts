@@ -169,7 +169,7 @@ export interface SidebarCategory {
                         <div
                           class="px-3 py-1.5 mt-2 text-xs font-bold text-slate-400 uppercase tracking-tighter flex items-center justify-between"
                         >
-                          <span>Arquivado (Done)</span>
+                          <span>Arquivado (Concluído)</span>
                           <span class="opacity-50">{{ getDoneItems(category).length }}</span>
                         </div>
                         @for (item of getDoneItems(category); track item.id) {
