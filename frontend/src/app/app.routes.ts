@@ -23,7 +23,7 @@ export const routes: Routes = [
     redirectTo: () => {
       const hostname = window.location.hostname;
       if (hostname.startsWith('docs.')) {
-        return 'docs/public/principles'; // Rota pública inicial de docs
+        return 'docs/intro'; // Nova rota principal unificada
       }
       return 'login';
     },
@@ -72,18 +72,14 @@ export const routes: Routes = [
         loadComponent: () =>
           import('../pages/public/onboarding.page').then((m) => m.OnboardingPage),
       },
-      {
-        path: 'docs/public/:slug',
-        loadComponent: () => import('../pages/docs/docs.page').then((m) => m.DocsPage),
-      },
     ],
   },
 
-  // Documentação de Usuário (Protegida)
+  // Documentação (Pública)
   {
-    path: 'docs/user',
+    path: 'docs',
     component: UserDocsLayoutComponent,
-    canActivate: [subdomainGuard, authGuard],
+    canActivate: [subdomainGuard],
     children: [
       {
         path: '',
@@ -97,23 +93,16 @@ export const routes: Routes = [
     ],
   },
 
-  // Documentação Legada/Atalho (Protegida - redireciona para intro)
-  {
-    path: 'docs',
-    redirectTo: 'docs/user/intro',
-    pathMatch: 'full',
-  },
-
   // Documentação Interna/Admin (Protegida)
   {
     path: 'docs/admin',
     component: AdminDocsLayoutComponent,
     canActivate: [subdomainGuard, authGuard],
-    data: { roles: ['ADMIN'] },
+    data: { roles: ['ADMIN'], context: 'admin' },
     children: [
       {
         path: '',
-        redirectTo: 'admin-intro',
+        redirectTo: 'intro',
         pathMatch: 'full',
       },
       {
