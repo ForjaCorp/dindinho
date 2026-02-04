@@ -1,6 +1,6 @@
-import { Component, ChangeDetectionStrategy, inject, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, Router } from '@angular/router';
+import { RouterOutlet } from '@angular/router';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 
@@ -13,7 +13,6 @@ import { MessageService } from 'primeng/api';
  * - Manter a navegação principal
  *
  * @class App
- * @implements {OnInit}
  */
 @Component({
   selector: 'app-root',
@@ -26,24 +25,4 @@ import { MessageService } from 'primeng/api';
     <router-outlet></router-outlet>
   `,
 })
-export class App implements OnInit {
-  private readonly router = inject(Router);
-
-  ngOnInit(): void {
-    this.handleDocsSubdomain();
-  }
-
-  /**
-   * Detecta se o acesso é via subdomínio 'docs' e redireciona para a rota /docs
-   * se estivermos na raiz do site.
-   */
-  private handleDocsSubdomain(): void {
-    const hostname = window.location.hostname;
-    const isDocsSubdomain = hostname.startsWith('docs.');
-    const isRootPath = window.location.pathname === '/' || window.location.pathname === '';
-
-    if (isDocsSubdomain && isRootPath) {
-      this.router.navigate(['/docs']);
-    }
-  }
-}
+export class App {}

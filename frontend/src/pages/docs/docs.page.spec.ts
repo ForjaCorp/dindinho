@@ -2,7 +2,7 @@
 import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ActivatedRoute, convertToParamMap, provideRouter, type ParamMap } from '@angular/router';
+import { ActivatedRoute, provideRouter, type Params } from '@angular/router';
 import { of, throwError, Subject } from 'rxjs';
 import { DocsPage } from './docs.page';
 import { DocsService, type OpenApiDocument } from '../../app/services/docs.service';
@@ -21,10 +21,8 @@ describe('DocsPage', () => {
     getSwaggerUiUrl: ReturnType<typeof vi.fn>;
   };
   let activatedRouteMock: {
-    snapshot: {
-      paramMap: ParamMap;
-      queryParamMap: ParamMap;
-    };
+    params: Subject<Params>;
+    queryParams: Subject<Params>;
   };
 
   beforeEach(async () => {
@@ -37,10 +35,8 @@ describe('DocsPage', () => {
     };
 
     activatedRouteMock = {
-      snapshot: {
-        paramMap: convertToParamMap({}),
-        queryParamMap: convertToParamMap({}),
-      },
+      params: new Subject<Params>(),
+      queryParams: new Subject<Params>(),
     };
 
     await TestBed.configureTestingModule({
@@ -72,41 +68,46 @@ describe('DocsPage', () => {
   it('deve carregar markdown padrão se nenhum slug ou path for fornecido', () => {
     docsServiceMock.getFile.mockReturnValue(of('# Documentação Padrão'));
     createComponent();
+    activatedRouteMock.params.next({});
+    activatedRouteMock.queryParams.next({});
+    fixture.detectChanges();
 
-    expect(docsServiceMock.getFile).toHaveBeenCalledWith('90-backlog/planning/documentation.md');
+    expect(docsServiceMock.getFile).toHaveBeenCalledWith('00-overview/principles.md');
     const markdownEl = fixture.nativeElement.querySelector('[data-testid="docs-markdown"]');
     expect(markdownEl.textContent).toContain('Documentação Padrão');
   });
 
   it('deve carregar documento via slug', () => {
-    activatedRouteMock.snapshot.paramMap = convertToParamMap({ slug: 'reports' });
     docsServiceMock.getFile.mockReturnValue(of('# Relatórios'));
     createComponent();
+    activatedRouteMock.params.next({ slug: 'reports' });
+    fixture.detectChanges();
 
     expect(docsServiceMock.getFile).toHaveBeenCalledWith('40-clients/pwa/reports-frontend.md');
   });
 
   it('deve carregar documento de domínio via slug', () => {
-    activatedRouteMock.snapshot.paramMap = convertToParamMap({ slug: 'dominio-contas' });
     docsServiceMock.getFile.mockReturnValue(of('# Domínio de Contas'));
     createComponent();
+    activatedRouteMock.params.next({ slug: 'dominio-contas' });
+    fixture.detectChanges();
 
     expect(docsServiceMock.getFile).toHaveBeenCalledWith('10-product/dominio-contas.md');
   });
 
   it('deve carregar api-ref via slug', () => {
-    activatedRouteMock.snapshot.paramMap = convertToParamMap({ slug: 'api-ref' });
     createComponent();
+    activatedRouteMock.params.next({ slug: 'api-ref' });
+    fixture.detectChanges();
 
     expect(docsServiceMock.getOpenApi).toHaveBeenCalled();
   });
 
   it('deve carregar documento via query param path', () => {
-    activatedRouteMock.snapshot.queryParamMap = convertToParamMap({
-      path: '30-api/authentication.md',
-    });
     docsServiceMock.getFile.mockReturnValue(of('# Auth'));
     createComponent();
+    activatedRouteMock.queryParams.next({ path: '30-api/authentication.md' });
+    fixture.detectChanges();
 
     expect(docsServiceMock.getFile).toHaveBeenCalledWith('30-api/authentication.md');
   });
@@ -120,6 +121,8 @@ tags: ["tag1", "tag2"]
 # Conteúdo`;
     docsServiceMock.getFile.mockReturnValue(of(content));
     createComponent();
+    activatedRouteMock.params.next({});
+    fixture.detectChanges();
 
     const titleEl = fixture.nativeElement.querySelector('h1');
     expect(titleEl.textContent).toContain('Meu Título');
@@ -133,8 +136,9 @@ tags: ["tag1", "tag2"]
   });
 
   it('deve exibir UI de redirecionamento do Swagger quando o slug é swagger', () => {
-    activatedRouteMock.snapshot.paramMap = convertToParamMap({ slug: 'swagger' });
     createComponent();
+    activatedRouteMock.params.next({ slug: 'swagger' });
+    fixture.detectChanges();
 
     const swaggerEl = fixture.nativeElement.querySelector('[data-testid="docs-swagger-redirect"]');
     expect(swaggerEl).toBeTruthy();
@@ -144,7 +148,6 @@ tags: ["tag1", "tag2"]
   });
 
   it('deve renderizar OpenAPI quando o path é __openapi__', () => {
-    activatedRouteMock.snapshot.paramMap = convertToParamMap({ slug: 'openapi' });
     const mockOpenApi: OpenApiDocument = {
       openapi: '3.0.0',
       info: { title: 'Dindinho API', version: '1.0.0' },
@@ -160,6 +163,8 @@ tags: ["tag1", "tag2"]
     };
     docsServiceMock.getOpenApi.mockReturnValue(of(mockOpenApi));
     createComponent();
+    activatedRouteMock.params.next({ slug: 'openapi' });
+    fixture.detectChanges();
 
     const openApiEl = fixture.nativeElement.querySelector('[data-testid="docs-openapi"]');
     expect(openApiEl).toBeTruthy();
@@ -171,8 +176,8 @@ tags: ["tag1", "tag2"]
   it('deve exibir estado de carregamento', () => {
     docsServiceMock.getFile.mockReturnValue(new Subject<string>().asObservable()); // Nunca emite automaticamente
     fixture = TestBed.createComponent(DocsPage);
-    // @ts-expect-error - Acessando sinal protegido para teste
-    fixture.componentInstance.isLoading.set(true);
+    fixture.detectChanges();
+    activatedRouteMock.params.next({});
     fixture.detectChanges();
 
     const loadingEl = fixture.nativeElement.querySelector('[data-testid="docs-loading"]');
@@ -182,9 +187,27 @@ tags: ["tag1", "tag2"]
   it('deve exibir mensagem de erro em caso de falha', () => {
     docsServiceMock.getFile.mockReturnValue(throwError(() => new Error('Falha')));
     createComponent();
+    activatedRouteMock.params.next({});
+    fixture.detectChanges();
 
     const errorEl = fixture.nativeElement.querySelector('[data-testid="docs-error"]');
     expect(errorEl).toBeTruthy();
     expect(errorEl.textContent).toContain('Não foi possível carregar o documento');
+  });
+
+  it('deve reagir a mudanças sucessivas nos parâmetros', () => {
+    docsServiceMock.getFile.mockReturnValue(of('# Primeiro'));
+    createComponent();
+
+    // Primeiro acesso
+    activatedRouteMock.params.next({ slug: 'reports' });
+    fixture.detectChanges();
+    expect(docsServiceMock.getFile).toHaveBeenCalledWith('40-clients/pwa/reports-frontend.md');
+
+    // Segundo acesso (mudança de rota)
+    docsServiceMock.getFile.mockReturnValue(of('# Segundo'));
+    activatedRouteMock.params.next({ slug: 'dominio-contas' });
+    fixture.detectChanges();
+    expect(docsServiceMock.getFile).toHaveBeenCalledWith('10-product/dominio-contas.md');
   });
 });
