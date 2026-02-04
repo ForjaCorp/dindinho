@@ -26,6 +26,7 @@ import {
       [badgeText]="'Docs Admin'"
       [footerText]="'Dindinho Interno v1.0.0'"
       [activeLinkClass]="'bg-indigo-50 text-indigo-700 font-bold'"
+      [backButtonClass]="'bg-indigo-600 hover:bg-indigo-700 border-indigo-500 shadow-indigo-100 focus:ring-indigo-500/40'"
       [categories]="categories"
       (backToApp)="goToApp()"
     >

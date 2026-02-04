@@ -126,8 +126,48 @@ describe('BaseDocsLayoutComponent', () => {
     const backButton = fixture.debugElement.query(
       By.css('header div.flex.items-center.gap-4 button'),
     );
+
+    // Verifica se o botão tem o ícone e o texto correto
+    const icon = backButton.query(By.css('i.pi-arrow-left'));
+    expect(icon).toBeTruthy();
+
+    const mobileText = backButton.query(By.css('.sm\\:hidden'));
+    expect(mobileText.nativeElement.textContent).toBe('Voltar ao App');
+
     backButton.triggerEventHandler('click', null);
     expect(emitSpy).toHaveBeenCalled();
+  });
+
+  it('deve exibir o link de pulo (skip link) para acessibilidade', () => {
+    const skipLink = fixture.debugElement.query(By.css('a[href="#main-content"]'));
+    expect(skipLink).toBeTruthy();
+    expect(skipLink.nativeElement.classList.contains('sr-only')).toBe(true);
+    expect(skipLink.nativeElement.textContent.trim()).toBe('Pular para o conteúdo principal');
+  });
+
+  it('deve exibir o título correto no header da sidebar mobile', () => {
+    const mobileHeader = fixture.debugElement.query(By.css('aside .lg\\:hidden.items-center'));
+    expect(mobileHeader).toBeTruthy();
+
+    const title = mobileHeader.query(By.css('span.font-bold'));
+    expect(title.nativeElement.textContent).toBe('Conteúdo do Guia');
+
+    const icon = mobileHeader.query(By.css('i.pi-list'));
+    expect(icon).toBeTruthy();
+  });
+
+  it('deve ter atributos de acessibilidade ARIA corretos', () => {
+    const nav = fixture.debugElement.query(By.css('nav'));
+    expect(nav.attributes['aria-label']).toBe('Navegação da documentação');
+
+    const main = fixture.debugElement.query(By.css('main'));
+    expect(main.attributes['id']).toBe('main-content');
+    expect(main.attributes['tabindex']).toBe('-1');
+
+    // Verifica role="group" nas categorias expandidas
+    const expandedGroup = fixture.debugElement.query(By.css('[role="group"]'));
+    expect(expandedGroup).toBeTruthy();
+    expect(expandedGroup.attributes['aria-label']).toContain('Itens de Categoria 1');
   });
 
   it('deve aplicar as classes de status corretamente', () => {

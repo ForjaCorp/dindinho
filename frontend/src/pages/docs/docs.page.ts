@@ -74,7 +74,7 @@ interface OpenApiEndpointItem {
           </a>
         </div>
       } @else {
-        <div class="mb-8">
+        <div class="mb-8" [attr.aria-busy]="isLoading()">
           @if (isLoading()) {
             <!-- Skeleton para Título e Descrição -->
             <div class="animate-pulse space-y-4">
@@ -107,7 +107,7 @@ interface OpenApiEndpointItem {
           }
         </div>
 
-        <div class="relative">
+        <div class="relative" [attr.aria-busy]="isLoading()">
           @if (isLoading()) {
             <!-- Skeleton para Conteúdo Principal -->
             <div
@@ -150,20 +150,29 @@ interface OpenApiEndpointItem {
             </div>
           } @else if (isOpenApi()) {
             @if (openApiDoc()) {
-              <div data-testid="docs-openapi" class="space-y-8">
+              <div
+                data-testid="docs-openapi"
+                class="space-y-8"
+                role="article"
+                aria-label="Referência da API"
+              >
                 @for (group of openApiGroups(); track group.tag) {
-                  <div class="space-y-4">
-                    <h2 class="text-xl font-bold text-slate-800 border-b border-slate-100 pb-2">
+                  <section class="space-y-4" [attr.aria-labelledby]="'group-' + group.tag">
+                    <h2
+                      [id]="'group-' + group.tag"
+                      class="text-xl font-bold text-slate-800 border-b border-slate-100 pb-2"
+                    >
                       {{ group.tag }}
                     </h2>
                     @if (group.description) {
                       <p class="text-sm text-slate-500">{{ group.description }}</p>
                     }
 
-                    <div class="grid gap-3">
+                    <div class="grid gap-3" role="list">
                       @for (item of group.items; track item.operationId) {
                         <div
                           class="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors"
+                          role="listitem"
                         >
                           <div class="flex items-start justify-between gap-4">
                             <div class="min-w-0">
@@ -191,20 +200,21 @@ interface OpenApiEndpointItem {
                         </div>
                       }
                     </div>
-                  </div>
+                  </section>
                 }
               </div>
             }
           } @else {
-            <div
+            <article
               data-testid="docs-markdown"
               class="prose prose-slate max-w-none prose-headings:font-bold prose-h1:text-3xl prose-pre:bg-slate-900 prose-pre:text-slate-50"
+              aria-label="Conteúdo do documento"
             >
               <pre
                 class="whitespace-pre-wrap font-mono text-sm leading-relaxed p-6 rounded-2xl bg-slate-50 border border-slate-100 text-slate-800"
                 >{{ markdown() }}</pre
               >
-            </div>
+            </article>
           }
         </div>
       }

@@ -36,6 +36,12 @@ export interface SidebarCategory {
   imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   template: `
     <div [attr.data-testid]="testId" class="flex flex-col h-dvh bg-slate-50 font-sans relative">
+      <a
+        href="#main-content"
+        class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-100 focus:px-4 focus:py-2 focus:bg-indigo-600 focus:text-white focus:rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+      >
+        Pular para o conteúdo principal
+      </a>
       <!-- Overlay para Mobile -->
       @if (isMobileMenuOpen()) {
         <button
@@ -86,10 +92,15 @@ export interface SidebarCategory {
         <div class="flex items-center gap-4">
           <button
             (click)="backToApp.emit()"
-            class="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors focus:outline-none focus:underline"
+            [class]="
+              'flex items-center gap-2 px-4 py-2 text-sm font-bold text-white rounded-xl transition-all active:scale-95 shadow-sm border focus:outline-none focus:ring-2 ' +
+              backButtonClass
+            "
+            aria-label="Voltar para o aplicativo principal"
           >
+            <i class="pi pi-arrow-left text-[10px]"></i>
             <span class="hidden sm:inline">Voltar para o App</span>
-            <span class="sm:hidden">Voltar</span>
+            <span class="sm:hidden text-xs">Voltar ao App</span>
           </button>
         </div>
       </header>
@@ -102,11 +113,12 @@ export interface SidebarCategory {
           class="fixed inset-y-0 left-0 w-72 lg:static lg:translate-x-0 border-r border-slate-200 bg-white flex flex-col z-40 transition-transform duration-300 ease-in-out"
         >
           <!-- Header da Sidebar no Mobile (opcional, para alinhar com o header principal) -->
-          <div class="h-16 flex lg:hidden items-center px-6 border-b border-slate-100">
-            <span class="font-bold text-slate-900">Navegação</span>
+          <div class="h-16 flex lg:hidden items-center px-6 border-b border-slate-100 gap-2">
+            <i class="pi pi-list text-slate-400"></i>
+            <span class="font-bold text-slate-900">Conteúdo do Guia</span>
           </div>
 
-          <nav class="flex-1 overflow-y-auto p-4 space-y-6">
+          <nav class="flex-1 overflow-y-auto p-4 space-y-6" aria-label="Navegação da documentação">
             @for (category of categories; track category.id) {
               <div>
                 <button
@@ -132,7 +144,11 @@ export interface SidebarCategory {
                 </button>
 
                 @if (isExpanded(category.id)) {
-                  <div class="space-y-1 overflow-hidden">
+                  <div
+                    class="space-y-1 overflow-hidden"
+                    role="group"
+                    [attr.aria-label]="'Itens de ' + category.label"
+                  >
                     @if (category.isBacklog) {
                       <!-- WIP Items -->
                       @if (getWIPItems(category).length > 0) {
@@ -199,7 +215,11 @@ export interface SidebarCategory {
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 overflow-y-auto bg-white p-4 sm:px-6 lg:px-8 sm:py-2">
+        <main
+          id="main-content"
+          class="flex-1 overflow-y-auto bg-white p-4 sm:px-6 lg:px-8 sm:py-2"
+          tabindex="-1"
+        >
           <div class="max-w-4xl mx-auto">
             <router-outlet></router-outlet>
           </div>
@@ -247,6 +267,8 @@ export class BaseDocsLayoutComponent implements OnInit {
   @Input() footerText = 'Dindinho Docs v1.0.0';
   @Input() activeLinkClass = 'bg-indigo-50 text-indigo-700 font-bold';
   @Input() categories: SidebarCategory[] = [];
+  @Input() backButtonClass =
+    'bg-emerald-600 hover:bg-emerald-700 border-emerald-500 shadow-emerald-100 focus:ring-emerald-500/40';
   @Output() backToApp = new EventEmitter<void>();
 
   private expandedCategories = signal<Set<string>>(new Set());

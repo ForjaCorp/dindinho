@@ -168,12 +168,25 @@ tags: ["tag1", "tag2"]
 
     const openApiEl = fixture.nativeElement.querySelector('[data-testid="docs-openapi"]');
     expect(openApiEl).toBeTruthy();
+    expect(openApiEl.getAttribute('role')).toBe('article');
+    expect(openApiEl.getAttribute('aria-label')).toBe('Referência da API');
+
+    const sections = openApiEl.querySelectorAll('section');
+    expect(sections.length).toBe(1);
+    expect(sections[0].getAttribute('aria-labelledby')).toContain('group-Auth');
+
+    const list = openApiEl.querySelector('[role="list"]');
+    expect(list).toBeTruthy();
+
+    const listItem = openApiEl.querySelector('[role="listitem"]');
+    expect(listItem).toBeTruthy();
+
     expect(openApiEl.textContent).toContain('POST');
     expect(openApiEl.textContent).toContain('/auth/login');
     expect(openApiEl.textContent).toContain('Realiza login');
   });
 
-  it('deve exibir estado de carregamento', () => {
+  it('deve exibir estado de carregamento com skeleton e aria-busy', () => {
     docsServiceMock.getFile.mockReturnValue(new Subject<string>().asObservable()); // Nunca emite automaticamente
     fixture = TestBed.createComponent(DocsPage);
     fixture.detectChanges();
@@ -182,6 +195,23 @@ tags: ["tag1", "tag2"]
 
     const loadingEl = fixture.nativeElement.querySelector('[data-testid="docs-loading"]');
     expect(loadingEl).toBeTruthy();
+    expect(loadingEl.getAttribute('aria-busy')).toBe('true');
+    expect(loadingEl.getAttribute('aria-label')).toBe('Carregando conteúdo');
+
+    // Verifica se os containers principais têm aria-busy
+    const busyContainers = fixture.nativeElement.querySelectorAll('[aria-busy="true"]');
+    expect(busyContainers.length).toBeGreaterThan(1);
+  });
+
+  it('deve ter atributos de acessibilidade no conteúdo markdown', () => {
+    docsServiceMock.getFile.mockReturnValue(of('# Teste'));
+    createComponent();
+    activatedRouteMock.params.next({});
+    fixture.detectChanges();
+
+    const markdownEl = fixture.nativeElement.querySelector('[data-testid="docs-markdown"]');
+    expect(markdownEl.tagName.toLowerCase()).toBe('article');
+    expect(markdownEl.getAttribute('aria-label')).toBe('Conteúdo do documento');
   });
 
   it('deve exibir mensagem de erro em caso de falha', () => {
