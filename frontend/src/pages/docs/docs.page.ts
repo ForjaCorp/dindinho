@@ -323,7 +323,7 @@ export class DocsPage {
 
       // Admin Docs
       architecture: '90-backlog/planning/documentation.md',
-      adr: '90-backlog/planning/documentation.md',
+      adr: '21-adr/intro.md',
       roadmap: '90-backlog/planning/evolucao-roadmap.md',
       'test-plan-e2e': '90-backlog/planning/test-plan-e2e.md',
       openapi: this.OPENAPI_PATH,

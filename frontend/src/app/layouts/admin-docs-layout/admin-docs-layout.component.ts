@@ -13,14 +13,11 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   template: `
-    <div
-      data-testid="admin-docs-layout"
-      class="flex flex-col h-dvh bg-slate-900 font-sans text-slate-300"
-    >
+    <div data-testid="admin-docs-layout" class="flex flex-col h-dvh bg-slate-50 font-sans">
       <!-- Admin Header -->
       <header
         data-testid="admin-docs-header"
-        class="h-16 border-b border-slate-800 bg-slate-900 flex items-center px-6 justify-between sticky top-0 z-20"
+        class="h-16 border-b border-slate-200 bg-white flex items-center px-6 justify-between sticky top-0 z-20"
       >
         <div class="flex items-center gap-3">
           <a data-testid="admin-logo" routerLink="/docs" class="flex items-center gap-2">
@@ -29,12 +26,12 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
             >
               A
             </div>
-            <span class="font-bold text-white tracking-tight"
-              >Dindinho <span class="text-indigo-400 font-medium">Internal</span></span
+            <span class="font-bold text-slate-900 tracking-tight"
+              >Dindinho <span class="text-indigo-600 font-medium">Internal</span></span
             >
           </a>
           <span
-            class="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 text-[10px] font-bold uppercase tracking-widest border border-indigo-500/20"
+            class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase tracking-widest border border-indigo-100"
             >Admin Docs</span
           >
         </div>
@@ -43,7 +40,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
           <button
             data-testid="btn-back-app"
             (click)="goToApp()"
-            class="text-sm font-medium text-slate-400 hover:text-white transition-colors"
+            class="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors"
           >
             Voltar para o App
           </button>
@@ -54,18 +51,18 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
         <!-- Sidebar -->
         <aside
           data-testid="admin-docs-sidebar"
-          class="w-64 border-r border-slate-800 bg-slate-900 hidden md:flex flex-col"
+          class="w-64 border-r border-slate-200 bg-white hidden md:flex flex-col"
         >
           <nav class="flex-1 overflow-y-auto p-4 space-y-1">
-            <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2">
+            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
               Engenharia
             </div>
 
             <a
               data-testid="nav-arch"
               routerLink="/docs/admin/architecture"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
             >
               <i class="pi pi-sitemap"></i> Arquitetura
             </a>
@@ -73,8 +70,8 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
             <a
               data-testid="nav-adr"
               routerLink="/docs/admin/adr"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
             >
               <i class="pi pi-book"></i> ADRs
             </a>
@@ -82,8 +79,8 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
             <a
               data-testid="nav-roadmap"
               routerLink="/docs/admin/roadmap"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
             >
               <i class="pi pi-map"></i> Roadmap
             </a>
@@ -91,94 +88,111 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
             <a
               data-testid="nav-test-plan-e2e"
               routerLink="/docs/admin/test-plan-e2e"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
             >
               <i class="pi pi-check-square"></i> Plano E2E
             </a>
 
-            <div
-              class="pt-6 text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2"
-            >
+            <div class="pt-4 text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
               Infraestrutura
             </div>
 
             <a
               data-testid="nav-ops"
               routerLink="/docs/admin/ops"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
             >
               <i class="pi pi-cog"></i> Operações
             </a>
 
             <a
-              data-testid="nav-api-ref"
-              routerLink="/docs/admin/api-ref"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+              data-testid="nav-deploy"
+              routerLink="/docs/admin/deploy"
+              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
             >
-              <i class="pi pi-code"></i> API Reference
+              <i class="pi pi-cloud-upload"></i> Deploy & Cloud
             </a>
 
-            <div
-              class="pt-6 text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2"
+            <a
+              data-testid="nav-api-ref"
+              routerLink="/docs/admin/api-ref"
+              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
             >
-              Domínios (Técnico)
+              <i class="pi pi-code"></i> Referência de API
+            </a>
+
+            <div class="pt-4 text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
+              Domínios do Produto
             </div>
 
             <a
               data-testid="nav-dominio-auth"
               routerLink="/docs/admin/dominio-auth"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
             >
-              <i class="pi pi-lock"></i> Auth & Security
+              <i class="pi pi-lock"></i> Autenticação
             </a>
 
             <a
               data-testid="nav-dominio-contas"
               routerLink="/docs/admin/dominio-contas"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
             >
-              <i class="pi pi-wallet"></i> Accounts & Cards
-            </a>
-
-            <div
-              class="pt-6 text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2"
-            >
-              Infraestrutura & Ops
-            </div>
-
-            <a
-              data-testid="nav-deploy"
-              routerLink="/docs/admin/deploy"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
-            >
-              <i class="pi pi-cloud-upload"></i> Deploy & Coolify
+              <i class="pi pi-wallet"></i> Contas e Cartões
             </a>
 
             <a
-              data-testid="nav-collaboration"
-              routerLink="/docs/user/dominio-colaboracao"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+              data-testid="nav-dominio-transacoes"
+              routerLink="/docs/admin/dominio-transacoes"
+              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <i class="pi pi-list"></i> Transações
+            </a>
+
+            <a
+              data-testid="nav-dominio-relatorios"
+              routerLink="/docs/admin/dominio-relatorios"
+              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <i class="pi pi-chart-bar"></i> Relatórios
+            </a>
+
+            <a
+              data-testid="nav-dominio-colaboracao"
+              routerLink="/docs/admin/dominio-colaboracao"
+              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
             >
               <i class="pi pi-users"></i> Colaboração
             </a>
+
+            <a
+              data-testid="nav-dominio-metas"
+              routerLink="/docs/admin/dominio-metas"
+              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <i class="pi pi-briefcase"></i> Metas de Economia
+            </a>
           </nav>
 
-          <div class="p-4 border-t border-slate-800 bg-slate-900">
-            <p class="text-[10px] text-slate-500 text-center uppercase font-bold tracking-tighter">
-              Dindinho v1.0.0 (Internal)
+          <div class="p-4 border-t border-slate-100 bg-slate-50/50">
+            <p class="text-[10px] text-slate-400 text-center uppercase font-bold tracking-tighter">
+              Dindinho Internal v1.0.0
             </p>
           </div>
         </aside>
 
         <!-- Main Content -->
-        <main data-testid="admin-docs-main" class="flex-1 overflow-y-auto bg-slate-950">
+        <main data-testid="admin-docs-main" class="flex-1 overflow-y-auto bg-white">
           <router-outlet></router-outlet>
         </main>
       </div>
