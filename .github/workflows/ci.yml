@@ -48,11 +48,15 @@ jobs:
           restore-keys: |
             turbo-${{ runner.os }}-node${{ env.NODE_VERSION }}-
 
+      - name: Build Shared Package
+        run: |
+          npm ci --workspace=@dindinho/shared
+          npx turbo run build --filter=@dindinho/shared
+
       - name: "Fail Fast: Documentation Validation"
         run: |
-          # Rodar docs:check com o mínimo de dependências
-          # O script de validação só depende de 'zod' e '@dindinho/shared'
-          npm install zod gray-matter
+          # O script de validação depende de '@dindinho/shared' (já buildado acima)
+          npm install gray-matter
           npx turbo run docs:check
 
       - name: Install
