@@ -2,8 +2,8 @@
 id: ops-guide
 title: "Guia de Operações"
 description: "Manual de manutenção, deploy e gerenciamento da infraestrutura do Dindinho."
-audience: ["admin", "dev"]
-visibility: "private"
+audience: ["ops", "dev"]
+visibility: "internal"
 status: "wip"
 owners: ["engineering"]
 tags: ["ops", "deploy", "prisma", "maintenance"]

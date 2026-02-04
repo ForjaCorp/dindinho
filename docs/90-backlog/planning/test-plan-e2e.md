@@ -2,7 +2,7 @@
 id: test-plan-e2e
 title: "Plano de Testes E2E"
 description: "Estratégia de testes de ponta a ponta (End-to-End) para garantir a integridade dos fluxos críticos do Dindinho."
-audience: ["dev", "qa"]
+audience: ["dev", "product"]
 visibility: "internal"
 status: "draft"
 owners: ["engineering", "qa"]
