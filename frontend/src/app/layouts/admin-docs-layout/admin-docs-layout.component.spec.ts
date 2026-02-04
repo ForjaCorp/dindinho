@@ -80,9 +80,9 @@ describe('AdminDocsLayoutComponent', () => {
     const statusHeaders = backlogSection!.queryAll(By.css('.uppercase.tracking-tighter'));
     const headerTexts = statusHeaders.map((h) => h.nativeElement.textContent);
 
-    expect(headerTexts.some((t) => t.includes('Ativo (WIP)'))).toBe(true);
-    expect(headerTexts.some((t) => t.includes('Discussão (RFC)'))).toBe(true);
-    expect(headerTexts.some((t) => t.includes('Arquivado (Concluído)'))).toBe(true);
+    expect(headerTexts.some((t) => t.includes('Andamento'))).toBe(true);
+    expect(headerTexts.some((t) => t.includes('Discussão'))).toBe(true);
+    expect(headerTexts.some((t) => t.includes('Arquivado'))).toBe(true);
   });
 
   it('deve alternar a visibilidade de uma categoria ao clicar', () => {
@@ -109,20 +109,31 @@ describe('AdminDocsLayoutComponent', () => {
     expect(baseComponent.isExpanded(categoryId)).toBe(true);
   });
 
+  it('deve exibir o texto correto no botão de voltar', () => {
+    const backButton = fixture.debugElement.query(By.css('aside .mt-auto button'));
+    expect(backButton.nativeElement.textContent).toContain('Voltar para a Plataforma');
+  });
+
+  it('deve exibir o link de acesso rápido para a visão do usuário', () => {
+    const userViewLink = fixture.debugElement.query(By.css('a[routerLink="/docs/intro"]'));
+    expect(userViewLink).toBeTruthy();
+    expect(userViewLink.nativeElement.textContent).toContain('Visão do Usuário');
+  });
+
   it('deve aplicar as cores corretas para cada badge de status', () => {
     const baseComponent = fixture.debugElement.query(
       By.directive(BaseDocsLayoutComponent),
     ).componentInstance;
-    expect(baseComponent.getStatusClass('WIP')).toContain('bg-indigo-50');
-    expect(baseComponent.getStatusClass('RFC')).toContain('bg-orange-50');
-    expect(baseComponent.getStatusClass('DONE')).toContain('bg-slate-100');
+    expect(baseComponent.getStatusClass('ANDAMENTO')).toContain('bg-indigo-50');
+    expect(baseComponent.getStatusClass('DISCUSSAO')).toContain('bg-orange-50');
+    expect(baseComponent.getStatusClass('ARQUIVADO')).toContain('bg-slate-100');
   });
 
-  it('deve conter o link para o roadmap com o status WIP', () => {
+  it('deve conter o link para o roadmap com o status ANDAMENTO', () => {
     const roadmapLink = fixture.debugElement.query(By.css('[data-testid="nav-roadmap"]'));
     expect(roadmapLink).toBeTruthy();
 
     const badge = roadmapLink.query(By.css('.rounded.font-bold'));
-    expect(badge.nativeElement.textContent.trim()).toBe('WIP');
+    expect(badge.nativeElement.textContent.trim()).toBe('ANDAMENTO');
   });
 });

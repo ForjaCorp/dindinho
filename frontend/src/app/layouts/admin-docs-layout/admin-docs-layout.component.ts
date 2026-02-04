@@ -1,9 +1,11 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import {
   BaseDocsLayoutComponent,
   SidebarCategory,
 } from '../base-docs-layout/base-docs-layout.component';
+import { AuthService } from '../../services/auth.service';
 
 /**
  * @description
@@ -14,11 +16,11 @@ import {
   selector: 'app-admin-docs-layout',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, BaseDocsLayoutComponent],
+  imports: [CommonModule, BaseDocsLayoutComponent, RouterLink],
   template: `
     <app-base-docs-layout
       [testId]="'admin-docs-layout'"
-      [logoLink]="'/docs/admin/admin-intro'"
+      [logoLink]="'/docs/admin/intro'"
       [logoLetter]="'A'"
       [logoBgClass]="'bg-indigo-600'"
       [logoTextClass]="'text-indigo-600'"
@@ -26,24 +28,48 @@ import {
       [badgeText]="'Docs Admin'"
       [footerText]="'Dindinho Interno v1.0.0'"
       [activeLinkClass]="'bg-indigo-50 text-indigo-700 font-bold'"
-      [backButtonClass]="'bg-indigo-600 hover:bg-indigo-700 border-indigo-500 shadow-indigo-100 focus:ring-indigo-500/40'"
+      currentContext="admin"
       [categories]="categories"
-      (backToApp)="goToApp()"
     >
+      <div sidebarFooter class="flex flex-col gap-2">
+        <!-- Visão do Usuário (Acesso Rápido) -->
+        <a
+          routerLink="/docs/intro"
+          class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-all border border-slate-200/60 bg-white shadow-sm group/user"
+        >
+          <div class="flex items-center gap-2">
+            <i class="pi pi-eye text-emerald-500 text-xs"></i>
+            <span class="text-[11px] font-bold text-slate-700">Visão do Usuário</span>
+          </div>
+          <i
+            class="pi pi-arrow-right text-[8px] text-slate-300 group-hover/user:translate-x-0.5 transition-transform"
+          ></i>
+        </a>
+
+        <button
+          (click)="goToApp()"
+          class="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-sm shadow-indigo-100 active:scale-95"
+        >
+          <i class="pi pi-arrow-left text-[10px]"></i>
+          <span>Voltar para a Plataforma</span>
+        </button>
+      </div>
     </app-base-docs-layout>
   `,
 })
 export class AdminDocsLayoutComponent {
+  private readonly auth = inject(AuthService);
+
   protected categories: SidebarCategory[] = [
     {
       id: 'geral',
       label: 'Geral',
       items: [
         {
-          id: 'admin-intro',
+          id: 'intro',
           label: 'Introdução',
           icon: 'pi-home',
-          link: '/docs/admin/admin-intro',
+          link: '/docs/admin/intro',
         },
       ],
     },
@@ -51,8 +77,22 @@ export class AdminDocsLayoutComponent {
       id: 'engenharia',
       label: 'Engenharia',
       items: [
-        { id: 'arch', label: 'Arquitetura', icon: 'pi-sitemap', link: '/docs/admin/architecture' },
-        { id: 'adr', label: 'ADRs', icon: 'pi-book', link: '/docs/admin/adr' },
+        {
+          id: 'arch',
+          label: 'Arquitetura',
+          icon: 'pi-sitemap',
+          link: '/docs/admin/architecture',
+          priority: 'alta',
+          owner: 'engineering',
+        },
+        {
+          id: 'adr',
+          label: 'ADRs',
+          icon: 'pi-book',
+          link: '/docs/admin/adr',
+          priority: 'media',
+          owner: 'architecture',
+        },
       ],
     },
     {
@@ -65,63 +105,83 @@ export class AdminDocsLayoutComponent {
           label: 'Roadmap',
           icon: 'pi-map',
           link: '/docs/admin/roadmap',
-          status: 'WIP',
+          status: 'ANDAMENTO',
+          priority: 'alta',
+          owner: 'engineering',
         },
         {
           id: 'test-plan-e2e',
           label: 'Plano E2E',
           icon: 'pi-check-square',
           link: '/docs/admin/test-plan-e2e',
-          status: 'DONE',
+          status: 'DISCUSSAO',
+          owner: 'qa',
         },
         {
           id: 'fix-docs-access',
           label: 'Exp. de Acesso',
           icon: 'pi-bolt',
           link: '/docs/admin/fix-docs-access',
-          status: 'WIP',
+          status: 'ANDAMENTO',
+          priority: 'media',
+          owner: 'engineering',
         },
         {
           id: 'plan-routing',
           label: 'Evolução de Rotas',
           icon: 'pi-directions',
           link: '/docs/admin/plan-routing',
-          status: 'RFC',
+          status: 'DISCUSSAO',
         },
         {
           id: 'plan-accounts',
           label: 'Filtro de Contas',
           icon: 'pi-filter',
           link: '/docs/admin/plan-accounts',
-          status: 'RFC',
+          status: 'ARQUIVADO',
         },
         {
           id: 'plan-time-filter',
           label: 'Filtro Temporal',
           icon: 'pi-calendar',
           link: '/docs/admin/plan-time-filter',
-          status: 'RFC',
+          status: 'ARQUIVADO',
         },
         {
           id: 'plan-notifications',
           label: 'Notificações',
           icon: 'pi-bell',
           link: '/docs/admin/plan-notifications',
-          status: 'RFC',
+          status: 'DISCUSSAO',
         },
         {
           id: 'plan-invites',
           label: 'Convites',
           icon: 'pi-user-plus',
           link: '/docs/admin/plan-invites',
-          status: 'RFC',
+          status: 'DISCUSSAO',
+        },
+        {
+          id: 'plan-metas',
+          label: 'Metas',
+          icon: 'pi-bullseye',
+          link: '/docs/admin/plan-metas',
+          status: 'DISCUSSAO',
+        },
+        {
+          id: 'plan-documentation',
+          label: 'Portal de Docs',
+          icon: 'pi-book',
+          link: '/docs/admin/plan-documentation',
+          status: 'ARQUIVADO',
+          owner: 'engineering',
         },
         {
           id: 'plan-url-sync',
           label: 'Sincronismo URL',
           icon: 'pi-sync',
           link: '/docs/admin/plan-url-sync',
-          status: 'RFC',
+          status: 'ARQUIVADO',
         },
       ],
     },
@@ -176,7 +236,7 @@ export class AdminDocsLayoutComponent {
         {
           id: 'dominio-metas',
           label: 'Metas de Economia',
-          icon: 'pi-briefcase',
+          icon: 'pi-bullseye',
           link: '/docs/admin/dominio-metas',
         },
       ],
@@ -185,12 +245,13 @@ export class AdminDocsLayoutComponent {
 
   /**
    * Redireciona o usuário para o domínio principal da aplicação (Dashboard).
+   * Remove o subdomínio 'docs.' da origem atual (preservando protocolo e porta).
    */
   goToApp(): void {
-    const host = window.location.host;
-    if (host.startsWith('docs.')) {
-      const mainDomain = host.replace('docs.', '');
-      window.location.href = `${window.location.protocol}//${mainDomain}/dashboard`;
+    const origin = window.location.origin;
+    if (origin.includes('://docs.')) {
+      const mainOrigin = origin.replace('://docs.', '://');
+      window.location.href = `${mainOrigin}/dashboard`;
     } else {
       window.location.href = '/dashboard';
     }

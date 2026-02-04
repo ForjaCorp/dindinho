@@ -25,8 +25,15 @@ describe('BaseDocsLayoutComponent', () => {
       id: 'cat1',
       label: 'Categoria 1',
       items: [
-        { id: 'item1', label: 'Item 1', icon: 'pi-home', link: '/item1' },
-        { id: 'item2', label: 'Item 2', icon: 'pi-user', link: '/item2', status: 'WIP' },
+        {
+          id: 'item1',
+          label: 'Guia de Inicio',
+          icon: 'pi-home',
+          link: '/item1',
+          priority: 'alta',
+          owner: 'engineering',
+        },
+        { id: 'item2', label: 'Item 2', icon: 'pi-user', link: '/item2', status: 'ANDAMENTO' },
       ],
     },
     {
@@ -34,8 +41,8 @@ describe('BaseDocsLayoutComponent', () => {
       label: 'Categoria 2',
       isBacklog: true,
       items: [
-        { id: 'item3', label: 'Item 3', icon: 'pi-cog', link: '/item3', status: 'RFC' },
-        { id: 'item4', label: 'Item 4', icon: 'pi-check', link: '/item4', status: 'DONE' },
+        { id: 'item3', label: 'Item 3', icon: 'pi-cog', link: '/item3', status: 'DISCUSSAO' },
+        { id: 'item4', label: 'Item 4', icon: 'pi-check', link: '/item4', status: 'ARQUIVADO' },
       ],
     },
   ];
@@ -119,25 +126,6 @@ describe('BaseDocsLayoutComponent', () => {
     expect(baseComponent.isExpanded(categoryId)).toBe(true);
   });
 
-  it('deve emitir backToApp ao clicar no botão de voltar', () => {
-    const emitSpy = vi.spyOn(baseComponent.backToApp, 'emit');
-    // Usamos um seletor mais específico para o botão de voltar,
-    // já que agora temos o botão de menu mobile também
-    const backButton = fixture.debugElement.query(
-      By.css('header div.flex.items-center.gap-4 button'),
-    );
-
-    // Verifica se o botão tem o ícone e o texto correto
-    const icon = backButton.query(By.css('i.pi-arrow-left'));
-    expect(icon).toBeTruthy();
-
-    const mobileText = backButton.query(By.css('.sm\\:hidden'));
-    expect(mobileText.nativeElement.textContent).toBe('Voltar ao App');
-
-    backButton.triggerEventHandler('click', null);
-    expect(emitSpy).toHaveBeenCalled();
-  });
-
   it('deve exibir o link de pulo (skip link) para acessibilidade', () => {
     const skipLink = fixture.debugElement.query(By.css('a[href="#main-content"]'));
     expect(skipLink).toBeTruthy();
@@ -171,9 +159,9 @@ describe('BaseDocsLayoutComponent', () => {
   });
 
   it('deve aplicar as classes de status corretamente', () => {
-    expect(baseComponent.getStatusClass('WIP')).toContain('bg-indigo-50');
-    expect(baseComponent.getStatusClass('RFC')).toContain('bg-orange-50');
-    expect(baseComponent.getStatusClass('DONE')).toContain('bg-slate-100');
+    expect(baseComponent.getStatusClass('ANDAMENTO')).toContain('bg-indigo-50');
+    expect(baseComponent.getStatusClass('DISCUSSAO')).toContain('bg-orange-50');
+    expect(baseComponent.getStatusClass('ARQUIVADO')).toContain('bg-slate-100');
   });
 
   it('deve alternar o menu mobile', () => {
@@ -208,7 +196,83 @@ describe('BaseDocsLayoutComponent', () => {
     );
 
     const headerTexts = headers.map((h) => h.nativeElement.textContent);
-    expect(headerTexts.some((t) => t.includes('Discussão (RFC)'))).toBe(true);
-    expect(headerTexts.some((t) => t.includes('Arquivado (Concluído)'))).toBe(true);
+    expect(headerTexts.some((t) => t.includes('Discussão'))).toBe(true);
+    expect(headerTexts.some((t) => t.includes('Arquivado'))).toBe(true);
+  });
+
+  describe('Command Palette e Metadados Avançados', () => {
+    it('deve exibir ícones de prioridade e tags de proprietário nos itens da sidebar', () => {
+      const item1 = fixture.debugElement.query(By.css('[data-testid="nav-item1"]'));
+      expect(item1).toBeTruthy();
+
+      // Verifica ícone de prioridade
+      const priorityIcon = item1.query(By.css('.pi-bolt'));
+      expect(priorityIcon).toBeTruthy();
+      expect(priorityIcon.nativeElement.classList.contains('text-orange-500')).toBe(true);
+
+      // Verifica tag de proprietário
+      const ownerTag = item1.query(By.css('.border-slate-200\\/50'));
+      expect(ownerTag).toBeTruthy();
+      expect(ownerTag.nativeElement.textContent.trim()).toBe('engineering');
+      expect(ownerTag.nativeElement.classList.contains('hidden')).toBe(true); // Oculto por padrão (hover)
+    });
+
+    it('deve abrir a busca ao pressionar Ctrl+K', () => {
+      expect(fixture.debugElement.query(By.css('[role="dialog"]'))).toBeFalsy();
+
+      const event = new KeyboardEvent('keydown', {
+        key: 'k',
+        ctrlKey: true,
+        cancelable: true,
+      });
+      window.dispatchEvent(event);
+      fixture.detectChanges();
+
+      expect(fixture.debugElement.query(By.css('[role="dialog"]'))).toBeTruthy();
+      expect(baseComponent['isSearchOpen']()).toBe(true);
+    });
+
+    it('deve filtrar resultados na command palette', async () => {
+      baseComponent['openSearch']();
+      fixture.detectChanges();
+
+      baseComponent['onSearchQueryChange']('Guia');
+      fixture.detectChanges();
+
+      const results = baseComponent['searchResults']();
+      expect(results.length).toBe(1);
+      expect(results[0].label).toBe('Guia de Inicio');
+    });
+
+    it('deve navegar para o resultado ao pressionar Enter', () => {
+      const routerSpy = vi.spyOn(baseComponent['router'], 'navigateByUrl');
+      baseComponent['openSearch']();
+      baseComponent['onSearchQueryChange']('Guia');
+      fixture.detectChanges();
+
+      const event = new KeyboardEvent('keydown', {
+        key: 'Enter',
+        cancelable: true,
+      });
+      window.dispatchEvent(event);
+
+      expect(routerSpy).toHaveBeenCalledWith('/item1');
+      expect(baseComponent['isSearchOpen']()).toBe(false);
+    });
+
+    it('deve fechar a busca ao pressionar Esc', () => {
+      baseComponent['openSearch']();
+      fixture.detectChanges();
+      expect(baseComponent['isSearchOpen']()).toBe(true);
+
+      const event = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        cancelable: true,
+      });
+      window.dispatchEvent(event);
+      fixture.detectChanges();
+
+      expect(baseComponent['isSearchOpen']()).toBe(false);
+    });
   });
 });
