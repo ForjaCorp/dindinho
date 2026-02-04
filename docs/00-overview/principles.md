@@ -2,7 +2,7 @@
 id: principles
 title: "Princípios do Produto"
 description: "Valores fundamentais, visão de longo prazo e pilares que guiam o desenvolvimento do Dindinho."
-audience: ["product", "user", "dev"]
+audience: ["produto", "usuário", "dev"]
 visibility: "público"
 status: "rascunho"
 owners: ["product", "engineering"]

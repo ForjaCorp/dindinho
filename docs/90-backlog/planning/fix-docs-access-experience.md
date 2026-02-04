@@ -6,7 +6,7 @@ audience: ["dev", "ops", "produto"]
 visibility: "interno"
 status: "em-progresso"
 owners: ["engineering"]
-tags: ["planejamento", "ux", "auth", "roteamento"]
+tags: ["planejamento", "ux", "autenticação", "roteamento"]
 mvp: true
 createdAt: "2026-02-04"
 updatedAt: "2026-02-04"

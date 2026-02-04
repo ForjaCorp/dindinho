@@ -6,7 +6,7 @@ audience: ["dev"]
 visibility: "interno"
 status: "estável"
 owners: ["engineering"]
-tags: ["auth", "api", "frontend"]
+tags: ["autenticação", "api", "frontend"]
 mvp: true
 createdAt: "2026-02-03"
 updatedAt: "2026-02-03"
