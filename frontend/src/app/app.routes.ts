@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { guestGuard } from './guards/guest.guard';
+import { subdomainGuard } from './guards/subdomain.guard';
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
 import { AuthLayoutComponent } from './layouts/auth-layout/auth-layout.component';
 import { PublicLayoutComponent } from './layouts/public-layout/public-layout.component';
@@ -18,14 +19,21 @@ export const routes: Routes = [
   // Redirecionamento inicial
   {
     path: '',
-    redirectTo: 'login',
     pathMatch: 'full',
+    redirectTo: () => {
+      const hostname = window.location.hostname;
+      if (hostname.startsWith('docs.')) {
+        return 'docs/public/principles'; // Rota pública inicial de docs
+      }
+      return 'login';
+    },
   },
 
   // Rotas Públicas (Sem Header/Footer)
   {
     path: '',
     component: AuthLayoutComponent,
+    canActivate: [subdomainGuard],
     children: [
       {
         path: 'login',
@@ -44,6 +52,7 @@ export const routes: Routes = [
   {
     path: '',
     component: PublicLayoutComponent,
+    canActivate: [subdomainGuard],
     children: [
       {
         path: 'faq',
@@ -74,7 +83,7 @@ export const routes: Routes = [
   {
     path: 'docs/user',
     component: UserDocsLayoutComponent,
-    canActivate: [authGuard],
+    canActivate: [subdomainGuard, authGuard],
     children: [
       {
         path: '',
@@ -88,11 +97,24 @@ export const routes: Routes = [
     ],
   },
 
+  // Documentação Legada/Atalho (Protegida - usa layout de docs de usuário)
+  {
+    path: 'docs',
+    component: UserDocsLayoutComponent,
+    canActivate: [subdomainGuard, authGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('../pages/docs/docs.page').then((m) => m.DocsPage),
+      },
+    ],
+  },
+
   // Documentação Interna/Admin (Protegida)
   {
     path: 'docs/admin',
     component: AdminDocsLayoutComponent,
-    canActivate: [authGuard],
+    canActivate: [subdomainGuard, authGuard],
     data: { roles: ['ADMIN'] },
     children: [
       {
@@ -111,17 +133,12 @@ export const routes: Routes = [
   {
     path: '',
     component: MainLayoutComponent,
-    canActivate: [authGuard],
+    canActivate: [subdomainGuard, authGuard],
     children: [
       {
         path: 'dashboard',
         loadComponent: () => import('../pages/dashboard.page').then((m) => m.DashboardComponent),
         data: { maxWidth: '5xl' },
-      },
-      {
-        path: 'docs',
-        loadComponent: () => import('../pages/docs/docs.page').then((m) => m.DocsPage),
-        data: { title: 'Documentação' },
       },
       {
         path: 'accounts',
