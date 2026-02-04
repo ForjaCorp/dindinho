@@ -322,7 +322,7 @@ export class DocsPage {
       faq: '00-overview/faq.md',
 
       // Admin Docs
-      'admin-intro': 'docs/admin/intro.md',
+      'admin-intro': 'admin/intro.md',
       architecture: '20-architecture/intro.md',
       adr: '21-adr/intro.md',
       roadmap: '90-backlog/planning/evolucao-roadmap.md',
