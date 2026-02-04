@@ -311,9 +311,11 @@ export class DocsPage {
     effect(() => {
       const params = this.params();
       const queryParams = this.queryParams();
+      const routeData = this.route.snapshot.data;
 
       const slugValue = params?.['slug'];
       const queryPath = queryParams?.['path'];
+      const context = routeData?.['context'];
 
       this.slug.set(slugValue || null);
 
@@ -321,12 +323,12 @@ export class DocsPage {
       let finalPath = '';
 
       if (slugValue) {
-        finalPath = this.mapSlugToPath(slugValue);
+        finalPath = this.mapSlugToPath(slugValue, context);
       } else if (queryPath) {
         finalPath = queryPath;
       } else {
         // Fallback para a introdução se nada for informado
-        finalPath = '00-overview/intro.md';
+        finalPath = context === 'admin' ? 'admin/intro.md' : '00-overview/intro.md';
       }
 
       this.selectedPath.set(finalPath);
@@ -356,6 +358,9 @@ export class DocsPage {
         },
         error: (_err) => {
           this.error.set(`Não foi possível carregar o documento: ${path}`);
+          this.title.set('Erro de Carregamento');
+          this.description.set('');
+          this.tags.set([]);
           this.isLoading.set(false);
         },
       });
@@ -367,9 +372,10 @@ export class DocsPage {
   /**
    * Mapeia um slug amigável da URL para o caminho real do arquivo na pasta de assets.
    * @param slug - O identificador amigável da rota
+   * @param context - O contexto da rota (ex: 'admin')
    * @returns O caminho relativo do arquivo .md ou constante especial
    */
-  private mapSlugToPath(slug: string): string {
+  private mapSlugToPath(slug: string, context?: string): string {
     // Mapeamento de slugs amigáveis para caminhos de arquivos reais
     const mapping: Record<string, string> = {
       // Overview
@@ -377,7 +383,6 @@ export class DocsPage {
       faq: '00-overview/faq.md',
 
       // Admin Docs
-      'admin-intro': 'admin/intro.md',
       architecture: '20-architecture/intro.md',
       adr: '21-adr/intro.md',
       roadmap: '90-backlog/planning/evolucao-roadmap.md',
@@ -389,6 +394,7 @@ export class DocsPage {
       'plan-url-sync': '90-backlog/planning/refactor-url-sync.md',
       'plan-invites': '90-backlog/planning/sistema-convites.md',
       'plan-time-filter': '90-backlog/planning/time-filter.md',
+      'plan-documentation': '90-backlog/planning/documentation.md',
       openapi: this.OPENAPI_PATH,
       'api-ref': this.OPENAPI_PATH,
       deploy: '50-ops/deploy.md',
@@ -410,6 +416,11 @@ export class DocsPage {
       reports: '40-clients/pwa/reports-frontend.md',
       auth: '30-api/authentication.md',
     };
+
+    // Caso especial para 'intro' em contexto admin
+    if (context === 'admin' && slug === 'intro') {
+      return 'admin/intro.md';
+    }
 
     return mapping[slug] || slug;
   }

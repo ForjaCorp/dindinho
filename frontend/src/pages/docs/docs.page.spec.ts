@@ -23,6 +23,7 @@ describe('DocsPage', () => {
   let activatedRouteMock: {
     params: Subject<Params>;
     queryParams: Subject<Params>;
+    snapshot: ActivatedRoute['snapshot'];
   };
 
   beforeEach(async () => {
@@ -37,6 +38,7 @@ describe('DocsPage', () => {
     activatedRouteMock = {
       params: new Subject<Params>(),
       queryParams: new Subject<Params>(),
+      snapshot: { data: {} } as ActivatedRoute['snapshot'],
     };
 
     await TestBed.configureTestingModule({
@@ -59,6 +61,10 @@ describe('DocsPage', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
   };
+
+  afterEach(() => {
+    fixture.destroy();
+  });
 
   it('deve criar o componente', () => {
     createComponent();
@@ -93,6 +99,19 @@ describe('DocsPage', () => {
     fixture.detectChanges();
 
     expect(docsServiceMock.getFile).toHaveBeenCalledWith('10-product/dominio-contas.md');
+  });
+
+  it('deve carregar intro de admin quando context é admin', () => {
+    docsServiceMock.getFile.mockReturnValue(of('# Admin Intro'));
+
+    // Simula data da rota no mock
+    activatedRouteMock.snapshot.data = { context: 'admin' };
+
+    createComponent();
+    activatedRouteMock.params.next({ slug: 'intro' });
+    fixture.detectChanges();
+
+    expect(docsServiceMock.getFile).toHaveBeenCalledWith('admin/intro.md');
   });
 
   it('deve carregar api-ref via slug', () => {
@@ -214,15 +233,41 @@ tags: ["tag1", "tag2"]
     expect(markdownEl.getAttribute('aria-label')).toBe('Conteúdo do documento');
   });
 
-  it('deve exibir mensagem de erro em caso de falha', () => {
-    docsServiceMock.getFile.mockReturnValue(throwError(() => new Error('Falha')));
+  it('deve exibir mensagem de erro em caso de falha e resetar metadados', () => {
+    // Primeiro carrega um documento com sucesso para preencher os metadados
+    const content = `---
+title: "Título Original"
+description: "Descrição Original"
+tags: ["tag1"]
+---
+# Conteúdo`;
+    docsServiceMock.getFile.mockReturnValue(of(content));
     createComponent();
-    activatedRouteMock.params.next({});
+    activatedRouteMock.params.next({ slug: 'intro' });
+    fixture.detectChanges();
+
+    // Verifica se preencheu
+    expect(fixture.nativeElement.querySelector('h1').textContent).toContain('Título Original');
+
+    // Agora simula erro no próximo carregamento
+    docsServiceMock.getFile.mockReturnValue(throwError(() => new Error('Falha')));
+    activatedRouteMock.params.next({ slug: 'inexistente' });
     fixture.detectChanges();
 
     const errorEl = fixture.nativeElement.querySelector('[data-testid="docs-error"]');
     expect(errorEl).toBeTruthy();
     expect(errorEl.textContent).toContain('Não foi possível carregar o documento');
+
+    // Verifica se resetou os metadados
+    const titleEl = fixture.nativeElement.querySelector('h1');
+    expect(titleEl.textContent).toContain('Erro de Carregamento');
+    expect(titleEl.textContent).not.toContain('Título Original');
+
+    const descEl = fixture.nativeElement.querySelector('p.text-lg');
+    expect(descEl).toBeFalsy(); // Description deve estar vazia e não renderizar
+
+    const tagsEl = fixture.nativeElement.querySelectorAll('.rounded-md.bg-slate-100');
+    expect(tagsEl.length).toBe(0); // Tags devem estar vazias
   });
 
   it('deve reagir a mudanças sucessivas nos parâmetros', () => {
@@ -239,5 +284,78 @@ tags: ["tag1", "tag2"]
     activatedRouteMock.params.next({ slug: 'dominio-contas' });
     fixture.detectChanges();
     expect(docsServiceMock.getFile).toHaveBeenCalledWith('10-product/dominio-contas.md');
+  });
+
+  it('deve lidar com falha no carregamento do OpenAPI', async () => {
+    docsServiceMock.getOpenApi.mockReturnValue(throwError(() => new Error('Falha')));
+    createComponent();
+    activatedRouteMock.queryParams.next({ path: '__openapi__' });
+    fixture.detectChanges();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    fixture.detectChanges();
+
+    expect(component['error']()).toBe('Não foi possível carregar o documento: __openapi__');
+  });
+
+  it('deve agrupar endpoints OpenAPI por tags e ordenar resultados', async () => {
+    const mockDoc = {
+      openapi: '3.0.0',
+      info: { title: 'Test', version: '1.0' },
+      tags: [
+        { name: 'B-Tag', description: 'Desc B' },
+        { name: 'A-Tag', description: 'Desc A' },
+      ],
+      paths: {
+        '/user': {
+          get: { tags: ['A-Tag'], summary: 'Get User', operationId: 'getUser' },
+        },
+        '/login': {
+          post: { tags: ['B-Tag'], summary: 'Login', operationId: 'login' },
+        },
+        '/auth': {
+          post: { tags: ['B-Tag'], summary: 'Auth', operationId: 'auth' },
+        },
+      },
+    };
+
+    docsServiceMock.getOpenApi.mockReturnValue(of(mockDoc));
+    createComponent();
+    activatedRouteMock.queryParams.next({ path: '__openapi__' });
+    fixture.detectChanges();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    fixture.detectChanges();
+
+    const groups = component['openApiGroups']();
+    expect(groups.length).toBe(2);
+    expect(groups[0].tag).toBe('A-Tag');
+    expect(groups[1].tag).toBe('B-Tag');
+
+    const bGroup = groups[1];
+    expect(bGroup.items[0].path).toBe('/auth');
+    expect(bGroup.items[1].path).toBe('/login');
+
+    expect(groups[0].description).toBe('Desc A');
+  });
+
+  it('deve lidar com endpoints sem tags', async () => {
+    const mockDoc = {
+      openapi: '3.0.0',
+      info: { title: 'Test', version: '1.0' },
+      paths: {
+        '/test': {
+          get: { summary: 'Test', operationId: 'test' },
+        },
+      },
+    };
+
+    docsServiceMock.getOpenApi.mockReturnValue(of(mockDoc));
+    createComponent();
+    activatedRouteMock.queryParams.next({ path: '__openapi__' });
+    fixture.detectChanges();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    fixture.detectChanges();
+
+    const groups = component['openApiGroups']();
+    expect(groups.find((g) => g.tag === 'untagged')).toBeTruthy();
   });
 });
