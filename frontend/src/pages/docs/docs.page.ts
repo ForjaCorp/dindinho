@@ -75,28 +75,66 @@ interface OpenApiEndpointItem {
         </div>
       } @else {
         <div class="mb-8">
-          <h1 class="text-3xl font-bold text-slate-900 tracking-tight">{{ title() }}</h1>
-          @if (description()) {
-            <p class="mt-2 text-lg text-slate-500">{{ description() }}</p>
-          }
-          @if (tags().length > 0) {
-            <div class="mt-4 flex flex-wrap gap-2">
-              @for (tag of tags(); track trackByTag($index, tag)) {
-                <span
-                  class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider"
-                >
-                  {{ tag }}
-                </span>
-              }
+          @if (isLoading()) {
+            <!-- Skeleton para Título e Descrição -->
+            <div class="animate-pulse space-y-4">
+              <div class="h-9 bg-slate-200 rounded-lg w-3/4"></div>
+              <div class="space-y-2">
+                <div class="h-5 bg-slate-100 rounded w-full"></div>
+                <div class="h-5 bg-slate-100 rounded w-5/6"></div>
+              </div>
+              <div class="flex gap-2 pt-2">
+                <div class="h-5 bg-slate-100 rounded-md w-16"></div>
+                <div class="h-5 bg-slate-100 rounded-md w-20"></div>
+              </div>
             </div>
+          } @else {
+            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">{{ title() }}</h1>
+            @if (description()) {
+              <p class="mt-2 text-lg text-slate-500">{{ description() }}</p>
+            }
+            @if (tags().length > 0) {
+              <div class="mt-4 flex flex-wrap gap-2">
+                @for (tag of tags(); track trackByTag($index, tag)) {
+                  <span
+                    class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider"
+                  >
+                    {{ tag }}
+                  </span>
+                }
+              </div>
+            }
           }
         </div>
 
         <div class="relative">
           @if (isLoading()) {
-            <div data-testid="docs-loading" class="flex items-center gap-3 text-slate-400 py-10">
-              <i class="pi pi-spin pi-spinner text-xl"></i>
-              <span class="text-sm font-medium" aria-live="polite">Carregando conteúdo...</span>
+            <!-- Skeleton para Conteúdo Principal -->
+            <div
+              data-testid="docs-loading"
+              class="animate-pulse space-y-6 py-4"
+              aria-busy="true"
+              aria-label="Carregando conteúdo"
+            >
+              <div class="space-y-3">
+                <div class="h-4 bg-slate-100 rounded w-full"></div>
+                <div class="h-4 bg-slate-100 rounded w-full"></div>
+                <div class="h-4 bg-slate-100 rounded w-3/4"></div>
+              </div>
+
+              <div class="h-40 bg-slate-50 rounded-2xl border border-slate-100 w-full"></div>
+
+              <div class="space-y-3 pt-4">
+                <div class="h-4 bg-slate-100 rounded w-full"></div>
+                <div class="h-4 bg-slate-100 rounded w-5/6"></div>
+                <div class="h-4 bg-slate-100 rounded w-full"></div>
+                <div class="h-4 bg-slate-100 rounded w-2/3"></div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4 pt-4">
+                <div class="h-24 bg-slate-50 rounded-xl border border-slate-100"></div>
+                <div class="h-24 bg-slate-50 rounded-xl border border-slate-100"></div>
+              </div>
             </div>
           } @else if (error()) {
             <div
