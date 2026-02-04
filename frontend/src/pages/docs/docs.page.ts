@@ -270,8 +270,8 @@ export class DocsPage {
       } else if (queryPath) {
         finalPath = queryPath;
       } else {
-        // Fallback para os princípios do produto se nada for informado
-        finalPath = '00-overview/principles.md';
+        // Fallback para a introdução se nada for informado
+        finalPath = '00-overview/intro.md';
       }
 
       this.selectedPath.set(finalPath);
@@ -343,7 +343,7 @@ export class DocsPage {
       'fix-docs-access': '90-backlog/planning/fix-docs-access-experience.md',
 
       // Legacy/Placeholders
-      intro: '00-overview/principles.md',
+      intro: '00-overview/intro.md',
       reports: '40-clients/pwa/reports-frontend.md',
       auth: '30-api/authentication.md',
     };

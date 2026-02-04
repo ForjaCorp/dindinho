@@ -72,7 +72,7 @@ describe('DocsPage', () => {
     activatedRouteMock.queryParams.next({});
     fixture.detectChanges();
 
-    expect(docsServiceMock.getFile).toHaveBeenCalledWith('00-overview/principles.md');
+    expect(docsServiceMock.getFile).toHaveBeenCalledWith('00-overview/intro.md');
     const markdownEl = fixture.nativeElement.querySelector('[data-testid="docs-markdown"]');
     expect(markdownEl.textContent).toContain('Documentação Padrão');
   });
