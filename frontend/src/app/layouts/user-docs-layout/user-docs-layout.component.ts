@@ -20,7 +20,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
         class="h-16 border-b border-slate-200 bg-white flex items-center px-6 justify-between sticky top-0 z-20"
       >
         <div class="flex items-center gap-3">
-          <a data-testid="docs-logo" routerLink="/dashboard" class="flex items-center gap-2">
+          <a data-testid="docs-logo" routerLink="/docs" class="flex items-center gap-2">
             <div
               class="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center text-white font-bold"
             >
@@ -33,13 +33,13 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
         </div>
 
         <div class="flex items-center gap-4">
-          <a
+          <button
             data-testid="btn-back-app"
-            routerLink="/dashboard"
+            (click)="goToApp()"
             class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors"
           >
             Voltar para o App
-          </a>
+          </button>
         </div>
       </header>
 
@@ -91,7 +91,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
               routerLinkActive="bg-emerald-50 text-emerald-700 font-semibold"
               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
             >
-              <i class="pi pi-wallet"></i> Contas e Saldos
+              <i class="pi pi-wallet"></i> Contas e Cartões
             </a>
 
             <a
@@ -109,7 +109,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
               routerLinkActive="bg-emerald-50 text-emerald-700 font-semibold"
               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
             >
-              <i class="pi pi-chart-pie"></i> Relatórios
+              <i class="pi pi-chart-bar"></i> Relatórios
             </a>
 
             <a
@@ -127,7 +127,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
               routerLinkActive="bg-emerald-50 text-emerald-700 font-semibold"
               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
             >
-              <i class="pi pi-target"></i> Metas de Economia
+              <i class="pi pi-briefcase"></i> Metas de Economia
             </a>
           </nav>
 
@@ -140,12 +140,25 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 
         <!-- Main Content -->
         <main data-testid="user-docs-main" class="flex-1 overflow-y-auto bg-white">
-          <div class="max-w-4xl mx-auto px-6 py-10">
-            <router-outlet></router-outlet>
-          </div>
+          <router-outlet></router-outlet>
         </main>
       </div>
     </div>
   `,
 })
-export class UserDocsLayoutComponent {}
+export class UserDocsLayoutComponent {
+  /**
+   * Redireciona o usuário para o domínio principal da aplicação (Dashboard).
+   * Remove o subdomínio 'docs.' do host atual (preservando a porta se existir).
+   */
+  goToApp(): void {
+    const host = window.location.host;
+    if (host.startsWith('docs.')) {
+      const mainDomain = host.replace('docs.', '');
+      window.location.href = `${window.location.protocol}//${mainDomain}/dashboard`;
+    } else {
+      // Se já estiver no domínio principal (desenvolvimento), apenas navega
+      window.location.href = '/dashboard';
+    }
+  }
+}

@@ -23,7 +23,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
         class="h-16 border-b border-slate-800 bg-slate-900 flex items-center px-6 justify-between sticky top-0 z-20"
       >
         <div class="flex items-center gap-3">
-          <a data-testid="admin-logo" routerLink="/dashboard" class="flex items-center gap-2">
+          <a data-testid="admin-logo" routerLink="/docs" class="flex items-center gap-2">
             <div
               class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold"
             >
@@ -40,13 +40,13 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
         </div>
 
         <div class="flex items-center gap-4">
-          <a
+          <button
             data-testid="btn-back-app"
-            routerLink="/dashboard"
+            (click)="goToApp()"
             class="text-sm font-medium text-slate-400 hover:text-white transition-colors"
           >
             Voltar para o App
-          </a>
+          </button>
         </div>
       </header>
 
@@ -151,89 +151,38 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
               routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
             >
-              <i class="pi pi-users"></i> Collaboration & Invites
-            </a>
-
-            <div
-              class="pt-6 text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2"
-            >
-              API & Contratos
-            </div>
-
-            <a
-              data-testid="nav-openapi"
-              routerLink="/docs/admin/openapi"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
-            >
-              <i class="pi pi-code"></i> OpenAPI Spec
-            </a>
-
-            <a
-              data-testid="nav-swagger"
-              routerLink="/docs/admin/swagger"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
-            >
-              <i class="pi pi-external-link"></i> Swagger UI
-            </a>
-
-            <div
-              class="pt-6 text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2"
-            >
-              Domínios de Produto
-            </div>
-
-            <a
-              data-testid="nav-dom-colab"
-              routerLink="/docs/admin/dominio-colaboracao"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
-            >
-              <i class="pi pi-users"></i> Colaboração
-            </a>
-
-            <a
-              data-testid="nav-dom-metas"
-              routerLink="/docs/admin/dominio-metas"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
-            >
-              <i class="pi pi-target"></i> Metas de Economia
-            </a>
-
-            <div
-              class="pt-6 text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2"
-            >
-              Infra & Ops
-            </div>
-
-            <a
-              data-testid="nav-deploy"
-              routerLink="/docs/admin/deploy"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
-            >
-              <i class="pi pi-cloud-upload"></i> Deploy & Coolify
+              <i class="pi pi-users"></i> Collaboration
             </a>
           </nav>
 
-          <div class="p-4 border-t border-slate-800 bg-slate-950/50">
-            <div class="flex items-center justify-between text-[10px] text-slate-500 font-mono">
-              <span>ENV: PROD</span>
-              <span>v1.0.0-build.42</span>
-            </div>
+          <div class="p-4 border-t border-slate-800 bg-slate-900">
+            <p class="text-[10px] text-slate-500 text-center uppercase font-bold tracking-tighter">
+              Dindinho v1.0.0 (Internal)
+            </p>
           </div>
         </aside>
 
         <!-- Main Content -->
         <main data-testid="admin-docs-main" class="flex-1 overflow-y-auto bg-slate-950">
-          <div class="max-w-5xl mx-auto px-8 py-12">
-            <router-outlet></router-outlet>
-          </div>
+          <router-outlet></router-outlet>
         </main>
       </div>
     </div>
   `,
 })
-export class AdminDocsLayoutComponent {}
+export class AdminDocsLayoutComponent {
+  /**
+   * Redireciona o usuário para o domínio principal da aplicação (Dashboard).
+   * Remove o subdomínio 'docs.' do host atual (preservando a porta se existir).
+   */
+  goToApp(): void {
+    const host = window.location.host;
+    if (host.startsWith('docs.')) {
+      const mainDomain = host.replace('docs.', '');
+      window.location.href = `${window.location.protocol}//${mainDomain}/dashboard`;
+    } else {
+      // Se já estiver no domínio principal (desenvolvimento), apenas navega
+      window.location.href = '/dashboard';
+    }
+  }
+}
