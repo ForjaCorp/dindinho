@@ -384,13 +384,9 @@ export class DocsPage {
    * @returns O caminho relativo do arquivo .md ou constante especial
    */
   private mapSlugToPath(slug: string, context?: string): string {
-    // Mapeamento de slugs amigáveis para caminhos de arquivos reais
-    const mapping: Record<string, string> = {
-      // Overview
-      principles: '00-overview/principles.md',
-      faq: '00-overview/faq.md',
-
-      // Admin Docs
+    // Mapeamento para Contexto Admin (Informações Técnicas/Internas)
+    const adminMapping: Record<string, string> = {
+      intro: 'admin/intro.md',
       architecture: '20-architecture/intro.md',
       adr: '21-adr/intro.md',
       roadmap: '90-backlog/planning/evolucao-roadmap.md',
@@ -403,34 +399,33 @@ export class DocsPage {
       'plan-invites': '90-backlog/planning/sistema-convites.md',
       'plan-time-filter': '90-backlog/planning/time-filter.md',
       'plan-documentation': '90-backlog/planning/documentation.md',
+      'fix-docs-access': '90-backlog/planning/fix-docs-access-experience.md',
       openapi: this.OPENAPI_PATH,
       'api-ref': this.OPENAPI_PATH,
       deploy: '50-ops/deploy.md',
       ops: '50-ops/guia-operacoes.md',
+      reports: '40-clients/pwa/reports-frontend.md',
+      auth: '30-api/authentication.md',
+    };
 
-      // User/Product Domains (Fase 7)
+    // Mapeamento para Contexto User (Guia do Usuário/Amigável)
+    const userMapping: Record<string, string> = {
+      intro: '00-overview/intro.md',
+      principles: '00-overview/principles.md',
+      faq: '00-overview/faq.md',
       'dominio-contas': '10-product/dominio-contas.md',
       'dominio-auth': '10-product/dominio-auth.md',
       'dominio-transacoes': '10-product/dominio-transacoes.md',
       'dominio-relatorios': '10-product/dominio-relatorios.md',
       'dominio-colaboracao': '10-product/dominio-colaboracao.md',
       'dominio-metas': '10-product/dominio-metas.md',
-
-      // UX & Access Experience
-      'fix-docs-access': '90-backlog/planning/fix-docs-access-experience.md',
-
-      // Legacy/Placeholders
-      intro: '00-overview/intro.md',
-      reports: '40-clients/pwa/reports-frontend.md',
-      auth: '30-api/authentication.md',
     };
 
-    // Caso especial para 'intro' em contexto admin
-    if (context === 'admin' && slug === 'intro') {
-      return 'admin/intro.md';
+    if (context === 'admin') {
+      return adminMapping[slug] || slug;
     }
 
-    return mapping[slug] || slug;
+    return userMapping[slug] || slug;
   }
 
   /**
