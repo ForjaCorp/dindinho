@@ -40,6 +40,13 @@ import { RouterOutlet, RouterLink } from '@angular/router';
             >Preços</a
           >
           <a
+            data-testid="nav-principles"
+            routerLink="/docs/public/principles"
+            routerLinkActive="text-emerald-600"
+            class="hover:text-emerald-600 transition-colors"
+            >Princípios</a
+          >
+          <a
             data-testid="nav-faq"
             routerLink="/faq"
             routerLinkActive="text-emerald-600"
@@ -97,6 +104,11 @@ import { RouterOutlet, RouterLink } from '@angular/router';
             <h4 class="font-semibold text-slate-900 mb-4 text-sm">Produto</h4>
             <ul class="space-y-2 text-sm text-slate-500">
               <li><a routerLink="/pricing" class="hover:text-emerald-600">Preços</a></li>
+              <li>
+                <a routerLink="/docs/public/principles" class="hover:text-emerald-600"
+                  >Princípios</a
+                >
+              </li>
               <li><a routerLink="/onboarding" class="hover:text-emerald-600">Como funciona</a></li>
             </ul>
           </div>

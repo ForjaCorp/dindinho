@@ -63,6 +63,10 @@ export const routes: Routes = [
         loadComponent: () =>
           import('../pages/public/onboarding.page').then((m) => m.OnboardingPage),
       },
+      {
+        path: 'docs/public/:slug',
+        loadComponent: () => import('../pages/docs/docs.page').then((m) => m.DocsPage),
+      },
     ],
   },
 

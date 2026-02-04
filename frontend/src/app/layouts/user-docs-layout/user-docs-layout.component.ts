@@ -63,6 +63,15 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
               <i class="pi pi-info-circle"></i> Introdução
             </a>
 
+            <a
+              data-testid="nav-principles"
+              routerLink="/docs/user/principles"
+              routerLinkActive="bg-emerald-50 text-emerald-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <i class="pi pi-star"></i> Nossos Princípios
+            </a>
+
             <div class="pt-4 text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
               Domínios do Produto
             </div>

@@ -291,10 +291,15 @@ export class DocsPage {
   private mapSlugToPath(slug: string): string {
     // Mapeamento de slugs amigáveis para caminhos de arquivos reais
     const mapping: Record<string, string> = {
+      // Overview
+      principles: '00-overview/principles.md',
+      faq: '00-overview/faq.md',
+
       // Admin Docs
       architecture: '90-backlog/planning/documentation.md',
       adr: '90-backlog/planning/documentation.md',
       roadmap: '90-backlog/planning/evolucao-roadmap.md',
+      'test-plan-e2e': '90-backlog/planning/test-plan-e2e.md',
       openapi: this.OPENAPI_PATH,
       'api-ref': this.OPENAPI_PATH,
       deploy: '90-backlog/planning/documentation.md',

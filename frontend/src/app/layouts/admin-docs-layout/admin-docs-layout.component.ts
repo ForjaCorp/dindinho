@@ -88,6 +88,15 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
               <i class="pi pi-map"></i> Roadmap
             </a>
 
+            <a
+              data-testid="nav-test-plan-e2e"
+              routerLink="/docs/admin/test-plan-e2e"
+              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+            >
+              <i class="pi pi-check-square"></i> Plano E2E
+            </a>
+
             <div
               class="pt-6 text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2"
             >
