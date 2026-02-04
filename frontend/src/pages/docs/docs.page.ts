@@ -51,7 +51,7 @@ interface OpenApiEndpointItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule],
   template: `
-    <div data-testid="docs-page" class="bg-white max-w-4xl mx-auto py-12 px-6">
+    <div data-testid="docs-page" class="bg-white max-w-4xl mx-auto pt-2 pb-10 px-4 sm:px-0">
       @if (isSwaggerSlug()) {
         <div data-testid="docs-swagger-redirect" class="py-20 text-center">
           <div
@@ -79,15 +79,17 @@ interface OpenApiEndpointItem {
           @if (description()) {
             <p class="mt-2 text-lg text-slate-500">{{ description() }}</p>
           }
-          <div class="mt-4 flex flex-wrap gap-2">
-            @for (tag of tags(); track tag) {
-              <span
-                class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider"
-              >
-                {{ tag }}
-              </span>
-            }
-          </div>
+          @if (tags().length > 0) {
+            <div class="mt-4 flex flex-wrap gap-2">
+              @for (tag of tags(); track trackByTag($index, tag)) {
+                <span
+                  class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider"
+                >
+                  {{ tag }}
+                </span>
+              }
+            </div>
+          }
         </div>
 
         <div class="relative">
@@ -195,6 +197,11 @@ export class DocsPage {
   protected readonly description = signal<string>('');
   /** Tags associadas ao documento */
   protected readonly tags = signal<string[]>([]);
+
+  /** Tracking function para as tags */
+  protected trackByTag(_index: number, tag: string): string {
+    return tag;
+  }
   /** Documento OpenAPI carregado */
   protected readonly openApiDoc = signal<OpenApiDocument | null>(null);
   /** Indica se o conteúdo está sendo carregado */
