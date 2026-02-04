@@ -192,6 +192,43 @@ describe('LoginComponent', () => {
       expect(authService.login).toHaveBeenCalledWith(credentials, undefined);
     });
 
+    it('deve chamar authService.login com returnUrl dos queryParams se disponível', async () => {
+      TestBed.resetTestingModule();
+      const authServiceSpy = { login: vi.fn().mockReturnValue(of({})) };
+
+      await TestBed.configureTestingModule({
+        imports: [LoginComponent],
+        providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          provideRouter([]),
+          {
+            provide: ActivatedRoute,
+            useValue: {
+              snapshot: {
+                queryParams: { returnUrl: '/docs/admin/api-ref' },
+              },
+            },
+          },
+          { provide: AuthService, useValue: authServiceSpy },
+        ],
+      }).compileComponents();
+
+      const newFixture = TestBed.createComponent(LoginComponent);
+      const newComponent = newFixture.componentInstance;
+      newFixture.detectChanges();
+
+      const credentials: LoginDTO = {
+        email: 'test@example.com',
+        password: 'password123',
+      };
+      newComponent['loginForm'].setValue(credentials);
+
+      newComponent.onSubmit();
+
+      expect(authServiceSpy.login).toHaveBeenCalledWith(credentials, '/docs/admin/api-ref');
+    });
+
     it('deve definir mensagem de erro em caso de erro 401', () => {
       component['loginForm'].setValue({ email: 'test@example.com', password: 'wrong' });
       const errorResponse = ErrorMapper.fromUnknown({
