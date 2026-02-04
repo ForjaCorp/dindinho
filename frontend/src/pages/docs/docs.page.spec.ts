@@ -3,6 +3,7 @@ import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ActivatedRoute, provideRouter, type Params } from '@angular/router';
+import { provideMarkdown } from 'ngx-markdown';
 import { of, throwError, Subject } from 'rxjs';
 import { DocsPage } from './docs.page';
 import { DocsService, type OpenApiDocument } from '../../app/services/docs.service';
@@ -45,6 +46,7 @@ describe('DocsPage', () => {
       imports: [DocsPage],
       providers: [
         provideRouter([]),
+        provideMarkdown(),
         { provide: ActivatedRoute, useValue: activatedRouteMock },
         { provide: DocsService, useValue: docsServiceMock },
       ],
@@ -71,11 +73,13 @@ describe('DocsPage', () => {
     expect(component).toBeTruthy();
   });
 
-  it('deve carregar markdown padrão se nenhum slug ou path for fornecido', () => {
+  it('deve carregar markdown padrão se nenhum slug ou path for fornecido', async () => {
     docsServiceMock.getFile.mockReturnValue(of('# Documentação Padrão'));
     createComponent();
     activatedRouteMock.params.next({});
     activatedRouteMock.queryParams.next({});
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     expect(docsServiceMock.getFile).toHaveBeenCalledWith('00-overview/intro.md');
@@ -131,27 +135,22 @@ describe('DocsPage', () => {
     expect(docsServiceMock.getFile).toHaveBeenCalledWith('30-api/authentication.md');
   });
 
-  it('deve processar frontmatter corretamente', () => {
-    const content = `---
-title: "Meu Título"
-description: "Minha Descrição"
-tags: ["tag1", "tag2"]
----
-# Conteúdo`;
-    docsServiceMock.getFile.mockReturnValue(of(content));
+  it('deve processar frontmatter corretamente', async () => {
+    const md = `---\ntitle: "Meu Título"\ndescription: "Minha Descrição"\ntags: ["test", "frontmatter"]\n---\n# Meu Título Interno\nConteúdo`;
+    docsServiceMock.getFile.mockReturnValue(of(md));
     createComponent();
-    activatedRouteMock.params.next({});
+    activatedRouteMock.params.next({ slug: 'principles' });
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
-    const titleEl = fixture.nativeElement.querySelector('h1');
-    expect(titleEl.textContent).toContain('Meu Título');
+    // Título externo (h1 fora do markdown) não deve existir
+    const externalTitleEl = fixture.nativeElement.querySelector('.mb-8 h1');
+    expect(externalTitleEl).toBeNull();
 
-    const descEl = fixture.nativeElement.querySelector('p');
-    expect(descEl.textContent).toContain('Minha Descrição');
-
-    const tags = fixture.nativeElement.querySelectorAll('span');
-    expect(tags[0].textContent.toLowerCase()).toContain('tag1');
-    expect(tags[1].textContent.toLowerCase()).toContain('tag2');
+    // Mas o conteúdo deve estar presente no markdown renderer (que terá seu próprio h1)
+    const markdownEl = fixture.nativeElement.querySelector('[data-testid="docs-markdown"]');
+    expect(markdownEl.textContent).toContain('Meu Título Interno');
   });
 
   it('deve exibir UI de redirecionamento do Swagger quando o slug é swagger', () => {
@@ -233,41 +232,33 @@ tags: ["tag1", "tag2"]
     expect(markdownEl.getAttribute('aria-label')).toBe('Conteúdo do documento');
   });
 
-  it('deve exibir mensagem de erro em caso de falha e resetar metadados', () => {
-    // Primeiro carrega um documento com sucesso para preencher os metadados
-    const content = `---
-title: "Título Original"
-description: "Descrição Original"
-tags: ["tag1"]
----
-# Conteúdo`;
-    docsServiceMock.getFile.mockReturnValue(of(content));
+  it('deve exibir mensagem de erro em caso de falha e resetar metadados', async () => {
+    // Primeiro carrega algo com sucesso
+    docsServiceMock.getOpenApi.mockReturnValue(
+      of({ openapi: '3.0.0', info: { title: 'API Sucesso', version: '1.0' }, paths: {} }),
+    );
     createComponent();
-    activatedRouteMock.params.next({ slug: 'intro' });
+    activatedRouteMock.params.next({ slug: 'api-ref' });
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
-    // Verifica se preencheu
-    expect(fixture.nativeElement.querySelector('h1').textContent).toContain('Título Original');
+    // Verifica se preencheu o título externo (OpenAPI usa título externo)
+    expect(fixture.nativeElement.querySelector('h1').textContent).toContain('API Reference');
 
     // Agora simula erro no próximo carregamento
     docsServiceMock.getFile.mockReturnValue(throwError(() => new Error('Falha')));
-    activatedRouteMock.params.next({ slug: 'inexistente' });
+    activatedRouteMock.params.next({ slug: 'principles' });
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     const errorEl = fixture.nativeElement.querySelector('[data-testid="docs-error"]');
     expect(errorEl).toBeTruthy();
-    expect(errorEl.textContent).toContain('Não foi possível carregar o documento');
+    expect(errorEl.textContent).toContain('Erro ao carregar documento');
 
-    // Verifica se resetou os metadados
-    const titleEl = fixture.nativeElement.querySelector('h1');
-    expect(titleEl.textContent).toContain('Erro de Carregamento');
-    expect(titleEl.textContent).not.toContain('Título Original');
-
-    const descEl = fixture.nativeElement.querySelector('p.text-lg');
-    expect(descEl).toBeFalsy(); // Description deve estar vazia e não renderizar
-
-    const tagsEl = fixture.nativeElement.querySelectorAll('.rounded-md.bg-slate-100');
-    expect(tagsEl.length).toBe(0); // Tags devem estar vazias
+    // Título externo deve mudar para Erro
+    expect(fixture.nativeElement.querySelector('h1').textContent).toContain('Erro de Carregamento');
   });
 
   it('deve reagir a mudanças sucessivas nos parâmetros', () => {

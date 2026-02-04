@@ -9,6 +9,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Params } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { MarkdownComponent } from 'ngx-markdown';
 import { DocsService, OpenApiDocument, OpenApiOperation } from '../../app/services/docs.service';
 
 /**
@@ -49,7 +50,7 @@ interface OpenApiEndpointItem {
   selector: 'app-docs-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule],
+  imports: [CommonModule, MarkdownComponent],
   template: `
     <div data-testid="docs-page" class="bg-white max-w-4xl mx-auto pt-2 pb-10 px-4 sm:px-0">
       @if (isSwaggerSlug()) {
@@ -88,7 +89,7 @@ interface OpenApiEndpointItem {
                 <div class="h-5 bg-slate-100 rounded-md w-20"></div>
               </div>
             </div>
-          } @else {
+          } @else if (shouldShowExternalHeader()) {
             <h1 class="text-3xl font-bold text-slate-900 tracking-tight">{{ title() }}</h1>
             @if (description()) {
               <p class="mt-2 text-lg text-slate-500">{{ description() }}</p>
@@ -210,10 +211,7 @@ interface OpenApiEndpointItem {
               class="prose prose-slate max-w-none prose-headings:font-bold prose-h1:text-3xl prose-pre:bg-slate-900 prose-pre:text-slate-50"
               aria-label="Conteúdo do documento"
             >
-              <pre
-                class="whitespace-pre-wrap font-mono text-sm leading-relaxed p-6 rounded-2xl bg-slate-50 border border-slate-100 text-slate-800"
-                >{{ markdown() }}</pre
-              >
+              <markdown [data]="markdown()"></markdown>
             </article>
           }
         </div>
@@ -263,6 +261,14 @@ export class DocsPage {
   protected readonly isSwaggerSlug = computed(() => this.slug() === 'swagger');
   /** URL do Swagger UI fornecida pelo serviço de documentação */
   protected readonly swaggerUrl = signal<string>(this.docs.getSwaggerUiUrl());
+
+  /** Indica se o cabeçalho externo (título/descrição) deve ser exibido */
+  protected readonly shouldShowExternalHeader = computed(() => {
+    // Não mostra cabeçalho se houver conteúdo markdown (o markdown já tem seu H1)
+    if (this.markdown()) return false;
+    // Mostra apenas para OpenAPI ou Erros
+    return this.isOpenApi() || !!this.error();
+  });
 
   /** Agrupa os endpoints OpenAPI por tags para exibição organizada */
   protected readonly openApiGroups = computed(() => {
@@ -349,6 +355,7 @@ export class DocsPage {
             this.parseMarkdown(content);
             this.openApiDoc.set(null);
           } else {
+            this.markdown.set('');
             this.openApiDoc.set(content);
             this.title.set('API Reference');
             this.description.set('Especificação completa dos endpoints do Dindinho.');
@@ -357,6 +364,7 @@ export class DocsPage {
           this.isLoading.set(false);
         },
         error: (_err) => {
+          this.markdown.set('');
           this.error.set(`Não foi possível carregar o documento: ${path}`);
           this.title.set('Erro de Carregamento');
           this.description.set('');
