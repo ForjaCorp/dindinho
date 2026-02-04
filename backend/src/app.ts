@@ -137,6 +137,8 @@ export function buildApp(): FastifyInstance {
 
   app.register(authPlugin);
 
+  app.register(healthRoutes);
+
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
 
