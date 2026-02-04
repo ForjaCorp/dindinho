@@ -104,12 +104,21 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
             </a>
 
             <a
-              data-testid="nav-collab"
+              data-testid="nav-collaboration"
               routerLink="/docs/user/dominio-colaboracao"
               routerLinkActive="bg-emerald-50 text-emerald-700 font-semibold"
               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
             >
               <i class="pi pi-users"></i> Colaboração
+            </a>
+
+            <a
+              data-testid="nav-metas"
+              routerLink="/docs/user/dominio-metas"
+              routerLinkActive="bg-emerald-50 text-emerald-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <i class="pi pi-target"></i> Metas de Economia
             </a>
           </nav>
 

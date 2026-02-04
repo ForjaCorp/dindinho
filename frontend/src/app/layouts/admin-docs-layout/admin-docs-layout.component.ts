@@ -163,6 +163,30 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
             <div
               class="pt-6 text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2"
             >
+              Domínios de Produto
+            </div>
+
+            <a
+              data-testid="nav-dom-colab"
+              routerLink="/docs/admin/dominio-colaboracao"
+              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+            >
+              <i class="pi pi-users"></i> Colaboração
+            </a>
+
+            <a
+              data-testid="nav-dom-metas"
+              routerLink="/docs/admin/dominio-metas"
+              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+            >
+              <i class="pi pi-target"></i> Metas de Economia
+            </a>
+
+            <div
+              class="pt-6 text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2"
+            >
               Infra & Ops
             </div>
 
