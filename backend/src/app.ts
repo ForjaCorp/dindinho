@@ -164,7 +164,8 @@ export function buildApp(): FastifyInstance {
       if (process.env.NODE_ENV !== "production") {
         if (
           origin.startsWith("http://localhost:") ||
-          origin.startsWith("http://127.0.0.1:")
+          origin.startsWith("http://127.0.0.1:") ||
+          origin.includes(".localhost:")
         ) {
           cb(null, true);
           return;
