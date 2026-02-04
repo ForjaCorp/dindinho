@@ -3,10 +3,10 @@ id: doc-refactor-url-sync
 title: "Refatoração da Sincronização de URL (Query Params)"
 description: "Plano para centralizar sincronização de filtros via query params em um serviço/utilitários."
 audience: ["dev"]
-visibility: "internal"
-status: "stable"
+visibility: "interno"
+status: "estável"
 owners: ["engineering"]
-tags: ["routing", "query-params", "refactor"]
+tags: ["roteamento", "query-params", "refatoração"]
 mvp: false
 createdAt: "2026-02-03"
 updatedAt: "2026-02-03"

@@ -3,10 +3,10 @@ id: template-planejamento
 title: "Título do Planejamento/RFC"
 description: "Descrição do problema a ser resolvido ou funcionalidade a ser implementada."
 audience: ["dev", "ops"]
-visibility: "internal"
-status: "draft"
+visibility: "interno"
+status: "rascunho"
 owners: ["engineering"]
-tags: ["planning", "rfc"]
+tags: ["planejamento", "rfc"]
 mvp: false
 createdAt: "2026-02-03"
 ---

@@ -3,10 +3,10 @@ id: planejamento-sistema-convites
 title: "Sistema de Convites (Colaboração Multi-contas)"
 description: "Planejamento para implementação do sistema de convites por e-mail, permitindo compartilhar múltiplas carteiras com diferentes permissões."
 audience: ["dev", "ops"]
-visibility: "internal"
-status: "draft"
+visibility: "interno"
+status: "rascunho"
 owners: ["engineering"]
-tags: ["planning", "rfc", "collaboration", "invites"]
+tags: ["planejamento", "rfc", "colaboração", "convites"]
 mvp: true
 createdAt: "2026-02-03"
 ---

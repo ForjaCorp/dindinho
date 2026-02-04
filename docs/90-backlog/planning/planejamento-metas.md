@@ -3,10 +3,10 @@ id: planejamento-metas-economia
 title: "Metas de Economia (Limites e Objetivos)"
 description: "Planejamento para implementação do sistema de metas híbrido, cobrindo limites de gastos por categoria e objetivos de poupança."
 audience: ["dev", "ops"]
-visibility: "internal"
-status: "draft"
+visibility: "interno"
+status: "rascunho"
 owners: ["engineering"]
-tags: ["planning", "rfc", "budgets", "goals"]
+tags: ["planejamento", "rfc", "orçamentos", "metas"]
 mvp: true
 createdAt: "2026-02-03"
 ---

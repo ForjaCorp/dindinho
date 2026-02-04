@@ -2,11 +2,11 @@
 id: doc-account-filter
 title: "Filtro por conta unificado (Relatórios + Transações)"
 description: "Planejamento e execução do filtro unificado por conta (multi-select) em Relatórios e Transações."
-audience: ["dev", "product"]
-visibility: "internal"
-status: "stable"
+audience: ["dev", "produto"]
+visibility: "interno"
+status: "estável"
 owners: ["engineering"]
-tags: ["filters", "accounts", "ux"]
+tags: ["filtros", "contas", "ux"]
 mvp: true
 createdAt: "2026-02-03"
 updatedAt: "2026-02-03"

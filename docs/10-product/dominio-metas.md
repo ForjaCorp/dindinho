@@ -2,11 +2,11 @@
 id: dominio-metas-economia
 title: "Metas de Economia"
 description: "Gestão de limites de gastos por categoria e objetivos de poupança para controle financeiro pessoal."
-audience: ["dev", "user"]
-visibility: "public"
-status: "draft"
+audience: ["dev", "usuário"]
+visibility: "público"
+status: "rascunho"
 owners: ["engineering"]
-tags: ["dominio", "metas", "budgets", "goals"]
+tags: ["metas", "planejamento", "objetivos"]
 mvp: true
 createdAt: "2026-02-03"
 ---

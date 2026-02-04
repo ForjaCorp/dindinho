@@ -3,10 +3,10 @@ id: routing-evolution-plan
 title: "Planejamento de Evolução: Arquitetura de Roteamento e API"
 description: "Estratégia de evolução da arquitetura de roteamento e infraestrutura do Dindinho, focada em escalabilidade e resiliência."
 audience: ["dev", "ops"]
-visibility: "internal"
-status: wip
+visibility: "interno"
+status: "em-progresso"
 owners: ["engineering"]
-tags: ["routing", "architecture", "nginx", "api"]
+tags: ["roteamento", "arquitetura", "nginx", "api"]
 mvp: false
 createdAt: "2026-02-03"
 ---

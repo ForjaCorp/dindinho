@@ -2,11 +2,11 @@
 id: dominio-relatorios
 title: "Relatórios e Insights"
 description: "Visualização de dados e análise de saúde financeira através de gráficos e métricas."
-audience: ["dev", "user"]
-visibility: "public"
-status: "wip"
-owners: ["product"]
-tags: ["reports", "analytics", "charts"]
+audience: ["dev", "usuário"]
+visibility: "público"
+status: "em-progresso"
+owners: ["engineering"]
+tags: ["relatórios", "análise", "gráficos"]
 mvp: true
 createdAt: "2026-02-03"
 ---

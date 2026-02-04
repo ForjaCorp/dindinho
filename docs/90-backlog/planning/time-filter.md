@@ -3,10 +3,10 @@ id: doc-time-filter
 title: "TimeFilter — Iteração de melhorias"
 description: "Polimento de UX, correções de timezone e endurecimento de contratos do TimeFilter."
 audience: ["dev"]
-visibility: "internal"
-status: "stable"
+visibility: "interno"
+status: "estável"
 owners: ["engineering"]
-tags: ["filters", "time", "contracts"]
+tags: ["filtros", "tempo", "contratos"]
 mvp: true
 createdAt: "2026-02-03"
 updatedAt: "2026-02-03"

@@ -2,11 +2,11 @@
 id: dominio-transacoes
 title: "Transações e Categorias"
 description: "O coração financeiro do sistema: registro de entradas, saídas e organização por categorias."
-audience: ["dev", "user"]
-visibility: "public"
-status: "wip"
-owners: ["product", "engineering"]
-tags: ["transactions", "finance", "categories"]
+audience: ["dev", "usuário"]
+visibility: "público"
+status: "em-progresso"
+owners: ["engineering"]
+tags: ["transações", "finanças", "categorias"]
 mvp: true
 createdAt: "2026-02-03"
 ---

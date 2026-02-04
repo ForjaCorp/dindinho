@@ -2,11 +2,11 @@
 id: dominio-contas
 title: "Domínio: Contas Bancárias e Cartões"
 description: "Gestão de contas correntes, poupanças e cartões de crédito do usuário."
-audience: ["dev", "user"]
-visibility: "public"
-status: "wip"
+audience: ["dev", "usuário"]
+visibility: "público"
+status: "em-progresso"
 owners: ["engineering"]
-tags: ["accounts", "credit-card", "finance"]
+tags: ["contas", "cartão-de-crédito", "finanças"]
 mvp: true
 createdAt: "2026-02-03"
 ---

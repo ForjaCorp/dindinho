@@ -2,11 +2,11 @@
 id: dominio-colaboracao
 title: "Domínio: Colaboração e Compartilhamento"
 description: "Gestão de acessos compartilhados, convites entre usuários e permissões de visualização e edição em carteiras."
-audience: ["dev", "user"]
-visibility: "public"
-status: "wip"
+audience: ["dev", "usuário"]
+visibility: "público"
+status: "em-progresso"
 owners: ["engineering"]
-tags: ["collaboration", "invites", "sharing"]
+tags: ["colaboração", "convites", "compartilhamento"]
 mvp: true
 createdAt: "2026-02-03"
 ---

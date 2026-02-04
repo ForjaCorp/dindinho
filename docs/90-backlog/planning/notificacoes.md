@@ -3,10 +3,10 @@ id: planejamento-notificacoes
 title: "Sistema de Notificações"
 description: "Planejamento para implementação de alertas push e notificações in-app para eventos financeiros."
 audience: ["dev", "ops"]
-visibility: "internal"
-status: "draft"
+visibility: "interno"
+status: "rascunho"
 owners: ["engineering"]
-tags: ["planning", "rfc", "notifications"]
+tags: ["planejamento", "rfc", "notificações"]
 mvp: false
 createdAt: "2026-02-03"
 ---

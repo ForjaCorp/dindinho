@@ -2,11 +2,11 @@
 id: template-dominio
 title: "Título do Domínio"
 description: "Breve descrição do propósito deste domínio no sistema (max 280 caracteres)."
-audience: ["dev", "user"]
-visibility: "public"
-status: "draft"
+audience: ["dev", "usuário"]
+visibility: "público"
+status: "rascunho"
 owners: ["engineering"]
-tags: ["dominio", "template"]
+tags: ["domínio", "template"]
 mvp: true
 createdAt: "2026-02-03"
 ---

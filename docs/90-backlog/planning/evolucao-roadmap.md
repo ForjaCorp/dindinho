@@ -2,11 +2,11 @@
 id: evolucao-roadmap
 title: "Roadmap de Evolução e Backlog"
 description: "Planejamento de longo prazo para novas funcionalidades, melhorias de infraestrutura e expansão do ecossistema Dindinho."
-audience: ["dev", "product", "ops"]
-visibility: "internal"
-status: "draft"
-owners: ["engineering", "product"]
-tags: ["roadmap", "planning", "backlog", "future"]
+audience: ["dev", "produto", "ops"]
+visibility: "interno"
+status: "rascunho"
+owners: ["product", "engineering"]
+tags: ["roadmap", "planejamento", "backlog", "futuro"]
 mvp: false
 createdAt: "2026-02-03"
 ---

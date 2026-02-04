@@ -2,11 +2,11 @@
 id: fix-docs-access-experience
 title: "Correção da Experiência de Acesso à Documentação e Redirecionamento"
 description: "Melhoria no fluxo de redirecionamento pós-login para documentação e isolamento do subdomínio de docs."
-audience: ["dev", "ops", "product"]
-visibility: "internal"
-status: "wip"
+audience: ["dev", "ops", "produto"]
+visibility: "interno"
+status: "em-progresso"
 owners: ["engineering"]
-tags: ["planning", "ux", "auth", "routing"]
+tags: ["planejamento", "ux", "auth", "roteamento"]
 mvp: true
 createdAt: "2026-02-04"
 updatedAt: "2026-02-04"
