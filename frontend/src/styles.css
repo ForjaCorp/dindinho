@@ -21,6 +21,11 @@
 
 /* 2. Reset e estilos base */
 @import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+/* PrismJS Theme for Syntax Highlighting */
+@import 'prismjs/themes/prism-tomorrow.css';
+@import 'prismjs/plugins/line-numbers/prism-line-numbers.css';
 
 /* 3. Variáveis CSS personalizadas */
 :root {
