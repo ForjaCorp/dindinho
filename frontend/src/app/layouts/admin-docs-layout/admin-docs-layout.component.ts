@@ -20,7 +20,11 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
         class="h-16 border-b border-slate-200 bg-white flex items-center px-6 justify-between sticky top-0 z-20"
       >
         <div class="flex items-center gap-3">
-          <a data-testid="admin-logo" routerLink="/docs" class="flex items-center gap-2">
+          <a
+            data-testid="admin-logo"
+            routerLink="/docs/admin/admin-intro"
+            class="flex items-center gap-2"
+          >
             <div
               class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold"
             >
@@ -89,6 +93,10 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
               <i class="pi pi-book"></i> ADRs
             </a>
 
+            <div class="pt-4 text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
+              Backlog & Planejamento
+            </div>
+
             <a
               data-testid="nav-roadmap"
               routerLink="/docs/admin/roadmap"
@@ -105,6 +113,69 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
               class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
             >
               <i class="pi pi-check-square"></i> Plano E2E
+            </a>
+
+            <a
+              data-testid="nav-fix-docs-access"
+              routerLink="/docs/admin/fix-docs-access"
+              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <i class="pi pi-bolt"></i> Exp. de Acesso
+            </a>
+
+            <a
+              data-testid="nav-plan-routing"
+              routerLink="/docs/admin/plan-routing"
+              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <i class="pi pi-directions"></i> Evolução de Rotas
+            </a>
+
+            <a
+              data-testid="nav-plan-accounts"
+              routerLink="/docs/admin/plan-accounts"
+              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <i class="pi pi-filter"></i> Filtro de Contas
+            </a>
+
+            <a
+              data-testid="nav-plan-time-filter"
+              routerLink="/docs/admin/plan-time-filter"
+              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <i class="pi pi-calendar"></i> Filtro Temporal
+            </a>
+
+            <a
+              data-testid="nav-plan-notifications"
+              routerLink="/docs/admin/plan-notifications"
+              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <i class="pi pi-bell"></i> Notificações
+            </a>
+
+            <a
+              data-testid="nav-plan-invites"
+              routerLink="/docs/admin/plan-invites"
+              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <i class="pi pi-user-plus"></i> Convites
+            </a>
+
+            <a
+              data-testid="nav-plan-url-sync"
+              routerLink="/docs/admin/plan-url-sync"
+              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <i class="pi pi-sync"></i> Sincronismo URL
             </a>
 
             <div class="pt-4 text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">

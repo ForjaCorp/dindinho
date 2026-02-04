@@ -11,7 +11,7 @@ mvp: true
 createdAt: "2026-02-04"
 ---
 
-# Bem-vindo ao Dindinho Internal ��
+# Bem-vindo ao Dindinho Internal 🚀
 
 Este é o portal central de documentação técnica do Dindinho. Aqui você encontrará tudo o que é necessário para manter, evoluir e operar o ecossistema.
 
