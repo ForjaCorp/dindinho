@@ -29,6 +29,14 @@ O Dindinho é um PWA (Progressive Web App) focado em organização financeira pe
 - **Containerização**: Docker
 - **Orquestração/Deploy**: Coolify (Apps Docker)
 
+### Notas de API
+
+Todas as rotas do backend são prefixadas com `/api`. Por exemplo:
+
+- Login: `POST /api/auth/login`
+- Transações: `GET /api/transactions`
+- Relatórios: `GET /api/reports`
+
 ## 🌟 Funcionalidades Principais (MVP)
 
 ### 1. Gestão de Carteiras e Contas
@@ -103,6 +111,61 @@ JWT_SECRET="segredo_para_gerar_tokens_de_autenticacao"
 PORT=3333
 ```
 
+### Scripts Disponíveis
+
+#### Scripts do Monorepo (Raiz)
+
+```bash
+# Setup completo do ambiente
+npm run setup:dev      # Setup para desenvolvimento
+npm run setup:prod     # Setup para produção
+
+# Banco de dados
+npm run db:up          # Inicia o banco com Docker
+npm run db:down        # Para o banco
+npm run db:logs        # Ver logs do banco
+
+# Desenvolvimento
+npm run dev            # Inicia backend + frontend
+npm run build          # Build de todos os projetos
+npm run test           # Executa todos os testes
+```
+
+#### Scripts do Backend
+
+```bash
+# Seed e setup
+npm run seed           # Cria dados iniciais (dev)
+npm run seed:prod      # Cria dados iniciais (prod)
+npm run check:dev-user # Verifica usuário de desenvolvimento
+
+# Prisma
+npm run prisma:generate # Gera cliente Prisma
+npm run prisma:migrate  # Executa migrações
+npm run prisma:deploy   # Deploy de migrações (prod)
+
+# Manutenção
+npm run cleanup:refresh-tokens # Limpa tokens expirados
+```
+
+## 📅 Planejamento e Status
+
+O desenvolvimento do Dindinho é guiado por um plano de execução estruturado em fases.
+
+| Fase   | Descrição                                   | Status       |
+| :----- | :------------------------------------------ | :----------- |
+| **D0** | Inventário e pontos de entrada              | ✅ Concluído |
+| **D1** | Padrões de contrato e compatibilidade       | ✅ Concluído |
+| **D2** | Metadados de docs e backlog estruturado     | ✅ Concluído |
+| **D3** | Geração de OpenAPI (Zod -> Swagger)         | ✅ Concluído |
+| **D4** | Portal de documentação (Angular + Markdown) | ✅ Concluído |
+| **D5** | Deploy no Coolify e infraestrutura          | ✅ Concluído |
+| **D6** | Separação em 3 Tiers (Public/User/Admin)    | ✅ Concluído |
+| **D7** | Domínios e Especialização de Conteúdo       | ✅ Concluído |
+| **D8** | Operações, Persistência e Erros             | ✅ Concluído |
+
+Para detalhes técnicos sobre o progresso e próximos passos, consulte o [Plano de Execução de Documentação](docs/90-backlog/planning/documentation.md).
+
 ## 🚀 Iniciando o Projeto
 
 ### Instalação
@@ -111,7 +174,24 @@ PORT=3333
 npm install
 ```
 
-### Executando Localmente
+### Setup Rápido (Recomendado)
+
+Execute o comando completo de setup para configurar o ambiente de desenvolvimento:
+
+```bash
+npm run setup:dev
+```
+
+Este comando executa:
+
+1. Inicia o banco de dados com Docker
+2. Gera o cliente Prisma
+3. Executa as migrações
+4. Cria dados iniciais (usuário dev e categorias)
+
+### Executando Localmente (Passo a Passo)
+
+Se preferir executar manualmente:
 
 1. Inicie o banco de dados com Docker:
 
@@ -125,16 +205,33 @@ npm install
    npm --prefix backend run prisma:migrate
    ```
 
-3. Inicie backend + frontend (Turbo):
+3. Crie dados iniciais (opcional, mas recomendado):
+
+   ```bash
+   npm --prefix backend run seed
+   ```
+
+4. Verifique se o usuário de desenvolvimento foi criado:
+
+   ```bash
+   npm --prefix backend run check:dev-user
+   ```
+
+5. Inicie backend + frontend (Turbo):
 
    ```bash
    npm run dev
    ```
 
-4. Acesse:
+6. Acesse:
 
 - Frontend: [http://localhost:4200](http://localhost:4200)
 - Backend: [http://localhost:3333](http://localhost:3333)
+
+**Credenciais padrão de desenvolvimento:**
+
+- Email: `dev@dindinho.com`
+- Senha: `Password123!`
 
 ## 📦 Deploy e Infraestrutura
 
@@ -149,16 +246,22 @@ Referência de orquestração: `docker-compose.coolify.yml` demonstra a configur
 ## 📚 Documentação
 
 - [Padrões de Código](CODING_STANDARDS.md)
-- [Autenticação](docs/AUTHENTICATION.md)
+- [Autenticação](docs/30-api/authentication.md)
+- [Scripts de Seed e Setup](docs/30-api/seed-scripts-setup.md)
 - [Relatórios (módulo)](backend/src/reports/README.md)
-- [Design: Página de Relatórios (Frontend)](docs/design/reports-frontend.md)
+- [Design: Página de Relatórios (Frontend)](docs/40-clients/pwa/reports-frontend.md)
 
 ## 📅 Planejamentos
 
-- [TimeFilter — Iteração de melhorias (Concluído)](docs/planning/time-filter.md)
-- [Filtro por conta unificado (Relatórios + Transações) (Concluído)](docs/planning/account-filter.md)
-- [Refatoração: Sincronização de URL (Concluído)](docs/planning/refactor-url-sync.md)
-- [Documentação — backlog](docs/planning/documentation.md)
+- [TimeFilter — Iteração de melhorias (Concluído)](docs/90-backlog/planning/time-filter.md)
+- [Filtro por conta unificado (Relatórios + Transações) (Concluído)](docs/90-backlog/planning/account-filter.md)
+- [Refatoração: Sincronização de URL (Concluído)](docs/90-backlog/planning/refactor-url-sync.md)
+- [Documentação — Plano de execução (Em andamento)](docs/90-backlog/planning/documentation.md)
+- [Metas de Economia Híbridas (Em andamento)](docs/90-backlog/planning/planejamento-metas.md)
+- [Sistema de Convites (Colaboração Multi-contas) (Pendente)](docs/90-backlog/planning/sistema-convites.md)
+- [Plano de Testes E2E (Pendente)](docs/90-backlog/planning/test-plan-e2e.md)
+- [Roadmap de Evolução e Backlog (Pendente)](docs/90-backlog/planning/evolucao-roadmap.md)
+- [Evolução de Roteamento e API (Pendente)](docs/90-backlog/planning/ROUTING_EVOLUTION_PLAN.md)
 
 ## 🤝 Contribuição
 

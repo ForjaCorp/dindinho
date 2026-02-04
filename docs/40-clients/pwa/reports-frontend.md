@@ -1,3 +1,17 @@
+---
+id: doc-reports-frontend
+title: "Página de Relatórios (Frontend)"
+description: "Diretrizes de UX e implementação para a página de Relatórios no PWA."
+audience: ["dev", "product"]
+visibility: "internal"
+status: "stable"
+owners: ["engineering"]
+tags: ["pwa", "reports", "charts"]
+mvp: true
+createdAt: "2026-02-03"
+updatedAt: "2026-02-03"
+---
+
 # Design: Página de Relatórios (Frontend)
 
 ## Objetivo

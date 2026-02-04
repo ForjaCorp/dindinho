@@ -24,7 +24,9 @@
     "quality:prepush": "turbo run typecheck build test:integration --continue",
     "quality:ci": "turbo run lint typecheck build test test:integration --continue",
     "install:all": "npm install",
-    "prepare": "husky"
+    "setup:dev": "npm run db:up && npm run prisma:generate && npm run prisma:migrate && npm run seed",
+    "setup:prod": "npm run prisma:generate && npm run prisma:deploy && npm run seed:prod",
+    "prepare": "node -e \"if (process.env.HUSKY !== '0' && process.env.NODE_ENV !== 'production') { try { const husky = require('husky'); (husky.install || husky.default || (() => {}))() } catch (e) { if (e.code !== 'MODULE_NOT_FOUND') throw e } }\""
   },
   "keywords": [
     "angular",

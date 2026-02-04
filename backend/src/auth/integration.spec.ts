@@ -69,7 +69,7 @@ describe("Integração de autenticação (login -> rotação de refresh)", () =>
     // Realiza login
     const loginRes = await app.inject({
       method: "POST",
-      url: "/api/login",
+      url: "/api/auth/login",
       payload: { email: "int@user.com", password },
     });
 
@@ -81,7 +81,7 @@ describe("Integração de autenticação (login -> rotação de refresh)", () =>
     // Realiza fluxo de refresh
     const refreshRes = await app.inject({
       method: "POST",
-      url: "/api/refresh",
+      url: "/api/auth/refresh",
       payload: { refreshToken: "rt-old" },
     });
 

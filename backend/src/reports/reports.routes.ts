@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
+import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { ReportsService } from "./reports.service";
 import {
@@ -7,21 +8,16 @@ import {
   spendingByCategorySchema,
   cashFlowSchema,
   balanceHistorySchema,
+  apiErrorResponseSchema,
 } from "@dindinho/shared";
 
 export async function reportsRoutes(app: FastifyInstance) {
   const service = new ReportsService(prisma);
 
-  app.addHook("onRequest", async (request) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      throw { statusCode: 401, message: "Token inválido ou expirado" };
-    }
-  });
+  app.addHook("onRequest", app.authenticate);
 
   app.withTypeProvider<ZodTypeProvider>().get(
-    "/reports/spending-by-category",
+    "/spending-by-category",
     {
       schema: {
         summary: "Relatório de gastos por categoria",
@@ -29,6 +25,8 @@ export async function reportsRoutes(app: FastifyInstance) {
         querystring: reportFilterSchema,
         response: {
           200: spendingByCategorySchema,
+          401: apiErrorResponseSchema,
+          422: apiErrorResponseSchema,
         },
       },
     },
@@ -39,7 +37,7 @@ export async function reportsRoutes(app: FastifyInstance) {
   );
 
   app.withTypeProvider<ZodTypeProvider>().get(
-    "/reports/cash-flow",
+    "/cash-flow",
     {
       schema: {
         summary: "Relatório de fluxo de caixa mensal",
@@ -47,6 +45,8 @@ export async function reportsRoutes(app: FastifyInstance) {
         querystring: reportFilterSchema,
         response: {
           200: cashFlowSchema,
+          401: apiErrorResponseSchema,
+          422: apiErrorResponseSchema,
         },
       },
     },
@@ -57,7 +57,7 @@ export async function reportsRoutes(app: FastifyInstance) {
   );
 
   app.withTypeProvider<ZodTypeProvider>().get(
-    "/reports/balance-history",
+    "/balance-history",
     {
       schema: {
         summary: "Relatório de histórico de saldo",
@@ -65,6 +65,8 @@ export async function reportsRoutes(app: FastifyInstance) {
         querystring: reportFilterSchema,
         response: {
           200: balanceHistorySchema,
+          401: apiErrorResponseSchema,
+          422: apiErrorResponseSchema,
         },
       },
     },
@@ -75,12 +77,17 @@ export async function reportsRoutes(app: FastifyInstance) {
   );
 
   app.withTypeProvider<ZodTypeProvider>().get(
-    "/reports/export/csv",
+    "/export/csv",
     {
       schema: {
         summary: "Exportar transações filtradas para CSV",
         tags: ["reports"],
         querystring: reportFilterSchema,
+        response: {
+          200: z.string(),
+          401: apiErrorResponseSchema,
+          422: apiErrorResponseSchema,
+        },
       },
     },
     async (request, reply) => {

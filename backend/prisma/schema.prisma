@@ -18,6 +18,13 @@ enum Role {
   ADMIN
 }
 
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
 enum TransactionType {
   INCOME
   EXPENSE
@@ -29,6 +36,11 @@ enum RecurrenceFrequency {
   WEEKLY
   YEARLY
   CUSTOM
+}
+
+enum BudgetType {
+  SPENDING_LIMIT
+  SAVINGS_GOAL
 }
 
 model User {
@@ -46,6 +58,8 @@ model User {
   sharedAccounts AccountAccess[]
   categories    Category[]
   refreshTokens RefreshToken[]
+  sentInvites   Invite[]        @relation("SentInvites")
+  budgets       Budget[]
 }
 
 model Account {
@@ -64,6 +78,7 @@ model Account {
   transactions   Transaction[]
   snapshots      DailySnapshot[]
   creditCardInfo CreditCardInfo?
+  inviteAccounts InviteAccount[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -104,6 +119,7 @@ model Category {
   children Category[] @relation("SubCategories")
 
   transactions Transaction[]
+  budgets      Budget[]
 }
 
 model Transaction {
@@ -187,4 +203,51 @@ model DailySnapshot {
 
   @@unique([accountId, date])
   @@index([date])
+}
+
+model Invite {
+  id        String   @id @default(uuid())
+  email     String
+  senderId  String
+  sender    User     @relation("SentInvites", fields: [senderId], references: [id])
+  status    InviteStatus @default(PENDING)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts  InviteAccount[]
+
+  @@index([email])
+}
+
+model InviteAccount {
+  id        String @id @default(uuid())
+  inviteId  String
+  accountId String
+  role      Role   @default(VIEWER)
+
+  invite  Invite  @relation(fields: [inviteId], references: [id], onDelete: Cascade)
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([inviteId, accountId])
+}
+
+model Budget {
+  id          String     @id @default(uuid())
+  name        String
+  description String?
+  type        BudgetType @default(SPENDING_LIMIT)
+  targetValue Decimal    @db.Decimal(10, 2)
+  startDate   DateTime
+  endDate     DateTime?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  categories Category[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }

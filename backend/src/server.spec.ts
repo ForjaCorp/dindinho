@@ -55,7 +55,7 @@ describe("Server Health Endpoints", () => {
 
     expect(body).toMatchObject({
       status: "ok",
-      app: "Dindinho API",
+      app: "dindinho-backend",
     });
     expect(body.timestamp).toBeDefined();
     expect(typeof body.timestamp).toBe("string");
@@ -76,7 +76,7 @@ describe("Server Health Endpoints", () => {
 
     expect(body).toMatchObject({
       status: "ok",
-      app: "Dindinho API",
+      app: "dindinho-backend",
     });
     expect(body.timestamp).toBeDefined();
     expect(typeof body.timestamp).toBe("string");
@@ -94,7 +94,7 @@ describe("Server Health Endpoints", () => {
 
     const response = await app.inject({
       method: "GET",
-      url: "/test-db",
+      url: "/api/test-db",
     });
 
     expect(response.statusCode).toBe(200);
@@ -118,7 +118,7 @@ describe("Server Health Endpoints", () => {
 
     const response = await app.inject({
       method: "GET",
-      url: "/test-db",
+      url: "/api/test-db",
     });
 
     expect(response.statusCode).toBe(200);
@@ -142,12 +142,12 @@ describe("Server Health Endpoints", () => {
 
     const healthResponse = await app.inject({
       method: "GET",
-      url: "/health",
+      url: "/api/health",
     });
 
     const dbResponse = await app.inject({
       method: "GET",
-      url: "/test-db",
+      url: "/api/test-db",
     });
 
     // Health deve funcionar
@@ -168,12 +168,12 @@ describe("Server Health Endpoints", () => {
   it("deve retornar content-type application/json", async () => {
     const healthResponse = await app.inject({
       method: "GET",
-      url: "/health",
+      url: "/api/health",
     });
 
     const dbResponse = await app.inject({
       method: "GET",
-      url: "/test-db",
+      url: "/api/test-db",
     });
 
     expect(healthResponse.headers["content-type"]).toContain(
@@ -191,7 +191,7 @@ describe("Server Health Endpoints", () => {
 
     const response = await app.inject({
       method: "GET",
-      url: "/test-db",
+      url: "/api/test-db",
     });
 
     expect(response.statusCode).toBe(200);

@@ -1,13 +1,17 @@
 import { prisma } from "../lib/prisma";
 import { hash } from "bcryptjs";
 
+const writeOut = (message: string) => {
+  process.stdout.write(`${message}\n`);
+};
+
 /**
  * Script de seed para popular o banco de dados com dados iniciais.
  * Garante a criação de categorias padrão e do usuário de desenvolvimento com permissão de ADMIN.
  */
 export async function main() {
-  const email = "dev@dindinho.com";
-  const password = "Password123!";
+  const email = process.env.SEED_ADMIN_EMAIL || "dev@dindinho.com";
+  const password = process.env.SEED_ADMIN_PASSWORD || "Password123!";
 
   const defaultCategories = [
     { name: "Salário", icon: "pi-briefcase" },
@@ -45,18 +49,19 @@ export async function main() {
         where: { email },
         data: { role: "ADMIN" },
       });
-      console.log(`Role do usuário ${email} atualizada para ADMIN`);
+      writeOut(`Role do usuário ${email} atualizada para ADMIN`);
     } else {
-      console.log(`Usuário de dev já existe e é ADMIN: ${email}`);
+      writeOut(`Usuário de dev já existe e é ADMIN: ${email}`);
     }
     return;
   }
 
   const isDev = process.env.NODE_ENV !== "production";
+  const autoSeed = process.env.AUTO_SEED === "true";
 
-  if (!isDev) {
-    console.log(
-      "Seed de usuário dev ignorado fora do ambiente de desenvolvimento",
+  if (!isDev && !autoSeed) {
+    writeOut(
+      "Seed de usuário dev ignorado fora do ambiente de desenvolvimento (use AUTO_SEED=true para forçar)",
     );
     return;
   }
@@ -72,6 +77,6 @@ export async function main() {
     },
   });
 
-  console.log(`Usuário de dev criado com sucesso: ${user.email}`);
-  console.log(`Senha: ${password}`);
+  writeOut(`Usuário de dev criado com sucesso: ${user.email}`);
+  writeOut(`Senha: ${password}`);
 }

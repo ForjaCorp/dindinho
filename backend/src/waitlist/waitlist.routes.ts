@@ -3,7 +3,8 @@ import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { WaitlistService } from "./waitlist.service";
-import { createWaitlistSchema } from "@dindinho/shared";
+import { apiErrorResponseSchema, createWaitlistSchema } from "@dindinho/shared";
+import { getHttpErrorLabel } from "../lib/get-http-error-label";
 
 /**
  * Configura as rotas relacionadas à lista de espera.
@@ -31,9 +32,9 @@ export async function waitlistRoutes(app: FastifyInstance) {
           201: z.object({
             message: z.string(),
           }),
-          409: z.object({
-            message: z.string(),
-          }),
+          409: apiErrorResponseSchema,
+          422: apiErrorResponseSchema,
+          500: apiErrorResponseSchema,
         },
       },
     },
@@ -49,9 +50,22 @@ export async function waitlistRoutes(app: FastifyInstance) {
           error instanceof Error &&
           error.message === "Email já está na lista de espera."
         ) {
-          return reply.status(409).send({ message: error.message });
+          const statusCode = 409;
+          return reply.code(statusCode).send({
+            statusCode,
+            error: getHttpErrorLabel(statusCode),
+            message: error.message,
+            code: "WAITLIST_EMAIL_ALREADY_EXISTS",
+          });
         }
-        throw error;
+
+        const statusCode = 500;
+        return reply.code(statusCode).send({
+          statusCode,
+          error: getHttpErrorLabel(statusCode),
+          message: "Erro interno do servidor",
+          code: "INTERNAL_SERVER_ERROR",
+        });
       }
     },
   );

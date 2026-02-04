@@ -7,7 +7,6 @@
   "include": [
     "src/**/*",
     "eslint.config.mjs",
-    "vitest.config.ts",
     "prisma.config.js",
     "scripts/**/*.ts"
   ]

@@ -25,9 +25,9 @@ describe("Rate Limit", () => {
     app = buildApp();
     await app.ready();
 
-    const r1 = await app.inject({ method: "GET", url: "/health" });
-    const r2 = await app.inject({ method: "GET", url: "/health" });
-    const r3 = await app.inject({ method: "GET", url: "/health" });
+    const r1 = await app.inject({ method: "GET", url: "/api/health" });
+    const r2 = await app.inject({ method: "GET", url: "/api/health" });
+    const r3 = await app.inject({ method: "GET", url: "/api/health" });
 
     expect(r1.statusCode).toBe(200);
     expect(r2.statusCode).toBe(200);
@@ -46,8 +46,8 @@ describe("Rate Limit", () => {
     await app.ready();
 
     const headers = { "x-real-ip": "8.8.8.8" } as Record<string, string>;
-    const r1 = await app.inject({ method: "GET", url: "/health", headers });
-    const r2 = await app.inject({ method: "GET", url: "/health", headers });
+    const r1 = await app.inject({ method: "GET", url: "/api/health", headers });
+    const r2 = await app.inject({ method: "GET", url: "/api/health", headers });
 
     expect(r1.statusCode).toBe(200);
     expect(r2.statusCode).toBe(200);

@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { DeepMockProxy, mockReset } from "vitest-mock-extended";
+import Fastify, { FastifyInstance } from "fastify";
+import {
+  serializerCompiler,
+  validatorCompiler,
+  ZodTypeProvider,
+} from "fastify-type-provider-zod";
+import fastifyJwt from "@fastify/jwt";
+import { DeepMockProxy, mockDeep, mockReset } from "vitest-mock-extended";
 import {
   PrismaClient,
   Role,
@@ -8,21 +15,19 @@ import {
   Prisma,
 } from "@prisma/client";
 
-vi.mock("../lib/prisma", async () => {
-  const { mockDeep } = await import("vitest-mock-extended");
-  return {
-    __esModule: true,
-    prisma: mockDeep<PrismaClient>(),
-  };
-});
-
-import { buildApp } from "../app";
+import { signupAllowlistRoutes } from "./signup-allowlist.routes";
+import authPlugin from "../plugins/auth";
 import { prisma } from "../lib/prisma";
+
+vi.mock("../lib/prisma", () => ({
+  __esModule: true,
+  prisma: mockDeep<PrismaClient>(),
+}));
 
 const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>;
 
 describe("Rotas de allowlist de cadastro", () => {
-  let app: ReturnType<typeof buildApp>;
+  let app: FastifyInstance;
   let token: string;
   const userId = "123e4567-e89b-12d3-a456-426614174000";
 
@@ -30,7 +35,15 @@ describe("Rotas de allowlist de cadastro", () => {
     mockReset(prismaMock);
     vi.stubEnv("ALLOWLIST_ADMIN_KEY", "admin-key");
     vi.stubEnv("JWT_SECRET", "test-secret");
-    app = buildApp();
+
+    app = Fastify().withTypeProvider<ZodTypeProvider>();
+    app.setValidatorCompiler(validatorCompiler);
+    app.setSerializerCompiler(serializerCompiler);
+
+    await app.register(fastifyJwt, { secret: "test-secret" });
+    await app.register(authPlugin);
+    await app.register(signupAllowlistRoutes, { prefix: "/signup-allowlist" });
+
     await app.ready();
     token = app.jwt.sign({ sub: userId });
   });
@@ -43,7 +56,7 @@ describe("Rotas de allowlist de cadastro", () => {
   it("deve negar acesso sem credenciais", async () => {
     const response = await app.inject({
       method: "GET",
-      url: "/api/allowlist",
+      url: "/signup-allowlist",
     });
 
     expect(response.statusCode).toBe(401);
@@ -58,7 +71,7 @@ describe("Rotas de allowlist de cadastro", () => {
 
     const response = await app.inject({
       method: "POST",
-      url: "/api/allowlist",
+      url: "/signup-allowlist",
       headers: {
         "x-admin-key": "admin-key",
       },
@@ -87,7 +100,7 @@ describe("Rotas de allowlist de cadastro", () => {
 
     const response = await app.inject({
       method: "POST",
-      url: "/api/allowlist",
+      url: "/signup-allowlist",
       headers: {
         authorization: `Bearer ${token}`,
       },
@@ -111,7 +124,7 @@ describe("Rotas de allowlist de cadastro", () => {
 
     const response = await app.inject({
       method: "GET",
-      url: "/api/allowlist",
+      url: "/signup-allowlist",
       headers: {
         authorization: `Bearer ${token}`,
       },
@@ -127,7 +140,7 @@ describe("Rotas de allowlist de cadastro", () => {
 
     const response = await app.inject({
       method: "DELETE",
-      url: "/api/allowlist/user@example.com",
+      url: "/signup-allowlist/user@example.com",
       headers: {
         "x-admin-key": "admin-key",
       },

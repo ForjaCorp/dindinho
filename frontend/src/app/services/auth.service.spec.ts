@@ -1,6 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
+
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { TestBed, getTestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
@@ -17,7 +18,8 @@ import { provideLocationMocks } from '@angular/common/testing';
 import { AuthService, UserState } from './auth.service';
 import { ApiService } from './api.service';
 import { LoginDTO, LoginResponseDTO } from '@dindinho/shared';
-import { of, throwError } from 'rxjs';
+import { of, throwError, firstValueFrom } from 'rxjs';
+import { AppError } from '../../app/models/error.model';
 
 // Mock do jwt-decode
 vi.mock('jwt-decode', () => ({
@@ -30,12 +32,16 @@ vi.mock('jwt-decode', () => ({
     exp: 1234567890 + 3600,
   })),
 }));
+
 describe('AuthService', () => {
   let service: AuthService;
   let router: Router;
   let apiService: ApiService;
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
   let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
+  let setItemSpy: ReturnType<typeof vi.spyOn>;
+  let getItemSpy: ReturnType<typeof vi.spyOn>;
+  let removeItemSpy: ReturnType<typeof vi.spyOn>;
 
   const mockUser: UserState = {
     id: '1',
@@ -53,6 +59,11 @@ describe('AuthService', () => {
   beforeEach(() => {
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    // Spies para localStorage
+    setItemSpy = vi.spyOn(localStorage, 'setItem');
+    getItemSpy = vi.spyOn(localStorage, 'getItem');
+    removeItemSpy = vi.spyOn(localStorage, 'removeItem');
 
     const apiServiceSpy = {
       login: vi.fn(),
@@ -76,14 +87,20 @@ describe('AuthService', () => {
 
     // Mock do router.navigate para evitar erros de rota inexistente
     vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+
+    localStorage.clear();
     vi.clearAllMocks();
   });
 
   afterEach(() => {
+    localStorage.clear();
     TestBed.resetTestingModule();
     consoleErrorSpy.mockRestore();
     consoleWarnSpy.mockRestore();
-    localStorage.removeItem('dindinho_token');
+    setItemSpy.mockRestore();
+    getItemSpy.mockRestore();
+    removeItemSpy.mockRestore();
   });
 
   it('should be created', () => {
@@ -95,17 +112,12 @@ describe('AuthService', () => {
       const credentials: LoginDTO = { email: 'test@example.com', password: 'password123' };
       vi.spyOn(apiService, 'login').mockReturnValue(of(mockLoginResponse));
 
-      const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
+      const response = await firstValueFrom(service.login(credentials));
 
-      await new Promise<void>((done) => {
-        service.login(credentials).subscribe((response) => {
-          expect(response).toEqual(mockLoginResponse);
-          expect(setItemSpy).toHaveBeenCalledWith('dindinho_token', 'test-token');
-          expect(setItemSpy).toHaveBeenCalledWith('dindinho_refresh_token', 'test-refresh');
-          expect(service.currentUser()).toBeTruthy();
-          done();
-        });
-      });
+      expect(response).toEqual(mockLoginResponse);
+      expect(setItemSpy).toHaveBeenCalledWith('dindinho_token', 'test-token');
+      expect(setItemSpy).toHaveBeenCalledWith('dindinho_refresh_token', 'test-refresh');
+      expect(service.currentUser()).toBeTruthy();
     });
 
     it('should handle login error', async () => {
@@ -117,32 +129,35 @@ describe('AuthService', () => {
         status: 401,
         statusText: 'Unauthorized',
         error: { message: 'Unauthorized' },
-        url: 'http://localhost/api/login',
+        url: 'http://localhost/api/auth/login',
       });
 
       vi.spyOn(apiService, 'login').mockReturnValue(throwError(() => errorResponse));
 
-      await new Promise<void>((done) => {
-        service.login(credentials).subscribe({
-          error: (err) => {
-            expect(err).toEqual({
-              type: 'AUTH',
-              message: 'Unauthorized',
-              code: 401,
-              details: errorResponse.error,
-              originalError: errorResponse,
-            });
-            expect(service.currentUser()).toBeNull();
-            done();
-          },
+      try {
+        await firstValueFrom(service.login(credentials));
+        expect.fail('Should have thrown an error');
+      } catch (err) {
+        const error = err as AppError;
+        expect(error).toEqual({
+          type: 'AUTH',
+          message: 'Unauthorized',
+          code: 401,
+          details: errorResponse.error,
+          originalError: errorResponse,
         });
-      });
+        expect(service.currentUser()).toBeNull();
+      }
     }, 10000);
   });
 
   describe('logout', () => {
     it('should clear token and user data on logout', () => {
-      const removeItemSpy = vi.spyOn(Storage.prototype, 'removeItem');
+      // Simula um estado de login
+      localStorage.setItem('dindinho_token', 'some-token');
+      localStorage.setItem('dindinho_refresh_token', 'some-refresh-token');
+      service.currentUser.set(mockUser);
+
       const navigateSpy = vi.spyOn(router, 'navigate');
 
       service.logout();
@@ -160,52 +175,50 @@ describe('AuthService', () => {
         token: 'new-token',
         refreshToken: 'new-refresh-token',
       };
+      // Configura o estado inicial do localStorage
+      localStorage.setItem('dindinho_refresh_token', 'old-refresh-token');
 
-      vi.spyOn(Storage.prototype, 'getItem').mockReturnValue('old-refresh-token');
       vi.spyOn(apiService, 'refresh').mockReturnValue(of(mockRefreshResponse));
-      const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
 
-      await new Promise<void>((done) => {
-        service.refreshToken().subscribe((newToken) => {
-          expect(newToken).toBe('new-token');
-          expect(setItemSpy).toHaveBeenCalledWith('dindinho_token', 'new-token');
-          expect(setItemSpy).toHaveBeenCalledWith('dindinho_refresh_token', 'new-refresh-token');
-          done();
-        });
-      });
+      const newToken = await firstValueFrom(service.refreshToken());
+
+      expect(newToken).toBe('new-token');
+      expect(setItemSpy).toHaveBeenCalledWith('dindinho_token', 'new-token');
+      expect(setItemSpy).toHaveBeenCalledWith('dindinho_refresh_token', 'new-refresh-token');
     });
 
     it('should logout if no refresh token available', async () => {
-      vi.spyOn(Storage.prototype, 'getItem').mockReturnValue(null);
+      // Garante que o refresh token não existe
+      localStorage.removeItem('dindinho_refresh_token');
       const logoutSpy = vi.spyOn(service, 'logout');
 
-      await new Promise<void>((done) => {
-        service.refreshToken().subscribe({
-          error: (err) => {
-            expect(logoutSpy).toHaveBeenCalled();
-            expect(err.message).toBe('No refresh token available');
-            done();
-          },
-        });
-      });
+      try {
+        await firstValueFrom(service.refreshToken());
+        expect.fail('Should have thrown an error');
+      } catch (err) {
+        const error = err as Error;
+        expect(logoutSpy).toHaveBeenCalled();
+        expect(error.message).toBe('No refresh token available');
+      }
     });
 
     it('should logout on refresh error', async () => {
-      vi.spyOn(Storage.prototype, 'getItem').mockReturnValue('old-refresh-token');
+      // Configura o estado inicial do localStorage
+      localStorage.setItem('dindinho_refresh_token', 'old-refresh-token');
+
       vi.spyOn(apiService, 'refresh').mockReturnValue(
         throwError(() => new Error('Refresh failed')),
       );
       const logoutSpy = vi.spyOn(service, 'logout');
 
-      await new Promise<void>((done) => {
-        service.refreshToken().subscribe({
-          error: (err) => {
-            expect(logoutSpy).toHaveBeenCalled();
-            expect(err.message).toBe('Refresh failed');
-            done();
-          },
-        });
-      });
+      try {
+        await firstValueFrom(service.refreshToken());
+        expect.fail('Should have thrown an error');
+      } catch (err) {
+        const error = err as Error;
+        expect(logoutSpy).toHaveBeenCalled();
+        expect(error.message).toBe('Refresh failed');
+      }
     });
   });
 

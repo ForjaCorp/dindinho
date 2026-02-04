@@ -9,7 +9,24 @@ import {
   accountSchema,
   UpdateAccountDTO,
   updateAccountSchema,
+  apiErrorResponseSchema,
 } from "@dindinho/shared";
+import { getHttpErrorLabel } from "../lib/get-http-error-label";
+import { DuplicateAccountError } from "./accounts.service";
+
+class ForbiddenError extends Error {
+  readonly statusCode = 403;
+  constructor(message = "Sem permissão") {
+    super(message);
+  }
+}
+
+class NotFoundError extends Error {
+  readonly statusCode = 404;
+  constructor(message = "Recurso não encontrado") {
+    super(message);
+  }
+}
 
 /**
  * Rotas da API para gerenciamento de contas.
@@ -37,11 +54,17 @@ export async function accountsRoutes(app: FastifyInstance) {
    * Intercepta todas as requisições para este prefixo de rotas
    * e valida o token JWT. Lança erro 401 se o token for inválido.
    */
-  app.addHook("onRequest", async (request) => {
+  app.addHook("onRequest", async (request, reply) => {
     try {
       await request.jwtVerify();
     } catch {
-      throw { statusCode: 401, message: "Token inválido ou expirado" };
+      const statusCode = 401;
+      return reply.code(statusCode).send({
+        statusCode,
+        error: getHttpErrorLabel(statusCode),
+        message: "Token inválido ou expirado",
+        code: "INVALID_TOKEN",
+      });
     }
   });
 
@@ -74,17 +97,53 @@ export async function accountsRoutes(app: FastifyInstance) {
         body: createAccountSchema,
         response: {
           201: accountSchema,
-          401: z.object({
-            message: z.string(),
-          }),
+          401: apiErrorResponseSchema,
+          403: apiErrorResponseSchema,
+          404: apiErrorResponseSchema,
+          409: apiErrorResponseSchema,
+          422: apiErrorResponseSchema,
+          500: apiErrorResponseSchema,
         },
       },
     },
     async (request, reply) => {
-      const { sub: userId } = request.user as { sub: string };
-      const payload: CreateAccountDTO = createAccountSchema.parse(request.body);
-      const account = await service.create(userId, payload);
-      return reply.status(201).send(account);
+      try {
+        const { sub: userId } = request.user as { sub: string };
+        const payload: CreateAccountDTO = createAccountSchema.parse(
+          request.body,
+        );
+        const account = await service.create(userId, payload);
+        return reply.status(201).send(account);
+      } catch (error) {
+        if (error instanceof ForbiddenError || error instanceof NotFoundError) {
+          const { statusCode } = error;
+          return reply.code(statusCode).send({
+            statusCode,
+            error: getHttpErrorLabel(statusCode),
+            message: error.message,
+            code: error.constructor.name.replace(/Error$/, "").toUpperCase(),
+          });
+        }
+
+        if (error instanceof DuplicateAccountError) {
+          const duplicateError = error as DuplicateAccountError;
+          return reply.code(409).send({
+            statusCode: 409,
+            error: getHttpErrorLabel(409),
+            message: duplicateError.message,
+            code: "DUPLICATE_ACCOUNT",
+          });
+        }
+
+        // TODO: Improve error handling to map service errors
+        const statusCode = 500;
+        return reply.code(statusCode).send({
+          statusCode,
+          error: getHttpErrorLabel(statusCode),
+          message: "Erro interno do servidor",
+          code: "INTERNAL_SERVER_ERROR",
+        });
+      }
     },
   );
 
@@ -121,15 +180,25 @@ export async function accountsRoutes(app: FastifyInstance) {
         tags: ["accounts"],
         response: {
           200: z.array(accountSchema),
-          401: z.object({
-            message: z.string(),
-          }),
+          401: apiErrorResponseSchema,
+          500: apiErrorResponseSchema,
         },
       },
     },
-    async (request) => {
-      const { sub: userId } = request.user as { sub: string };
-      return service.findAllByUserId(userId);
+    async (request, reply) => {
+      try {
+        const { sub: userId } = request.user as { sub: string };
+        return service.findAllByUserId(userId);
+      } catch {
+        // TODO: Improve error handling to map service errors
+        const statusCode = 500;
+        return reply.code(statusCode).send({
+          statusCode,
+          error: getHttpErrorLabel(statusCode),
+          message: "Erro interno do servidor",
+          code: "INTERNAL_SERVER_ERROR",
+        });
+      }
     },
   );
 
@@ -147,19 +216,43 @@ export async function accountsRoutes(app: FastifyInstance) {
         body: updateAccountSchema,
         response: {
           200: accountSchema,
-          400: z.object({ message: z.string() }).passthrough(),
-          401: z.object({ message: z.string() }),
-          403: z.object({ message: z.string() }),
-          404: z.object({ message: z.string() }),
-          409: z.object({ message: z.string() }),
+          401: apiErrorResponseSchema,
+          403: apiErrorResponseSchema,
+          404: apiErrorResponseSchema,
+          409: apiErrorResponseSchema,
+          422: apiErrorResponseSchema,
+          500: apiErrorResponseSchema,
         },
       },
     },
-    async (request) => {
-      const { sub: userId } = request.user as { sub: string };
-      const { id } = paramsSchema.parse(request.params);
-      const payload: UpdateAccountDTO = updateAccountSchema.parse(request.body);
-      return service.update(userId, id, payload);
+    async (request, reply) => {
+      try {
+        const { sub: userId } = request.user as { sub: string };
+        const { id } = paramsSchema.parse(request.params);
+        const payload: UpdateAccountDTO = updateAccountSchema.parse(
+          request.body,
+        );
+        return service.update(userId, id, payload);
+      } catch (error) {
+        if (error instanceof ForbiddenError || error instanceof NotFoundError) {
+          const { statusCode } = error;
+          return reply.code(statusCode).send({
+            statusCode,
+            error: getHttpErrorLabel(statusCode),
+            message: error.message,
+            code: error.constructor.name.replace(/Error$/, "").toUpperCase(),
+          });
+        }
+
+        // TODO: Improve error handling to map service errors
+        const statusCode = 500;
+        return reply.code(statusCode).send({
+          statusCode,
+          error: getHttpErrorLabel(statusCode),
+          message: "Erro interno do servidor",
+          code: "INTERNAL_SERVER_ERROR",
+        });
+      }
     },
   );
 }

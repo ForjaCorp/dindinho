@@ -189,7 +189,7 @@ describe('LoginComponent', () => {
 
       component.onSubmit();
 
-      expect(authService.login).toHaveBeenCalledWith(credentials);
+      expect(authService.login).toHaveBeenCalledWith(credentials, undefined);
     });
 
     it('deve definir mensagem de erro em caso de erro 401', () => {

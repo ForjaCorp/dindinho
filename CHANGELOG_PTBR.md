@@ -2,6 +2,41 @@
 
 Última atualização: 2025-12-12
 
+## 0.2.0 - 2026-02-04
+
+Esta versão foca na estruturação completa da documentação do ecossistema Dindinho, portal de docs integrado ao frontend e melhorias críticas de infraestrutura e segurança.
+
+### Portal de Documentação (Core)
+
+- **Multi-tier Docs**: Implementação de portal com 3 níveis de acesso (Público, Usuário, Admin) via layouts Angular específicos.
+- **Renderização Dinâmica**: Novo `DocsPage` que processa Markdown e especificações OpenAPI em tempo real.
+- **DocsService**: Serviço de carregamento de documentos com fallback inteligente para OpenAPI spec.
+- **Taxonomia**: Reorganização massiva da pasta `docs/` em categorias estruturadas (Overview, Product, Architecture, ADR, API, Ops).
+
+### Backend e Segurança
+
+- **Rate Limit**: Restauração da proteção global contra brute-force via `@fastify/rate-limit`.
+- **CORS Dev**: Configuração flexível para múltiplos ports de localhost em ambiente de desenvolvimento.
+- **ErrorHandler Centralizado**: Melhoria na captura de erros para garantir persistência de headers CORS e respostas padronizadas (RFC 7807-like).
+- **Zod Type Provider**: Refatoração de todos os domínios para uso total de tipagem estática via Zod no Fastify.
+- **Auto-cleanup**: Serviço automatizado de limpeza de refresh tokens expirados.
+
+### Frontend e UX
+
+- **Novas Páginas Públicas**: Adição de FAQ, Pricing, Onboarding e Políticas de Privacidade.
+- **Error Mapping**: Utilitário aprimorado para traduzir erros técnicos do backend em mensagens amigáveis no frontend.
+- **Auth Interceptor**: Refinamento na lógica de rotação de tokens e tratamento de erros 401.
+
+### Shared e Qualidade
+
+- **Novos Schemas**: Contratos Zod para validação de `backlog-item` e `doc-frontmatter`.
+- **Testes**: Cobertura ampliada com novos `*.spec.ts` para serviços de documentação e validação de contratos.
+- **CI/CD**: Pipeline GitHub Actions otimizado com validação de documentação e cache de build aprimorado.
+
+### Banco de Dados
+
+- **Migration**: Nova migração `init_dev` para estabilização do ambiente de desenvolvimento.
+
 ## 0.1.0 - 2025-12-12
 
 Nota: esta tag `v0.1.0` representa um snapshot de desenvolvimento (release inicial não‑final).

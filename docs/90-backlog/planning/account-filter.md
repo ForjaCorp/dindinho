@@ -1,3 +1,17 @@
+---
+id: doc-account-filter
+title: "Filtro por conta unificado (Relatórios + Transações)"
+description: "Planejamento e execução do filtro unificado por conta (multi-select) em Relatórios e Transações."
+audience: ["dev", "product"]
+visibility: "internal"
+status: "stable"
+owners: ["engineering"]
+tags: ["filters", "accounts", "ux"]
+mvp: true
+createdAt: "2026-02-03"
+updatedAt: "2026-02-03"
+---
+
 # Filtro por conta unificado (Relatórios + Transações)
 
 ## Contexto
@@ -43,10 +57,10 @@ Critério:
 
 Arquivos-alvo:
 
-- [reports.routes.ts](../../backend/src/reports/reports.routes.ts)
-- [reports.service.ts](../../backend/src/reports/reports.service.ts)
-- [transactions.routes.ts](../../backend/src/transactions/transactions.routes.ts)
-- [transactions.service.ts](../../backend/src/transactions/transactions.service.ts)
+- [reports.routes.ts](../../../backend/src/reports/reports.routes.ts)
+- [reports.service.ts](../../../backend/src/reports/reports.service.ts)
+- [transactions.routes.ts](../../../backend/src/transactions/transactions.routes.ts)
+- [transactions.service.ts](../../../backend/src/transactions/transactions.service.ts)
 
 ### Fase A3 — Frontend (PARCIAL - Lógica implementada, componentização adiada)
 
@@ -57,8 +71,8 @@ Arquivos-alvo:
 
 Arquivos-alvo:
 
-- [reports.page.ts](../../frontend/src/pages/reports/reports.page.ts)
-- [transactions.page.ts](../../frontend/src/pages/transactions/transactions.page.ts)
+- [reports.page.ts](../../../frontend/src/pages/reports/reports.page.ts)
+- [transactions.page.ts](../../../frontend/src/pages/transactions/transactions.page.ts)
 
 ### Fase A4 — Testes e critérios de aceite (CONCLUÍDO)
 

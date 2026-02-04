@@ -99,7 +99,7 @@ export class ApiService {
    *   });
    */
   login(data: LoginDTO): Observable<LoginResponseDTO> {
-    return this.http.post<LoginResponseDTO>(`${this.baseUrl}/login`, data);
+    return this.http.post<LoginResponseDTO>(`${this.baseUrl}/auth/login`, data);
   }
 
   /**

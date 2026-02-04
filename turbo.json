@@ -30,6 +30,10 @@
     },
     "lint": {
       "dependsOn": ["^lint"]
+    },
+    "docs:check": {
+      "cache": true,
+      "inputs": ["docs/**", "frontend/scripts/validate-docs.mjs"]
     }
   }
 }

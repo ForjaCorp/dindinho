@@ -1,3 +1,17 @@
+---
+id: doc-time-filter
+title: "TimeFilter — Iteração de melhorias"
+description: "Polimento de UX, correções de timezone e endurecimento de contratos do TimeFilter."
+audience: ["dev"]
+visibility: "internal"
+status: "stable"
+owners: ["engineering"]
+tags: ["filters", "time", "contracts"]
+mvp: true
+createdAt: "2026-02-03"
+updatedAt: "2026-02-03"
+---
+
 # TimeFilter — Iteração de melhorias (Concluído)
 
 ## Contexto
@@ -36,8 +50,8 @@ Não-escopo:
 
 Arquivos-alvo:
 
-- [time-filter.component.ts](../../frontend/src/app/components/time-filter.component.ts)
-- [time-filter.component.spec.ts](../../frontend/src/app/components/time-filter.component.spec.ts)
+- [time-filter.component.ts](../../../frontend/src/app/components/time-filter.component.ts)
+- [time-filter.component.spec.ts](../../../frontend/src/app/components/time-filter.component.spec.ts)
 
 Critério:
 
@@ -50,8 +64,8 @@ Critério:
 
 Arquivos-alvo:
 
-- [reports.page.ts](../../frontend/src/pages/reports/reports.page.ts)
-- [reports.page.spec.ts](../../frontend/src/pages/reports/reports.page.spec.ts)
+- [reports.page.ts](../../../frontend/src/pages/reports/reports.page.ts)
+- [reports.page.spec.ts](../../../frontend/src/pages/reports/reports.page.spec.ts)
 
 ### Fase M3 — Contratos shared (validações e deduplicação) [Concluído]
 
@@ -61,10 +75,10 @@ Arquivos-alvo:
 
 Arquivos-alvo:
 
-- [transaction.schema.ts](../../packages/shared/src/schemas/transaction.schema.ts)
-- [report.schema.ts](../../packages/shared/src/schemas/report.schema.ts)
-- [report.schema.spec.ts](../../packages/shared/src/schemas/report.schema.spec.ts)
-- [transaction.schema.spec.ts](../../packages/shared/src/schemas/transaction.schema.spec.ts)
+- [transaction.schema.ts](../../../packages/shared/src/schemas/transaction.schema.ts)
+- [report.schema.ts](../../../packages/shared/src/schemas/report.schema.ts)
+- [report.schema.spec.ts](../../../packages/shared/src/schemas/report.schema.spec.ts)
+- [transaction.schema.spec.ts](../../../packages/shared/src/schemas/transaction.schema.spec.ts)
 
 ### Fase M4 — Guardrails de query params (Transações) [Concluído]
 
@@ -73,8 +87,8 @@ Arquivos-alvo:
 
 Arquivos-alvo:
 
-- [transactions.page.ts](../../frontend/src/pages/transactions/transactions.page.ts)
-- [transactions.page.spec.ts](../../frontend/src/pages/transactions/transactions.page.spec.ts)
+- [transactions.page.ts](../../../frontend/src/pages/transactions/transactions.page.ts)
+- [transactions.page.spec.ts](../../../frontend/src/pages/transactions/transactions.page.spec.ts)
 
 ## Critérios de aceite
 

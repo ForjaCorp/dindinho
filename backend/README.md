@@ -2,20 +2,40 @@
 
 Para instruções de setup do monorepo (DB, Turbo, etc.), veja o [README principal](../README.md).
 
-Variáveis de ambiente relevantes para Refresh Tokens
+Documentação relacionada:
+
+- Fluxo de autenticação (frontend + API): [authentication.md](../docs/30-api/authentication.md)
+- Plano de documentação (portal + contratos + API): [documentation.md](../docs/90-backlog/planning/documentation.md)
+- Scripts de seed: [seed-scripts-setup.md](../docs/30-api/seed-scripts-setup.md)
+
+Padrões de Desenvolvimento:
+
+- **Design Pattern**: Service Pattern (Controller → Service → Data Access)
+- **Validação**: Zod obrigatório para `body`, `querystring` e `params` em todas as rotas
+- **Documentação API**: OpenAPI derivada automaticamente dos schemas Zod
+- **Tratamento de Erros**: Exceções de domínio capturadas por handler global e formatadas conforme `ApiErrorResponseDTO`
+- **Rotas**: Todas as rotas possuem prefixo `/api` (ex: `/api/auth/login`)
+
+Variáveis de ambiente relevantes para Refresh Tokens e Seed
 
 - `REFRESH_TOKEN_DAYS` (opcional): número de dias que um refresh token é válido. Default: `7`.
 - `ENABLE_REFRESH_CLEANUP` (opcional): quando `true`, a aplicação agenda uma tarefa periódica para limpar tokens expirados. Default: `false`.
 - `REFRESH_CLEANUP_INTERVAL_MINUTES` (opcional): intervalo em minutos para a tarefa de cleanup. Default: `60` (uma hora).
+- `AUTO_SEED` (opcional): quando `true`, executa o script de seed automaticamente no startup (útil para staging). Default: `false`.
+- `SEED_ADMIN_EMAIL` (opcional): email do admin criado pelo seed. Default: `dev@dindinho.com`.
+- `SEED_ADMIN_PASSWORD` (opcional): senha do admin criado pelo seed. Default: `Password123!`.
 
 Exemplo `.env`:
 
-```
+```text
 DATABASE_URL=mysql://root:root@localhost:3306/dindinho_dev
 JWT_SECRET=super-secret
 REFRESH_TOKEN_DAYS=7
 ENABLE_REFRESH_CLEANUP=true
 REFRESH_CLEANUP_INTERVAL_MINUTES=60
+AUTO_SEED=true
+SEED_ADMIN_EMAIL=admin@example.com
+SEED_ADMIN_PASSWORD=SenhaForteSegura123!
 FRONTEND_URL=https://app.example.com
 PORT=3333
 ```
@@ -23,7 +43,10 @@ PORT=3333
 Como rodar (local):
 
 ```bash
-# no root do monorepo
+# no root do monorepo - setup completo (recomendado)
+npm run setup:dev
+
+# ou manualmente
 npm --prefix backend run prisma:migrate
 npm --prefix backend run dev
 ```
@@ -43,6 +66,9 @@ Scripts úteis:
 - `npm --prefix backend run typecheck`
 - `npm --prefix backend run prisma:generate`
 - `npm --prefix backend run prisma:migrate`
+- `npm --prefix backend run seed` (cria usuário dev e categorias)
+- `npm --prefix backend run seed:prod` (seed para produção)
+- `npm --prefix backend run check:dev-user` (verifica usuário dev)
 
 Observações de segurança
 
@@ -57,26 +83,26 @@ Se preferir rodar a limpeza de tokens expirados fora do processo da API (recomen
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-	name: dindinho-cleanup-refresh-tokens
+  name: dindinho-cleanup-refresh-tokens
 spec:
-	schedule: "0 * * * *" # a cada hora
-	jobTemplate:
-		spec:
-			template:
-				spec:
-					containers:
-						- name: cleanup
-							image: registry.example.com/forjacorp/dindinho-backend:latest
-							command: ["/bin/sh", "-lc", "npm run cleanup:refresh-tokens"]
-							env:
-								- name: NODE_ENV
-									value: "production"
-								- name: DATABASE_URL
-									valueFrom:
-										secretKeyRef:
-											name: dindinho-secrets
-											key: DATABASE_URL
-					restartPolicy: OnFailure
+  schedule: "0 * * * *" # a cada hora
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: cleanup
+              image: registry.example.com/forjacorp/dindinho-backend:latest
+              command: ["/bin/sh", "-lc", "npm run cleanup:refresh-tokens"]
+              env:
+                - name: NODE_ENV
+                  value: "production"
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: dindinho-secrets
+                      key: DATABASE_URL
+          restartPolicy: OnFailure
 ```
 
 Alternativas operacionais:

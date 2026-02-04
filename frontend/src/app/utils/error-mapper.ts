@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { AppError } from '../models/error.model';
+import { apiErrorResponseSchema, ApiErrorResponseDTO } from '@dindinho/shared';
 
 /**
  * Utilitário para mapear erros técnicos em erros padronizados da aplicação.
@@ -9,50 +10,78 @@ export class ErrorMapper {
    * Converte um HttpErrorResponse em um AppError.
    * @param error O erro retornado pelo HttpClient.
    * @returns Um objeto AppError formatado.
-   * @example
-   * const appError = ErrorMapper.fromHttpError(httpError);
    */
   static fromHttpError(error: HttpErrorResponse): AppError {
     let message = 'Ocorreu um erro inesperado. Tente novamente mais tarde.';
     let type: AppError['type'] = 'HTTP';
+    let apiError: ApiErrorResponseDTO | null = null;
 
-    // Prioridade para mensagens vindas do backend
-    if (error.error?.message) {
-      message = error.error.message;
+    // Tentativa defensiva de parsear o erro usando o schema do shared
+    try {
+      if (error.error) {
+        const result = apiErrorResponseSchema.safeParse(error.error);
+        if (result.success) {
+          apiError = result.data;
+        } else if (typeof error.error === 'object' && error.error !== null) {
+          // Fallback parcial se o schema falhar mas for um objeto
+          apiError = {
+            statusCode: error.status,
+            error: error.error.error || 'Unknown Error',
+            message: error.error.message || message,
+            code: error.error.code,
+            requestId: error.error.requestId,
+            issues: error.error.issues,
+            details: error.error.details,
+          };
+        }
+      }
+    } catch {
+      // Ignora erros de parse
+    }
+
+    if (apiError?.message) {
+      message = apiError.message;
     }
 
     if (error.status === 0) {
       message = 'Não foi possível conectar ao servidor. Verifique sua conexão.';
     } else if (error.status === 401) {
-      if (!error.error?.message) {
+      if (!apiError?.message) {
         message = 'Sessão expirada ou não autorizada. Por favor, faça login novamente.';
       }
       type = 'AUTH';
     } else if (error.status === 403) {
-      if (!error.error?.message) {
+      if (!apiError?.message) {
         message = 'Você não tem permissão para realizar esta ação.';
       }
     } else if (error.status === 404) {
-      if (!error.error?.message) {
+      if (!apiError?.message) {
         message = 'O recurso solicitado não foi encontrado.';
       }
     } else if (error.status === 409) {
-      if (!error.error?.message) {
+      if (!apiError?.message) {
         message = 'Este recurso já existe ou está em conflito.';
       }
+    } else if (
+      error.status === 422 ||
+      (error.status === 400 && apiError?.code === 'VALIDATION_ERROR')
+    ) {
+      type = 'VALIDATION';
     } else if (error.status === 429) {
       message = 'Muitas requisições. Tente novamente em alguns minutos.';
     } else if (error.status >= 500) {
-      message = 'Erro no servidor. Estamos trabalhando para resolver.';
-    } else if (error.status === 400) {
-      type = 'VALIDATION';
+      if (!apiError?.message || error.status === 500) {
+        message = 'Erro no servidor. Estamos trabalhando para resolver.';
+      }
     }
 
     return {
       type,
       message,
-      code: error.status,
-      details: error.error,
+      code: apiError?.code || error.status,
+      requestId: apiError?.requestId,
+      issues: apiError?.issues,
+      details: apiError?.details || error.error,
       originalError: error,
     };
   }

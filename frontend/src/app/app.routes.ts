@@ -3,6 +3,9 @@ import { authGuard } from './guards/auth.guard';
 import { guestGuard } from './guards/guest.guard';
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
 import { AuthLayoutComponent } from './layouts/auth-layout/auth-layout.component';
+import { PublicLayoutComponent } from './layouts/public-layout/public-layout.component';
+import { UserDocsLayoutComponent } from './layouts/user-docs-layout/user-docs-layout.component';
+import { AdminDocsLayoutComponent } from './layouts/admin-docs-layout/admin-docs-layout.component';
 
 /**
  * @description
@@ -19,7 +22,7 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
 
-  // Rotas de Autenticação (Sem Header/Footer)
+  // Rotas Públicas (Sem Header/Footer)
   {
     path: '',
     component: AuthLayoutComponent,
@@ -34,8 +37,73 @@ export const routes: Routes = [
         loadComponent: () => import('../pages/signup/signup.page').then((m) => m.SignupPage),
         canActivate: [guestGuard],
       },
-      // Futuro registro:
-      // { path: 'register', ... }
+    ],
+  },
+
+  // Conteúdo Público (Marketing/Info)
+  {
+    path: '',
+    component: PublicLayoutComponent,
+    children: [
+      {
+        path: 'faq',
+        loadComponent: () => import('../pages/public/faq.page').then((m) => m.FAQPage),
+      },
+      {
+        path: 'pricing',
+        loadComponent: () => import('../pages/public/pricing.page').then((m) => m.PricingPage),
+      },
+      {
+        path: 'privacy-policy',
+        loadComponent: () =>
+          import('../pages/public/privacy-policy.page').then((m) => m.PrivacyPolicyPage),
+      },
+      {
+        path: 'onboarding',
+        loadComponent: () =>
+          import('../pages/public/onboarding.page').then((m) => m.OnboardingPage),
+      },
+      {
+        path: 'docs/public/:slug',
+        loadComponent: () => import('../pages/docs/docs.page').then((m) => m.DocsPage),
+      },
+    ],
+  },
+
+  // Documentação de Usuário (Protegida)
+  {
+    path: 'docs/user',
+    component: UserDocsLayoutComponent,
+    canActivate: [authGuard],
+    children: [
+      {
+        path: '',
+        redirectTo: 'intro',
+        pathMatch: 'full',
+      },
+      {
+        path: ':slug',
+        loadComponent: () => import('../pages/docs/docs.page').then((m) => m.DocsPage),
+      },
+    ],
+  },
+
+  // Documentação Interna/Admin (Protegida)
+  {
+    path: 'docs/admin',
+    component: AdminDocsLayoutComponent,
+    canActivate: [authGuard],
+    data: { roles: ['ADMIN'] },
+    children: [
+      {
+        path: '',
+        redirectTo: 'architecture',
+        pathMatch: 'full',
+      },
+      {
+        path: ':slug',
+        loadComponent: () => import('../pages/docs/docs.page').then((m) => m.DocsPage),
+      },
     ],
   },
 
@@ -49,6 +117,11 @@ export const routes: Routes = [
         path: 'dashboard',
         loadComponent: () => import('../pages/dashboard.page').then((m) => m.DashboardComponent),
         data: { maxWidth: '5xl' },
+      },
+      {
+        path: 'docs',
+        loadComponent: () => import('../pages/docs/docs.page').then((m) => m.DocsPage),
+        data: { title: 'Documentação' },
       },
       {
         path: 'accounts',

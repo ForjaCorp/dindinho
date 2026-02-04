@@ -33,7 +33,7 @@ abstract class AccountError extends Error {
  * Erro quando conta com nome duplicado já existe
  * @description Lançado quando usuário tenta criar conta com nome já existente
  */
-class DuplicateAccountError extends AccountError {
+export class DuplicateAccountError extends AccountError {
   readonly statusCode = 409;
   readonly isOperational = true;
 
@@ -399,7 +399,6 @@ export class AccountsService {
    *
    * @example
    * const accounts = await service.findAllByUserId('user-123');
-   * console.log(accounts.length); // Número de contas do usuário
    */
   async findAllByUserId(userId: string): Promise<AccountDTO[]> {
     try {

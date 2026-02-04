@@ -1,8 +1,10 @@
-import { FastifyInstance, FastifyRequest } from "fastify";
+import { FastifyInstance } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
-import fastifyRateLimit from "@fastify/rate-limit";
+import { apiErrorResponseSchema } from "@dindinho/shared";
+import { getHttpErrorLabel } from "../lib/get-http-error-label";
+import { SignupAllowlistService } from "./signup-allowlist.service";
 
 const emailSchema = z.string().email();
 
@@ -13,143 +15,132 @@ const allowlistItemSchema = z.object({
 });
 
 export async function signupAllowlistRoutes(app: FastifyInstance) {
-  await app.register(fastifyRateLimit, {
-    global: true,
-    hook: "onRequest",
-    max: Number(process.env.ALLOWLIST_RATE_LIMIT_MAX ?? "30"),
-    timeWindow: /^[0-9]+$/.test(
-      process.env.ALLOWLIST_RATE_LIMIT_TIME_WINDOW || "",
-    )
-      ? Number(process.env.ALLOWLIST_RATE_LIMIT_TIME_WINDOW)
-      : (process.env.ALLOWLIST_RATE_LIMIT_TIME_WINDOW ?? "1 minute"),
-    keyGenerator: (request: FastifyRequest) =>
-      (request.headers["x-real-ip"] as string | undefined) || request.ip,
-  });
+  const service = new SignupAllowlistService(prisma);
+
   app.addHook("onRequest", async (request, reply) => {
-    const adminKey = process.env.ALLOWLIST_ADMIN_KEY;
-    const providedKey = request.headers["x-admin-key"];
-    const normalizedKey = Array.isArray(providedKey)
-      ? providedKey[0]
-      : providedKey;
-
-    if (normalizedKey && !adminKey) {
-      return reply.status(503).send({ message: "Chave admin não configurada" });
-    }
-
-    if (adminKey && normalizedKey === adminKey) {
+    const adminKey = request.headers["x-admin-key"];
+    if (adminKey === process.env.ALLOWLIST_ADMIN_KEY) {
       return;
     }
-
-    try {
-      await request.jwtVerify();
-    } catch {
-      if (normalizedKey) {
-        return reply.status(401).send({ message: "Chave admin inválida" });
-      }
-      return reply.status(401).send({ message: "Token inválido ou expirado" });
-    }
-
-    const userId = (request.user as { sub: string }).sub;
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true },
-    });
-
-    if (!user || user.role !== "ADMIN") {
-      return reply
-        .status(403)
-        .send({ message: "Acesso restrito a administradores" });
-    }
+    await app.authenticateAdmin(request, reply);
   });
 
   app.withTypeProvider<ZodTypeProvider>().get(
-    "/allowlist",
+    "/",
     {
       schema: {
-        summary: "Listar emails liberados",
-        tags: ["allowlist"],
+        summary: "Listar emails liberados para cadastro",
+        tags: ["signup-allowlist"],
         response: {
           200: z.array(allowlistItemSchema),
-          401: z.object({ message: z.string() }),
-          403: z.object({ message: z.string() }),
-          503: z.object({ message: z.string() }),
+          401: apiErrorResponseSchema,
+          403: apiErrorResponseSchema,
         },
       },
     },
     async () => {
-      const items = await prisma.signupAllowlist.findMany({
-        orderBy: { createdAt: "desc" },
-        select: { id: true, email: true, createdAt: true },
-      });
-
-      return items.map(
-        (item: { id: string; email: string; createdAt: Date }) => ({
-          ...item,
-          createdAt: item.createdAt.toISOString(),
-        }),
-      );
+      return service.list();
     },
   );
 
   app.withTypeProvider<ZodTypeProvider>().post(
-    "/allowlist",
+    "/",
     {
       schema: {
-        summary: "Adicionar email na allowlist",
-        tags: ["allowlist"],
+        summary: "Adicionar email na lista de permissão",
+        tags: ["signup-allowlist"],
         body: z.object({ email: emailSchema }),
         response: {
           201: allowlistItemSchema,
-          401: z.object({ message: z.string() }),
-          403: z.object({ message: z.string() }),
-          503: z.object({ message: z.string() }),
+          401: apiErrorResponseSchema,
+          403: apiErrorResponseSchema,
+          409: apiErrorResponseSchema,
+          422: apiErrorResponseSchema,
+          500: apiErrorResponseSchema,
         },
       },
     },
     async (request, reply) => {
-      const payload = request.body as { email: string };
-      const email = payload.email.trim().toLowerCase();
+      const { email } = request.body;
 
-      const item = await prisma.signupAllowlist.upsert({
-        where: { email },
-        create: { email },
-        update: {},
-        select: { id: true, email: true, createdAt: true },
-      });
+      try {
+        const item = await service.add(email);
+        return reply.status(201).send(item);
+      } catch (error: unknown) {
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "code" in error &&
+          (error as { code: unknown }).code === "P2002"
+        ) {
+          const statusCode = 409;
+          return reply.code(statusCode).send({
+            statusCode,
+            error: getHttpErrorLabel(statusCode),
+            message: "O e-mail fornecido já está na lista de permissão.",
+            code: "EMAIL_ALREADY_IN_ALLOWLIST",
+          });
+        }
 
-      return reply.status(201).send({
-        ...item,
-        createdAt: item.createdAt.toISOString(),
-      });
+        request.log.error(
+          { err: error },
+          "Erro ao adicionar email na allowlist",
+        );
+        const statusCode = 500;
+        return reply.code(statusCode).send({
+          statusCode,
+          error: getHttpErrorLabel(statusCode),
+          message: "Erro interno do servidor.",
+          code: "INTERNAL_SERVER_ERROR",
+        });
+      }
     },
   );
 
   app.withTypeProvider<ZodTypeProvider>().delete(
-    "/allowlist/:email",
+    "/:email",
     {
       schema: {
-        summary: "Remover email da allowlist",
-        tags: ["allowlist"],
+        summary: "Remover email da lista de permissão",
+        tags: ["signup-allowlist"],
         params: z.object({ email: emailSchema }),
         response: {
           200: z.object({ deleted: z.boolean() }),
-          401: z.object({ message: z.string() }),
-          403: z.object({ message: z.string() }),
-          503: z.object({ message: z.string() }),
+          401: apiErrorResponseSchema,
+          403: apiErrorResponseSchema,
+          404: apiErrorResponseSchema,
+          422: apiErrorResponseSchema,
+          500: apiErrorResponseSchema,
         },
       },
     },
-    async (request) => {
-      const email = emailSchema
-        .parse(request.params.email)
-        .trim()
-        .toLowerCase();
+    async (request, reply) => {
+      try {
+        const { email } = request.params;
+        const deleted = await service.remove(email);
 
-      const result = await prisma.signupAllowlist.deleteMany({
-        where: { email },
-      });
+        if (!deleted) {
+          const statusCode = 404;
+          return reply.code(statusCode).send({
+            statusCode,
+            error: getHttpErrorLabel(statusCode),
+            message:
+              "O e-mail fornecido não foi encontrado na lista de permissão.",
+            code: "EMAIL_NOT_FOUND_IN_ALLOWLIST",
+          });
+        }
 
-      return { deleted: result.count > 0 };
+        return reply.status(200).send({ deleted: true });
+      } catch (error) {
+        request.log.error({ err: error }, "Erro ao remover email da allowlist");
+        const statusCode = 500;
+        return reply.code(statusCode).send({
+          statusCode,
+          error: getHttpErrorLabel(statusCode),
+          message: "Erro interno do servidor.",
+          code: "INTERNAL_SERVER_ERROR",
+        });
+      }
     },
   );
 }
