@@ -3,10 +3,10 @@ id: guia-operacoes
 title: "Guia de Operações"
 description: "Documentação técnica sobre infraestrutura, banco de dados, deploy e manutenção do Dindinho."
 audience: ["ops", "dev"]
-visibility: "internal"
-status: "wip"
+visibility: "interno"
+status: "em-progresso"
 owners: ["engineering"]
-tags: ["ops", "infra", "deploy", "database"]
+tags: ["ops", "infra", "deploy", "banco-de-dados"]
 mvp: true
 createdAt: "2026-02-03"
 ---

@@ -3,8 +3,8 @@ id: doc-authentication
 title: "Autenticação (Frontend + API)"
 description: "Fluxo de autenticação com JWT, access token e refresh token."
 audience: ["dev"]
-visibility: "internal"
-status: "stable"
+visibility: "interno"
+status: "estável"
 owners: ["engineering"]
 tags: ["auth", "api", "frontend"]
 mvp: true

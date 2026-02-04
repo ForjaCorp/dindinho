@@ -3,10 +3,10 @@ id: dominio-auth
 title: "Autenticação e Usuários"
 description: "Gerenciamento de identidade, sessões e controle de acesso (RBAC) no Dindinho."
 audience: ["dev", "user"]
-visibility: "public"
-status: "wip"
+visibility: "público"
+status: "em-progresso"
 owners: ["engineering"]
-tags: ["auth", "security", "users"]
+tags: ["auth", "segurança", "usuários"]
 mvp: true
 createdAt: "2026-02-03"
 ---

@@ -3,10 +3,10 @@ id: doc-planning-execution
 title: "Documentação — plano de execução (portal + contratos + API)"
 description: "Plano de execução para criar um portal de documentação, gerar referência de API via OpenAPI e manter contratos de dados consistentes."
 audience: ["dev", "ops", "product"]
-visibility: "internal"
-status: "wip"
+visibility: "interno"
+status: "em-progresso"
 owners: ["engineering"]
-tags: ["documentation", "planning", "openapi", "contracts"]
+tags: ["documentação", "planejamento", "openapi", "contratos"]
 mvp: true
 createdAt: "2026-02-02"
 ---
@@ -68,6 +68,14 @@ A documentação do Dindinho é estruturada em três camadas de acesso, garantin
 ---
 
 ## Implementação Técnica
+
+### Metadados (Frontmatter)
+
+Todas as páginas de documentação devem seguir o padrão de metadados em português:
+
+- `tags`: Priorizar termos em português (ex: `planejamento`, `arquitetura`, `segurança`).
+- `status`: `rascunho` (draft), `em-progresso` (wip), `estável` (stable).
+- `visibility`: `público` (public), `interno` (internal).
 
 ### Roteamento e Slugs
 
