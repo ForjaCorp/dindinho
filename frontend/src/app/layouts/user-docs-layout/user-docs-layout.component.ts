@@ -101,7 +101,7 @@ export class UserDocsLayoutComponent {
         {
           id: 'intro',
           label: 'Introdução',
-          icon: 'pi-info-circle',
+          icon: 'pi-home',
           link: '/docs/intro',
         },
         {
@@ -109,6 +109,12 @@ export class UserDocsLayoutComponent {
           label: 'Nossos Princípios',
           icon: 'pi-star',
           link: '/docs/principles',
+        },
+        {
+          id: 'faq',
+          label: 'Perguntas Frequentes',
+          icon: 'pi-question-circle',
+          link: '/docs/faq',
         },
       ],
     },
@@ -149,7 +155,7 @@ export class UserDocsLayoutComponent {
         {
           id: 'metas',
           label: 'Metas de Economia',
-          icon: 'pi-bullseye',
+          icon: 'pi-target',
           link: '/docs/dominio-metas',
         },
       ],
