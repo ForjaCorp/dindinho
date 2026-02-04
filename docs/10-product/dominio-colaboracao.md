@@ -66,6 +66,6 @@ O sistema utiliza três entidades principais para gerenciar a colaboração:
 
 ## 🔗 Links Úteis
 
-- [Planejamento: Sistema de Convites](file:///home/vinicius/dev/dindinho/docs/90-backlog/planning/sistema-convites.md)
-- [Esquema de Banco de Dados](file:///home/vinicius/dev/dindinho/backend/prisma/schema.prisma)
-- [Domínio: Contas](file:///home/vinicius/dev/dindinho/docs/10-product/dominio-contas.md)
+- [Planejamento: Sistema de Convites](../90-backlog/planning/sistema-convites.md)
+- [Esquema de Banco de Dados](../../backend/prisma/schema.prisma)
+- [Domínio: Contas](./dominio-contas.md)

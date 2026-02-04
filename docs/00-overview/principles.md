@@ -63,5 +63,5 @@ Ser a solução financeira preferida para quem busca simplicidade sem abrir mão
 
 ## 🔗 Links Relacionados
 
-- [Guia de Estilo](file:///home/vinicius/dev/dindinho/CODING_STANDARDS.md)
-- [Roadmap de Evolução](file:///home/vinicius/dev/dindinho/docs/90-backlog/planning/evolucao-roadmap.md)
+- [Guia de Estilo](../../CODING_STANDARDS.md)
+- [Roadmap de Evolução](../90-backlog/planning/evolucao-roadmap.md)

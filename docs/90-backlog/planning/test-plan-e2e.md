@@ -72,5 +72,5 @@ Este documento define a estratégia, ferramentas e cenários de teste para garan
 
 ## 🔗 Links Relacionados
 
-- [Padrões de Código](file:///home/vinicius/dev/dindinho/CODING_STANDARDS.md)
-- [Roadmap de Evolução](file:///home/vinicius/dev/dindinho/docs/90-backlog/planning/evolucao-roadmap.md)
+- [Padrões de Código](../../../CODING_STANDARDS.md)
+- [Roadmap de Evolução](./evolucao-roadmap.md)

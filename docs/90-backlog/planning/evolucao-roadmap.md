@@ -23,17 +23,17 @@ Estes itens já possuem planejamento iniciado ou são essenciais para o fechamen
 
 ### 1. Sistema de Convites (Colaboração)
 
-- **Status**: [Pendente](file:///home/vinicius/dev/dindinho/docs/90-backlog/planning/sistema-convites.md)
+- **Status**: [Pendente](./sistema-convites.md)
 - **Foco**: Fluxo de e-mail para compartilhar múltiplas contas com permissões (Viewer/Editor/Admin).
 
 ### 2. Metas de Economia Híbridas
 
-- **Status**: [Em Andamento](file:///home/vinicius/dev/dindinho/docs/90-backlog/planning/planejamento-metas.md)
+- **Status**: [Em Andamento](./planejamento-metas.md)
 - **Foco**: Implementação do motor de cálculo para Limites de Gastos e Objetivos de Poupança.
 
 ### 3. Evolução de Roteamento e API
 
-- **Status**: [Pendente](file:///home/vinicius/dev/dindinho/docs/90-backlog/planning/ROUTING_EVOLUTION_PLAN.md)
+- **Status**: [Pendente](./ROUTING_EVOLUTION_PLAN.md)
 - **Foco**: Padronização de slugs, versionamento de API e melhorias na navegação do portal.
 
 ---
@@ -111,7 +111,7 @@ Garantindo que a evolução do app não comprometa a estabilidade.
 ### 11. Plano de Testes E2E
 
 - **Foco**: Garantir que as jornadas críticas funcionem de ponta a ponta.
-- **Documento**: [Plano de Testes E2E](file:///home/vinicius/dev/dindinho/docs/90-backlog/planning/test-plan-e2e.md)
+- **Documento**: [Plano de Testes E2E](./test-plan-e2e.md)
 
 ### 12. Testes de Regressão Visual
 
@@ -165,5 +165,5 @@ Onde o Dindinho ganha vida e cria conexão emocional.
 
 ## 🔗 Links Relacionados
 
-- [Princípios do Produto](file:///home/vinicius/dev/dindinho/docs/00-overview/principles.md)
-- [Arquitetura Atual](file:///home/vinicius/dev/dindinho/docs/90-backlog/planning/documentation.md)
+- [Princípios do Produto](../../00-overview/principles.md)
+- [Arquitetura Atual](./documentation.md)

@@ -40,18 +40,18 @@ Este domínio transforma dados brutos de transações em informações acionáve
 
 ### Modelo de Dados
 
-Referência no [schema.prisma](file:///home/vinicius/dev/dindinho/backend/prisma/schema.prisma):
+Referência no [schema.prisma](../../backend/prisma/schema.prisma):
 
 - `DailySnapshot`: Esta é a tabela crítica para performance. Em vez de recalcular o saldo histórico somando milhares de transações, consultamos snapshots diários.
 - **Processo de Snapshot**: Atualizado via triggers ou jobs periódicos após mudanças significativas em transações passadas.
 
 ### Integração e API
 
-- **Endpoints**: `/reports/*` na [Referência de API](file:///home/vinicius/dev/dindinho/docs/admin/api-ref).
+- **Endpoints**: `/reports/*` na [Referência de API](../30-api/openapi.json).
 - **Performance**: Uso intensivo de agregações SQL (`GROUP BY`, `SUM`) e cache para garantir carregamento instantâneo.
 - **Visualização**: Frontend utiliza bibliotecas de gráficos (ex: Chart.js ou Ngx-charts) integradas com Signals do Angular.
 
 ## 🔗 Links Úteis
 
-- [Cálculo de Agregações](file:///home/vinicius/dev/dindinho/backend/src/services/report.service.ts)
-- [Dashboard Component](file:///home/vinicius/dev/dindinho/frontend/src/app/pages/dashboard/dashboard.component.ts)
+- [Cálculo de Agregações](../../backend/src/reports/reports.service.ts)
+- [Dashboard Component](../../frontend/src/pages/dashboard.page.ts)

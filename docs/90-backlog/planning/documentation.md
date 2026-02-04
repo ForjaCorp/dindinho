@@ -47,7 +47,7 @@ A documentação do Dindinho é estruturada em três camadas de acesso, garantin
 - **Layout:** `GuestDocsLayoutComponent` (Tema Slate/Neutral).
 - **Conteúdo:** Visão geral do produto, FAQ, Planos/Pricing, Termos de Uso.
 - **Acesso:** Rotas abertas via `docs/public/*`.
-- **Exemplo:** [FAQ](file:///home/vinicius/dev/dindinho/docs/00-overview/faq.md).
+- **Exemplo:** [Princípios](../../00-overview/principles.md).
 
 ### 2. Nível Usuário (Authenticated)
 
@@ -55,7 +55,7 @@ A documentação do Dindinho é estruturada em três camadas de acesso, garantin
 - **Layout:** `UserDocsLayoutComponent` (Tema Emerald/Finance).
 - **Conteúdo:** Guia de uso das funcionalidades, tutoriais de conciliação, relatórios.
 - **Acesso:** Protegido por `authGuard`. Rotas em `docs/user/*`.
-- **Exemplo:** [Guia de Relatórios](file:///home/vinicius/dev/dindinho/docs/40-clients/pwa/reports-frontend.md).
+- **Exemplo:** [Guia de Relatórios](../../40-clients/pwa/reports-frontend.md).
 
 ### 3. Nível Admin/Engenharia (Internal/Privileged)
 
@@ -63,7 +63,7 @@ A documentação do Dindinho é estruturada em três camadas de acesso, garantin
 - **Layout:** `AdminDocsLayoutComponent` (Tema Indigo/Tech).
 - **Conteúdo:** Arquitetura técnica, ADRs, Infraestrutura e **Swagger UI**.
 - **Acesso:** Requer role `ADMIN`. Rotas em `docs/admin/*`.
-- **Exemplo:** [Evolução de Rotas](file:///home/vinicius/dev/dindinho/docs/90-backlog/planning/ROUTING_EVOLUTION_PLAN.md).
+- **Exemplo:** [Evolução de Rotas](./ROUTING_EVOLUTION_PLAN.md).
 
 ---
 

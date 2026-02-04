@@ -45,10 +45,10 @@ _Esta seção é voltada para o **Tier Admin** (docs/admin/_). Foque em arquitet
 
 ### Integração e API
 
-- **Endpoints**: Links para a [Referência de API](file:///home/vinicius/dev/dindinho/docs/admin/api-ref).
+- **Endpoints**: Links para a [Referência de API](../../30-api/openapi.json).
 - **Contratos**: Referência aos schemas em `@dindinho/shared`.
 
 ## 🔗 Links Úteis
 
-- [Link Relacionado](file:///home/vinicius/dev/dindinho/README.md)
-- [RFC/Planejamento](file:///home/vinicius/dev/dindinho/docs/90-backlog/planning/documentation.md)
+- [Link Relacionado](../../../README.md)
+- [RFC/Planejamento](../../90-backlog/planning/documentation.md)

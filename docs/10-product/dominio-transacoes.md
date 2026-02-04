@@ -41,7 +41,7 @@ Este domínio gerencia todos os lançamentos financeiros do usuário, permitindo
 
 ### Modelo de Dados
 
-Referência no [schema.prisma](file:///home/vinicius/dev/dindinho/backend/prisma/schema.prisma):
+Referência no [schema.prisma](../../backend/prisma/schema.prisma):
 
 - `Transaction`: Tabela principal. Note o uso de `Decimal` para evitar erros de precisão de ponto flutuante.
 - `Category`: Estrutura de árvore (Auto-relacionamento `parentId`) para categorias e subcategorias.
@@ -54,11 +54,11 @@ Referência no [schema.prisma](file:///home/vinicius/dev/dindinho/backend/prisma
 
 ### Integração e API
 
-- **Endpoints**: `/transactions/*` e `/categories/*` na [Referência de API](file:///home/vinicius/dev/dindinho/docs/admin/api-ref).
+- **Endpoints**: `/transactions/*` e `/categories/*` na [Referência de API](../30-api/openapi.json).
 - **Lógica de Negócio**: Cálculo de saldos em tempo real e geração de snapshots diários.
 - **Contratos**: Schemas Zod em `packages/shared/src/schemas/transaction.schema.ts`.
 
 ## 🔗 Links Úteis
 
-- [Lógica de Saldo](file:///home/vinicius/dev/dindinho/backend/src/services/transaction.service.ts)
-- [Página de Lançamentos](file:///home/vinicius/dev/dindinho/frontend/src/app/pages/transactions/transactions.page.ts)
+- [Lógica de Saldo](../../backend/src/transactions/transactions.service.ts)
+- [Página de Lançamentos](../../frontend/src/pages/transactions/transactions.page.ts)

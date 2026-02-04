@@ -236,4 +236,4 @@ function calculateTotal(items: { value: number }[]): number {
 ## IDE
 
 - Usar o TypeScript do workspace para evitar falsos erros de resolução de módulos
-- Configuração recomendada: [.vscode/settings.json](file:///home/vinicius/dev/dindinho/.vscode/settings.json)
+- Configuração recomendada: [.vscode/settings.json](./.vscode/settings.json)

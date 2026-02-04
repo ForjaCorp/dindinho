@@ -63,5 +63,5 @@ As metas são centralizadas na tabela `Budget`, diferenciadas pelo campo `type`.
 
 ## 🔗 Links Úteis
 
-- [Planejamento de Metas](file:///home/vinicius/dev/dindinho/docs/90-backlog/planning/planejamento-metas.md)
-- [Esquema do Banco](file:///home/vinicius/dev/dindinho/backend/prisma/schema.prisma)
+- [Planejamento de Metas](../90-backlog/planning/planejamento-metas.md)
+- [Esquema do Banco](../../backend/prisma/schema.prisma)

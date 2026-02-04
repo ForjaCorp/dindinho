@@ -40,7 +40,7 @@ Este domínio é o alicerce de segurança do Dindinho, garantindo que apenas usu
 
 ### Modelo de Dados
 
-Referência no [schema.prisma](file:///home/vinicius/dev/dindinho/backend/prisma/schema.prisma):
+Referência no [schema.prisma](../../backend/prisma/schema.prisma):
 
 - `User`: Entidade central com dados de perfil e hash de senha (Argon2).
 - `RefreshToken`: Armazena tokens de atualização em formato binário para segurança e performance.
@@ -55,11 +55,11 @@ Referência no [schema.prisma](file:///home/vinicius/dev/dindinho/backend/prisma
 
 ### Integração e API
 
-- **Endpoints**: Verifique `/auth/*` e `/users/*` na [Referência de API](file:///home/vinicius/dev/dindinho/docs/admin/api-ref).
+- **Endpoints**: Verifique `/auth/*` e `/users/*` na [Referência de API](../30-api/openapi.json).
 - **Segurança**: Uso de JWT (Short-lived) e Refresh Tokens (Long-lived, Database-backed).
 - **Contratos**: Schemas Zod definidos em `packages/shared/src/schemas/auth.schema.ts`.
 
 ## 🔗 Links Úteis
 
-- [Configuração de Segurança](file:///home/vinicius/dev/dindinho/backend/src/plugins/security.ts)
-- [Auth Guard (Frontend)](file:///home/vinicius/dev/dindinho/frontend/src/app/guards/auth.guard.ts)
+- [Configuração de Segurança](../../backend/src/plugins/auth.ts)
+- [Auth Guard (Frontend)](../../frontend/src/app/guards/auth.guard.ts)
