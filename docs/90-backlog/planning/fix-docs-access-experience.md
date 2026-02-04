@@ -57,7 +57,7 @@ A solução consiste em quatro pilares:
 - [x] Alterar o fallback de conteúdo no `DocsPage` de `documentation.md` para `00-overview/principles.md`.
 - [x] Corrigir o botão "Voltar para o App" nos layouts de documentação para forçar a navegação para o domínio principal (sem prefixo `docs.`).
 - [x] Garantir que o subdomínio `docs.` não exiba componentes do dashboard ou menus do app principal.
-- [x] Atualizar ícone de "Metas de Economia" para `pi-briefcase` (PrimeIcons) para melhor representação visual.
+- [x] Atualizar ícone de "Metas de Economia" para `pi-bullseye` (PrimeIcons) para melhor representação visual.
 
 ### Fase 4: Estabilização de Testes e Reatividade (Concluída)
 
@@ -65,6 +65,24 @@ A solução consiste em quatro pilares:
 - [x] Atualizar `docs.page.spec.ts` para suportar testes assíncronos de navegação usando `Subject` e `Observable`.
 - [x] Eliminar avisos de lint e garantir conformidade com `ts-ignore` e `any` (Zero Tolerance).
 - [x] Validar reação a mudanças sucessivas de parâmetros de rota no portal de documentação.
+
+### Fase 5: Experiência Premium de Documentação Interna (Concluída)
+
+Esta fase foca em transformar a documentação administrativa em uma ferramenta de nível profissional (Stripe/Linear style).
+
+- [x] **Categorização por Ciclo de Vida (Lifecycle)**: Organizar o backlog em estágios de maturidade:
+  - **WIP (Work in Progress)**: Itens em desenvolvimento ativo.
+  - **Discovery / RFCs**: Planos em discussão inicial.
+  - **Concluído / Arquivo**: Histórico de decisões e planos finalizados.
+- [x] **Interface Colapsável (Visual Hierarchy)**:
+  - Implementar seções que podem ser expandidas/colapsadas com animações suaves.
+  - Adicionar indicadores de quantidade de itens em cada categoria e sub-status.
+- [x] **Sistema de Badges e Metadados**:
+  - Adicionar badges visuais discretos na sidebar para indicar status (ex: `RFC`, `Novo`, `WIP`).
+- [x] **Busca Contextual (Command Palette)**:
+  - Implementar atalho `Cmd+K` / `Ctrl+K` para busca rápida em toda a documentação (Pilar Premium).
+- [x] **Metadados Avançados**:
+  - Usar ícones de prioridade para itens críticos e tags de "Proprietário" do documento.
 
 ## 🏗️ Impacto Técnico
 

@@ -1,5 +1,5 @@
 ---
-id: admin-intro
+id: intro
 title: "Bem-vindo ao Dindinho Internal"
 description: "Guia central para desenvolvedores e administradores do ecossistema Dindinho."
 audience: ["dev", "arquitetura", "ops"]
