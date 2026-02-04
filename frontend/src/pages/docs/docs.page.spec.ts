@@ -89,6 +89,8 @@ describe('DocsPage', () => {
 
   it('deve carregar documento via slug', () => {
     docsServiceMock.getFile.mockReturnValue(of('# Relatórios'));
+    // Define contexto admin pois reports está no adminMapping
+    activatedRouteMock.snapshot.data = { context: 'admin' };
     createComponent();
     activatedRouteMock.params.next({ slug: 'reports' });
     fixture.detectChanges();
@@ -98,6 +100,7 @@ describe('DocsPage', () => {
 
   it('deve carregar documento de domínio via slug', () => {
     docsServiceMock.getFile.mockReturnValue(of('# Domínio de Contas'));
+    // Contexto padrão é user, onde dominio-contas está mapeado
     createComponent();
     activatedRouteMock.params.next({ slug: 'dominio-contas' });
     fixture.detectChanges();
@@ -119,6 +122,8 @@ describe('DocsPage', () => {
   });
 
   it('deve carregar api-ref via slug', () => {
+    // api-ref está no adminMapping
+    activatedRouteMock.snapshot.data = { context: 'admin' };
     createComponent();
     activatedRouteMock.params.next({ slug: 'api-ref' });
     fixture.detectChanges();
@@ -180,6 +185,8 @@ describe('DocsPage', () => {
       },
     };
     docsServiceMock.getOpenApi.mockReturnValue(of(mockOpenApi));
+    // openapi está no adminMapping
+    activatedRouteMock.snapshot.data = { context: 'admin' };
     createComponent();
     activatedRouteMock.params.next({ slug: 'openapi' });
     fixture.detectChanges();
@@ -237,6 +244,8 @@ describe('DocsPage', () => {
     docsServiceMock.getOpenApi.mockReturnValue(
       of({ openapi: '3.0.0', info: { title: 'API Sucesso', version: '1.0' }, paths: {} }),
     );
+    // api-ref está no adminMapping
+    activatedRouteMock.snapshot.data = { context: 'admin' };
     createComponent();
     activatedRouteMock.params.next({ slug: 'api-ref' });
     fixture.detectChanges();
@@ -248,33 +257,34 @@ describe('DocsPage', () => {
 
     // Agora simula erro no próximo carregamento
     docsServiceMock.getFile.mockReturnValue(throwError(() => new Error('Falha')));
-    activatedRouteMock.params.next({ slug: 'principles' });
-    fixture.detectChanges();
-    await fixture.whenStable();
+    activatedRouteMock.params.next({ slug: 'erro' });
     fixture.detectChanges();
 
     const errorEl = fixture.nativeElement.querySelector('[data-testid="docs-error"]');
     expect(errorEl).toBeTruthy();
     expect(errorEl.textContent).toContain('Erro ao carregar documento');
+    expect(errorEl.getAttribute('role')).toBe('alert');
 
-    // Título externo deve mudar para Erro
-    expect(fixture.nativeElement.querySelector('h1').textContent).toContain('Erro de Carregamento');
+    // Verifica se metadados foram limpos/resetados para estado de erro
+    expect(component['title']()).toBe('Erro de Carregamento');
+    expect(component['description']()).toBe('');
+    expect(component['tags']()).toEqual([]);
   });
 
   it('deve reagir a mudanças sucessivas nos parâmetros', () => {
-    docsServiceMock.getFile.mockReturnValue(of('# Primeiro'));
+    docsServiceMock.getFile.mockReturnValue(of('# Relatórios'));
+    // reports está no adminMapping
+    activatedRouteMock.snapshot.data = { context: 'admin' };
     createComponent();
-
-    // Primeiro acesso
     activatedRouteMock.params.next({ slug: 'reports' });
     fixture.detectChanges();
     expect(docsServiceMock.getFile).toHaveBeenCalledWith('40-clients/pwa/reports-frontend.md');
 
     // Segundo acesso (mudança de rota)
-    docsServiceMock.getFile.mockReturnValue(of('# Segundo'));
-    activatedRouteMock.params.next({ slug: 'dominio-contas' });
+    docsServiceMock.getFile.mockReturnValue(of('# Intro'));
+    activatedRouteMock.params.next({ slug: 'intro' });
     fixture.detectChanges();
-    expect(docsServiceMock.getFile).toHaveBeenCalledWith('10-product/dominio-contas.md');
+    expect(docsServiceMock.getFile).toHaveBeenCalledWith('admin/intro.md');
   });
 
   it('deve lidar com falha no carregamento do OpenAPI', async () => {
