@@ -163,6 +163,7 @@ O desenvolvimento do Dindinho é guiado por um plano de execução estruturado e
 | **D6** | Separação em 3 Tiers (Public/User/Admin)    | ✅ Concluído |
 | **D7** | Domínios e Especialização de Conteúdo       | ✅ Concluído |
 | **D8** | Operações, Persistência e Erros             | ✅ Concluído |
+| **D9** | Experiência de Acesso e Isolamento de Docs  | ✅ Concluído |
 
 Para detalhes técnicos sobre o progresso e próximos passos, consulte o [Plano de Execução de Documentação](docs/90-backlog/planning/documentation.md).
 

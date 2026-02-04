@@ -349,11 +349,19 @@ Critério de aceite:
 - [x] Refatoração de Erros: Padronização de envelopes e códigos de erro (Backend/Frontend)
 - [x] QA & Testes: Princípios, Plano E2E e estratégia de qualidade
 
+### Fase D9 — Experiência de Acesso e Isolamento (1 PR) (CONCLUÍDO)
+
+- [x] Implementar `SubdomainGuard` para restringir acesso a rotas não-docs.
+- [x] Corrigir fluxo de `returnUrl` no `AuthGuard` e `LoginComponent`.
+- [x] Configurar redirecionamento automático da raiz de docs para conteúdo público.
+- [x] Validar isolamento entre domínio principal e subdomínio de documentação.
+
 Critério de aceite:
 
-- [x] Operar o sistema sem ler código: como subir, migrar, debugar healthcheck e rollback básico
-- [x] Erros são reportados de forma consistente em toda a stack.
-- [x] Estratégia de testes documentada e integrada ao roadmap.
+- [x] Deep linking funciona corretamente pós-login.
+- [x] Subdomínio `docs` é restrito a conteúdo de documentação e auth.
+
+---
 
 ## Backlog de engenharia — contratos em runtime
 
