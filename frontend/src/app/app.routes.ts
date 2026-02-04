@@ -75,7 +75,7 @@ export const routes: Routes = [
     ],
   },
 
-  // Documentação (Pública)
+  // Documentação (Pública/Usuário)
   {
     path: 'docs',
     component: UserDocsLayoutComponent,
@@ -89,6 +89,7 @@ export const routes: Routes = [
       {
         path: ':slug',
         loadComponent: () => import('../pages/docs/docs.page').then((m) => m.DocsPage),
+        data: { context: 'user' },
       },
     ],
   },
@@ -108,6 +109,7 @@ export const routes: Routes = [
       {
         path: ':slug',
         loadComponent: () => import('../pages/docs/docs.page').then((m) => m.DocsPage),
+        data: { context: 'admin' },
       },
     ],
   },
