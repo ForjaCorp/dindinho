@@ -347,11 +347,13 @@ Critério de aceite:
 - [x] Deploy: Coolify, docker-compose e healthchecks
 - [x] Jobs: limpeza de refresh tokens (in-process vs cron externo)
 - [x] Refatoração de Erros: Padronização de envelopes e códigos de erro (Backend/Frontend)
+- [x] QA & Testes: Princípios, Plano E2E e estratégia de qualidade
 
 Critério de aceite:
 
 - [x] Operar o sistema sem ler código: como subir, migrar, debugar healthcheck e rollback básico
 - [x] Erros são reportados de forma consistente em toda a stack.
+- [x] Estratégia de testes documentada e integrada ao roadmap.
 
 ## Backlog de engenharia — contratos em runtime
 
