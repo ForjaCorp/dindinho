@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject, signal, WritableSignal } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService, RefreshResponse } from './api.service';
 import { LoginDTO, LoginResponseDTO, CreateUserDTO, CreateWaitlistDTO } from '@dindinho/shared';
@@ -7,6 +7,7 @@ import { Observable, throwError } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 import { LoggerService } from './logger.service';
 import { ErrorMapper } from '../utils/error-mapper';
+import { CookieUtil } from '../utils/cookie.util';
 
 /**
  * Interface que representa o estado do usuário autenticado
@@ -95,10 +96,19 @@ export class AuthService {
    *   const user = authService.currentUser();
    * });
    *
-   * @type {Signal<UserState | null>}
+   * @type {WritableSignal<UserState | null>}
    * @readonly
    */
-  readonly currentUser = signal<UserState | null>(this.tryRestoreSession());
+  readonly currentUser: WritableSignal<UserState | null> = signal<UserState | null>(null);
+
+  constructor() {
+    // Tenta restaurar a sessão após o Signal ser inicializado para evitar erros de referência
+    // Isso é feito no construtor em vez da inicialização direta para garantir que 'this.currentUser' exista
+    const savedUser = this.tryRestoreSession();
+    if (savedUser) {
+      this.currentUser.set(savedUser);
+    }
+  }
 
   /**
    * Realiza o login do usuário
@@ -253,12 +263,16 @@ export class AuthService {
    */
   private tryRestoreSession(): UserState | null {
     try {
-      // 1. Verifica ambiente de navegador (SSR/Testes)
-      if (typeof localStorage === 'undefined') {
-        return null;
+      // 1. Tenta recuperar do localStorage ou Cookies
+      let token = null;
+      if (typeof localStorage !== 'undefined') {
+        token = localStorage.getItem(this.TOKEN_KEY);
       }
 
-      const token = localStorage.getItem(this.TOKEN_KEY);
+      if (!token && typeof document !== 'undefined') {
+        token = CookieUtil.get(this.TOKEN_KEY);
+      }
+
       if (!token) {
         return null; // Sem token, sem sessão
       }
@@ -268,7 +282,7 @@ export class AuthService {
 
       // 3. Se o token for inválido ou expirado, limpa o storage
       if (!user) {
-        localStorage.removeItem(this.TOKEN_KEY);
+        this.clearAuthState();
         return null;
       }
 
@@ -356,18 +370,43 @@ export class AuthService {
    * @throws {AuthError.STORAGE_ERROR} Quando não é possível armazenar os tokens
    */
   private storeTokens(token: string, refreshToken: string): void {
-    if (typeof localStorage === 'undefined') {
-      this.logger.warn('localStorage não disponível para armazenar tokens');
-      return;
-    }
-
     if (!token || !refreshToken) {
       this.logger.error('Tentativa de armazenar tokens inválidos');
       return;
     }
 
-    localStorage.setItem(this.TOKEN_KEY, token);
-    localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
+    // Armazena no localStorage se disponível
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(this.TOKEN_KEY, token);
+      localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
+    }
+
+    // Armazena em Cookies para compartilhamento entre subdomínios
+    if (typeof document !== 'undefined') {
+      // Tokens costumam durar 1h, Refresh Tokens duram mais (ex: 7 dias)
+      // Aqui usamos 7 dias para ambos no cookie por simplicidade,
+      // mas o JWT interno controla a expiração real.
+      CookieUtil.set(this.TOKEN_KEY, token, 7);
+      CookieUtil.set(this.REFRESH_TOKEN_KEY, refreshToken, 7);
+    }
+  }
+
+  /**
+   * Recupera o token de acesso.
+   *
+   * @returns {string | null} O token de acesso ou null
+   */
+  getAccessToken(): string | null {
+    if (typeof localStorage !== 'undefined') {
+      const token = localStorage.getItem(this.TOKEN_KEY);
+      if (token) return token;
+    }
+
+    if (typeof document !== 'undefined') {
+      return CookieUtil.get(this.TOKEN_KEY);
+    }
+
+    return null;
   }
 
   /**
@@ -376,8 +415,16 @@ export class AuthService {
    * @returns {string | null} O refresh token ou null se não existir
    */
   getRefreshToken(): string | null {
-    if (typeof localStorage === 'undefined') return null;
-    return localStorage.getItem(this.REFRESH_TOKEN_KEY);
+    if (typeof localStorage !== 'undefined') {
+      const token = localStorage.getItem(this.REFRESH_TOKEN_KEY);
+      if (token) return token;
+    }
+
+    if (typeof document !== 'undefined') {
+      return CookieUtil.get(this.REFRESH_TOKEN_KEY);
+    }
+
+    return null;
   }
 
   /**
@@ -397,6 +444,11 @@ export class AuthService {
       } catch (err) {
         this.logger.debug('Erro ao limpar localStorage:', err);
       }
+    }
+
+    if (typeof document !== 'undefined') {
+      CookieUtil.delete(this.TOKEN_KEY);
+      CookieUtil.delete(this.REFRESH_TOKEN_KEY);
     }
 
     this.currentUser.set(null);

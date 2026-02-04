@@ -28,7 +28,7 @@ export function resetInterceptorState() {
  */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
-  const token = localStorage.getItem('dindinho_token');
+  const token = authService.getAccessToken();
 
   // Verifica se a requisição é destinada à nossa API
   const isApiRequest = req.url.startsWith('/api') || req.url.includes('localhost:3333');
