@@ -406,6 +406,12 @@ export class DocsPage {
       ops: '50-ops/guia-operacoes.md',
       reports: '40-clients/pwa/reports-frontend.md',
       auth: '30-api/authentication.md',
+      'dominio-contas': '10-product/dominio-contas.md',
+      'dominio-auth': '10-product/dominio-auth.md',
+      'dominio-transacoes': '10-product/dominio-transacoes.md',
+      'dominio-relatorios': '10-product/dominio-relatorios.md',
+      'dominio-colaboracao': '10-product/dominio-colaboracao.md',
+      'dominio-metas': '10-product/dominio-metas.md',
     };
 
     // Mapeamento para Contexto User (Guia do Usuário/Amigável)
@@ -413,12 +419,12 @@ export class DocsPage {
       intro: '00-overview/intro.md',
       principles: '00-overview/principles.md',
       faq: '00-overview/faq.md',
-      'dominio-contas': '10-product/dominio-contas.md',
-      'dominio-auth': '10-product/dominio-auth.md',
-      'dominio-transacoes': '10-product/dominio-transacoes.md',
-      'dominio-relatorios': '10-product/dominio-relatorios.md',
-      'dominio-colaboracao': '10-product/dominio-colaboracao.md',
-      'dominio-metas': '10-product/dominio-metas.md',
+      'dominio-contas': 'user/dominios/contas.md',
+      'dominio-auth': 'user/dominios/auth.md',
+      'dominio-transacoes': 'user/dominios/transacoes.md',
+      'dominio-relatorios': 'user/dominios/relatorios.md',
+      'dominio-colaboracao': 'user/dominios/colaboracao.md',
+      'dominio-metas': 'user/dominios/metas.md',
     };
 
     if (context === 'admin') {

@@ -100,12 +100,12 @@ describe('DocsPage', () => {
 
   it('deve carregar documento de domínio via slug', () => {
     docsServiceMock.getFile.mockReturnValue(of('# Domínio de Contas'));
-    // Contexto padrão é user, onde dominio-contas está mapeado
+    // Contexto padrão é user, onde dominio-contas está mapeado para a versão amigável
     createComponent();
     activatedRouteMock.params.next({ slug: 'dominio-contas' });
     fixture.detectChanges();
 
-    expect(docsServiceMock.getFile).toHaveBeenCalledWith('10-product/dominio-contas.md');
+    expect(docsServiceMock.getFile).toHaveBeenCalledWith('user/dominios/contas.md');
   });
 
   it('deve carregar intro de admin quando context é admin', () => {

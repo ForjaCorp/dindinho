@@ -120,11 +120,11 @@ export class UserDocsLayoutComponent {
     },
     {
       id: 'dominios',
-      label: 'Domínios do Produto',
+      label: 'Como usar o Dindinho',
       items: [
         {
           id: 'auth',
-          label: 'Autenticação',
+          label: 'Acesso e Perfil',
           icon: 'pi-lock',
           link: '/docs/dominio-auth',
         },
@@ -136,25 +136,25 @@ export class UserDocsLayoutComponent {
         },
         {
           id: 'transactions',
-          label: 'Transações',
+          label: 'Lançamentos e Extrato',
           icon: 'pi-list',
           link: '/docs/dominio-transacoes',
         },
         {
           id: 'reports',
-          label: 'Relatórios',
+          label: 'Gráficos e Relatórios',
           icon: 'pi-chart-bar',
           link: '/docs/dominio-relatorios',
         },
         {
           id: 'collaboration',
-          label: 'Colaboração',
+          label: 'Compartilhar com Família',
           icon: 'pi-users',
           link: '/docs/dominio-colaboracao',
         },
         {
           id: 'metas',
-          label: 'Metas de Economia',
+          label: 'Metas e Objetivos',
           icon: 'pi-target',
           link: '/docs/dominio-metas',
         },
