@@ -7,7 +7,7 @@ import Fastify, {
 import { ZodError } from "zod";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
-import fastifyRateLimit from "@fastify/rate-limit";
+import rateLimit from "@fastify/rate-limit";
 import underPressure from "@fastify/under-pressure";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
@@ -151,10 +151,6 @@ export function buildApp(): FastifyInstance {
   });
 
   app.register(cors, {
-    /**
-     * @description Configuração de CORS que permite origens específicas baseadas no ambiente.
-     * Requisições sem o header 'Origin' (como health checks internos e ferramentas CLI) são permitidas.
-     */
     origin: (origin, cb) => {
       // Permitir requisições sem origem (ex: health checks locais, chamadas de servidor)
       if (!origin) {
@@ -162,12 +158,12 @@ export function buildApp(): FastifyInstance {
         return;
       }
 
+      // Em desenvolvimento, permitir qualquer localhost para evitar problemas de porta (4200, 4201, etc)
       if (process.env.NODE_ENV !== "production") {
-        const allowedDevOrigins = [
-          "http://localhost:4200",
-          ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
-        ];
-        if (allowedDevOrigins.includes(origin)) {
+        if (
+          origin.startsWith("http://localhost:") ||
+          origin.startsWith("http://127.0.0.1:")
+        ) {
           cb(null, true);
           return;
         }
@@ -183,7 +179,7 @@ export function buildApp(): FastifyInstance {
     credentials: true,
   });
 
-  app.register(fastifyRateLimit, {
+  app.register(rateLimit, {
     max: Number(process.env.RATE_LIMIT_MAX) || 100,
     timeWindow: process.env.RATE_LIMIT_TIME_WINDOW || "1 minute",
     allowList: process.env.RATE_LIMIT_ALLOWLIST
@@ -195,55 +191,22 @@ export function buildApp(): FastifyInstance {
     },
   });
 
-  // Health Check na raiz para monitoramento (ex: Load Balancer)
-  app.register(healthRoutes);
-
-  // API v1
-  app.register(
-    async (api: FastifyInstance) => {
-      const typedApi = api.withTypeProvider<ZodTypeProvider>();
-      typedApi.setValidatorCompiler(validatorCompiler);
-      typedApi.setSerializerCompiler(serializerCompiler);
-
-      // Swagger UI - Documentação da API (Somente em desenvolvimento ou se explicitamente habilitado)
-      if (
-        process.env.NODE_ENV !== "production" ||
-        process.env.ENABLE_SWAGGER === "true"
-      ) {
-        api.register(swaggerUi, {
-          routePrefix: "/docs",
-          uiConfig: {
-            docExpansion: "list",
-            deepLinking: false,
-          },
-        });
-      }
-
-      // Registro de rotas sequencial para garantir ordem de inicialização
-      api.log.debug("Iniciando registro de rotas da API...");
-
-      await api.register(healthRoutes);
-      await api.register(authRoutes, { prefix: "/auth" });
-      await api.register(usersRoutes, { prefix: "/users" });
-      await api.register(accountsRoutes, { prefix: "/accounts" });
-      await api.register(transactionsRoutes, { prefix: "/transactions" });
-      await api.register(categoriesRoutes, { prefix: "/categories" });
-      await api.register(reportsRoutes, { prefix: "/reports" });
-      await api.register(waitlistRoutes, { prefix: "/waitlist" });
-      await api.register(signupAllowlistRoutes, {
-        prefix: "/signup-allowlist",
-      });
-
-      api.log.debug("Registro de rotas da API concluído.");
-    },
-    { prefix: "/api" },
-  );
-
   app.setErrorHandler(
     (error: FastifyError, request: FastifyRequest, reply: FastifyReply) => {
       const { validation, code, message, statusCode = 500 } = error;
       const { id: requestId } = request;
       const isDev = process.env.NODE_ENV !== "production";
+
+      // Log detalhado do erro no servidor
+      request.log.error(
+        {
+          err: error,
+          requestId,
+          url: request.url,
+          method: request.method,
+        },
+        "Erro capturado pelo ErrorHandler",
+      );
 
       // Erros de validação do Zod
       if (error instanceof ZodError) {
@@ -301,28 +264,55 @@ export function buildApp(): FastifyInstance {
         );
       }
 
-      // Log de erro interno inesperado
-      request.log.error(
-        {
-          err: error,
-          requestId,
-          path: request.url,
-          method: request.method,
-        },
-        "Internal Server Error",
-      );
-
-      // Resposta genérica para erros 500 inesperados
+      // Erros genéricos 500 ou não mapeados
       return reply.status(statusCode).send(
         buildApiErrorResponse({
           statusCode,
-          message: isDev ? message : "Ocorreu um erro inesperado.",
+          message: isDev ? message : "Ocorreu um erro interno no servidor.",
           requestId,
-          code: normalizeErrorCode(code) || "INTERNAL_SERVER_ERROR",
-          details: isDev ? error.stack : undefined,
+          code: normalizeErrorCode(code),
         }),
       );
     },
+  );
+
+  // API v1
+  app.register(
+    async (api: FastifyInstance) => {
+      const typedApi = api.withTypeProvider<ZodTypeProvider>();
+
+      // Swagger UI - Documentação da API (Somente em desenvolvimento ou se explicitamente habilitado)
+      if (
+        process.env.NODE_ENV !== "production" ||
+        process.env.ENABLE_SWAGGER === "true"
+      ) {
+        typedApi.register(swaggerUi, {
+          routePrefix: "/docs",
+          uiConfig: {
+            docExpansion: "list",
+            deepLinking: false,
+          },
+        });
+      }
+
+      // Registro de rotas sequencial para garantir ordem de inicialização
+      typedApi.log.debug("Iniciando registro de rotas da API...");
+
+      await typedApi.register(healthRoutes);
+      await typedApi.register(authRoutes, { prefix: "/auth" });
+      await typedApi.register(usersRoutes, { prefix: "/users" });
+      await typedApi.register(accountsRoutes, { prefix: "/accounts" });
+      await typedApi.register(transactionsRoutes, { prefix: "/transactions" });
+      await typedApi.register(categoriesRoutes, { prefix: "/categories" });
+      await typedApi.register(reportsRoutes, { prefix: "/reports" });
+      await typedApi.register(waitlistRoutes, { prefix: "/waitlist" });
+      await typedApi.register(signupAllowlistRoutes, {
+        prefix: "/signup-allowlist",
+      });
+
+      typedApi.log.debug("Registro de rotas da API concluído.");
+    },
+    { prefix: "/api" },
   );
 
   const refreshTokenService = new RefreshTokenService(prisma, app.log);

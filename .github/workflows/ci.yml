@@ -2,9 +2,9 @@ name: CI
 
 on:
   pull_request:
-    branches: ['**']
+    branches: ["**"]
   push:
-    branches: ['**']
+    branches: ["**"]
   merge_group:
   workflow_dispatch:
 
@@ -16,10 +16,10 @@ permissions:
   contents: read
 
 env:
-  NODE_VERSION: '20'
-  TURBO_TELEMETRY_DISABLED: '1'
-  CI: 'true'
-  HUSKY: '0'
+  NODE_VERSION: "20"
+  TURBO_TELEMETRY_DISABLED: "1"
+  CI: "true"
+  HUSKY: "0"
 
 jobs:
   quality:
@@ -77,4 +77,3 @@ jobs:
       - name: "Quality (main: full)"
         if: ${{ github.event_name != 'pull_request' }}
         run: npm run quality:ci
-
