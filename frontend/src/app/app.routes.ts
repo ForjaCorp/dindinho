@@ -113,7 +113,7 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        redirectTo: 'architecture',
+        redirectTo: 'admin-intro',
         pathMatch: 'full',
       },
       {

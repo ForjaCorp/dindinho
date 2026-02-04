@@ -55,6 +55,19 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
         >
           <nav class="flex-1 overflow-y-auto p-4 space-y-1">
             <div class="text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
+              Geral
+            </div>
+
+            <a
+              data-testid="nav-admin-intro"
+              routerLink="/docs/admin/admin-intro"
+              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
+              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+            >
+              <i class="pi pi-home"></i> Introdução
+            </a>
+
+            <div class="pt-4 text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
               Engenharia
             </div>
 

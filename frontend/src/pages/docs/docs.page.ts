@@ -322,13 +322,14 @@ export class DocsPage {
       faq: '00-overview/faq.md',
 
       // Admin Docs
-      architecture: '90-backlog/planning/documentation.md',
+      'admin-intro': 'docs/admin/intro.md',
+      architecture: '20-architecture/intro.md',
       adr: '21-adr/intro.md',
       roadmap: '90-backlog/planning/evolucao-roadmap.md',
       'test-plan-e2e': '90-backlog/planning/test-plan-e2e.md',
       openapi: this.OPENAPI_PATH,
       'api-ref': this.OPENAPI_PATH,
-      deploy: '90-backlog/planning/documentation.md',
+      deploy: '50-ops/deploy.md',
       ops: '50-ops/guia-operacoes.md',
 
       // User/Product Domains (Fase 7)
