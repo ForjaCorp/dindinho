@@ -33,7 +33,8 @@ packages/shared/src/**/*.js.map
 
 # Editor
 .idea
-.vscode
+.vscode/*
+!.vscode/settings.json
 *.suo
 *.ntvs*
 *.njsproj
