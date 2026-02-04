@@ -7,8 +7,23 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Params } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { DocsService, OpenApiDocument, OpenApiOperation } from '../../app/services/docs.service';
+
+/**
+ * Interface para os parâmetros de rota do DocsPage.
+ */
+interface DocsRouteParams extends Params {
+  slug?: string;
+}
+
+/**
+ * Interface para os query parameters do DocsPage.
+ */
+interface DocsQueryParams extends Params {
+  path?: string;
+}
 
 /**
  * Interface que representa um endpoint individual na visualização OpenAPI.
@@ -36,7 +51,7 @@ interface OpenApiEndpointItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule],
   template: `
-    <div data-testid="docs-page" class="bg-white">
+    <div data-testid="docs-page" class="bg-white max-w-4xl mx-auto py-12 px-6">
       @if (isSwaggerSlug()) {
         <div data-testid="docs-swagger-redirect" class="py-20 text-center">
           <div
@@ -53,6 +68,7 @@ interface OpenApiEndpointItem {
             [href]="swaggerUrl()"
             target="_blank"
             class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
+            aria-label="Abrir documentação interativa Swagger em nova aba"
           >
             Abrir Swagger UI <i class="pi pi-arrow-right"></i>
           </a>
@@ -78,12 +94,13 @@ interface OpenApiEndpointItem {
           @if (isLoading()) {
             <div data-testid="docs-loading" class="flex items-center gap-3 text-slate-400 py-10">
               <i class="pi pi-spin pi-spinner text-xl"></i>
-              <span class="text-sm font-medium">Carregando conteúdo...</span>
+              <span class="text-sm font-medium" aria-live="polite">Carregando conteúdo...</span>
             </div>
           } @else if (error()) {
             <div
               data-testid="docs-error"
               class="p-6 rounded-2xl bg-red-50 border border-red-100 text-red-800"
+              role="alert"
             >
               <div class="flex items-center gap-3 mb-2">
                 <i class="pi pi-exclamation-circle text-xl"></i>
@@ -160,6 +177,12 @@ export class DocsPage {
 
   private readonly OPENAPI_PATH = '__openapi__';
 
+  /** Signals de rota para reagir a mudanças de URL */
+  private readonly params = toSignal(this.route.params, { initialValue: {} as DocsRouteParams });
+  private readonly queryParams = toSignal(this.route.queryParams, {
+    initialValue: {} as DocsQueryParams,
+  });
+
   /** Caminho do arquivo selecionado para exibição */
   protected readonly selectedPath = signal<string>('');
   /** Slug amigável da rota atual */
@@ -231,10 +254,13 @@ export class DocsPage {
   constructor() {
     // Escuta mudanças no slug ou no queryParam 'path'
     effect(() => {
-      const slugValue = this.route.snapshot.paramMap.get('slug');
-      const queryPath = this.route.snapshot.queryParamMap.get('path');
+      const params = this.params();
+      const queryParams = this.queryParams();
 
-      this.slug.set(slugValue);
+      const slugValue = params?.['slug'];
+      const queryPath = queryParams?.['path'];
+
+      this.slug.set(slugValue || null);
 
       // Determina o caminho final (slug tem prioridade para a nova estrutura)
       let finalPath = '';
@@ -244,8 +270,8 @@ export class DocsPage {
       } else if (queryPath) {
         finalPath = queryPath;
       } else {
-        // Fallback para o doc de planejamento se nada for informado
-        finalPath = '90-backlog/planning/documentation.md';
+        // Fallback para os princípios do produto se nada for informado
+        finalPath = '00-overview/principles.md';
       }
 
       this.selectedPath.set(finalPath);
@@ -313,8 +339,11 @@ export class DocsPage {
       'dominio-colaboracao': '10-product/dominio-colaboracao.md',
       'dominio-metas': '10-product/dominio-metas.md',
 
+      // UX & Access Experience
+      'fix-docs-access': '90-backlog/planning/fix-docs-access-experience.md',
+
       // Legacy/Placeholders
-      intro: '90-backlog/planning/documentation.md',
+      intro: '00-overview/principles.md',
       reports: '40-clients/pwa/reports-frontend.md',
       auth: '30-api/authentication.md',
     };
