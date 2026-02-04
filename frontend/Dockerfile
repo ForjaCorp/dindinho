@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY frontend/package.json ./frontend/
 COPY packages/shared/package.json ./packages/shared/
+ENV HUSKY=0
 RUN npm ci --workspaces --include-workspace-root
 
 FROM node:20-alpine AS builder
