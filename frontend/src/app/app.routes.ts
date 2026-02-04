@@ -97,17 +97,11 @@ export const routes: Routes = [
     ],
   },
 
-  // Documentação Legada/Atalho (Protegida - usa layout de docs de usuário)
+  // Documentação Legada/Atalho (Protegida - redireciona para intro)
   {
     path: 'docs',
-    component: UserDocsLayoutComponent,
-    canActivate: [subdomainGuard, authGuard],
-    children: [
-      {
-        path: '',
-        loadComponent: () => import('../pages/docs/docs.page').then((m) => m.DocsPage),
-      },
-    ],
+    redirectTo: 'docs/user/intro',
+    pathMatch: 'full',
   },
 
   // Documentação Interna/Admin (Protegida)

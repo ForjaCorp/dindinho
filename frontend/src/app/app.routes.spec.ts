@@ -98,4 +98,11 @@ describe('Rotas da aplicação', () => {
     expect(wildcardRoute).toBeDefined();
     expect(wildcardRoute?.redirectTo).toBe('login');
   });
+
+  it('deve redirecionar /docs para /docs/user/intro', () => {
+    const docsRoute = routesList.find((route) => route.path === 'docs');
+    expect(docsRoute).toBeDefined();
+    expect(docsRoute?.redirectTo).toBe('docs/user/intro');
+    expect(docsRoute?.pathMatch).toBe('full');
+  });
 });
