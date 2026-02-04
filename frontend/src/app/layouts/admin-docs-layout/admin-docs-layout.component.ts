@@ -1,292 +1,189 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import {
+  BaseDocsLayoutComponent,
+  SidebarCategory,
+} from '../base-docs-layout/base-docs-layout.component';
 
 /**
  * @description
  * Layout para documentação técnica e administrativa.
- * Restrito a desenvolvedores e administradores.
+ * Estende o BaseDocsLayoutComponent com configurações específicas de Admin.
  */
 @Component({
   selector: 'app-admin-docs-layout',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, BaseDocsLayoutComponent],
   template: `
-    <div data-testid="admin-docs-layout" class="flex flex-col h-dvh bg-slate-50 font-sans">
-      <!-- Admin Header -->
-      <header
-        data-testid="admin-docs-header"
-        class="h-16 border-b border-slate-200 bg-white flex items-center px-6 justify-between sticky top-0 z-20"
-      >
-        <div class="flex items-center gap-3">
-          <a
-            data-testid="admin-logo"
-            routerLink="/docs/admin/admin-intro"
-            class="flex items-center gap-2"
-          >
-            <div
-              class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold"
-            >
-              A
-            </div>
-            <span class="font-bold text-slate-900 tracking-tight"
-              >Dindinho <span class="text-indigo-600 font-medium">Internal</span></span
-            >
-          </a>
-          <span
-            class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[10px] font-bold uppercase tracking-widest border border-indigo-100"
-            >Admin Docs</span
-          >
-        </div>
-
-        <div class="flex items-center gap-4">
-          <button
-            data-testid="btn-back-app"
-            (click)="goToApp()"
-            class="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors"
-          >
-            Voltar para o App
-          </button>
-        </div>
-      </header>
-
-      <div class="flex-1 flex overflow-hidden">
-        <!-- Sidebar -->
-        <aside
-          data-testid="admin-docs-sidebar"
-          class="w-64 border-r border-slate-200 bg-white hidden md:flex flex-col"
-        >
-          <nav class="flex-1 overflow-y-auto p-4 space-y-1">
-            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
-              Geral
-            </div>
-
-            <a
-              data-testid="nav-admin-intro"
-              routerLink="/docs/admin/admin-intro"
-              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-home"></i> Introdução
-            </a>
-
-            <div class="pt-4 text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
-              Engenharia
-            </div>
-
-            <a
-              data-testid="nav-arch"
-              routerLink="/docs/admin/architecture"
-              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-sitemap"></i> Arquitetura
-            </a>
-
-            <a
-              data-testid="nav-adr"
-              routerLink="/docs/admin/adr"
-              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-book"></i> ADRs
-            </a>
-
-            <div class="pt-4 text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
-              Backlog & Planejamento
-            </div>
-
-            <a
-              data-testid="nav-roadmap"
-              routerLink="/docs/admin/roadmap"
-              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-map"></i> Roadmap
-            </a>
-
-            <a
-              data-testid="nav-test-plan-e2e"
-              routerLink="/docs/admin/test-plan-e2e"
-              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-check-square"></i> Plano E2E
-            </a>
-
-            <a
-              data-testid="nav-fix-docs-access"
-              routerLink="/docs/admin/fix-docs-access"
-              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-bolt"></i> Exp. de Acesso
-            </a>
-
-            <a
-              data-testid="nav-plan-routing"
-              routerLink="/docs/admin/plan-routing"
-              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-directions"></i> Evolução de Rotas
-            </a>
-
-            <a
-              data-testid="nav-plan-accounts"
-              routerLink="/docs/admin/plan-accounts"
-              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-filter"></i> Filtro de Contas
-            </a>
-
-            <a
-              data-testid="nav-plan-time-filter"
-              routerLink="/docs/admin/plan-time-filter"
-              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-calendar"></i> Filtro Temporal
-            </a>
-
-            <a
-              data-testid="nav-plan-notifications"
-              routerLink="/docs/admin/plan-notifications"
-              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-bell"></i> Notificações
-            </a>
-
-            <a
-              data-testid="nav-plan-invites"
-              routerLink="/docs/admin/plan-invites"
-              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-user-plus"></i> Convites
-            </a>
-
-            <a
-              data-testid="nav-plan-url-sync"
-              routerLink="/docs/admin/plan-url-sync"
-              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-sync"></i> Sincronismo URL
-            </a>
-
-            <div class="pt-4 text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
-              Infraestrutura
-            </div>
-
-            <a
-              data-testid="nav-ops"
-              routerLink="/docs/admin/ops"
-              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-cog"></i> Operações
-            </a>
-
-            <a
-              data-testid="nav-deploy"
-              routerLink="/docs/admin/deploy"
-              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-cloud-upload"></i> Deploy & Cloud
-            </a>
-
-            <a
-              data-testid="nav-api-ref"
-              routerLink="/docs/admin/api-ref"
-              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-code"></i> Referência de API
-            </a>
-
-            <div class="pt-4 text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
-              Domínios do Produto
-            </div>
-
-            <a
-              data-testid="nav-dominio-auth"
-              routerLink="/docs/admin/dominio-auth"
-              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-lock"></i> Autenticação
-            </a>
-
-            <a
-              data-testid="nav-dominio-contas"
-              routerLink="/docs/admin/dominio-contas"
-              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-wallet"></i> Contas e Cartões
-            </a>
-
-            <a
-              data-testid="nav-dominio-transacoes"
-              routerLink="/docs/admin/dominio-transacoes"
-              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-list"></i> Transações
-            </a>
-
-            <a
-              data-testid="nav-dominio-relatorios"
-              routerLink="/docs/admin/dominio-relatorios"
-              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-chart-bar"></i> Relatórios
-            </a>
-
-            <a
-              data-testid="nav-dominio-colaboracao"
-              routerLink="/docs/admin/dominio-colaboracao"
-              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-users"></i> Colaboração
-            </a>
-
-            <a
-              data-testid="nav-dominio-metas"
-              routerLink="/docs/admin/dominio-metas"
-              routerLinkActive="bg-indigo-50 text-indigo-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-briefcase"></i> Metas de Economia
-            </a>
-          </nav>
-
-          <div class="p-4 border-t border-slate-100 bg-slate-50/50">
-            <p class="text-[10px] text-slate-400 text-center uppercase font-bold tracking-tighter">
-              Dindinho Internal v1.0.0
-            </p>
-          </div>
-        </aside>
-
-        <!-- Main Content -->
-        <main data-testid="admin-docs-main" class="flex-1 overflow-y-auto bg-white">
-          <router-outlet></router-outlet>
-        </main>
-      </div>
-    </div>
+    <app-base-docs-layout
+      [testId]="'admin-docs-layout'"
+      [logoLink]="'/docs/admin/admin-intro'"
+      [logoLetter]="'A'"
+      [logoBgClass]="'bg-indigo-600'"
+      [logoTextClass]="'text-indigo-600'"
+      [logoSubtitle]="'Internal'"
+      [badgeText]="'Admin Docs'"
+      [footerText]="'Dindinho Internal v1.0.0'"
+      [activeLinkClass]="'bg-indigo-50 text-indigo-700 font-bold'"
+      [categories]="categories"
+      (backToApp)="goToApp()"
+    >
+    </app-base-docs-layout>
   `,
 })
 export class AdminDocsLayoutComponent {
+  protected categories: SidebarCategory[] = [
+    {
+      id: 'geral',
+      label: 'Geral',
+      items: [
+        {
+          id: 'admin-intro',
+          label: 'Introdução',
+          icon: 'pi-home',
+          link: '/docs/admin/admin-intro',
+        },
+      ],
+    },
+    {
+      id: 'engenharia',
+      label: 'Engenharia',
+      items: [
+        { id: 'arch', label: 'Arquitetura', icon: 'pi-sitemap', link: '/docs/admin/architecture' },
+        { id: 'adr', label: 'ADRs', icon: 'pi-book', link: '/docs/admin/adr' },
+      ],
+    },
+    {
+      id: 'backlog',
+      label: 'Backlog & Planejamento',
+      isBacklog: true,
+      items: [
+        {
+          id: 'roadmap',
+          label: 'Roadmap',
+          icon: 'pi-map',
+          link: '/docs/admin/roadmap',
+          status: 'WIP',
+        },
+        {
+          id: 'test-plan-e2e',
+          label: 'Plano E2E',
+          icon: 'pi-check-square',
+          link: '/docs/admin/test-plan-e2e',
+          status: 'DONE',
+        },
+        {
+          id: 'fix-docs-access',
+          label: 'Exp. de Acesso',
+          icon: 'pi-bolt',
+          link: '/docs/admin/fix-docs-access',
+          status: 'WIP',
+        },
+        {
+          id: 'plan-routing',
+          label: 'Evolução de Rotas',
+          icon: 'pi-directions',
+          link: '/docs/admin/plan-routing',
+          status: 'RFC',
+        },
+        {
+          id: 'plan-accounts',
+          label: 'Filtro de Contas',
+          icon: 'pi-filter',
+          link: '/docs/admin/plan-accounts',
+          status: 'RFC',
+        },
+        {
+          id: 'plan-time-filter',
+          label: 'Filtro Temporal',
+          icon: 'pi-calendar',
+          link: '/docs/admin/plan-time-filter',
+          status: 'RFC',
+        },
+        {
+          id: 'plan-notifications',
+          label: 'Notificações',
+          icon: 'pi-bell',
+          link: '/docs/admin/plan-notifications',
+          status: 'RFC',
+        },
+        {
+          id: 'plan-invites',
+          label: 'Convites',
+          icon: 'pi-user-plus',
+          link: '/docs/admin/plan-invites',
+          status: 'RFC',
+        },
+        {
+          id: 'plan-url-sync',
+          label: 'Sincronismo URL',
+          icon: 'pi-sync',
+          link: '/docs/admin/plan-url-sync',
+          status: 'RFC',
+        },
+      ],
+    },
+    {
+      id: 'infra',
+      label: 'Infraestrutura',
+      items: [
+        { id: 'ops', label: 'Operações', icon: 'pi-cog', link: '/docs/admin/ops' },
+        {
+          id: 'deploy',
+          label: 'Deploy & Cloud',
+          icon: 'pi-cloud-upload',
+          link: '/docs/admin/deploy',
+        },
+        { id: 'api-ref', label: 'Referência de API', icon: 'pi-code', link: '/docs/admin/api-ref' },
+      ],
+    },
+    {
+      id: 'dominios',
+      label: 'Domínios do Produto',
+      items: [
+        {
+          id: 'dominio-auth',
+          label: 'Autenticação',
+          icon: 'pi-lock',
+          link: '/docs/admin/dominio-auth',
+        },
+        {
+          id: 'dominio-contas',
+          label: 'Contas e Cartões',
+          icon: 'pi-wallet',
+          link: '/docs/admin/dominio-contas',
+        },
+        {
+          id: 'dominio-transacoes',
+          label: 'Transações',
+          icon: 'pi-list',
+          link: '/docs/admin/dominio-transacoes',
+        },
+        {
+          id: 'dominio-relatorios',
+          label: 'Relatórios',
+          icon: 'pi-chart-bar',
+          link: '/docs/admin/dominio-relatorios',
+        },
+        {
+          id: 'dominio-colaboracao',
+          label: 'Colaboração',
+          icon: 'pi-users',
+          link: '/docs/admin/dominio-colaboracao',
+        },
+        {
+          id: 'dominio-metas',
+          label: 'Metas de Economia',
+          icon: 'pi-briefcase',
+          link: '/docs/admin/dominio-metas',
+        },
+      ],
+    },
+  ];
+
   /**
    * Redireciona o usuário para o domínio principal da aplicação (Dashboard).
-   * Remove o subdomínio 'docs.' do host atual (preservando a porta se existir).
    */
   goToApp(): void {
     const host = window.location.host;
@@ -294,7 +191,6 @@ export class AdminDocsLayoutComponent {
       const mainDomain = host.replace('docs.', '');
       window.location.href = `${window.location.protocol}//${mainDomain}/dashboard`;
     } else {
-      // Se já estiver no domínio principal (desenvolvimento), apenas navega
       window.location.href = '/dashboard';
     }
   }
