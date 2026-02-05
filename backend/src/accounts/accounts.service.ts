@@ -66,7 +66,7 @@ export class UserNotFoundError extends AccountError {
  * @description Lançado quando dados fornecidos são inválidos.
  */
 export class AccountValidationError extends AccountError {
-  readonly statusCode = 400;
+  readonly statusCode = 422;
   readonly isOperational = true;
 
   constructor(message: string, validationErrors?: unknown) {

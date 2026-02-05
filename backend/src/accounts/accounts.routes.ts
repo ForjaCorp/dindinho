@@ -81,9 +81,16 @@ export async function accountsRoutes(app: FastifyInstance) {
         return reply.status(201).send(account);
       } catch (error) {
         if (error instanceof AccountError) {
-          return reply.code(error.statusCode).send({
-            statusCode: error.statusCode,
-            error: getHttpErrorLabel(error.statusCode),
+          const statusCode = error.statusCode as
+            | 401
+            | 403
+            | 404
+            | 409
+            | 422
+            | 500;
+          return reply.code(statusCode).send({
+            statusCode,
+            error: getHttpErrorLabel(statusCode),
             message: error.message,
             code:
               typeof error.details === "object" &&
@@ -131,9 +138,10 @@ export async function accountsRoutes(app: FastifyInstance) {
         return await service.findAllByUserId(userId);
       } catch (error) {
         if (error instanceof AccountError) {
-          return reply.code(error.statusCode).send({
-            statusCode: error.statusCode,
-            error: getHttpErrorLabel(error.statusCode),
+          const statusCode = error.statusCode as 200 | 401 | 500;
+          return reply.code(statusCode).send({
+            statusCode,
+            error: getHttpErrorLabel(statusCode),
             message: error.message,
             code:
               typeof error.details === "object" &&
@@ -195,9 +203,17 @@ export async function accountsRoutes(app: FastifyInstance) {
         return await service.update(userId, id, payload);
       } catch (error) {
         if (error instanceof AccountError) {
-          return reply.code(error.statusCode).send({
-            statusCode: error.statusCode,
-            error: getHttpErrorLabel(error.statusCode),
+          const statusCode = error.statusCode as
+            | 200
+            | 404
+            | 401
+            | 403
+            | 409
+            | 422
+            | 500;
+          return reply.code(statusCode).send({
+            statusCode,
+            error: getHttpErrorLabel(statusCode),
             message: error.message,
             code:
               typeof error.details === "object" &&
