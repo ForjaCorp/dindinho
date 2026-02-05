@@ -57,7 +57,7 @@ describe('ReportChartCardComponent', () => {
   });
 
   it('deve renderizar o título corretamente', () => {
-    const titleElement = fixture.nativeElement.querySelector('.p-card-title');
+    const titleElement = fixture.nativeElement.querySelector('[data-testid="chart-card-title"]');
     expect(titleElement.textContent).toContain('Teste Gráfico');
   });
 
