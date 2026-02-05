@@ -77,6 +77,7 @@ describe('TransactionsPage', () => {
   let fixture: ComponentFixture<TransactionsPage>;
   let queryParamMap$: BehaviorSubject<ParamMap>;
   let router: Router;
+  let route: ActivatedRoute;
   let urlSync: { updateParams: ReturnType<typeof vi.fn> };
 
   interface TransactionsPageHarness {
@@ -202,6 +203,7 @@ describe('TransactionsPage', () => {
 
     fixture = TestBed.createComponent(TransactionsPage);
     router = TestBed.inject(Router);
+    route = TestBed.inject(ActivatedRoute);
     urlSync = TestBed.inject(UrlSyncService) as unknown as typeof urlSync;
     vi.spyOn(router, 'navigate').mockResolvedValue(true);
     fixture.detectChanges();
@@ -317,7 +319,7 @@ describe('TransactionsPage', () => {
     });
 
     expect(urlSync.updateParams).toHaveBeenCalledWith(
-      expect.anything(),
+      route,
       expect.objectContaining({
         invoiceMonth: '2026-01',
         month: null,
@@ -402,7 +404,7 @@ describe('TransactionsPage', () => {
     });
 
     expect(urlSync.updateParams).toHaveBeenCalledWith(
-      expect.anything(),
+      route,
       expect.objectContaining({
         periodPreset: 'TODAY',
         invoiceMonth: null,
@@ -431,7 +433,7 @@ describe('TransactionsPage', () => {
     });
 
     expect(urlSync.updateParams).toHaveBeenCalledWith(
-      expect.anything(),
+      route,
       expect.objectContaining({
         month: null,
         invoiceMonth: null,
@@ -507,7 +509,7 @@ describe('TransactionsPage', () => {
     component.onAccountFilterChange(['account-1']);
 
     expect(urlSync.updateParams).toHaveBeenCalledWith(
-      expect.anything(),
+      route,
       expect.objectContaining({
         accountIds: ['account-1'],
         accountId: null,
@@ -530,7 +532,7 @@ describe('TransactionsPage', () => {
     } as unknown as Event);
 
     expect(urlSync.updateParams).toHaveBeenCalledWith(
-      expect.anything(),
+      route,
       expect.objectContaining({ categoryId: 'cat-1' }),
       expect.objectContaining({ openFilters: true }),
     );
@@ -550,7 +552,7 @@ describe('TransactionsPage', () => {
     } as unknown as Event);
 
     expect(urlSync.updateParams).toHaveBeenCalledWith(
-      expect.anything(),
+      route,
       expect.objectContaining({ type: 'EXPENSE' }),
       expect.objectContaining({ openFilters: true }),
     );
@@ -563,8 +565,8 @@ describe('TransactionsPage', () => {
     component.toggleFilters();
 
     expect(urlSync.updateParams).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.anything(),
+      route,
+      expect.any(Object),
       expect.objectContaining({ openFilters: false }),
     );
   });
