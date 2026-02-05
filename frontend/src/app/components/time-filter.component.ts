@@ -86,7 +86,11 @@ import {
 
           <header class="px-4 pt-4 pb-3 flex items-center justify-between">
             <div class="flex flex-col">
-              <h2 class="text-sm font-semibold text-slate-900" [attr.id]="titleId">
+              <h2
+                class="text-sm font-semibold text-slate-900"
+                [attr.id]="titleId"
+                data-testid="time-filter-sheet-title"
+              >
                 {{ draft.mode === 'INVOICE_MONTH' ? 'Fatura' : 'Período' }}
               </h2>
               <span class="text-xs text-slate-500" data-testid="time-filter-sheet-summary">

@@ -19,6 +19,13 @@ import { SkeletonModule } from 'primeng/skeleton';
       [attr.aria-label]="ariaLabel"
       data-testid="report-chart-card"
     >
+      <ng-template pTemplate="header">
+        <div class="p-4 pb-0">
+          <h3 class="text-lg font-semibold text-slate-800" data-testid="chart-card-title">
+            {{ title }}
+          </h3>
+        </div>
+      </ng-template>
       <div [class]="'relative w-full overflow-hidden ' + contentClass" data-testid="card-content">
         @if (loading) {
           <div
