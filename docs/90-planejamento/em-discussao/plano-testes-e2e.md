@@ -76,5 +76,5 @@ Para que os testes sejam confiáveis e rápidos, a arquitetura deve suportar:
 
 ## 🔗 Links Relacionados
 
-- [Padrões de Código](../../../CODING_STANDARDS.md)
+- [Padrões de Código](../../20-arquitetura/padroes-frontend.md)
 - [Roadmap de Evolução](../roadmap-evolucao.md)
