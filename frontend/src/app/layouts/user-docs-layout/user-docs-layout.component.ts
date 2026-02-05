@@ -57,6 +57,7 @@ import {
         @if (isAdmin()) {
           <a
             routerLink="/docs/admin/intro"
+            data-testid="admin-panel-link"
             class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-all border border-slate-200/60 bg-white shadow-sm group/admin"
           >
             <div class="flex items-center gap-2">
@@ -72,9 +73,10 @@ import {
         <!-- Entrar no Dindinho / Voltar -->
         <button
           (click)="goToApp()"
+          data-testid="back-to-app-button"
           class="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-sm shadow-emerald-100 active:scale-95"
         >
-          <i class="pi pi-sign-in text-[10px]"></i>
+          <i [class]="'pi ' + backButtonIcon() + ' text-[10px]'"></i>
           <span>{{ backButtonText() }}</span>
         </button>
       </div>
@@ -93,6 +95,10 @@ export class UserDocsLayoutComponent {
     this.auth.isAuthenticated() ? 'Voltar para a Plataforma' : 'Entrar no Dindinho',
   );
 
+  protected readonly backButtonIcon = computed(() =>
+    this.auth.isAuthenticated() ? 'pi-arrow-left' : 'pi-sign-in',
+  );
+
   protected categories: SidebarCategory[] = [
     {
       id: 'guia',
@@ -108,13 +114,19 @@ export class UserDocsLayoutComponent {
           id: 'principles',
           label: 'Nossos Princípios',
           icon: 'pi-star',
-          link: '/docs/principles',
+          link: '/docs/principios',
         },
         {
           id: 'faq',
           label: 'Perguntas Frequentes',
           icon: 'pi-question-circle',
           link: '/docs/faq',
+        },
+        {
+          id: 'codigo-conduta',
+          label: 'Código de Conduta',
+          icon: 'pi-shield',
+          link: '/docs/codigo-conduta',
         },
       ],
     },
@@ -148,14 +160,14 @@ export class UserDocsLayoutComponent {
         },
         {
           id: 'collaboration',
-          label: 'Compartilhar com Família',
+          label: 'Colaboração e Família',
           icon: 'pi-users',
           link: '/docs/dominio-colaboracao',
         },
         {
           id: 'metas',
           label: 'Metas e Objetivos',
-          icon: 'pi-target',
+          icon: 'pi-bullseye',
           link: '/docs/dominio-metas',
         },
       ],
@@ -183,10 +195,10 @@ export class UserDocsLayoutComponent {
   goToApp(): void {
     const origin = window.location.origin;
     const isAuthenticated = this.auth.isAuthenticated();
-    const targetPath = isAuthenticated ? '/dashboard' : '/';
+    const targetPath = isAuthenticated ? '/dashboard' : '/login';
 
     if (origin.includes('://docs.')) {
-      const mainOrigin = origin.replace('docs.', '');
+      const mainOrigin = origin.replace('://docs.', '://');
       window.location.href = `${mainOrigin}${targetPath}`;
     } else {
       // Se já estiver no domínio principal (desenvolvimento), apenas navega

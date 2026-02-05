@@ -27,7 +27,7 @@ export const subdomainGuard: CanActivateFn = (_route, state) => {
     }
 
     // Se tentar acessar o app principal pelo subdomínio docs, redireciona para o domínio principal
-    const mainOrigin = origin.replace('docs.', '');
+    const mainOrigin = origin.replace('://docs.', '://');
     window.location.href = `${mainOrigin}${url}`;
     return false;
   } else {

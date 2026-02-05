@@ -17,8 +17,9 @@ Este é o portal central de documentação técnica do Dindinho. Aqui você enco
 
 ## Áreas Principais
 
-- **Engenharia:** [Arquitetura](../20-architecture/intro.md), [ADRs](../21-adr/intro.md) e planos de execução.
-- **Infraestrutura:** Guias de [Operações](../50-ops/guia-operacoes.md) e processos de [Deploy](../50-ops/deploy.md).
+- **Engenharia:** [Arquitetura](../20-arquitetura/intro.md), [ADRs](../20-arquitetura/adr/intro.md) e planos de execução.
+- **Infraestrutura:** Guias de [Operações](../50-operacoes/guia-operacoes.md) e processos de [Deploy](../50-operacoes/deploy.md).
+
 - **Domínios:** Detalhamento técnico de cada módulo do produto.
 - **API:** Referência completa de contratos via OpenAPI.
 
@@ -27,6 +28,6 @@ Este é o portal central de documentação técnica do Dindinho. Aqui você enco
 Toda a documentação reside na pasta `/docs` do monorepo.
 
 - Documentos técnicos devem ter metadados (frontmatter) completos.
-- Use o padrão de tags em PT-BR conforme definido no [Guia de Documentação](../90-backlog/planning/documentation.md).
+- Use o padrão de tags em PT-BR conforme definido no [Guia de Documentação](./guia-documentacao.md).
 
 > **Acesso Restrito:** Este conteúdo é confidencial e destinado apenas a colaboradores autorizados.

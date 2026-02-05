@@ -6,8 +6,8 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Params } from '@angular/router';
+import { CommonModule, ViewportScroller } from '@angular/common';
+import { ActivatedRoute, Params, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MarkdownComponent } from 'ngx-markdown';
 import { DocsService, OpenApiDocument, OpenApiOperation } from '../../app/services/docs.service';
@@ -52,7 +52,14 @@ interface OpenApiEndpointItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, MarkdownComponent],
   template: `
-    <div data-testid="docs-page" class="bg-white max-w-4xl mx-auto pt-2 pb-10 px-4 sm:px-0">
+    <div
+      data-testid="docs-page"
+      class="bg-white max-w-4xl mx-auto pt-2 pb-10 px-4 sm:px-0"
+      (click)="handleContentClick($event)"
+      (keydown.enter)="handleContentClick($event)"
+      role="region"
+      aria-label="Portal de Documentação"
+    >
       @if (isSwaggerSlug()) {
         <div data-testid="docs-swagger-redirect" class="py-20 text-center">
           <div
@@ -78,7 +85,12 @@ interface OpenApiEndpointItem {
         <div class="mb-8" [attr.aria-busy]="isLoading()">
           @if (isLoading()) {
             <!-- Skeleton para Título e Descrição -->
-            <div class="animate-pulse space-y-4">
+            <div
+              data-testid="docs-loading"
+              class="animate-pulse space-y-4"
+              aria-label="Carregando conteúdo"
+              aria-busy="true"
+            >
               <div class="h-9 bg-slate-200 rounded-lg w-3/4"></div>
               <div class="space-y-2">
                 <div class="h-5 bg-slate-100 rounded w-full"></div>
@@ -89,130 +101,122 @@ interface OpenApiEndpointItem {
                 <div class="h-5 bg-slate-100 rounded-md w-20"></div>
               </div>
             </div>
-          } @else if (shouldShowExternalHeader()) {
-            <h1 class="text-3xl font-bold text-slate-900 tracking-tight">{{ title() }}</h1>
-            @if (description()) {
-              <p class="mt-2 text-lg text-slate-500">{{ description() }}</p>
-            }
-            @if (tags().length > 0) {
-              <div class="mt-4 flex flex-wrap gap-2">
-                @for (tag of tags(); track trackByTag($index, tag)) {
-                  <span
-                    class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider"
-                  >
-                    {{ tag }}
-                  </span>
-                }
-              </div>
-            }
-          }
-        </div>
-
-        <div class="relative" [attr.aria-busy]="isLoading()">
-          @if (isLoading()) {
-            <!-- Skeleton para Conteúdo Principal -->
-            <div
-              data-testid="docs-loading"
-              class="animate-pulse space-y-6 py-4"
-              aria-busy="true"
-              aria-label="Carregando conteúdo"
-            >
-              <div class="space-y-3">
-                <div class="h-4 bg-slate-100 rounded w-full"></div>
-                <div class="h-4 bg-slate-100 rounded w-full"></div>
-                <div class="h-4 bg-slate-100 rounded w-3/4"></div>
-              </div>
-
-              <div class="h-40 bg-slate-50 rounded-2xl border border-slate-100 w-full"></div>
-
-              <div class="space-y-3 pt-4">
-                <div class="h-4 bg-slate-100 rounded w-full"></div>
-                <div class="h-4 bg-slate-100 rounded w-5/6"></div>
-                <div class="h-4 bg-slate-100 rounded w-full"></div>
-                <div class="h-4 bg-slate-100 rounded w-2/3"></div>
-              </div>
-
-              <div class="grid grid-cols-2 gap-4 pt-4">
-                <div class="h-24 bg-slate-50 rounded-xl border border-slate-100"></div>
-                <div class="h-24 bg-slate-50 rounded-xl border border-slate-100"></div>
-              </div>
-            </div>
-          } @else if (error()) {
-            <div
-              data-testid="docs-error"
-              class="p-6 rounded-2xl bg-red-50 border border-red-100 text-red-800"
-              role="alert"
-            >
-              <div class="flex items-center gap-3 mb-2">
-                <i class="pi pi-exclamation-circle text-xl"></i>
-                <h3 class="font-bold">Erro ao carregar documento</h3>
-              </div>
-              <p class="text-sm">{{ error() }}</p>
-            </div>
-          } @else if (isOpenApi()) {
-            @if (openApiDoc()) {
-              <div
-                data-testid="docs-openapi"
-                class="space-y-8"
-                role="article"
-                aria-label="Referência da API"
-              >
-                @for (group of openApiGroups(); track group.tag) {
-                  <section class="space-y-4" [attr.aria-labelledby]="'group-' + group.tag">
-                    <h2
-                      [id]="'group-' + group.tag"
-                      class="text-xl font-bold text-slate-800 border-b border-slate-100 pb-2"
-                    >
-                      {{ group.tag }}
-                    </h2>
-                    @if (group.description) {
-                      <p class="text-sm text-slate-500">{{ group.description }}</p>
-                    }
-
-                    <div class="grid gap-3" role="list">
-                      @for (item of group.items; track item.operationId) {
-                        <div
-                          class="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors"
-                          role="listitem"
-                        >
-                          <div class="flex items-start justify-between gap-4">
-                            <div class="min-w-0">
-                              <div class="flex items-center gap-2 mb-1">
-                                <span
-                                  [class]="
-                                    'px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ' +
-                                    getMethodClass(item.method)
-                                  "
-                                >
-                                  {{ item.method }}
-                                </span>
-                                <span class="text-xs font-mono text-slate-500">{{
-                                  item.path
-                                }}</span>
-                              </div>
-                              <div class="text-sm font-semibold text-slate-800">
-                                {{ item.summary }}
-                              </div>
-                            </div>
-                            <span class="text-[10px] font-mono text-slate-400 shrink-0">
-                              {{ item.operationId }}
-                            </span>
-                          </div>
-                        </div>
-                      }
-                    </div>
-                  </section>
-                }
-              </div>
-            }
           } @else {
-            <article
-              data-testid="docs-markdown"
-              class="prose prose-slate max-w-none prose-headings:font-bold prose-h1:text-3xl prose-pre:bg-slate-900 prose-pre:text-slate-50"
-              aria-label="Conteúdo do documento"
-            >
-              <markdown [data]="markdown()"></markdown>
-            </article>
+            @if (shouldShowExternalHeader()) {
+              <h1 class="text-3xl font-bold text-slate-900 tracking-tight">{{ title() }}</h1>
+              @if (description()) {
+                <p class="mt-2 text-lg text-slate-500">{{ description() }}</p>
+              }
+              @if (tags().length > 0) {
+                <div class="mt-4 flex flex-wrap gap-2">
+                  @for (tag of tags(); track trackByTag($index, tag)) {
+                    <span
+                      class="px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200"
+                    >
+                      {{ tag }}
+                    </span>
+                  }
+                </div>
+              }
+            }
+
+            @if (error()) {
+              <div
+                data-testid="docs-error"
+                class="mt-8 py-12 px-6 rounded-2xl bg-red-50 border border-red-100 text-red-600 text-center"
+                role="alert"
+              >
+                <i class="pi pi-exclamation-circle text-3xl mb-3"></i>
+                <h3 class="font-bold text-lg mb-1">Ops! Algo deu errado</h3>
+                <p class="text-sm">{{ error() }}</p>
+              </div>
+            } @else if (isOpenApi()) {
+              @if (openApiDoc()) {
+                <div
+                  data-testid="docs-openapi"
+                  class="space-y-8"
+                  role="article"
+                  aria-label="Referência da API"
+                >
+                  <div
+                    class="flex items-center justify-between gap-4 border-b border-slate-100 pb-6"
+                  >
+                    <div>
+                      <h1 class="text-3xl font-bold text-slate-900 tracking-tight">
+                        Referência da API
+                      </h1>
+                      <p class="mt-2 text-lg text-slate-500">
+                        Especificação técnica detalhada dos endpoints do ecossistema Dindinho.
+                      </p>
+                    </div>
+                    <a
+                      [href]="swaggerUrl()"
+                      target="_blank"
+                      class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg font-semibold hover:bg-indigo-100 transition-colors whitespace-nowrap"
+                      aria-label="Abrir documentação interativa Swagger"
+                    >
+                      <i class="pi pi-external-link"></i>
+                      Swagger UI
+                    </a>
+                  </div>
+
+                  @for (group of openApiGroups(); track group.tag) {
+                    <section class="space-y-4" [attr.aria-labelledby]="'group-' + group.tag">
+                      <h2
+                        [id]="'group-' + group.tag"
+                        class="text-xl font-bold text-slate-800 border-b border-slate-100 pb-2"
+                      >
+                        {{ group.tag }}
+                      </h2>
+                      @if (group.description) {
+                        <p class="text-sm text-slate-500">{{ group.description }}</p>
+                      }
+
+                      <div class="grid gap-3" role="list">
+                        @for (item of group.items; track item.operationId) {
+                          <div
+                            class="p-4 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors"
+                            role="listitem"
+                          >
+                            <div class="flex items-start justify-between gap-4">
+                              <div class="min-w-0">
+                                <div class="flex items-center gap-2 mb-1">
+                                  <span
+                                    [class]="
+                                      'px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ' +
+                                      getMethodClass(item.method)
+                                    "
+                                  >
+                                    {{ item.method }}
+                                  </span>
+                                  <span class="text-xs font-mono text-slate-500">{{
+                                    item.path
+                                  }}</span>
+                                </div>
+                                <div class="text-sm font-semibold text-slate-800">
+                                  {{ item.summary }}
+                                </div>
+                              </div>
+                              <span class="text-[10px] font-mono text-slate-400 shrink-0">
+                                {{ item.operationId }}
+                              </span>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    </section>
+                  }
+                </div>
+              }
+            } @else {
+              <article
+                data-testid="docs-markdown"
+                class="prose prose-slate max-w-none prose-headings:font-bold prose-h1:text-3xl prose-pre:bg-slate-900 prose-pre:text-slate-50"
+                aria-label="Conteúdo do documento"
+              >
+                <markdown [data]="markdown()"></markdown>
+              </article>
+            }
           }
         </div>
       }
@@ -221,9 +225,131 @@ interface OpenApiEndpointItem {
 })
 export class DocsPage {
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly docs = inject(DocsService);
+  private readonly viewportScroller = inject(ViewportScroller);
 
   private readonly OPENAPI_PATH = '__openapi__';
+
+  /** Mapeamento centralizado de Slugs <-> Caminhos de Arquivos */
+  private static readonly DOCS_MAPPING: Record<
+    'admin' | 'user',
+    Record<string, { path: string; slug: string }>
+  > = {
+    admin: {
+      intro: { path: 'admin/intro.md', slug: 'intro' },
+      architecture: { path: '20-arquitetura/intro.md', slug: 'architecture' },
+      naming: { path: '20-arquitetura/convencoes-nomenclatura.md', slug: 'naming' },
+      tests: { path: '20-arquitetura/estrategia-testes.md', slug: 'tests' },
+      adr: { path: '20-arquitetura/adr/intro.md', slug: 'adr' },
+      roadmap: { path: '90-planejamento/roadmap-evolucao.md', slug: 'roadmap' },
+      'test-plan-e2e': {
+        path: '90-planejamento/em-discussao/plano-testes-e2e.md',
+        slug: 'test-plan-e2e',
+      },
+      'plano-testes': {
+        path: '90-planejamento/em-discussao/plano-testes-e2e.md',
+        slug: 'plano-testes',
+      },
+      'evolucao-rotas': {
+        path: '90-planejamento/em-discussao/evolucao-rotas.md',
+        slug: 'evolucao-rotas',
+      },
+      'planejamento-metas': {
+        path: '90-planejamento/em-discussao/planejamento-metas.md',
+        slug: 'planejamento-metas',
+      },
+      'sistema-convites': {
+        path: '90-planejamento/em-discussao/sistema-convites.md',
+        slug: 'sistema-convites',
+      },
+      'plan-routing': {
+        path: '90-planejamento/em-discussao/evolucao-rotas.md',
+        slug: 'plan-routing',
+      },
+      'plan-accounts': {
+        path: '90-planejamento/concluido/filtro-contas.md',
+        slug: 'plan-accounts',
+      },
+      'plan-notifications': {
+        path: '90-planejamento/em-discussao/notificacoes.md',
+        slug: 'plan-notifications',
+      },
+      'plan-goals': {
+        path: '90-planejamento/em-discussao/planejamento-metas.md',
+        slug: 'plan-goals',
+      },
+      'plan-url-sync': {
+        path: '90-planejamento/concluido/sincronizacao-url.md',
+        slug: 'plan-url-sync',
+      },
+      'plan-invites': {
+        path: '90-planejamento/em-discussao/sistema-convites.md',
+        slug: 'plan-invites',
+      },
+      'plan-time-filter': {
+        path: '90-planejamento/concluido/filtro-temporal.md',
+        slug: 'plan-time-filter',
+      },
+      'plan-documentation': {
+        path: '90-planejamento/concluido/plano-documentacao.md',
+        slug: 'plan-documentation',
+      },
+      'fix-docs-access': {
+        path: '90-planejamento/concluido/acesso-docs.md',
+        slug: 'fix-docs-access',
+      },
+      deploy: { path: '50-operacoes/deploy.md', slug: 'deploy' },
+      ops: { path: '50-operacoes/guia-operacoes.md', slug: 'ops' },
+      reports: { path: '40-plataformas/pwa/relatorios.md', slug: 'reports' },
+      auth: { path: '30-api/autenticacao-tecnica.md', slug: 'auth' },
+      'dominio-contas': { path: '10-produto/contas/regras-negocio.md', slug: 'dominio-contas' },
+      'dominio-auth': { path: '10-produto/autenticacao/regras-negocio.md', slug: 'dominio-auth' },
+      'dominio-transacoes': {
+        path: '10-produto/transacoes/regras-negocio.md',
+        slug: 'dominio-transacoes',
+      },
+      'dominio-relatorios': {
+        path: '10-produto/relatorios/regras-negocio.md',
+        slug: 'dominio-relatorios',
+      },
+      'dominio-colaboracao': {
+        path: '10-produto/colaboracao/regras-negocio.md',
+        slug: 'dominio-colaboracao',
+      },
+      'dominio-metas': { path: '10-produto/metas/regras-negocio.md', slug: 'dominio-metas' },
+      'frontend-standards': {
+        path: '20-arquitetura/padroes-frontend.md',
+        slug: 'frontend-standards',
+      },
+      'guia-documentacao': { path: 'admin/guia-documentacao.md', slug: 'guia-documentacao' },
+      'guia-contribuicao': { path: 'admin/contribuicao.md', slug: 'guia-contribuicao' },
+      principios: { path: '00-geral/principios.md', slug: 'principios' },
+      'codigo-conduta': { path: '00-geral/codigo-conduta.md', slug: 'codigo-conduta' },
+    },
+    user: {
+      intro: { path: 'user/intro.md', slug: 'intro' },
+      principles: { path: '00-geral/principios.md', slug: 'principles' },
+      faq: { path: '00-geral/faq.md', slug: 'faq' },
+      principios: { path: '00-geral/principios.md', slug: 'principios' },
+      'codigo-conduta': { path: '00-geral/codigo-conduta.md', slug: 'codigo-conduta' },
+      'dominio-contas': { path: '10-produto/contas/guia-usuario.md', slug: 'dominio-contas' },
+      'dominio-auth': { path: '10-produto/autenticacao/guia-usuario.md', slug: 'dominio-auth' },
+      'dominio-transacoes': {
+        path: '10-produto/transacoes/guia-usuario.md',
+        slug: 'dominio-transacoes',
+      },
+      'dominio-relatorios': {
+        path: '10-produto/relatorios/guia-usuario.md',
+        slug: 'dominio-relatorios',
+      },
+      'dominio-colaboracao': {
+        path: '10-produto/colaboracao/guia-usuario.md',
+        slug: 'dominio-colaboracao',
+      },
+      'dominio-metas': { path: '10-produto/metas/guia-usuario.md', slug: 'dominio-metas' },
+    },
+  };
 
   /** Signals de rota para reagir a mudanças de URL */
   private readonly params = toSignal(this.route.params, { initialValue: {} as DocsRouteParams });
@@ -258,12 +384,22 @@ export class DocsPage {
   /** Indica se o documento atual é uma especificação OpenAPI */
   protected readonly isOpenApi = computed(() => this.selectedPath() === this.OPENAPI_PATH);
   /** Indica se a rota atual deve exibir o redirecionamento para o Swagger UI */
-  protected readonly isSwaggerSlug = computed(() => this.slug() === 'swagger');
+  protected readonly isSwaggerSlug = computed(() => {
+    const context = this.route.snapshot.data['context'] || 'user';
+    return this.slug() === 'swagger' && context === 'admin';
+  });
   /** URL do Swagger UI fornecida pelo serviço de documentação */
   protected readonly swaggerUrl = signal<string>(this.docs.getSwaggerUiUrl());
 
+  /** Indica se o contexto atual é administrativo */
+  protected readonly isAdminContext = computed(
+    () => (this.route.snapshot.data['context'] || 'user') === 'admin',
+  );
+
   /** Indica se o cabeçalho externo (título/descrição) deve ser exibido */
   protected readonly shouldShowExternalHeader = computed(() => {
+    // Se estiver carregando, não mostra cabeçalho (mostra skeleton)
+    if (this.isLoading()) return false;
     // Não mostra cabeçalho se houver conteúdo markdown (o markdown já tem seu H1)
     if (this.markdown()) return false;
     // Mostra apenas para OpenAPI ou Erros
@@ -334,7 +470,7 @@ export class DocsPage {
         finalPath = queryPath;
       } else {
         // Fallback para a introdução se nada for informado
-        finalPath = context === 'admin' ? 'admin/intro.md' : '00-overview/intro.md';
+        finalPath = context === 'admin' ? 'admin/intro.md' : 'user/intro.md';
       }
 
       this.selectedPath.set(finalPath);
@@ -357,9 +493,9 @@ export class DocsPage {
           } else {
             this.markdown.set('');
             this.openApiDoc.set(content);
-            this.title.set('API Reference');
-            this.description.set('Especificação completa dos endpoints do Dindinho.');
-            this.tags.set(['REST', 'OpenAPI', 'v1']);
+            this.title.set(''); // Título agora é renderizado internamente para customização
+            this.description.set('');
+            this.tags.set([]);
           }
           this.isLoading.set(false);
         },
@@ -378,60 +514,136 @@ export class DocsPage {
   }
 
   /**
+   * Intercepta cliques em links dentro do conteúdo Markdown para realizar navegação SPA.
+   * Suporta links relativos (.md), âncoras e slugs.
+   */
+  protected handleContentClick(event: Event): void {
+    const target = event.target as HTMLElement;
+    const anchor = target.closest('a');
+
+    if (!anchor) return;
+
+    const href = anchor.getAttribute('href');
+    if (!href) return;
+
+    // Ignora links externos, mailto, etc.
+    if (href.includes('://') || href.startsWith('mailto:') || href.startsWith('javascript:')) {
+      return;
+    }
+
+    // Previne o comportamento padrão (recarregamento da página)
+    event.preventDefault();
+
+    // Lida com âncoras na mesma página
+    if (href.startsWith('#')) {
+      const elementId = href.slice(1);
+      this.viewportScroller.scrollToPosition([0, 0]); // Reset scroll se necessário ou buscar elemento
+      const element = document.getElementById(elementId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+      return;
+    }
+
+    // Resolve o link relativo para um slug
+    const currentPath = this.selectedPath();
+    const newSlug = this.resolveLinkToSlug(href, currentPath);
+
+    if (newSlug) {
+      // Navega para a nova rota de documentação
+      const context = this.route.snapshot.data['context'] || 'user';
+      const baseRoute = context === 'admin' ? '/docs/admin' : '/docs';
+      this.router.navigate([baseRoute, newSlug]);
+    }
+  }
+
+  /**
+   * Resolve um link relativo de arquivo Markdown para um slug conhecido.
+   */
+  private resolveLinkToSlug(href: string, currentPath: string): string | null {
+    // 1. Caso especial: Link de slug absoluto (ex: /docs/metas ou /docs/admin/roadmap)
+    if (href.startsWith('/docs')) {
+      const parts = href.split('/');
+      // Se for /docs/admin/roadmap, o slug é o último segmento
+      return parts.pop() || null;
+    }
+
+    // 2. Limpa o href (remove .md e âncoras para busca)
+    const cleanHref = href.split('#')[0].split('?')[0].replace(/\.md$/, '');
+
+    // 3. Resolve o caminho relativo baseado no arquivo atual
+    let targetPath = '';
+    if (cleanHref.startsWith('/')) {
+      // Relativo à raiz de docs (ex: /10-product/metas.md)
+      targetPath = cleanHref.slice(1);
+    } else {
+      // Relativo ao diretório do arquivo atual (ex: ../10-product/metas.md)
+      const currentDir = currentPath.split('/').slice(0, -1).join('/');
+      targetPath = this.normalizePath(`${currentDir}/${cleanHref}`);
+    }
+
+    // 4. Busca o slug nos mapeamentos
+    const context = (this.route.snapshot.data['context'] as 'admin' | 'user') || 'user';
+    return this.findSlugByPath(targetPath, context);
+  }
+
+  /**
+   * Normaliza um caminho removendo segmentos ./ e ../
+   */
+  private normalizePath(path: string): string {
+    const segments = path.split('/');
+    const result: string[] = [];
+
+    for (const segment of segments) {
+      if (segment === '..') {
+        result.pop();
+      } else if (segment !== '.' && segment !== '') {
+        result.push(segment);
+      }
+    }
+
+    return result.join('/');
+  }
+
+  /**
+   * Inverte a busca de slug por caminho físico.
+   * Busca apenas no contexto atual para garantir isolamento.
+   */
+  private findSlugByPath(targetPath: string, context: 'admin' | 'user' = 'user'): string | null {
+    // Caso especial para arquivos OpenAPI - APENAS ADMIN
+    if (targetPath.endsWith('openapi.json') && context === 'admin') {
+      return 'api-ref';
+    }
+
+    const pathWithExt = targetPath.endsWith('.md') ? targetPath : `${targetPath}.md`;
+
+    // Busca apenas no contexto atual
+    const currentMapping = DocsPage.DOCS_MAPPING[context];
+    const foundInCurrent = Object.values(currentMapping).find((m) => m.path === pathWithExt);
+    if (foundInCurrent) return foundInCurrent.slug;
+
+    // Fallback: nome do arquivo sem extensão
+    return targetPath.split('/').pop() || null;
+  }
+
+  /**
    * Mapeia um slug amigável da URL para o caminho real do arquivo na pasta de assets.
    * @param slug - O identificador amigável da rota
    * @param context - O contexto da rota (ex: 'admin')
    * @returns O caminho relativo do arquivo .md ou constante especial
    */
-  private mapSlugToPath(slug: string, context?: string): string {
-    // Mapeamento para Contexto Admin (Informações Técnicas/Internas)
-    const adminMapping: Record<string, string> = {
-      intro: 'admin/intro.md',
-      architecture: '20-architecture/intro.md',
-      adr: '21-adr/intro.md',
-      roadmap: '90-backlog/planning/evolucao-roadmap.md',
-      'test-plan-e2e': '90-backlog/planning/test-plan-e2e.md',
-      'plan-routing': '90-backlog/planning/ROUTING_EVOLUTION_PLAN.md',
-      'plan-accounts': '90-backlog/planning/account-filter.md',
-      'plan-notifications': '90-backlog/planning/notificacoes.md',
-      'plan-goals': '90-backlog/planning/planejamento-metas.md',
-      'plan-url-sync': '90-backlog/planning/refactor-url-sync.md',
-      'plan-invites': '90-backlog/planning/sistema-convites.md',
-      'plan-time-filter': '90-backlog/planning/time-filter.md',
-      'plan-documentation': '90-backlog/planning/documentation.md',
-      'fix-docs-access': '90-backlog/planning/fix-docs-access-experience.md',
-      openapi: this.OPENAPI_PATH,
-      'api-ref': this.OPENAPI_PATH,
-      deploy: '50-ops/deploy.md',
-      ops: '50-ops/guia-operacoes.md',
-      reports: '40-clients/pwa/reports-frontend.md',
-      auth: '30-api/authentication.md',
-      'dominio-contas': '10-product/dominio-contas.md',
-      'dominio-auth': '10-product/dominio-auth.md',
-      'dominio-transacoes': '10-product/dominio-transacoes.md',
-      'dominio-relatorios': '10-product/dominio-relatorios.md',
-      'dominio-colaboracao': '10-product/dominio-colaboracao.md',
-      'dominio-metas': '10-product/dominio-metas.md',
-    };
-
-    // Mapeamento para Contexto User (Guia do Usuário/Amigável)
-    const userMapping: Record<string, string> = {
-      intro: '00-overview/intro.md',
-      principles: '00-overview/principles.md',
-      faq: '00-overview/faq.md',
-      'dominio-contas': 'user/dominios/contas.md',
-      'dominio-auth': 'user/dominios/auth.md',
-      'dominio-transacoes': 'user/dominios/transacoes.md',
-      'dominio-relatorios': 'user/dominios/relatorios.md',
-      'dominio-colaboracao': 'user/dominios/colaboracao.md',
-      'dominio-metas': 'user/dominios/metas.md',
-    };
-
-    if (context === 'admin') {
-      return adminMapping[slug] || slug;
+  private mapSlugToPath(slug: string, context: 'admin' | 'user' = 'user'): string {
+    // Caso especial para OpenAPI - APENAS ADMIN
+    if ((slug === 'openapi' || slug === 'api-ref') && context === 'admin') {
+      return this.OPENAPI_PATH;
     }
 
-    return userMapping[slug] || slug;
+    // Busca apenas no contexto atual
+    const currentMapping = DocsPage.DOCS_MAPPING[context];
+    if (currentMapping[slug]) return currentMapping[slug].path;
+
+    // Fallback: assume que o slug já é o caminho parcial ou nome do arquivo
+    return slug;
   }
 
   /**
@@ -447,40 +659,44 @@ export class DocsPage {
         const frontmatter = content.slice(3, endIdx);
         const body = content.slice(endIdx + 3).trim();
 
-        // Extrair campos básicos
-        const titleMatch = frontmatter.match(/title:\s*["']?([^"'\n]+)["']?/);
-        const descMatch = frontmatter.match(/description:\s*["']?([^"'\n]+)["']?/);
-        const tagsMatch = frontmatter.match(/tags:\s*\[([^\]]+)\]/);
+        // Extrai metadados usando regex simples
+        const titleMatch = frontmatter.match(/title:\s*"(.*)"/);
+        const descMatch = frontmatter.match(/description:\s*"(.*)"/);
+        const tagsMatch = frontmatter.match(/tags:\s*\[(.*)\]/);
 
-        this.title.set(titleMatch ? titleMatch[1] : 'Documento');
+        this.title.set(titleMatch ? titleMatch[1] : '');
         this.description.set(descMatch ? descMatch[1] : '');
         this.tags.set(
-          tagsMatch ? tagsMatch[1].split(',').map((t) => t.trim().replace(/['"]/g, '')) : [],
+          tagsMatch ? tagsMatch[1].split(',').map((t) => t.trim().replace(/"/g, '')) : [],
         );
         this.markdown.set(body);
         return;
       }
     }
 
-    this.title.set('Documento');
+    // Reset se não houver frontmatter
+    this.title.set('');
     this.description.set('');
     this.tags.set([]);
     this.markdown.set(content);
   }
 
   /**
-   * Retorna classes de estilo Tailwind baseadas no método HTTP.
-   * @param method - O método HTTP (GET, POST, etc)
-   * @returns String com classes CSS para estilização
+   * Retorna a classe CSS de cor baseada no método HTTP.
+   * @param method - Método HTTP
    */
   protected getMethodClass(method: string): string {
-    const classes: Record<string, string> = {
-      GET: 'bg-blue-100 text-blue-700',
-      POST: 'bg-emerald-100 text-emerald-700',
-      PUT: 'bg-amber-100 text-amber-700',
-      DELETE: 'bg-red-100 text-red-700',
-      PATCH: 'bg-purple-100 text-purple-700',
-    };
-    return classes[method] || 'bg-slate-100 text-slate-700';
+    switch (method.toUpperCase()) {
+      case 'GET':
+        return 'bg-emerald-100 text-emerald-700';
+      case 'POST':
+        return 'bg-blue-100 text-blue-700';
+      case 'PUT':
+        return 'bg-amber-100 text-amber-700';
+      case 'DELETE':
+        return 'bg-red-100 text-red-700';
+      default:
+        return 'bg-slate-100 text-slate-700';
+    }
   }
 }

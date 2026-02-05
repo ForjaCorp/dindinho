@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import {
@@ -35,6 +35,7 @@ import { AuthService } from '../../services/auth.service';
         <!-- Visão do Usuário (Acesso Rápido) -->
         <a
           routerLink="/docs/intro"
+          data-testid="user-view-link"
           class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-all border border-slate-200/60 bg-white shadow-sm group/user"
         >
           <div class="flex items-center gap-2">
@@ -46,12 +47,14 @@ import { AuthService } from '../../services/auth.service';
           ></i>
         </a>
 
+        <!-- Entrar no Dindinho / Voltar -->
         <button
           (click)="goToApp()"
+          data-testid="back-to-app-button"
           class="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-sm shadow-indigo-100 active:scale-95"
         >
-          <i class="pi pi-arrow-left text-[10px]"></i>
-          <span>Voltar para a Plataforma</span>
+          <i [class]="'pi ' + backButtonIcon() + ' text-[10px]'"></i>
+          <span>{{ backButtonText() }}</span>
         </button>
       </div>
     </app-base-docs-layout>
@@ -59,6 +62,14 @@ import { AuthService } from '../../services/auth.service';
 })
 export class AdminDocsLayoutComponent {
   private readonly auth = inject(AuthService);
+
+  protected readonly backButtonText = computed(() =>
+    this.auth.isAuthenticated() ? 'Voltar para a Plataforma' : 'Entrar no Dindinho',
+  );
+
+  protected readonly backButtonIcon = computed(() =>
+    this.auth.isAuthenticated() ? 'pi-arrow-left' : 'pi-sign-in',
+  );
 
   protected categories: SidebarCategory[] = [
     {
@@ -71,6 +82,12 @@ export class AdminDocsLayoutComponent {
           icon: 'pi-home',
           link: '/docs/admin/intro',
         },
+        {
+          id: 'codigo-conduta',
+          label: 'Código de Conduta',
+          icon: 'pi-shield',
+          link: '/docs/admin/codigo-conduta',
+        },
       ],
     },
     {
@@ -82,16 +99,42 @@ export class AdminDocsLayoutComponent {
           label: 'Arquitetura',
           icon: 'pi-sitemap',
           link: '/docs/admin/architecture',
-          priority: 'alta',
-          owner: 'engineering',
+        },
+        {
+          id: 'naming',
+          label: 'Nomenclatura',
+          icon: 'pi-tag',
+          link: '/docs/admin/naming',
         },
         {
           id: 'adr',
           label: 'ADRs',
           icon: 'pi-book',
           link: '/docs/admin/adr',
-          priority: 'media',
-          owner: 'architecture',
+        },
+        {
+          id: 'frontend',
+          label: 'Padrões Frontend',
+          icon: 'pi-desktop',
+          link: '/docs/admin/frontend-standards',
+        },
+        {
+          id: 'tests',
+          label: 'Testes e QA',
+          icon: 'pi-check-circle',
+          link: '/docs/admin/tests',
+        },
+        {
+          id: 'guia-doc',
+          label: 'Guia de Documentação',
+          icon: 'pi-book',
+          link: '/docs/admin/guia-documentacao',
+        },
+        {
+          id: 'guia-contribuicao',
+          label: 'Como Contribuir',
+          icon: 'pi-plus-circle',
+          link: '/docs/admin/guia-contribuicao',
         },
       ],
     },
@@ -132,14 +175,14 @@ export class AdminDocsLayoutComponent {
         {
           id: 'metas',
           label: 'Metas de Economia',
-          icon: 'pi-target',
+          icon: 'pi-bullseye',
           link: '/docs/admin/dominio-metas',
         },
       ],
     },
     {
-      id: 'backlog',
-      label: 'Backlog & Planejamento',
+      id: 'estrategia',
+      label: 'Visão & Estratégia',
       items: [
         {
           id: 'roadmap',
@@ -147,65 +190,113 @@ export class AdminDocsLayoutComponent {
           icon: 'pi-map',
           link: '/docs/admin/roadmap',
         },
+      ],
+    },
+    {
+      id: 'backlog',
+      label: 'Evolução & Backlog',
+      isBacklog: true,
+      items: [
         {
-          id: 'test-plan',
-          label: 'Plano de Testes E2E',
-          icon: 'pi-check-square',
-          link: '/docs/admin/test-plan-e2e',
+          id: 'fix-docs-access',
+          label: 'Acesso Docs (Fix)',
+          icon: 'pi-wrench',
+          link: '/docs/admin/fix-docs-access',
+          status: 'ANDAMENTO',
+          priority: 'alta',
+          owner: 'engineering',
+          isBacklog: true,
         },
         {
-          id: 'plan-routing',
-          label: 'Evolução de Rotas',
-          icon: 'pi-directions',
-          link: '/docs/admin/plan-routing',
-        },
-        {
-          id: 'plan-accounts',
-          label: 'Filtro de Contas',
-          icon: 'pi-filter',
-          link: '/docs/admin/plan-accounts',
-        },
-        {
-          id: 'plan-notifications',
-          label: 'Sistema de Notificações',
-          icon: 'pi-bell',
-          link: '/docs/admin/plan-notifications',
+          id: 'plan-invites',
+          label: 'Sistema de Convites',
+          icon: 'pi-user-plus',
+          link: '/docs/admin/sistema-convites',
+          status: 'DISCUSSAO',
+          priority: 'alta',
+          owner: 'product',
+          isBacklog: true,
         },
         {
           id: 'plan-goals',
           label: 'Planejamento de Metas',
           icon: 'pi-flag',
-          link: '/docs/admin/plan-goals',
+          link: '/docs/admin/planejamento-metas',
+          status: 'DISCUSSAO',
+          priority: 'alta',
+          owner: 'product',
+          isBacklog: true,
+        },
+        {
+          id: 'plan-routing',
+          label: 'Evolução de Rotas',
+          icon: 'pi-directions',
+          link: '/docs/admin/evolucao-rotas',
+          status: 'PENDENTE',
+          priority: 'alta',
+          owner: 'engineering',
+          isBacklog: true,
+        },
+        {
+          id: 'test-plan',
+          label: 'Plano de Testes E2E',
+          icon: 'pi-check-square',
+          link: '/docs/admin/plano-testes',
+          status: 'PENDENTE',
+          priority: 'media',
+          owner: 'engineering',
+          isBacklog: true,
+        },
+
+        {
+          id: 'plan-notifications',
+          label: 'Sistema de Notificações',
+          icon: 'pi-bell',
+          link: '/docs/admin/plan-notifications',
+          status: 'DISCUSSAO',
+          priority: 'media',
+          owner: 'product',
+          isBacklog: true,
         },
         {
           id: 'plan-url-sync',
           label: 'Sincronização de URL',
           icon: 'pi-sync',
           link: '/docs/admin/plan-url-sync',
+          status: 'CONCLUIDO',
+          priority: 'alta',
+          owner: 'engineering',
+          isBacklog: true,
         },
         {
-          id: 'plan-invites',
-          label: 'Sistema de Convites',
-          icon: 'pi-user-plus',
-          link: '/docs/admin/plan-invites',
+          id: 'plan-accounts',
+          label: 'Filtro de Contas',
+          icon: 'pi-filter',
+          link: '/docs/admin/plan-accounts',
+          status: 'CONCLUIDO',
+          priority: 'alta',
+          owner: 'engineering',
+          isBacklog: true,
         },
         {
           id: 'plan-time-filter',
           label: 'Filtro Temporal',
           icon: 'pi-calendar',
           link: '/docs/admin/plan-time-filter',
+          status: 'CONCLUIDO',
+          priority: 'alta',
+          owner: 'engineering',
+          isBacklog: true,
         },
         {
           id: 'plan-documentation',
           label: 'Plano de Documentação',
           icon: 'pi-book',
           link: '/docs/admin/plan-documentation',
-        },
-        {
-          id: 'fix-docs-access',
-          label: 'Acesso Docs (Fix)',
-          icon: 'pi-wrench',
-          link: '/docs/admin/fix-docs-access',
+          status: 'CONCLUIDO',
+          priority: 'alta',
+          owner: 'engineering',
+          isBacklog: true,
         },
       ],
     },
@@ -241,11 +332,14 @@ export class AdminDocsLayoutComponent {
    */
   goToApp(): void {
     const origin = window.location.origin;
+    const isAuthenticated = this.auth.isAuthenticated();
+    const targetPath = isAuthenticated ? '/dashboard' : '/login';
+
     if (origin.includes('://docs.')) {
       const mainOrigin = origin.replace('://docs.', '://');
-      window.location.href = `${mainOrigin}/dashboard`;
+      window.location.href = `${mainOrigin}${targetPath}`;
     } else {
-      window.location.href = '/dashboard';
+      window.location.href = targetPath;
     }
   }
 }

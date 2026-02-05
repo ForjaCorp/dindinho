@@ -3,6 +3,7 @@ import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 import { AdminDocsLayoutComponent } from './admin-docs-layout.component';
 import { BaseDocsLayoutComponent } from '../base-docs-layout/base-docs-layout.component';
+import { AuthService } from '../../services/auth.service';
 import { provideRouter } from '@angular/router';
 import { By } from '@angular/platform-browser';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -23,9 +24,15 @@ describe('AdminDocsLayoutComponent', () => {
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
+
+    const authServiceMock = {
+      isAuthenticated: () => true,
+      currentUser: () => ({ role: 'ADMIN' }),
+    };
+
     await TestBed.configureTestingModule({
       imports: [AdminDocsLayoutComponent],
-      providers: [provideRouter([])],
+      providers: [provideRouter([]), { provide: AuthService, useValue: authServiceMock }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(AdminDocsLayoutComponent);
@@ -55,41 +62,39 @@ describe('AdminDocsLayoutComponent', () => {
   });
 
   it('deve exibir as categorias principais na sidebar', () => {
-    const categoryButtons = fixture.debugElement.queryAll(By.css('aside nav button'));
-    expect(categoryButtons.length).toBeGreaterThan(0);
-
-    const labels = categoryButtons.map((b) =>
-      b.query(By.css('span')).nativeElement.textContent.trim().toUpperCase(),
+    fixture.detectChanges();
+    const categories = fixture.debugElement.queryAll(By.css('[data-testid^="category-button-"]'));
+    const labels = categories.map((c) =>
+      c.query(By.css('span')).nativeElement.textContent.trim().toUpperCase(),
     );
     expect(labels).toContain('GERAL');
     expect(labels).toContain('BACKLOG & PLANEJAMENTO');
   });
 
-  it('deve agrupar itens de backlog por status', () => {
+  it('deve conter divisores entre itens de backlog de diferentes status', () => {
     fixture.detectChanges();
 
-    // Localiza a seção de backlog
-    const backlogSection = fixture.debugElement.queryAll(By.css('aside nav > div')).find((el) => {
-      const span = el.query(By.css('span'));
-      return span && span.nativeElement.textContent.trim().toUpperCase().includes('BACKLOG');
-    });
+    // Localiza a seção de backlog usando testid do botão da categoria
+    const backlogButton = fixture.debugElement.query(
+      By.css('[data-testid="category-button-backlog"]'),
+    );
+    const backlogSection = backlogButton.nativeElement.closest('div');
 
     expect(backlogSection).toBeTruthy();
 
-    // Verifica os cabeçalhos de status
-    const statusHeaders = backlogSection!.queryAll(By.css('.uppercase.tracking-tighter'));
-    const headerTexts = statusHeaders.map((h) => h.nativeElement.textContent);
-
-    expect(headerTexts.some((t) => t.includes('Andamento'))).toBe(true);
-    expect(headerTexts.some((t) => t.includes('Discussão'))).toBe(true);
-    expect(headerTexts.some((t) => t.includes('Arquivado'))).toBe(true);
+    // Verifica a presença dos divisores (divs com classe h-px)
+    const dividers = backlogSection.querySelectorAll('.h-px.bg-slate-200');
+    // Deve haver divisores separando os grupos (WIP, RFC, DONE)
+    expect(dividers.length).toBeGreaterThan(0);
   });
 
   it('deve alternar a visibilidade de uma categoria ao clicar', () => {
     fixture.detectChanges();
 
-    const categoryButton = fixture.debugElement.query(By.css('aside nav button'));
     const categoryId = component['categories'][0].id;
+    const categoryButton = fixture.debugElement.query(
+      By.css(`[data-testid="category-button-${categoryId}"]`),
+    );
 
     const baseComponent = fixture.debugElement.query(
       By.directive(BaseDocsLayoutComponent),
@@ -110,12 +115,12 @@ describe('AdminDocsLayoutComponent', () => {
   });
 
   it('deve exibir o texto correto no botão de voltar', () => {
-    const backButton = fixture.debugElement.query(By.css('aside .mt-auto button'));
+    const backButton = fixture.debugElement.query(By.css('[data-testid="back-to-app-button"]'));
     expect(backButton.nativeElement.textContent).toContain('Voltar para a Plataforma');
   });
 
   it('deve exibir o link de acesso rápido para a visão do usuário', () => {
-    const userViewLink = fixture.debugElement.query(By.css('a[routerLink="/docs/intro"]'));
+    const userViewLink = fixture.debugElement.query(By.css('[data-testid="user-view-link"]'));
     expect(userViewLink).toBeTruthy();
     expect(userViewLink.nativeElement.textContent).toContain('Visão do Usuário');
   });
@@ -130,7 +135,7 @@ describe('AdminDocsLayoutComponent', () => {
   });
 
   it('deve conter o link para o roadmap com o status ANDAMENTO', () => {
-    const roadmapLink = fixture.debugElement.query(By.css('[data-testid="nav-roadmap"]'));
+    const roadmapLink = fixture.debugElement.query(By.css('[data-testid="nav-fix-docs-access"]'));
     expect(roadmapLink).toBeTruthy();
 
     const badge = roadmapLink.query(By.css('.rounded.font-bold'));

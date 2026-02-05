@@ -23,9 +23,10 @@ export interface SidebarItem {
   label: string;
   icon: string;
   link: string;
-  status?: 'ANDAMENTO' | 'DISCUSSAO' | 'ARQUIVADO';
+  status?: 'ANDAMENTO' | 'DISCUSSAO' | 'ARQUIVADO' | 'CONCLUIDO' | 'PENDENTE';
   priority?: 'alta' | 'media' | 'baixa';
   owner?: string;
+  isBacklog?: boolean;
 }
 
 /**
@@ -146,7 +147,7 @@ export interface SidebarCategory {
                         @if (result.status) {
                           <span
                             [class]="
-                              'text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ' +
+                              'text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ' +
                               getStatusClass(result.status)
                             "
                           >
@@ -318,6 +319,7 @@ export interface SidebarCategory {
               <div>
                 <button
                   (click)="toggleCategory(category.id)"
+                  [attr.data-testid]="'category-button-' + category.id"
                   class="w-full flex items-center gap-2 px-3 py-1.5 mb-1 group text-left hover:bg-slate-50 rounded-lg transition-colors focus:outline-none focus:ring-2"
                   [ngClass]="accentFocusClass"
                   [attr.aria-expanded]="isExpanded(category.id)"
@@ -347,15 +349,18 @@ export interface SidebarCategory {
                     [attr.aria-label]="'Itens de ' + category.label"
                   >
                     @if (category.isBacklog) {
+                      <!-- PENDING Items -->
+                      @if (getPendingItems(category).length > 0) {
+                        @for (item of getPendingItems(category); track item.id) {
+                          <ng-container
+                            *ngTemplateOutlet="navItemTemplate; context: { $implicit: item }"
+                          ></ng-container>
+                        }
+                      }
+
                       <!-- WIP Items -->
                       @if (getWIPItems(category).length > 0) {
-                        <div
-                          class="px-3 py-1.5 text-xs font-bold uppercase tracking-tighter flex items-center justify-between"
-                          [ngClass]="accentTextClass"
-                        >
-                          <span>Em Andamento</span>
-                          <i class="pi pi-bolt text-[10px]"></i>
-                        </div>
+                        <div class="h-px bg-slate-200 my-3 mx-3"></div>
                         @for (item of getWIPItems(category); track item.id) {
                           <ng-container
                             *ngTemplateOutlet="navItemTemplate; context: { $implicit: item }"
@@ -365,12 +370,7 @@ export interface SidebarCategory {
 
                       <!-- RFC Items -->
                       @if (getRFCItems(category).length > 0) {
-                        <div
-                          class="px-3 py-1.5 mt-2 text-xs font-bold text-orange-600 uppercase tracking-tighter flex items-center justify-between"
-                        >
-                          <span>Discussão</span>
-                          <span class="opacity-60">{{ getRFCItems(category).length }}</span>
-                        </div>
+                        <div class="h-px bg-slate-200 my-3 mx-3"></div>
                         @for (item of getRFCItems(category); track item.id) {
                           <ng-container
                             *ngTemplateOutlet="navItemTemplate; context: { $implicit: item }"
@@ -380,12 +380,7 @@ export interface SidebarCategory {
 
                       <!-- DONE Items -->
                       @if (getDoneItems(category).length > 0) {
-                        <div
-                          class="px-3 py-1.5 mt-2 text-xs font-bold text-slate-500 uppercase tracking-tighter flex items-center justify-between"
-                        >
-                          <span>Arquivado</span>
-                          <span class="opacity-60">{{ getDoneItems(category).length }}</span>
-                        </div>
+                        <div class="h-px bg-slate-200 my-3 mx-3"></div>
                         @for (item of getDoneItems(category); track item.id) {
                           <ng-container
                             *ngTemplateOutlet="navItemTemplate; context: { $implicit: item }"
@@ -452,7 +447,7 @@ export interface SidebarCategory {
           <span class="leading-tight truncate">{{ item.label }}</span>
         </div>
         <div class="flex items-center gap-1.5 shrink-0">
-          @if (item.priority && item.status !== 'ARQUIVADO') {
+          @if (item.priority && item.status !== 'ARQUIVADO' && item.status !== 'CONCLUIDO') {
             <i
               [class]="'pi ' + getPriorityIcon(item.priority) + ' text-[10px]'"
               [attr.title]="'Prioridade: ' + item.priority"
@@ -470,11 +465,17 @@ export interface SidebarCategory {
           @if (item.status) {
             <span
               [class]="
-                'text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-tighter ' +
+                'text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ' +
                 getStatusClass(item.status)
               "
             >
-              {{ item.status === 'DISCUSSAO' ? 'DISCUSSÃO' : item.status }}
+              @if (item.status === 'DISCUSSAO') {
+                DISCUSSÃO
+              } @else if (item.status === 'CONCLUIDO') {
+                CONCLUÍDO
+              } @else {
+                {{ item.status }}
+              }
             </span>
           }
         </div>
@@ -719,7 +720,13 @@ export class BaseDocsLayoutComponent implements OnInit {
   }
 
   getDoneItems(category: SidebarCategory): SidebarItem[] {
-    return category.items.filter((item) => item.status === 'ARQUIVADO');
+    return category.items.filter(
+      (item) => item.status === 'ARQUIVADO' || item.status === 'CONCLUIDO',
+    );
+  }
+
+  getPendingItems(category: SidebarCategory): SidebarItem[] {
+    return category.items.filter((item) => item.status === 'PENDENTE');
   }
 
   getStatusClass(status: string): string {
@@ -730,6 +737,10 @@ export class BaseDocsLayoutComponent implements OnInit {
         return 'bg-orange-50 text-orange-700 border border-orange-200/50';
       case 'ARQUIVADO':
         return 'bg-slate-100 text-slate-500 border border-slate-200/50';
+      case 'CONCLUIDO':
+        return 'bg-emerald-50 text-emerald-700 border border-emerald-100';
+      case 'PENDENTE':
+        return 'bg-slate-50 text-slate-500 border border-slate-100';
       default:
         return 'bg-slate-100 text-slate-600';
     }

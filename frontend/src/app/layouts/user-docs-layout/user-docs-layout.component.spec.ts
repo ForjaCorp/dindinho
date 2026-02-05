@@ -45,7 +45,7 @@ describe('UserDocsLayoutComponent (QA)', () => {
     const fixture = TestBed.createComponent(UserDocsLayoutComponent);
     fixture.detectChanges();
 
-    const adminBtn = fixture.debugElement.query(By.css('a[routerLink="/docs/admin/intro"]'));
+    const adminBtn = fixture.debugElement.query(By.css('[data-testid="admin-panel-link"]'));
     expect(adminBtn).toBeNull();
   });
 
@@ -59,7 +59,7 @@ describe('UserDocsLayoutComponent (QA)', () => {
     const fixture = TestBed.createComponent(UserDocsLayoutComponent);
     fixture.detectChanges();
 
-    const adminBtn = fixture.debugElement.query(By.css('a[routerLink="/docs/admin/intro"]'));
+    const adminBtn = fixture.debugElement.query(By.css('[data-testid="admin-panel-link"]'));
     expect(adminBtn).not.toBeNull();
 
     const label = adminBtn.nativeElement.textContent;
@@ -71,7 +71,7 @@ describe('UserDocsLayoutComponent (QA)', () => {
     const fixture = TestBed.createComponent(UserDocsLayoutComponent);
     fixture.detectChanges();
 
-    const backBtn = fixture.debugElement.query(By.css('button.bg-emerald-600'));
+    const backBtn = fixture.debugElement.query(By.css('[data-testid="back-to-app-button"]'));
     expect(backBtn.nativeElement.textContent).toContain('Voltar para a Plataforma');
   });
 
@@ -80,7 +80,7 @@ describe('UserDocsLayoutComponent (QA)', () => {
     const fixture = TestBed.createComponent(UserDocsLayoutComponent);
     fixture.detectChanges();
 
-    const loginBtn = fixture.debugElement.query(By.css('button.bg-emerald-600'));
+    const loginBtn = fixture.debugElement.query(By.css('[data-testid="back-to-app-button"]'));
     expect(loginBtn.nativeElement.textContent).toContain('Entrar no Dindinho');
   });
 });

@@ -148,24 +148,11 @@ npm run prisma:deploy   # Deploy de migrações (prod)
 npm run cleanup:refresh-tokens # Limpa tokens expirados
 ```
 
-## 📅 Planejamento e Status
+## 📅 Status do Projeto
 
-O desenvolvimento do Dindinho é guiado por um plano de execução estruturado em fases.
+O desenvolvimento do Dindinho é guiado por um planejamento estratégico focado no MVP. Atualmente, a infraestrutura básica e o portal de documentação estão concluídos, e o foco está na implementação das funcionalidades centrais de negócio.
 
-| Fase   | Descrição                                   | Status       |
-| :----- | :------------------------------------------ | :----------- |
-| **D0** | Inventário e pontos de entrada              | ✅ Concluído |
-| **D1** | Padrões de contrato e compatibilidade       | ✅ Concluído |
-| **D2** | Metadados de docs e backlog estruturado     | ✅ Concluído |
-| **D3** | Geração de OpenAPI (Zod -> Swagger)         | ✅ Concluído |
-| **D4** | Portal de documentação (Angular + Markdown) | ✅ Concluído |
-| **D5** | Deploy no Coolify e infraestrutura          | ✅ Concluído |
-| **D6** | Separação em 3 Tiers (Public/User/Admin)    | ✅ Concluído |
-| **D7** | Domínios e Especialização de Conteúdo       | ✅ Concluído |
-| **D8** | Operações, Persistência e Erros             | ✅ Concluído |
-| **D9** | Experiência de Acesso e Isolamento de Docs  | ✅ Concluído |
-
-Para detalhes técnicos sobre o progresso e próximos passos, consulte o [Plano de Execução de Documentação](docs/90-backlog/planning/documentation.md).
+Para ver o status detalhado das funcionalidades e os próximos passos, consulte o [Roadmap de Evolução](docs/90-backlog/planning/evolucao-roadmap.md).
 
 ## 🚀 Iniciando o Projeto
 
@@ -244,25 +231,19 @@ O projeto é entregue via aplicações Docker organizadas pelo Coolify, separand
 
 Referência de orquestração: `docker-compose.coolify.yml` demonstra a configuração de serviços e healthchecks para ambientes gerenciados pelo Coolify.
 
-## 📚 Documentação
+## 📚 Documentação e Planejamento
 
+A documentação completa do projeto, incluindo guias de usuário, referências técnicas de API e o roadmap detalhado, está disponível no nosso **Portal de Documentação Interno**:
+
+- **Acesse**: [http://localhost:4200/docs](http://localhost:4200/docs) (em desenvolvimento)
+
+### Links Rápidos
+
+- [Roadmap de Evolução](docs/90-backlog/planning/evolucao-roadmap.md)
 - [Padrões de Código](CODING_STANDARDS.md)
-- [Autenticação](docs/30-api/authentication.md)
-- [Scripts de Seed e Setup](docs/30-api/seed-scripts-setup.md)
-- [Relatórios (módulo)](backend/src/reports/README.md)
-- [Design: Página de Relatórios (Frontend)](docs/40-clients/pwa/reports-frontend.md)
+- [Referência de API](docs/30-api/openapi.json)
 
-## 📅 Planejamentos
-
-- [TimeFilter — Iteração de melhorias (Concluído)](docs/90-backlog/planning/time-filter.md)
-- [Filtro por conta unificado (Relatórios + Transações) (Concluído)](docs/90-backlog/planning/account-filter.md)
-- [Refatoração: Sincronização de URL (Concluído)](docs/90-backlog/planning/refactor-url-sync.md)
-- [Documentação — Plano de execução (Em andamento)](docs/90-backlog/planning/documentation.md)
-- [Metas de Economia Híbridas (Em andamento)](docs/90-backlog/planning/planejamento-metas.md)
-- [Sistema de Convites (Colaboração Multi-contas) (Pendente)](docs/90-backlog/planning/sistema-convites.md)
-- [Plano de Testes E2E (Pendente)](docs/90-backlog/planning/test-plan-e2e.md)
-- [Roadmap de Evolução e Backlog (Pendente)](docs/90-backlog/planning/evolucao-roadmap.md)
-- [Evolução de Roteamento e API (Pendente)](docs/90-backlog/planning/ROUTING_EVOLUTION_PLAN.md)
+---
 
 ## 🤝 Contribuição
 
