@@ -186,7 +186,7 @@ export async function authRoutes(
         });
       }
 
-      return reply.status(204).send();
+      return reply.status(204).send({});
     },
   );
 }

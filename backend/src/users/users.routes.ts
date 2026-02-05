@@ -12,6 +12,7 @@
 
 import { FastifyInstance } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
+import fastifyRateLimit from "@fastify/rate-limit";
 import { prisma } from "../lib/prisma";
 import {
   SignupNotAllowedError,
@@ -46,6 +47,26 @@ import { getHttpErrorLabel } from "../lib/get-http-error-label";
  */
 export async function usersRoutes(app: FastifyInstance) {
   const service = new UsersService(prisma);
+
+  if (process.env.NODE_ENV !== "test") {
+    await app.register(fastifyRateLimit, {
+      max: 5,
+      timeWindow: "15 minutes",
+      keyGenerator: (request) =>
+        (request.headers["x-real-ip"] as string | undefined) || request.ip,
+      errorResponseBuilder: (request, _context) => {
+        const statusCode = 429;
+        return {
+          statusCode,
+          error: getHttpErrorLabel(statusCode),
+          message:
+            "Muitas tentativas de cadastro. Tente novamente em 15 minutos.",
+          code: "TOO_MANY_REQUESTS",
+          requestId: request.id,
+        };
+      },
+    });
+  }
 
   /**
    * Rota para criação de novo usuário
