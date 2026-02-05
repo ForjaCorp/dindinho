@@ -44,7 +44,7 @@ describe('Rotas da aplicação', () => {
     expect(redirectTo()).toBe('login');
 
     vi.stubGlobal('location', { hostname: 'docs.dindinho.forjacorp.com' });
-    expect(redirectTo()).toBe('docs/public/principles');
+    expect(redirectTo()).toBe('docs/intro');
 
     vi.unstubAllGlobals();
   });
@@ -99,10 +99,12 @@ describe('Rotas da aplicação', () => {
     expect(wildcardRoute?.redirectTo).toBe('login');
   });
 
-  it('deve redirecionar /docs para /docs/user/intro', () => {
+  it('deve redirecionar docs vazio para intro', () => {
     const docsRoute = routesList.find((route) => route.path === 'docs');
     expect(docsRoute).toBeDefined();
-    expect(docsRoute?.redirectTo).toBe('docs/user/intro');
-    expect(docsRoute?.pathMatch).toBe('full');
+    const emptyChild = docsRoute?.children?.find((child) => child.path === '');
+    expect(emptyChild).toBeDefined();
+    expect(emptyChild?.redirectTo).toBe('intro');
+    expect(emptyChild?.pathMatch).toBe('full');
   });
 });
