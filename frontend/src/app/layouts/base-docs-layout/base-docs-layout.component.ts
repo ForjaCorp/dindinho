@@ -80,6 +80,7 @@ export interface SidebarCategory {
                 placeholder="Buscar na documentação... (Esc para sair)"
                 class="flex-1 bg-transparent border-none outline-none text-slate-900 placeholder:text-slate-500 text-lg"
                 autoFocus
+                aria-label="Campo de busca na documentação"
                 aria-autocomplete="list"
                 aria-controls="search-results-list"
                 [attr.aria-activedescendant]="
@@ -241,7 +242,11 @@ export interface SidebarCategory {
             ></i>
           </button>
 
-          <a [routerLink]="logoLink" class="flex items-center gap-2 group">
+          <a
+            [routerLink]="logoLink"
+            class="flex items-center gap-2 group"
+            aria-label="Ir para a página inicial da documentação"
+          >
             <div
               [class]="
                 'w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold transition-transform group-hover:scale-105 ' +
@@ -251,7 +256,9 @@ export interface SidebarCategory {
             >
               {{ logoLetter }}
             </div>
-            <span class="font-bold text-slate-900 tracking-tight hidden sm:inline"
+            <span
+              class="font-bold text-slate-900 tracking-tight hidden sm:inline"
+              aria-hidden="true"
               >Dindinho
               <span [class]="'font-medium ' + logoTextClass">{{ logoSubtitle }}</span></span
             >
@@ -435,6 +442,7 @@ export interface SidebarCategory {
         [routerLink]="item.link"
         [routerLinkActive]="activeLinkClass"
         (click)="closeMobileMenu()"
+        [attr.aria-current]="isActive(item.link) ? 'page' : null"
         class="flex items-center justify-between px-3 py-2.5 rounded-lg text-[15px] text-slate-600 hover:bg-slate-50 transition-all group focus:outline-none focus:ring-2 focus:ring-indigo-500/10"
       >
         <div class="flex items-center gap-3.5 min-w-0">
@@ -709,6 +717,10 @@ export class BaseDocsLayoutComponent implements OnInit {
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
       ),
     ) as HTMLElement[];
+  }
+
+  public isActive(link: string): boolean {
+    return this.router.url.split('?')[0] === link;
   }
 
   getWIPItems(category: SidebarCategory): SidebarItem[] {

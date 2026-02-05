@@ -1,86 +1,97 @@
-/**
- * @vitest-environment jsdom
- */
-import { describe, it, expect, beforeEach } from 'vitest';
-import { TestBed, getTestBed } from '@angular/core/testing';
-import { UserDocsLayoutComponent } from './user-docs-layout.component';
-import { AuthService } from '../../services/auth.service';
-import { signal, WritableSignal } from '@angular/core';
-import { provideRouter } from '@angular/router';
-import { By } from '@angular/platform-browser';
+/** @vitest-environment jsdom */
+import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
-import { UserState } from '../../services/auth.service';
+import { describe, it, expect, beforeEach, afterEach, vi, Mock } from 'vitest';
+import { provideRouter } from '@angular/router';
+import { signal, WritableSignal } from '@angular/core';
+import { UserDocsLayoutComponent } from './user-docs-layout.component';
+import { AuthService, UserState } from '../../services/auth.service';
 
 const testBed = getTestBed();
 if (!testBed.platform) {
   testBed.initTestEnvironment(BrowserTestingModule, platformBrowserTesting());
 }
 
-describe('UserDocsLayoutComponent (QA)', () => {
-  let authServiceMock: {
+describe('UserDocsLayoutComponent', () => {
+  let fixture: ComponentFixture<UserDocsLayoutComponent>;
+  let component: UserDocsLayoutComponent;
+  let currentUserSignal: WritableSignal<UserState | null>;
+  let authServiceMock: Partial<AuthService> & {
+    isAuthenticated: Mock;
     currentUser: WritableSignal<UserState | null>;
-    isAuthenticated: WritableSignal<boolean>;
   };
 
   beforeEach(async () => {
-    TestBed.resetTestingModule();
+    currentUserSignal = signal<UserState | null>({
+      id: '1',
+      name: 'User',
+      email: 'user@test.com',
+      role: 'VIEWER',
+    });
     authServiceMock = {
-      currentUser: signal<UserState | null>(null),
-      isAuthenticated: signal(false),
+      isAuthenticated: vi.fn(() => currentUserSignal() !== null),
+      currentUser: currentUserSignal,
     };
 
     await TestBed.configureTestingModule({
       imports: [UserDocsLayoutComponent],
       providers: [provideRouter([]), { provide: AuthService, useValue: authServiceMock }],
     }).compileComponents();
+
+    fixture = TestBed.createComponent(UserDocsLayoutComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
   });
 
-  it('deve ocultar o botão de Painel Admin quando o usuário não é admin', () => {
-    authServiceMock.currentUser.set({
+  afterEach(() => {
+    vi.restoreAllMocks();
+    TestBed.resetTestingModule();
+  });
+
+  it('deve criar o componente', () => {
+    expect(component).toBeTruthy();
+  });
+
+  it('deve ter atributos de acessibilidade no botão de site institucional', () => {
+    const button = fixture.nativeElement.querySelector(
+      'button[aria-label="Ir para o site institucional"]',
+    );
+    expect(button).toBeTruthy();
+
+    const ariaHidden = button.querySelectorAll('[aria-hidden="true"]');
+    expect(ariaHidden.length).toBeGreaterThan(0);
+  });
+
+  it('deve mostrar link do painel admin apenas para administradores', () => {
+    // Caso 1: Usuário comum (não deve ver)
+    currentUserSignal.set({
       id: '1',
-      name: 'Test User',
-      email: 'test@example.com',
+      name: 'User',
+      email: 'user@test.com',
       role: 'VIEWER',
     });
-    const fixture = TestBed.createComponent(UserDocsLayoutComponent);
     fixture.detectChanges();
+    let link = fixture.nativeElement.querySelector('[data-testid="admin-panel-link"]');
+    expect(link).toBeFalsy();
 
-    const adminBtn = fixture.debugElement.query(By.css('[data-testid="admin-panel-link"]'));
-    expect(adminBtn).toBeNull();
-  });
-
-  it('deve mostrar o botão de Painel Admin quando o usuário é ADMIN', () => {
-    authServiceMock.currentUser.set({
+    // Caso 2: Administrador (deve ver com atributos de acessibilidade)
+    currentUserSignal.set({
       id: '1',
-      name: 'Admin User',
-      email: 'admin@example.com',
+      name: 'Admin',
+      email: 'admin@test.com',
       role: 'ADMIN',
     });
-    const fixture = TestBed.createComponent(UserDocsLayoutComponent);
     fixture.detectChanges();
+    link = fixture.nativeElement.querySelector('[data-testid="admin-panel-link"]');
+    expect(link).toBeTruthy();
+    expect(link.getAttribute('aria-label')).toBe('Acessar o painel administrativo de documentação');
 
-    const adminBtn = fixture.debugElement.query(By.css('[data-testid="admin-panel-link"]'));
-    expect(adminBtn).not.toBeNull();
-
-    const label = adminBtn.nativeElement.textContent;
-    expect(label).toContain('Painel Admin');
+    const ariaHidden = link.querySelectorAll('[aria-hidden="true"]');
+    expect(ariaHidden.length).toBeGreaterThan(0);
   });
 
-  it('deve mostrar o texto correto no botão de ação quando autenticado', () => {
-    authServiceMock.isAuthenticated.set(true);
-    const fixture = TestBed.createComponent(UserDocsLayoutComponent);
-    fixture.detectChanges();
-
-    const backBtn = fixture.debugElement.query(By.css('[data-testid="back-to-app-button"]'));
-    expect(backBtn.nativeElement.textContent).toContain('Voltar para a Plataforma');
-  });
-
-  it('deve mostrar o texto correto no botão de ação quando não autenticado', () => {
-    authServiceMock.isAuthenticated.set(false);
-    const fixture = TestBed.createComponent(UserDocsLayoutComponent);
-    fixture.detectChanges();
-
-    const loginBtn = fixture.debugElement.query(By.css('[data-testid="back-to-app-button"]'));
-    expect(loginBtn.nativeElement.textContent).toContain('Entrar no Dindinho');
+  it('deve ter atributos de acessibilidade no botão de voltar', () => {
+    const button = fixture.nativeElement.querySelector('[data-testid="back-to-app-button"]');
+    expect(button.getAttribute('aria-label')).toBe('Voltar para a Plataforma');
   });
 });

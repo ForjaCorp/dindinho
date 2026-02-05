@@ -45,12 +45,14 @@ import {
         <!-- Site Institucional -->
         <button
           (click)="goToLanding()"
+          aria-label="Ir para o site institucional"
           class="flex items-center gap-2 px-3 py-2 text-[11px] font-bold text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-all group"
         >
           <i
             class="pi pi-external-link text-[10px] text-slate-400 group-hover:text-emerald-500"
+            aria-hidden="true"
           ></i>
-          <span>Site Institucional</span>
+          <span aria-hidden="true">Site Institucional</span>
         </button>
 
         <!-- Acesso Rápido Admin (se for admin) -->
@@ -58,14 +60,16 @@ import {
           <a
             routerLink="/docs/admin/intro"
             data-testid="admin-panel-link"
+            aria-label="Acessar o painel administrativo de documentação"
             class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-all border border-slate-200/60 bg-white shadow-sm group/admin"
           >
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2" aria-hidden="true">
               <i class="pi pi-shield text-indigo-500 text-xs"></i>
               <span class="text-[11px] font-bold text-slate-700">Painel Admin</span>
             </div>
             <i
               class="pi pi-arrow-right text-[8px] text-slate-300 group-hover/admin:translate-x-0.5 transition-transform"
+              aria-hidden="true"
             ></i>
           </a>
         }
@@ -74,10 +78,11 @@ import {
         <button
           (click)="goToApp()"
           data-testid="back-to-app-button"
+          [attr.aria-label]="backButtonText()"
           class="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-sm shadow-emerald-100 active:scale-95"
         >
-          <i [class]="'pi ' + backButtonIcon() + ' text-[10px]'"></i>
-          <span>{{ backButtonText() }}</span>
+          <i [class]="'pi ' + backButtonIcon() + ' text-[10px]'" aria-hidden="true"></i>
+          <span aria-hidden="true">{{ backButtonText() }}</span>
         </button>
       </div>
     </app-base-docs-layout>

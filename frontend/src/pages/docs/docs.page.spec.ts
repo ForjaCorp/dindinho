@@ -73,6 +73,13 @@ describe('DocsPage', () => {
     expect(component).toBeTruthy();
   });
 
+  it('deve usar a tag <section> como container principal para acessibilidade dentro do layout', () => {
+    createComponent();
+    const sectionEl = fixture.nativeElement.querySelector('section[data-testid="docs-page"]');
+    expect(sectionEl).toBeTruthy();
+    expect(sectionEl.getAttribute('aria-label')).toBe('Conteúdo da Documentação');
+  });
+
   it('deve carregar markdown padrão se nenhum slug ou path for fornecido', async () => {
     docsServiceMock.getFile.mockReturnValue(of('# Documentação Padrão'));
     createComponent();
@@ -95,7 +102,7 @@ describe('DocsPage', () => {
     activatedRouteMock.params.next({ slug: 'reports' });
     fixture.detectChanges();
 
-    expect(docsServiceMock.getFile).toHaveBeenCalledWith('40-clients/pwa/reports-frontend.md');
+    expect(docsServiceMock.getFile).toHaveBeenCalledWith('40-plataformas/pwa/relatorios.md');
   });
 
   it('NÃO deve carregar documento administrativo se estiver no contexto de usuário', () => {
@@ -108,7 +115,7 @@ describe('DocsPage', () => {
 
     // Quando não encontra no mapeamento do contexto atual, ele usa o próprio slug como fallback
     expect(docsServiceMock.getFile).toHaveBeenCalledWith('reports');
-    expect(docsServiceMock.getFile).not.toHaveBeenCalledWith('40-clients/pwa/reports-frontend.md');
+    expect(docsServiceMock.getFile).not.toHaveBeenCalledWith('40-plataformas/pwa/relatorios.md');
   });
 
   it('deve carregar documento de domínio via slug', () => {
@@ -118,7 +125,7 @@ describe('DocsPage', () => {
     activatedRouteMock.params.next({ slug: 'dominio-contas' });
     fixture.detectChanges();
 
-    expect(docsServiceMock.getFile).toHaveBeenCalledWith('user/dominios/contas.md');
+    expect(docsServiceMock.getFile).toHaveBeenCalledWith('10-produto/contas/guia-usuario.md');
   });
 
   it('deve carregar intro de admin quando context é admin', () => {
@@ -308,7 +315,7 @@ describe('DocsPage', () => {
     createComponent();
     activatedRouteMock.params.next({ slug: 'reports' });
     fixture.detectChanges();
-    expect(docsServiceMock.getFile).toHaveBeenCalledWith('40-clients/pwa/reports-frontend.md');
+    expect(docsServiceMock.getFile).toHaveBeenCalledWith('40-plataformas/pwa/relatorios.md');
 
     // Segundo acesso (mudança de rota)
     docsServiceMock.getFile.mockReturnValue(of('# Intro'));

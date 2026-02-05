@@ -52,13 +52,13 @@ interface OpenApiEndpointItem {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, MarkdownComponent],
   template: `
-    <div
+    <section
       data-testid="docs-page"
-      class="bg-white max-w-4xl mx-auto pt-2 pb-10 px-4 sm:px-0"
+      class="bg-white max-w-4xl mx-auto pt-2 pb-10 px-4 sm:px-0 focus:outline-none"
       (click)="handleContentClick($event)"
       (keydown.enter)="handleContentClick($event)"
-      role="region"
-      aria-label="Portal de Documentação"
+      aria-label="Conteúdo da Documentação"
+      tabindex="0"
     >
       @if (isSwaggerSlug()) {
         <div data-testid="docs-swagger-redirect" class="py-20 text-center">
@@ -102,6 +102,22 @@ interface OpenApiEndpointItem {
               </div>
             </div>
           } @else {
+            @if (breadcrumbs().length > 0) {
+              <nav
+                class="flex items-center gap-1.5 text-[11px] font-medium text-slate-400 mb-6 overflow-x-auto no-scrollbar whitespace-nowrap"
+                aria-label="Caminho do documento"
+              >
+                @for (crumb of breadcrumbs(); track $index) {
+                  @if (!$first) {
+                    <i class="pi pi-angle-right text-[8px] opacity-50"></i>
+                  }
+                  <span [class.text-slate-600]="crumb.active" [class.font-bold]="crumb.active">
+                    {{ crumb.label }}
+                  </span>
+                }
+              </nav>
+            }
+
             @if (shouldShowExternalHeader()) {
               <h1 class="text-3xl font-bold text-slate-900 tracking-tight">{{ title() }}</h1>
               @if (description()) {
@@ -220,7 +236,7 @@ interface OpenApiEndpointItem {
           }
         </div>
       }
-    </div>
+    </section>
   `,
 })
 export class DocsPage {
@@ -330,9 +346,12 @@ export class DocsPage {
       'guia-contribuicao': { path: 'admin/contribuicao.md', slug: 'guia-contribuicao' },
       principios: { path: '00-geral/principios.md', slug: 'principios' },
       'codigo-conduta': { path: '00-geral/codigo-conduta.md', slug: 'codigo-conduta' },
+      'product-intro': { path: '00-geral/intro.md', slug: 'product-intro' },
+      logs: { path: '50-operacoes/logs-e-monitoramento.md', slug: 'logs' },
     },
     user: {
       intro: { path: 'user/intro.md', slug: 'intro' },
+      'product-intro': { path: '00-geral/intro.md', slug: 'product-intro' },
       principles: { path: '00-geral/principios.md', slug: 'principles' },
       faq: { path: '00-geral/faq.md', slug: 'faq' },
       principios: { path: '00-geral/principios.md', slug: 'principios' },
@@ -374,6 +393,54 @@ export class DocsPage {
   /** Tags associadas ao documento */
   protected readonly tags = signal<string[]>([]);
 
+  /** Breadcrumbs baseados no caminho do arquivo */
+  protected readonly breadcrumbs = computed(() => {
+    const path = this.selectedPath();
+    if (!path || path === this.OPENAPI_PATH) return [];
+
+    const segments = path.split('/');
+    const breadcrumbs: { label: string; active: boolean }[] = [];
+
+    // Mapeamento de nomes de pastas para labels amigáveis
+    const folderLabels: Record<string, string> = {
+      '00-geral': 'Geral',
+      '10-produto': 'Produto',
+      '20-arquitetura': 'Arquitetura',
+      '30-api': 'API',
+      '40-plataformas': 'Plataformas',
+      '50-operacoes': 'Operações',
+      '90-planejamento': 'Planejamento',
+      admin: 'Admin',
+      user: 'Usuário',
+      pwa: 'PWA',
+      adr: 'ADR',
+      concluido: 'Concluído',
+      'em-discussao': 'Em Discussão',
+    };
+
+    segments.forEach((segment, index) => {
+      const isLast = index === segments.length - 1;
+      let label = segment.replace('.md', '');
+
+      // Se for uma pasta conhecida, usa o label amigável
+      if (folderLabels[label]) {
+        label = folderLabels[label];
+      } else {
+        // Tenta limpar o nome do arquivo (ex: 10-autenticacao -> Autenticação)
+        label = label
+          .replace(/^\d+-/, '') // Remove prefixo numérico (ex: 10-)
+          .replace(/-/g, ' ') // Substitui hifens por espaços
+          .split(' ')
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+      }
+
+      breadcrumbs.push({ label, active: isLast });
+    });
+
+    return breadcrumbs;
+  });
+
   /** Tracking function para as tags */
   protected trackByTag(_index: number, tag: string): string {
     return tag;
@@ -386,7 +453,7 @@ export class DocsPage {
   protected readonly error = signal<string | null>(null);
 
   /** Indica se o documento atual é uma especificação OpenAPI */
-  protected readonly isOpenApi = computed(() => this.selectedPath() === this.OPENAPI_PATH);
+  protected readonly isOpenApi = computed(() => !!this.openApiDoc());
   /** Indica se a rota atual deve exibir o redirecionamento para o Swagger UI */
   protected readonly isSwaggerSlug = computed(() => {
     const context = this.route.snapshot.data['context'] || 'user';

@@ -190,14 +190,16 @@ describe('BaseDocsLayoutComponent', () => {
     const navElements = fixture.debugElement.queryAll(By.css('aside nav > div'));
     const backlogCategory = navElements[1];
 
-    // No novo template, os headers estão dentro de divs específicas
-    const headers = backlogCategory.queryAll(
-      By.css('.text-xs.font-bold.uppercase.tracking-tighter'),
+    // No novo template, os itens são filtrados por status, mas não possuem headers de texto explícitos
+    // O teste falha porque não existem elementos com a classe .text-xs.font-bold.uppercase.tracking-tighter
+    // Vamos verificar se os itens estão presentes e se o status é exibido corretamente
+    const statusBadges = backlogCategory.queryAll(
+      By.css('span.font-bold.uppercase.tracking-wider'),
     );
+    const statusTexts = statusBadges.map((b) => b.nativeElement.textContent.trim());
 
-    const headerTexts = headers.map((h) => h.nativeElement.textContent);
-    expect(headerTexts.some((t) => t.includes('Discussão'))).toBe(true);
-    expect(headerTexts.some((t) => t.includes('Arquivado'))).toBe(true);
+    expect(statusTexts).toContain('DISCUSSÃO');
+    expect(statusTexts).toContain('ARQUIVADO');
   });
 
   describe('Command Palette e Metadados Avançados', () => {

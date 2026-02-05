@@ -36,14 +36,16 @@ import { AuthService } from '../../services/auth.service';
         <a
           routerLink="/docs/intro"
           data-testid="user-view-link"
+          aria-label="Ir para a visão pública do usuário"
           class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-all border border-slate-200/60 bg-white shadow-sm group/user"
         >
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2" aria-hidden="true">
             <i class="pi pi-eye text-emerald-500 text-xs"></i>
             <span class="text-[11px] font-bold text-slate-700">Visão do Usuário</span>
           </div>
           <i
             class="pi pi-arrow-right text-[8px] text-slate-300 group-hover/user:translate-x-0.5 transition-transform"
+            aria-hidden="true"
           ></i>
         </a>
 
@@ -51,10 +53,11 @@ import { AuthService } from '../../services/auth.service';
         <button
           (click)="goToApp()"
           data-testid="back-to-app-button"
+          [attr.aria-label]="backButtonText()"
           class="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-sm shadow-indigo-100 active:scale-95"
         >
-          <i [class]="'pi ' + backButtonIcon() + ' text-[10px]'"></i>
-          <span>{{ backButtonText() }}</span>
+          <i [class]="'pi ' + backButtonIcon() + ' text-[10px]'" aria-hidden="true"></i>
+          <span aria-hidden="true">{{ backButtonText() }}</span>
         </button>
       </div>
     </app-base-docs-layout>
