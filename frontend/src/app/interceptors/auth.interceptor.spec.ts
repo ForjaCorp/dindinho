@@ -28,6 +28,7 @@ describe('AuthInterceptor', () => {
     const authServiceSpy = {
       refreshToken: vi.fn(),
       logout: vi.fn(),
+      getAccessToken: vi.fn().mockImplementation(() => localStorage.getItem('dindinho_token')),
     };
 
     TestBed.configureTestingModule({

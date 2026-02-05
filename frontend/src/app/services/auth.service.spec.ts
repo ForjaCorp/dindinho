@@ -37,8 +37,6 @@ describe('AuthService', () => {
   let service: AuthService;
   let router: Router;
   let apiService: ApiService;
-  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
-  let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
   let setItemSpy: ReturnType<typeof vi.spyOn>;
   let getItemSpy: ReturnType<typeof vi.spyOn>;
   let removeItemSpy: ReturnType<typeof vi.spyOn>;
@@ -57,13 +55,10 @@ describe('AuthService', () => {
   };
 
   beforeEach(() => {
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-
     // Spies para localStorage
-    setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
-    getItemSpy = vi.spyOn(Storage.prototype, 'getItem');
-    removeItemSpy = vi.spyOn(Storage.prototype, 'removeItem');
+    setItemSpy = vi.spyOn(window.localStorage, 'setItem');
+    getItemSpy = vi.spyOn(window.localStorage, 'getItem');
+    removeItemSpy = vi.spyOn(window.localStorage, 'removeItem');
 
     const apiServiceSpy = {
       login: vi.fn(),
@@ -96,8 +91,6 @@ describe('AuthService', () => {
   afterEach(() => {
     localStorage.clear();
     TestBed.resetTestingModule();
-    consoleErrorSpy.mockRestore();
-    consoleWarnSpy.mockRestore();
     setItemSpy.mockRestore();
     getItemSpy.mockRestore();
     removeItemSpy.mockRestore();
