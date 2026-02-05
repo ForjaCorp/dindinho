@@ -74,6 +74,38 @@ export class DocsService {
         path: '20-arquitetura/adr/0004-padronizacao-nomenclatura-commits.md',
         slug: 'adr-0004',
       },
+      'adr-0005': {
+        path: '20-arquitetura/adr/0005-estratégia-parcelamento-explosão.md',
+        slug: 'adr-0005',
+      },
+      'adr-0006': {
+        path: '20-arquitetura/adr/0006-sincronização-estado-url.md',
+        slug: 'adr-0006',
+      },
+      'adr-0007': {
+        path: '20-arquitetura/adr/0007-componentes-standalone.md',
+        slug: 'adr-0007',
+      },
+      'adr-0008': {
+        path: '20-arquitetura/adr/0008-estratégia-testes-data-testid.md',
+        slug: 'adr-0008',
+      },
+      'adr-0009': {
+        path: '20-arquitetura/adr/0009-animações-nativas-css.md',
+        slug: 'adr-0009',
+      },
+      'adr-0010': {
+        path: '20-arquitetura/adr/0010-modelagem-tabela-extensão.md',
+        slug: 'adr-0010',
+      },
+      'adr-0011': {
+        path: '20-arquitetura/adr/0011-autenticação-jwt-refresh-token.md',
+        slug: 'adr-0011',
+      },
+      'adr-0012': {
+        path: '20-arquitetura/adr/0012-infraestrutura-docker-coolify.md',
+        slug: 'adr-0012',
+      },
       roadmap: { path: '90-planejamento/roadmap-evolucao.md', slug: 'roadmap' },
       'test-plan-e2e': {
         path: '90-planejamento/em-discussao/plano-testes-e2e.md',
