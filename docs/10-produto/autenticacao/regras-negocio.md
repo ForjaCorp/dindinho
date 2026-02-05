@@ -40,7 +40,7 @@ Este domínio é o alicerce de segurança do Dindinho, garantindo que apenas usu
 
 ### Modelo de Dados
 
-Referência no [schema.prisma](../../backend/prisma/schema.prisma):
+Referência no [schema.prisma](../../../backend/prisma/schema.prisma):
 
 - `User`: Entidade central com dados de perfil e hash de senha (Argon2).
 - `RefreshToken`: Armazena tokens de atualização em formato binário para segurança e performance.
@@ -49,17 +49,21 @@ Referência no [schema.prisma](../../backend/prisma/schema.prisma):
 
 **Roles (Enum):**
 
-- `VIEWER`: Acesso apenas para leitura.
-- `EDITOR`: Pode criar e editar transações/contas.
-- `ADMIN`: Acesso total, incluindo gestão de usuários e sistema.
+- `USER`: Acesso padrão (Contas, Transações, Metas).
+- `ADMIN`: Acesso total e gerenciamento de plataforma.
 
-### Integração e API
+### Backend (Business Logic)
 
-- **Endpoints**: Verifique `/auth/*` e `/users/*` na [Referência de API](../30-api/openapi.json).
-- **Segurança**: Uso de JWT (Short-lived) e Refresh Tokens (Long-lived, Database-backed).
-- **Contratos**: Schemas Zod definidos em `packages/shared/src/schemas/auth.schema.ts`.
+- **Auth Plugin**: `backend/src/plugins/auth.ts` gerencia JWT e RBAC.
+- **Service**: `backend/src/modules/auth/auth.service.ts` contém a lógica de login/refresh.
+- **Zod Schemas**: Contratos em `@dindinho/shared/src/schemas/auth.schema.ts`.
+
+### Frontend (Integration)
+
+- **AuthGuard**: Proteção de rotas em `frontend/src/app/guards/auth.guard.ts`.
+- **Interceptador**: Injeção de JWT e tratamento de 401 (refresh automático).
 
 ## 🔗 Links Úteis
 
-- [Configuração de Segurança](../../backend/src/plugins/auth.ts)
-- [Auth Guard (Frontend)](../../frontend/src/app/guards/auth.guard.ts)
+- [Referência de API](../../30-api/openapi.json)
+- [Padrões de Segurança](../../20-arquitetura/padroes-backend.md)

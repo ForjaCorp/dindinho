@@ -2,7 +2,7 @@
 id: codigo-conduta
 title: "Código de Conduta"
 description: "Valores, comportamentos e cultura do time de engenharia do Dindinho."
-audience: ["time"]
+audience: ["dev", "produto"]
 visibility: "interno"
 status: "estável"
 owners: ["engineering"]

@@ -58,7 +58,7 @@ createdAt: "YYYY-MM-DD"
 Para manter a navegação fluida (sem recarregamento), use links relativos com extensão `.md`. O portal de documentação intercepta esses links e os converte em rotas SPA:
 
 - **Correto:** `[Veja os Princípios](../00-geral/principios.md)`
-- **Evitar:** `[Veja os Princípios](/docs/principles)` (quebra a visualização nativa no GitHub)
+- **Evitar:** `[Veja os Princípios](../00-geral/principios.md)` (quebra a visualização nativa no GitHub)
 
 ## Referência de API
 

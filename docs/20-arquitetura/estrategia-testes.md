@@ -2,7 +2,7 @@
 id: qa-test-strategy
 title: "Estratégia de QA e Testes"
 description: "Princípios, ferramentas e padrões de testes automatizados no ecossistema Dindinho."
-audience: ["dev", "qa"]
+audience: ["dev", "arquitetura"]
 visibility: "interno"
 status: "estável"
 owners: ["engineering"]

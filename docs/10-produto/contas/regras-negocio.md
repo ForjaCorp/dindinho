@@ -39,7 +39,7 @@ O domínio de **Contas** é o alicerce financeiro do Dindinho. Ele representa on
 
 ### Modelo de Dados
 
-Referência no [schema.prisma](../../backend/prisma/schema.prisma):
+Referência no [schema.prisma](../../../backend/prisma/schema.prisma):
 
 - `Account`: Entidade principal vinculada ao `User`.
 - `CreditCardInfo`: Extensão 1:1 para detalhes de faturas.
@@ -58,9 +58,9 @@ Referência no [schema.prisma](../../backend/prisma/schema.prisma):
 
 ## 🔗 Links Úteis
 
-- [Referência de API](../30-api/openapi.json)
-- [Esquema de Banco de Dados](../../backend/prisma/schema.prisma)
-- [Padrões de Backend](../../docs/20-arquitetura/padroes-backend.md)
+- [Referência de API](../../30-api/openapi.json)
+- [Esquema de Banco de Dados](../../../backend/prisma/schema.prisma)
+- [Padrões de Backend](../../20-arquitetura/padroes-backend.md)
 
 ---
 

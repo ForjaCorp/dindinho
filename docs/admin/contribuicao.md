@@ -2,7 +2,7 @@
 id: contribuicao
 title: "Guia de Contribuição"
 description: "Fluxo de trabalho, padrões e diretrizes para o time interno contribuir com o monorepo Dindinho."
-audience: ["dev", "engineering"]
+audience: ["dev", "arquitetura"]
 visibility: "interno"
 status: "estável"
 owners: ["engineering"]
