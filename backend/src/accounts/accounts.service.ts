@@ -12,10 +12,10 @@ import {
 } from "@dindinho/shared";
 
 /**
- * Erro base para operações de conta
- * @description Classe base para todos os erros relacionados a contas
+ * Erro base para operações de conta.
+ * @description Classe base para todos os erros relacionados a contas.
  */
-abstract class AccountError extends Error {
+export abstract class AccountError extends Error {
   abstract readonly statusCode: number;
   abstract readonly isOperational: boolean;
 
@@ -30,8 +30,8 @@ abstract class AccountError extends Error {
 }
 
 /**
- * Erro quando conta com nome duplicado já existe
- * @description Lançado quando usuário tenta criar conta com nome já existente
+ * Erro quando conta com nome duplicado já existe.
+ * @description Lançado quando usuário tenta criar conta com nome já existente.
  */
 export class DuplicateAccountError extends AccountError {
   readonly statusCode = 409;
@@ -46,10 +46,10 @@ export class DuplicateAccountError extends AccountError {
 }
 
 /**
- * Erro quando usuário não é encontrado
- * @description Lançado quando userId fornecido não existe no sistema
+ * Erro quando usuário não é encontrado.
+ * @description Lançado quando userId fornecido não existe no sistema.
  */
-class UserNotFoundError extends AccountError {
+export class UserNotFoundError extends AccountError {
   readonly statusCode = 404;
   readonly isOperational = true;
 
@@ -62,10 +62,10 @@ class UserNotFoundError extends AccountError {
 }
 
 /**
- * Erro de validação de dados
- * @description Lançado quando dados fornecidos são inválidos
+ * Erro de validação de dados.
+ * @description Lançado quando dados fornecidos são inválidos.
  */
-class AccountValidationError extends AccountError {
+export class AccountValidationError extends AccountError {
   readonly statusCode = 400;
   readonly isOperational = true;
 
@@ -78,10 +78,10 @@ class AccountValidationError extends AccountError {
 }
 
 /**
- * Erro de conexão com banco de dados
- * @description Lançado quando há problemas de conexão com o banco
+ * Erro de conexão com banco de dados.
+ * @description Lançado quando há problemas de conexão com o banco.
  */
-class DatabaseConnectionError extends AccountError {
+export class DatabaseConnectionError extends AccountError {
   readonly statusCode = 503;
   readonly isOperational = true;
 
@@ -94,10 +94,10 @@ class DatabaseConnectionError extends AccountError {
 }
 
 /**
- * Erro de permissão
- * @description Lançado quando usuário não tem permissão para acessar recurso
+ * Erro de permissão.
+ * @description Lançado quando usuário não tem permissão para acessar recurso.
  */
-class PermissionDeniedError extends AccountError {
+export class PermissionDeniedError extends AccountError {
   readonly statusCode = 403;
   readonly isOperational = true;
 
@@ -109,7 +109,11 @@ class PermissionDeniedError extends AccountError {
   }
 }
 
-class AccountNotFoundError extends AccountError {
+/**
+ * Erro quando conta não é encontrada.
+ * @description Lançado quando accountId fornecido não existe no sistema.
+ */
+export class AccountNotFoundError extends AccountError {
   readonly statusCode = 404;
   readonly isOperational = true;
 
@@ -122,10 +126,10 @@ class AccountNotFoundError extends AccountError {
 }
 
 /**
- * Erro genérico de conta
- * @description Erro não esperado em operações de conta
+ * Erro genérico de conta.
+ * @description Erro não esperado em operações de conta.
  */
-class AccountOperationError extends AccountError {
+export class AccountOperationError extends AccountError {
   readonly statusCode = 500;
   readonly isOperational = false;
 
@@ -139,23 +143,9 @@ class AccountOperationError extends AccountError {
 }
 
 /**
- * Serviço responsável pelo gerenciamento de contas dos usuários.
- *
- * @description
- * Fornece operações CRUD para contas, incluindo criação de contas padrão
- * e cartões de crédito com informações específicas.
- *
- * @example
- * const service = new AccountsService(prisma);
- * const account = await service.create('user-123', {
- *   name: 'Cartão Nubank',
- *   color: '#8A2BE2',
- *   icon: 'pi-credit-card',
- *   type: 'CREDIT',
- *   closingDay: 10,
- *   dueDay: 15,
- *   limit: 5000
- * });
+ * Serviço responsável pelo gerenciamento de contas bancárias e cartões
+ * @class AccountsService
+ * @description Gerencia operações de criação, listagem e atualização de contas e cartões de crédito
  */
 export class AccountsService {
   /**
@@ -163,6 +153,12 @@ export class AccountsService {
    */
   constructor(private prisma: PrismaClient) {}
 
+  /**
+   * Converte um valor desconhecido para número de forma segura
+   * @private
+   * @param {unknown} value - Valor a ser convertido
+   * @returns {number} Valor convertido ou 0
+   */
   private toNumber(value: unknown): number {
     if (typeof value === "number" && Number.isFinite(value)) return value;
     if (
@@ -177,6 +173,15 @@ export class AccountsService {
     return 0;
   }
 
+  /**
+   * Valida se o usuário tem permissão de escrita em uma conta
+   * @private
+   * @async
+   * @param {string} userId - ID do usuário
+   * @param {string} accountId - ID da conta
+   * @throws {AccountNotFoundError} Caso a conta não exista
+   * @throws {PermissionDeniedError} Caso o usuário não tenha permissão de escrita
+   */
   private async assertCanWriteAccount(userId: string, accountId: string) {
     const account = await this.prisma.account.findUnique({
       where: { id: accountId },
@@ -207,6 +212,15 @@ export class AccountsService {
     }
   }
 
+  /**
+   * Constrói o DTO de uma conta com cálculos de saldo e limites
+   * @private
+   * @async
+   * @param {string} userId - ID do usuário
+   * @param {string} accountId - ID da conta
+   * @returns {Promise<AccountDTO>} Dados formatados da conta
+   * @throws {PermissionDeniedError} Caso o usuário não tenha acesso à conta
+   */
   private async getAccountDTO(
     userId: string,
     accountId: string,
@@ -517,6 +531,17 @@ export class AccountsService {
     }
   }
 
+  /**
+   * Atualiza uma conta existente
+   * @async
+   * @param {string} userId - ID do usuário realizando a atualização
+   * @param {string} accountId - ID da conta a ser atualizada
+   * @param {UpdateAccountDTO} data - Novos dados da conta
+   * @returns {Promise<AccountDTO>} Dados atualizados da conta
+   * @throws {AccountNotFoundError} Caso a conta não exista
+   * @throws {PermissionDeniedError} Caso o usuário não tenha permissão de escrita
+   * @throws {AccountValidationError} Caso campos de cartão sejam enviados para conta padrão
+   */
   async update(
     userId: string,
     accountId: string,
@@ -597,6 +622,16 @@ export class AccountsService {
     }
   }
 
+  /**
+   * Trata erros de atualização de conta.
+   * @private
+   * @param {unknown} error - Erro capturado.
+   * @param {string} [accountName] - Nome da conta para contexto.
+   * @throws {DuplicateAccountError} Caso o novo nome já exista.
+   * @throws {AccountValidationError} Caso os dados sejam inválidos.
+   * @throws {DatabaseConnectionError} Caso haja erro de conexão.
+   * @throws {AccountOperationError} Para outros erros inesperados.
+   */
   private handleUpdateAccountError(
     error: unknown,
     accountName?: string,
@@ -637,10 +672,15 @@ export class AccountsService {
   }
 
   /**
-   * Trata erros de criação de conta
-   * @param error - Erro capturado
-   * @param accountName - Nome da conta para contexto
+   * Trata erros de criação de conta.
    * @private
+   * @param {unknown} error - Erro capturado.
+   * @param {string} accountName - Nome da conta para contexto.
+   * @throws {DuplicateAccountError} Caso o nome já exista.
+   * @throws {UserNotFoundError} Caso o usuário não seja encontrado.
+   * @throws {AccountValidationError} Caso os dados sejam inválidos.
+   * @throws {DatabaseConnectionError} Caso haja erro de conexão.
+   * @throws {AccountOperationError} Para outros erros inesperados.
    */
   private handleCreateAccountError(error: unknown, accountName: string): never {
     if (error instanceof AccountError) {
@@ -690,9 +730,12 @@ export class AccountsService {
   }
 
   /**
-   * Trata erros de busca de contas
-   * @param error - Erro capturado
+   * Trata erros de busca de contas.
    * @private
+   * @param {unknown} error - Erro capturado.
+   * @throws {DatabaseConnectionError} Caso haja erro de conexão.
+   * @throws {PermissionDeniedError} Caso o usuário não tenha permissão.
+   * @throws {AccountOperationError} Para outros erros inesperados.
    */
   private handleFindAccountsError(error: unknown): never {
     if (error instanceof AccountError) {

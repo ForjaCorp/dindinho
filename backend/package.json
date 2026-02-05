@@ -19,7 +19,8 @@
     "check:dev-user": "tsx ./scripts/check-dev-user.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:deploy": "prisma migrate deploy"
+    "prisma:deploy": "prisma migrate deploy",
+    "openapi:export": "tsx scripts/export-openapi.ts"
   },
   "dependencies": {
     "@dindinho/shared": "*",

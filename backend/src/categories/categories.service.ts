@@ -1,20 +1,10 @@
 import { prisma } from "../lib/prisma";
 import { CreateCategoryDTO } from "@dindinho/shared";
+import { ForbiddenError, NotFoundError } from "../lib/domain-exceptions";
 
-class ForbiddenError extends Error {
-  readonly statusCode = 403;
-  constructor(message = "Sem permissão") {
-    super(message);
-  }
-}
-
-class NotFoundError extends Error {
-  readonly statusCode = 404;
-  constructor(message = "Não encontrado") {
-    super(message);
-  }
-}
-
+/**
+ * Categorias globais padrão criadas para todos os novos usuários.
+ */
 const defaultGlobalCategories = [
   { name: "Salário", icon: "pi-briefcase" },
   { name: "Investimento", icon: "pi-chart-line" },
@@ -29,9 +19,22 @@ const defaultGlobalCategories = [
   { name: "Outros", icon: "pi-tag" },
 ];
 
+/**
+ * Serviço responsável pelo gerenciamento de categorias de transações.
+ * @class CategoriesService
+ * @description Gerencia a criação e listagem de categorias personalizadas e globais.
+ */
 export class CategoriesService {
+  /**
+   * @param {typeof prisma} prismaClient - Instância do cliente Prisma.
+   */
   constructor(private readonly prismaClient: typeof prisma) {}
 
+  /**
+   * Garante que as categorias globais padrão existam no banco de dados.
+   * @private
+   * @async
+   */
   private async ensureDefaultGlobalCategories() {
     const globalCount = await this.prismaClient.category.count({
       where: { userId: null },
@@ -57,6 +60,12 @@ export class CategoriesService {
     }
   }
 
+  /**
+   * Lista todas as categorias disponíveis para o usuário (pessoais + globais).
+   * @async
+   * @param {string} userId - ID do usuário.
+   * @returns {Promise<Array>} Lista de categorias ordenadas por nome.
+   */
   async findAllByUserId(userId: string) {
     await this.ensureDefaultGlobalCategories();
 
@@ -68,6 +77,15 @@ export class CategoriesService {
     });
   }
 
+  /**
+   * Cria uma nova categoria personalizada para o usuário.
+   * @async
+   * @param {string} userId - ID do usuário.
+   * @param {CreateCategoryDTO} payload - Dados da nova categoria.
+   * @returns {Promise<Object>} Categoria criada.
+   * @throws {NotFoundError} Caso a categoria pai informada não exista.
+   * @throws {ForbiddenError} Caso o usuário não tenha permissão sobre a categoria pai.
+   */
   async create(userId: string, payload: CreateCategoryDTO) {
     if (payload.parentId) {
       const parent = await this.prismaClient.category.findUnique({

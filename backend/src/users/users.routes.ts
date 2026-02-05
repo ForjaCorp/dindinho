@@ -12,14 +12,17 @@
 
 import { FastifyInstance } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
-import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import {
   SignupNotAllowedError,
   EmailAlreadyExistsError,
   UsersService,
 } from "./users.service";
-import { apiErrorResponseSchema, createUserSchema } from "@dindinho/shared";
+import {
+  apiErrorResponseSchema,
+  createUserSchema,
+  createUserResponseSchema,
+} from "@dindinho/shared";
 import { getHttpErrorLabel } from "../lib/get-http-error-label";
 
 /**
@@ -98,13 +101,7 @@ export async function usersRoutes(app: FastifyInstance) {
         tags: ["users"],
         body: createUserSchema,
         response: {
-          201: z.object({
-            id: z.string().uuid(),
-            name: z.string(),
-            email: z.string().email(),
-            phone: z.string(),
-            createdAt: z.string().datetime(),
-          }),
+          201: createUserResponseSchema,
           403: apiErrorResponseSchema,
           409: apiErrorResponseSchema,
           422: apiErrorResponseSchema,

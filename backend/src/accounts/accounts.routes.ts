@@ -1,8 +1,14 @@
+/**
+ * @file Rotas de contas da aplicação
+ * @description Define os endpoints para criação, listagem e atualização de contas bancárias e cartões
+ * @module accounts.routes
+ */
+
 import { FastifyInstance } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
-import { AccountsService } from "./accounts.service";
+import { AccountsService, AccountError } from "./accounts.service";
 import {
   CreateAccountDTO,
   createAccountSchema,
@@ -12,47 +18,20 @@ import {
   apiErrorResponseSchema,
 } from "@dindinho/shared";
 import { getHttpErrorLabel } from "../lib/get-http-error-label";
-import { DuplicateAccountError } from "./accounts.service";
-
-class ForbiddenError extends Error {
-  readonly statusCode = 403;
-  constructor(message = "Sem permissão") {
-    super(message);
-  }
-}
-
-class NotFoundError extends Error {
-  readonly statusCode = 404;
-  constructor(message = "Recurso não encontrado") {
-    super(message);
-  }
-}
 
 /**
- * Rotas da API para gerenciamento de contas.
- *
- * @description
- * Define os endpoints para criação e listagem de contas dos usuários.
- * Todas as rotas requerem autenticação via JWT.
- *
- * @example
- * // Registrar rotas no app Fastify
- * app.register(accountsRoutes, { prefix: '/api/accounts' });
- *
- * @param app - Instância do Fastify para registrar as rotas
+ * Configura as rotas relacionadas a contas
+ * @async
+ * @function accountsRoutes
+ * @description Registra os endpoints de gestão de contas na instância do Fastify
+ * @param {FastifyInstance} app - Instância do Fastify onde as rotas serão registradas
+ * @returns {Promise<void>} Promise vazia após configuração das rotas
  */
 export async function accountsRoutes(app: FastifyInstance) {
-  /**
-   * Instância do serviço de contas para operações de negócio.
-   */
   const service = new AccountsService(prisma);
 
   /**
    * Hook global para este prefixo: verifica o token antes de qualquer handler.
-   *
-   * @description
-   * Intercepta todas as requisições para este prefixo de rotas
-   * e valida o token JWT. Lança erro 401 se o token for inválido.
    */
   app.addHook("onRequest", async (request, reply) => {
     try {
@@ -69,24 +48,10 @@ export async function accountsRoutes(app: FastifyInstance) {
   });
 
   /**
-   * Endpoint para criar uma nova conta.
-   *
-   * @description
-   * Cria uma conta para o usuário autenticado. Suporta contas
-   * padrão e cartões de crédito com informações específicas.
-   *
-   * @example
-   * POST /api/accounts
-   * {
-   *   "name": "Cartão Nubank",
-   *   "color": "#8A2BE2",
-   *   "icon": "pi-credit-card",
-   *   "type": "CREDIT",
-   *   "closingDay": 10,
-   *   "dueDay": 15,
-   *   "limit": 5000,
-   *   "brand": "Mastercard"
-   * }
+   * Rota para criação de nova conta ou cartão
+   * @route POST /api/accounts
+   * @description Cria uma nova conta bancária ou cartão de crédito para o usuário autenticado
+   * @access Private
    */
   app.withTypeProvider<ZodTypeProvider>().post(
     "/",
@@ -115,27 +80,21 @@ export async function accountsRoutes(app: FastifyInstance) {
         const account = await service.create(userId, payload);
         return reply.status(201).send(account);
       } catch (error) {
-        if (error instanceof ForbiddenError || error instanceof NotFoundError) {
-          const { statusCode } = error;
-          return reply.code(statusCode).send({
-            statusCode,
-            error: getHttpErrorLabel(statusCode),
+        if (error instanceof AccountError) {
+          return reply.code(error.statusCode).send({
+            statusCode: error.statusCode,
+            error: getHttpErrorLabel(error.statusCode),
             message: error.message,
-            code: error.constructor.name.replace(/Error$/, "").toUpperCase(),
+            code:
+              typeof error.details === "object" &&
+              error.details !== null &&
+              "code" in error.details &&
+              typeof (error.details as { code: unknown }).code === "string"
+                ? (error.details as { code: string }).code
+                : "ACCOUNT_ERROR",
           });
         }
 
-        if (error instanceof DuplicateAccountError) {
-          const duplicateError = error as DuplicateAccountError;
-          return reply.code(409).send({
-            statusCode: 409,
-            error: getHttpErrorLabel(409),
-            message: duplicateError.message,
-            code: "DUPLICATE_ACCOUNT",
-          });
-        }
-
-        // TODO: Improve error handling to map service errors
         const statusCode = 500;
         return reply.code(statusCode).send({
           statusCode,
@@ -148,29 +107,10 @@ export async function accountsRoutes(app: FastifyInstance) {
   );
 
   /**
-   * Endpoint para listar todas as contas do usuário.
-   *
-   * @description
-   * Retorna todas as contas pertencentes ao usuário autenticado,
-   * ordenadas por data de criação. Inclui informações de cartão
-   * de crédito quando aplicável.
-   *
-   * @example
-   * GET /api/accounts
-   * Response: [
-   *   {
-   *     "id": "uuid",
-   *     "name": "Cartão Nubank",
-   *     "type": "CREDIT",
-   *     "balance": 1500.50,
-   *     "creditCardInfo": {
-   *       "closingDay": 10,
-   *       "dueDay": 15,
-   *       "limit": 5000,
-   *       "brand": "Mastercard"
-   *     }
-   *   }
-   * ]
+   * Rota para listagem de contas do usuário
+   * @route GET /api/accounts
+   * @description Retorna todas as contas pertencentes ao usuário autenticado
+   * @access Private
    */
   app.withTypeProvider<ZodTypeProvider>().get(
     "/",
@@ -188,9 +128,23 @@ export async function accountsRoutes(app: FastifyInstance) {
     async (request, reply) => {
       try {
         const { sub: userId } = request.user as { sub: string };
-        return service.findAllByUserId(userId);
-      } catch {
-        // TODO: Improve error handling to map service errors
+        return await service.findAllByUserId(userId);
+      } catch (error) {
+        if (error instanceof AccountError) {
+          return reply.code(error.statusCode).send({
+            statusCode: error.statusCode,
+            error: getHttpErrorLabel(error.statusCode),
+            message: error.message,
+            code:
+              typeof error.details === "object" &&
+              error.details !== null &&
+              "code" in error.details &&
+              typeof (error.details as { code: unknown }).code === "string"
+                ? (error.details as { code: string }).code
+                : "ACCOUNT_ERROR",
+          });
+        }
+
         const statusCode = 500;
         return reply.code(statusCode).send({
           statusCode,
@@ -206,6 +160,12 @@ export async function accountsRoutes(app: FastifyInstance) {
     id: z.string().uuid(),
   });
 
+  /**
+   * Rota para atualização de dados da conta
+   * @route PATCH /api/accounts/:id
+   * @description Atualiza as informações de uma conta ou cartão existente
+   * @access Private
+   */
   app.withTypeProvider<ZodTypeProvider>().patch(
     "/:id",
     {
@@ -232,19 +192,23 @@ export async function accountsRoutes(app: FastifyInstance) {
         const payload: UpdateAccountDTO = updateAccountSchema.parse(
           request.body,
         );
-        return service.update(userId, id, payload);
+        return await service.update(userId, id, payload);
       } catch (error) {
-        if (error instanceof ForbiddenError || error instanceof NotFoundError) {
-          const { statusCode } = error;
-          return reply.code(statusCode).send({
-            statusCode,
-            error: getHttpErrorLabel(statusCode),
+        if (error instanceof AccountError) {
+          return reply.code(error.statusCode).send({
+            statusCode: error.statusCode,
+            error: getHttpErrorLabel(error.statusCode),
             message: error.message,
-            code: error.constructor.name.replace(/Error$/, "").toUpperCase(),
+            code:
+              typeof error.details === "object" &&
+              error.details !== null &&
+              "code" in error.details &&
+              typeof (error.details as { code: unknown }).code === "string"
+                ? (error.details as { code: string }).code
+                : "ACCOUNT_ERROR",
           });
         }
 
-        // TODO: Improve error handling to map service errors
         const statusCode = 500;
         return reply.code(statusCode).send({
           statusCode,
