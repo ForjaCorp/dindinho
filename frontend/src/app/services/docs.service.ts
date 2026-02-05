@@ -67,6 +67,13 @@ export class DocsService {
       naming: { path: '20-arquitetura/convencoes-nomenclatura.md', slug: 'naming' },
       tests: { path: '20-arquitetura/estrategia-testes.md', slug: 'tests' },
       adr: { path: '20-arquitetura/adr/intro.md', slug: 'adr' },
+      'adr-0001': { path: '20-arquitetura/adr/0001-uso-signals.md', slug: 'adr-0001' },
+      'adr-0002': { path: '20-arquitetura/adr/0002-monorepo-zod-schemas.md', slug: 'adr-0002' },
+      'adr-0003': { path: '20-arquitetura/adr/0003-docs-as-code.md', slug: 'adr-0003' },
+      'adr-0004': {
+        path: '20-arquitetura/adr/0004-padronizacao-nomenclatura-commits.md',
+        slug: 'adr-0004',
+      },
       roadmap: { path: '90-planejamento/roadmap-evolucao.md', slug: 'roadmap' },
       'test-plan-e2e': {
         path: '90-planejamento/em-discussao/plano-testes-e2e.md',

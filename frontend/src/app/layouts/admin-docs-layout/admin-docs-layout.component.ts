@@ -110,6 +110,12 @@ export class AdminDocsLayoutComponent {
           link: '/docs/admin/adr',
         },
         {
+          id: 'naming',
+          label: 'Convenções de Nomenclatura',
+          icon: 'pi-tag',
+          link: '/docs/admin/naming',
+        },
+        {
           id: 'frontend-standards',
           label: 'Padrões de Frontend',
           icon: 'pi-desktop',
@@ -122,28 +128,22 @@ export class AdminDocsLayoutComponent {
           link: '/docs/admin/backend-standards',
         },
         {
-          id: 'naming',
-          label: 'Convenções de Nomenclatura',
-          icon: 'pi-tag',
-          link: '/docs/admin/naming',
-        },
-        {
           id: 'tests',
           label: 'Testes e QA',
           icon: 'pi-check-circle',
           link: '/docs/admin/tests',
         },
         {
-          id: 'guia-doc',
-          label: 'Guia de Documentação',
-          icon: 'pi-book',
-          link: '/docs/admin/guia-documentacao',
-        },
-        {
           id: 'guia-contribuicao',
           label: 'Como Contribuir',
           icon: 'pi-plus-circle',
           link: '/docs/admin/guia-contribuicao',
+        },
+        {
+          id: 'guia-doc',
+          label: 'Guia de Documentação',
+          icon: 'pi-book',
+          link: '/docs/admin/guia-documentacao',
         },
       ],
     },

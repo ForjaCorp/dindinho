@@ -60,6 +60,28 @@ Para manter a navegação fluida (sem recarregamento), use links relativos com e
 - **Correto:** `[Veja os Princípios](../00-geral/principios.md)`
 - **Evitar:** `[Veja os Princípios](../00-geral/principios.md)` (quebra a visualização nativa no GitHub)
 
+## ADRs (Architecture Decision Records)
+
+Decisões significativas que afetam a arquitetura ou o rumo técnico do projeto devem ser documentadas como ADRs em `docs/20-arquitetura/adr/`.
+
+### Quando criar um ADR?
+
+- Ao introduzir uma nova biblioteca ou framework principal.
+- Ao mudar padrões de comunicação entre serviços.
+- Ao definir padrões de código que afetam todo o monorepo.
+- Ao escolher uma estratégia de banco de dados ou infraestrutura específica.
+
+### Formato de Nomenclatura
+
+Use o padrão `NNNN-slug-descritivo.md`, onde `NNNN` é um número sequencial (ex: `0001-uso-signals.md`).
+
+### Estrutura Sugerida
+
+1. **Status:** Aceito, Proposto, Superado.
+2. **Contexto:** Por que estamos tomando essa decisão agora?
+3. **Decisão:** O que foi escolhido?
+4. **Consequências:** Quais os prós e contras dessa escolha?
+
 ## Referência de API
 
 A documentação da API é gerada automaticamente a partir da especificação OpenAPI.
