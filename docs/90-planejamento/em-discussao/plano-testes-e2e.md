@@ -78,3 +78,7 @@ Para que os testes sejam confiáveis e rápidos, a arquitetura deve suportar:
 
 - [Padrões de Código](../../20-arquitetura/padroes-frontend.md)
 - [Roadmap de Evolução](../roadmap-evolucao.md)
+
+---
+
+> **Nota:** A implementação deste plano depende da estabilização da Fase 5 do projeto.

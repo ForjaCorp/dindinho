@@ -67,6 +67,4 @@ As mensagens de commit devem ser em **português** e seguir o formato: `tipo: de
 
 ---
 
-**Regra de Ouro:**
-
-> Se você precisar de um comentário para explicar o que uma variável faz, o nome dela provavelmente não é bom o suficiente.
+> **Importante:** Se você precisar de um comentário para explicar o que uma variável faz, o nome dela provavelmente não é bom o suficiente.

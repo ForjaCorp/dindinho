@@ -62,4 +62,4 @@ Nunca retorne erros genéricos 500 para falhas de validação ou lógica.
 
 ---
 
-**STATUS: ATUALIZADO**
+> **Dica:** Sempre execute `npm run lint` antes de realizar o commit para garantir que os padrões estão sendo seguidos.

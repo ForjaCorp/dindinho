@@ -29,4 +29,4 @@ Simplificar a vida financeira através de transparência, tecnologia e boas prá
 
 ---
 
-> **Dica**: Se você é um desenvolvedor, confira nossa [Referência de API](/docs/api-ref) para começar a integrar com o Dindinho.
+> **Dica:** Se você é um desenvolvedor, confira nossa [Referência de API](/docs/api-ref) para começar a integrar com o Dindinho.

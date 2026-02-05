@@ -60,3 +60,8 @@ Referência no [schema.prisma](../../backend/prisma/schema.prisma):
 
 - [Referência de API](../30-api/openapi.json)
 - [Esquema de Banco de Dados](../../backend/prisma/schema.prisma)
+- [Padrões de Backend](../../docs/20-arquitetura/padroes-backend.md)
+
+---
+
+> **Dica:** Use o `@dindinho/shared` para garantir que as regras de validação sejam as mesmas no Frontend e no Backend.

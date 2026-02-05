@@ -89,8 +89,7 @@ Nossa integração contínua é automatizada via GitHub Actions e está definida
     - **Em PRs:** Executa `npm run quality:ci` apenas nos pacotes afetados pelas mudanças.
     - **Na Main:** Executa a verificação completa de todo o monorepo.
 
-> [!TIP]
-> O comando `quality:ci` engloba `lint`, `typecheck`, `build`, `test` (unitários) e `test:integration` (API/Serviços).
+> **Dica:** O comando `quality:ci` engloba `lint`, `typecheck`, `build`, `test` (unitários) e `test:integration` (API/Serviços).
 
 ## Roadmap de Testes (Em Planejamento)
 
@@ -101,6 +100,4 @@ Atualmente, o foco está na cobertura de testes unitários e de integração (AP
 
 ---
 
-**STATUS: ATUALIZADO**
-
-> Mantenha a cobertura de testes acima de 80% para lógica de negócio crítica.
+> **Dica:** Mantenha a cobertura de testes acima de 80% para lógica de negócio crítica.

@@ -20,3 +20,7 @@ O deploy do Dindinho é automatizado e baseado em containers.
 - **Orquestração:** Docker Compose.
 - **Gerenciamento:** Coolify.
 - **Ambientes:** Staging e Production.
+
+---
+
+> **Importante:** Certifique-se de que as variáveis de ambiente (Secrets) estão configuradas corretamente no Coolify antes de disparar o deploy.

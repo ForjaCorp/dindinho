@@ -29,3 +29,7 @@ No Dindinho, as **Contas** são os lugares onde seu dinheiro fica guardado (como
 - **Cartão de Crédito**: Para gerenciar seus gastos a prazo e limites.
 
 Lembre-se: manter seus saldos atualizados é o primeiro passo para um controle financeiro de sucesso!
+
+---
+
+> **Dica:** Você pode ocultar contas específicas do cálculo do saldo total nas configurações da conta.
