@@ -22,7 +22,7 @@ export async function waitlistRoutes(app: FastifyInstance) {
    * @access Public
    */
   app.withTypeProvider<ZodTypeProvider>().post(
-    "/waitlist",
+    "/",
     {
       schema: {
         summary: "Entrar na lista de espera",

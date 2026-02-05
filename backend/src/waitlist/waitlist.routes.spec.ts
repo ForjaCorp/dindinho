@@ -1,17 +1,19 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import Fastify, { FastifyInstance } from "fastify";
 import {
-  serializerCompiler,
-  validatorCompiler,
-  ZodTypeProvider,
-} from "fastify-type-provider-zod";
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  afterEach,
+  beforeAll,
+  afterAll,
+} from "vitest";
 import { Waitlist } from "@prisma/client";
 import { mockDeep, mockReset, DeepMockProxy } from "vitest-mock-extended";
 
-import { waitlistRoutes } from "./waitlist.routes";
+import { buildApp } from "../app";
 import { prisma } from "../lib/prisma";
 import { PrismaClient } from "@prisma/client";
-import { ZodError } from "zod";
 
 vi.mock("../lib/prisma", () => ({
   __esModule: true,
@@ -21,43 +23,18 @@ vi.mock("../lib/prisma", () => ({
 const prismaMock = prisma as unknown as DeepMockProxy<PrismaClient>;
 
 describe("WaitlistRoutes", () => {
-  let app: FastifyInstance;
+  const app = buildApp();
+
+  beforeAll(async () => {
+    await app.ready();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
 
   beforeEach(async () => {
     mockReset(prismaMock);
-    app = Fastify().withTypeProvider<ZodTypeProvider>();
-    app.setValidatorCompiler(validatorCompiler);
-    app.setSerializerCompiler(serializerCompiler);
-
-    app.setErrorHandler((error, request, reply) => {
-      if (error instanceof ZodError) {
-        return reply.status(422).send({
-          statusCode: 422,
-          error: "Unprocessable Entity",
-          message: "Os dados fornecidos são inválidos.",
-          code: "VALIDATION_ERROR",
-          issues: error.issues,
-        });
-      }
-
-      if (error instanceof Error && "statusCode" in error) {
-        const statusCode = (error as { statusCode: number }).statusCode;
-        return reply.status(statusCode).send({
-          statusCode,
-          error: "Error",
-          message: error.message,
-        });
-      }
-
-      return reply.status(500).send({
-        statusCode: 500,
-        error: "Internal Server Error",
-        message: "Ocorreu um erro inesperado.",
-      });
-    });
-
-    await app.register(waitlistRoutes, { prefix: "/" });
-    await app.ready();
   });
 
   afterEach(() => {
@@ -81,7 +58,7 @@ describe("WaitlistRoutes", () => {
 
     const response = await app.inject({
       method: "POST",
-      url: "/waitlist",
+      url: "/api/waitlist",
       payload,
     });
 
@@ -105,7 +82,7 @@ describe("WaitlistRoutes", () => {
 
     const response = await app.inject({
       method: "POST",
-      url: "/waitlist",
+      url: "/api/waitlist",
       payload,
     });
 
@@ -129,7 +106,7 @@ describe("WaitlistRoutes", () => {
 
     const response = await app.inject({
       method: "POST",
-      url: "/waitlist",
+      url: "/api/waitlist",
       payload,
     });
 
