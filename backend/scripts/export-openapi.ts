@@ -3,13 +3,6 @@ import { FastifyInstance } from "fastify";
 import fs from "fs";
 import path from "path";
 
-/**
- * Interface estendida para incluir o método swagger do plugin @fastify/swagger.
- */
-interface FastifySwaggerInstance extends FastifyInstance {
-  swagger: () => Record<string, unknown>;
-}
-
 const writeOut = (message: string) => {
   process.stdout.write(`${message}\n`);
 };
@@ -26,7 +19,7 @@ const writeErr = (message: string) => {
  * @function exportOpenApi
  */
 async function exportOpenApi() {
-  const app = buildApp() as unknown as FastifySwaggerInstance;
+  const app = buildApp();
 
   try {
     // Aguarda a aplicação estar pronta (carrega plugins e rotas)
