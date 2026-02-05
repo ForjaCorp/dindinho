@@ -248,6 +248,7 @@ export class DocsPage {
   private readonly layout = inject(BaseDocsLayoutComponent, { optional: true });
 
   private readonly OPENAPI_PATH = '__openapi__';
+  private readonly SWAGGER_PATH = '__swagger__';
 
   /** Signals de rota para reagir a mudanças de URL */
   private readonly params = toSignal(this.route.params, { initialValue: {} as DocsRouteParams });
@@ -407,8 +408,12 @@ export class DocsPage {
           const resolvedPath = this.docs.resolvePathFromSlug(context, slug);
           if (resolvedPath) {
             filePath = resolvedPath;
-          } else if (slug === 'api-ref' && context === 'admin') {
-            filePath = this.OPENAPI_PATH;
+          } else if (context === 'admin') {
+            if (slug === 'api-ref') {
+              filePath = this.OPENAPI_PATH;
+            } else if (slug === 'swagger') {
+              filePath = this.SWAGGER_PATH;
+            }
           }
         }
 
@@ -433,6 +438,14 @@ export class DocsPage {
    * @param path - Caminho do arquivo ou identificador especial (OPENAPI_PATH)
    */
   private loadContent(path: string): void {
+    if (path === this.SWAGGER_PATH) {
+      this.isLoading.set(false);
+      this.error.set(null);
+      this.markdown.set('');
+      this.openApiDoc.set(null);
+      return;
+    }
+
     this.isLoading.set(true);
     this.error.set(null);
 

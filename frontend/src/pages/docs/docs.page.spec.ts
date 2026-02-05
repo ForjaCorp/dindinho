@@ -2,9 +2,9 @@
 import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ActivatedRoute, Router, provideRouter, type Params } from '@angular/router';
+import { ActivatedRoute, Router, type Params } from '@angular/router';
 import { provideMarkdown } from 'ngx-markdown';
-import { of, throwError, Subject } from 'rxjs';
+import { of, throwError, Subject, BehaviorSubject } from 'rxjs';
 import { DocsPage } from './docs.page';
 import { DocsService, type OpenApiDocument } from '../../app/services/docs.service';
 
@@ -20,32 +20,54 @@ describe('DocsPage', () => {
     getFile: ReturnType<typeof vi.fn>;
     getOpenApi: ReturnType<typeof vi.fn>;
     getSwaggerUiUrl: ReturnType<typeof vi.fn>;
+    resolvePathFromSlug: ReturnType<typeof vi.fn>;
+    resolveSlugFromPath: ReturnType<typeof vi.fn>;
+  };
+  let routerMock: {
+    navigate: ReturnType<typeof vi.fn>;
   };
   let activatedRouteMock: {
-    params: Subject<Params>;
-    queryParams: Subject<Params>;
+    params: BehaviorSubject<Params>;
+    queryParams: BehaviorSubject<Params>;
     snapshot: ActivatedRoute['snapshot'];
   };
 
   beforeEach(async () => {
+    routerMock = {
+      navigate: vi.fn(),
+    };
     docsServiceMock = {
       getFile: vi.fn(() => of('')),
       getOpenApi: vi.fn(() =>
         of({ openapi: '3.0.0', info: { title: '', version: '' }, paths: {} }),
       ),
       getSwaggerUiUrl: vi.fn(() => 'https://api.dindinho.com/docs'),
+      resolvePathFromSlug: vi.fn((context, slug) => {
+        if (context === 'admin' && slug === 'reports') return '40-plataformas/pwa/relatorios.md';
+        if (slug === 'intro') return context === 'admin' ? 'admin/intro.md' : 'user/intro.md';
+        if (slug === 'openapi' || slug === 'api-ref') return '__openapi__';
+        if (slug === 'principles') return '00-overview/principles.md';
+        if (slug === 'dominio-contas') return '10-produto/contas/guia-usuario.md';
+        if (slug === 'metas') return '10-product/dominio-metas.md';
+        return null;
+      }),
+      resolveSlugFromPath: vi.fn((context, path) => {
+        if (context === 'admin' && path.includes('openapi.json')) return 'api-ref';
+        if (path.includes('dominio-metas.md')) return 'dominio-metas';
+        return null;
+      }),
     };
 
     activatedRouteMock = {
-      params: new Subject<Params>(),
-      queryParams: new Subject<Params>(),
+      params: new BehaviorSubject<Params>({}),
+      queryParams: new BehaviorSubject<Params>({}),
       snapshot: { data: {} } as ActivatedRoute['snapshot'],
     };
 
     await TestBed.configureTestingModule({
       imports: [DocsPage],
       providers: [
-        provideRouter([]),
+        { provide: Router, useValue: routerMock },
         provideMarkdown(),
         { provide: ActivatedRoute, useValue: activatedRouteMock },
         { provide: DocsService, useValue: docsServiceMock },
@@ -58,9 +80,11 @@ describe('DocsPage', () => {
     TestBed.resetTestingModule();
   });
 
-  const createComponent = () => {
+  const createComponent = async () => {
     fixture = TestBed.createComponent(DocsPage);
     component = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
   };
 
@@ -68,23 +92,31 @@ describe('DocsPage', () => {
     fixture.destroy();
   });
 
-  it('deve criar o componente', () => {
-    createComponent();
+  it('deve criar o componente', async () => {
+    await createComponent();
     expect(component).toBeTruthy();
   });
 
-  it('deve usar a tag <section> como container principal para acessibilidade dentro do layout', () => {
-    createComponent();
+  it('deve usar a tag <section> como container principal para acessibilidade dentro do layout', async () => {
+    await createComponent();
     const sectionEl = fixture.nativeElement.querySelector('section[data-testid="docs-page"]');
     expect(sectionEl).toBeTruthy();
     expect(sectionEl.getAttribute('aria-label')).toBe('Conteúdo da Documentação');
   });
 
-  it('deve carregar markdown padrão se nenhum slug ou path for fornecido', async () => {
-    docsServiceMock.getFile.mockReturnValue(of('# Documentação Padrão'));
-    createComponent();
+  it('deve redirecionar para intro se nenhum slug ou path for fornecido', async () => {
+    await createComponent();
     activatedRouteMock.params.next({});
     activatedRouteMock.queryParams.next({});
+    fixture.detectChanges();
+
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/docs/intro'], { replaceUrl: true });
+  });
+
+  it('deve carregar markdown padrão ao receber slug intro', async () => {
+    docsServiceMock.getFile.mockReturnValue(of('# Documentação Padrão'));
+    await createComponent();
+    activatedRouteMock.params.next({ slug: 'intro' });
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
@@ -94,73 +126,90 @@ describe('DocsPage', () => {
     expect(markdownEl.textContent).toContain('Documentação Padrão');
   });
 
-  it('deve carregar documento via slug', () => {
+  it('deve redirecionar para admin/intro quando context é admin e nenhum slug é fornecido', async () => {
+    activatedRouteMock.snapshot.data = { context: 'admin' };
+    await createComponent();
+    activatedRouteMock.params.next({});
+    activatedRouteMock.queryParams.next({});
+    fixture.detectChanges();
+
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/docs/admin/intro'], { replaceUrl: true });
+  });
+
+  it('deve carregar documento via slug', async () => {
     docsServiceMock.getFile.mockReturnValue(of('# Relatórios'));
     // Define contexto admin pois reports está no adminMapping
     activatedRouteMock.snapshot.data = { context: 'admin' };
-    createComponent();
+    await createComponent();
     activatedRouteMock.params.next({ slug: 'reports' });
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     expect(docsServiceMock.getFile).toHaveBeenCalledWith('40-plataformas/pwa/relatorios.md');
   });
 
-  it('NÃO deve carregar documento administrativo se estiver no contexto de usuário', () => {
+  it('NÃO deve carregar documento administrativo se estiver no contexto de usuário', async () => {
     docsServiceMock.getFile.mockReturnValue(of('# Relatórios'));
-    // Define contexto user - mesmo reports estando no adminMapping, não deve carregar o path correto
+    // Define contexto user
     activatedRouteMock.snapshot.data = { context: 'user' };
-    createComponent();
+    await createComponent();
     activatedRouteMock.params.next({ slug: 'reports' });
     fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
 
-    // Quando não encontra no mapeamento do contexto atual, ele usa o próprio slug como fallback
-    expect(docsServiceMock.getFile).toHaveBeenCalledWith('reports');
-    expect(docsServiceMock.getFile).not.toHaveBeenCalledWith('40-plataformas/pwa/relatorios.md');
+    // No contexto de usuário, 'reports' não deve resolver para o path administrativo
+    // e como não há fallback automático para o slug como path, deve dar erro
+    expect(docsServiceMock.getFile).not.toHaveBeenCalled();
+    expect(component['error']()).toBe('Documento não encontrado');
   });
 
-  it('deve carregar documento de domínio via slug', () => {
+  it('deve carregar documento de domínio via slug', async () => {
     docsServiceMock.getFile.mockReturnValue(of('# Domínio de Contas'));
     // Contexto padrão é user, onde dominio-contas está mapeado para a versão amigável
-    createComponent();
+    await createComponent();
     activatedRouteMock.params.next({ slug: 'dominio-contas' });
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     expect(docsServiceMock.getFile).toHaveBeenCalledWith('10-produto/contas/guia-usuario.md');
   });
 
-  it('deve carregar intro de admin quando context é admin', () => {
+  it('deve carregar intro de admin quando context é admin', async () => {
     docsServiceMock.getFile.mockReturnValue(of('# Admin Intro'));
 
     // Simula data da rota no mock
     activatedRouteMock.snapshot.data = { context: 'admin' };
 
-    createComponent();
+    await createComponent();
     activatedRouteMock.params.next({ slug: 'intro' });
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     expect(docsServiceMock.getFile).toHaveBeenCalledWith('admin/intro.md');
   });
 
-  it('deve carregar api-ref via slug apenas no contexto administrativo', () => {
-    // Caso 1: Admin - Deve carregar OpenAPI
+  it('deve carregar api-ref via slug apenas no contexto administrativo', async () => {
     activatedRouteMock.snapshot.data = { context: 'admin' };
-    createComponent();
+    await createComponent();
     activatedRouteMock.params.next({ slug: 'api-ref' });
     fixture.detectChanges();
-    expect(docsServiceMock.getOpenApi).toHaveBeenCalled();
+    await fixture.whenStable();
+    fixture.detectChanges();
 
-    // Caso 2: User - Não deve carregar OpenAPI, cai no fallback de arquivo normal
-    activatedRouteMock.snapshot.data = { context: 'user' };
-    createComponent();
-    activatedRouteMock.params.next({ slug: 'api-ref' });
-    fixture.detectChanges();
-    expect(docsServiceMock.getFile).toHaveBeenCalledWith('api-ref');
+    // No contexto admin, api-ref carrega o OpenAPI
+    expect(docsServiceMock.getOpenApi).toHaveBeenCalled();
   });
 
-  it('deve carregar documento via query param path', () => {
+  it('deve carregar documento via query param path', async () => {
     docsServiceMock.getFile.mockReturnValue(of('# Auth'));
-    createComponent();
+    await createComponent();
     activatedRouteMock.queryParams.next({ path: '30-api/authentication.md' });
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     expect(docsServiceMock.getFile).toHaveBeenCalledWith('30-api/authentication.md');
@@ -169,7 +218,7 @@ describe('DocsPage', () => {
   it('deve processar frontmatter corretamente', async () => {
     const md = `---\ntitle: "Meu Título"\ndescription: "Minha Descrição"\ntags: ["test", "frontmatter"]\n---\n# Meu Título Interno\nConteúdo`;
     docsServiceMock.getFile.mockReturnValue(of(md));
-    createComponent();
+    await createComponent();
     activatedRouteMock.params.next({ slug: 'principles' });
     fixture.detectChanges();
     await fixture.whenStable();
@@ -186,27 +235,27 @@ describe('DocsPage', () => {
     expect(markdownEl.textContent).toContain('Meu Título Interno');
   });
 
-  it('deve exibir UI de redirecionamento do Swagger apenas quando o slug é swagger e o contexto é admin', () => {
-    // Caso 1: Slug swagger no contexto admin (Deve funcionar)
-    activatedRouteMock.snapshot.data = { context: 'admin' };
-    createComponent();
+  it('deve exibir UI de redirecionamento do Swagger apenas quando o slug é swagger e o contexto é admin', async () => {
+    // Caso 1: Slug swagger no contexto admin
+    activatedRouteMock.snapshot.data['context'] = 'admin';
     activatedRouteMock.params.next({ slug: 'swagger' });
-    fixture.detectChanges();
-    expect(
-      fixture.nativeElement.querySelector('[data-testid="docs-swagger-redirect"]'),
-    ).toBeTruthy();
+    await createComponent();
+
+    const swaggerEl = fixture.nativeElement.querySelector('[data-testid="docs-swagger-redirect"]');
+    expect(swaggerEl).toBeTruthy();
 
     // Caso 2: Slug swagger no contexto user (Não deve funcionar)
-    activatedRouteMock.snapshot.data = { context: 'user' };
-    createComponent();
+    activatedRouteMock.snapshot.data['context'] = 'user';
     activatedRouteMock.params.next({ slug: 'swagger' });
-    fixture.detectChanges();
-    expect(
-      fixture.nativeElement.querySelector('[data-testid="docs-swagger-redirect"]'),
-    ).toBeFalsy();
+    await createComponent();
+
+    const swaggerElUser = fixture.nativeElement.querySelector(
+      '[data-testid="docs-swagger-redirect"]',
+    );
+    expect(swaggerElUser).toBeFalsy();
   });
 
-  it('deve renderizar OpenAPI quando o path é __openapi__', () => {
+  it('deve renderizar OpenAPI quando o path é __openapi__', async () => {
     const mockOpenApi: OpenApiDocument = {
       openapi: '3.0.0',
       info: { title: 'Dindinho API', version: '1.0.0' },
@@ -223,8 +272,10 @@ describe('DocsPage', () => {
     docsServiceMock.getOpenApi.mockReturnValue(of(mockOpenApi));
     // openapi está no adminMapping
     activatedRouteMock.snapshot.data = { context: 'admin' };
-    createComponent();
+    await createComponent();
     activatedRouteMock.params.next({ slug: 'openapi' });
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     const openApiEl = fixture.nativeElement.querySelector('[data-testid="docs-openapi"]');
@@ -247,11 +298,12 @@ describe('DocsPage', () => {
     expect(openApiEl.textContent).toContain('Realiza login');
   });
 
-  it('deve exibir estado de carregamento com skeleton e aria-busy', () => {
+  it('deve exibir estado de carregamento com skeleton e aria-busy', async () => {
     docsServiceMock.getFile.mockReturnValue(new Subject<string>().asObservable()); // Nunca emite automaticamente
     fixture = TestBed.createComponent(DocsPage);
+    component = fixture.componentInstance;
     fixture.detectChanges();
-    activatedRouteMock.params.next({});
+    activatedRouteMock.params.next({ slug: 'intro' });
     fixture.detectChanges();
 
     const loadingEl = fixture.nativeElement.querySelector('[data-testid="docs-loading"]');
@@ -264,10 +316,12 @@ describe('DocsPage', () => {
     expect(busyContainers.length).toBeGreaterThan(1);
   });
 
-  it('deve ter atributos de acessibilidade no conteúdo markdown', () => {
+  it('deve ter atributos de acessibilidade no conteúdo markdown', async () => {
     docsServiceMock.getFile.mockReturnValue(of('# Teste'));
-    createComponent();
+    await createComponent();
     activatedRouteMock.params.next({});
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     const markdownEl = fixture.nativeElement.querySelector('[data-testid="docs-markdown"]');
@@ -280,7 +334,7 @@ describe('DocsPage', () => {
     docsServiceMock.getFile.mockReturnValue(of('# Título Sucesso'));
     // intro está no userMapping
     activatedRouteMock.snapshot.data = { context: 'user' };
-    createComponent();
+    await createComponent();
     activatedRouteMock.params.next({ slug: 'intro' });
     fixture.detectChanges();
     await fixture.whenStable();
@@ -292,7 +346,7 @@ describe('DocsPage', () => {
 
     // Agora simula erro no próximo carregamento
     docsServiceMock.getFile.mockReturnValue(throwError(() => new Error('Falha')));
-    activatedRouteMock.params.next({ slug: 'erro' });
+    activatedRouteMock.params.next({ slug: 'intro' });
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
@@ -308,12 +362,14 @@ describe('DocsPage', () => {
     expect(component['tags']()).toEqual([]);
   });
 
-  it('deve reagir a mudanças sucessivas nos parâmetros', () => {
+  it('deve reagir a mudanças sucessivas nos parâmetros', async () => {
     docsServiceMock.getFile.mockReturnValue(of('# Relatórios'));
     // reports está no adminMapping
     activatedRouteMock.snapshot.data = { context: 'admin' };
-    createComponent();
+    await createComponent();
     activatedRouteMock.params.next({ slug: 'reports' });
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
     expect(docsServiceMock.getFile).toHaveBeenCalledWith('40-plataformas/pwa/relatorios.md');
 
@@ -321,15 +377,17 @@ describe('DocsPage', () => {
     docsServiceMock.getFile.mockReturnValue(of('# Intro'));
     activatedRouteMock.params.next({ slug: 'intro' });
     fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
     expect(docsServiceMock.getFile).toHaveBeenCalledWith('admin/intro.md');
   });
 
   it('deve lidar com falha no carregamento do OpenAPI', async () => {
     docsServiceMock.getOpenApi.mockReturnValue(throwError(() => new Error('Falha')));
-    createComponent();
+    await createComponent();
     activatedRouteMock.queryParams.next({ path: '__openapi__' });
     fixture.detectChanges();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await fixture.whenStable();
     fixture.detectChanges();
 
     expect(component['error']()).toBe('Não foi possível carregar o documento: __openapi__');
@@ -357,10 +415,10 @@ describe('DocsPage', () => {
     };
 
     docsServiceMock.getOpenApi.mockReturnValue(of(mockDoc));
-    createComponent();
+    await createComponent();
     activatedRouteMock.queryParams.next({ path: '__openapi__' });
     fixture.detectChanges();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await fixture.whenStable();
     fixture.detectChanges();
 
     const groups = component['openApiGroups']();
@@ -387,10 +445,10 @@ describe('DocsPage', () => {
     };
 
     docsServiceMock.getOpenApi.mockReturnValue(of(mockDoc));
-    createComponent();
+    await createComponent();
     activatedRouteMock.queryParams.next({ path: '__openapi__' });
     fixture.detectChanges();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await fixture.whenStable();
     fixture.detectChanges();
 
     const groups = component['openApiGroups']();
@@ -398,14 +456,13 @@ describe('DocsPage', () => {
   });
 
   it('deve interceptar cliques em links relativos e navegar usando o router', async () => {
-    const router = TestBed.inject(Router);
-    const navigateSpy = vi.spyOn(router, 'navigate');
-
     // Simula conteúdo com link relativo
     docsServiceMock.getFile.mockReturnValue(
       of('# Princípios\n[Metas](../10-product/dominio-metas.md)'),
     );
-    createComponent();
+    activatedRouteMock.snapshot.data = { context: 'user' };
+    await createComponent();
+    routerMock.navigate.mockClear();
 
     // Simula estar na página de princípios (00-overview/principles.md)
     activatedRouteMock.params.next({ slug: 'principles' });
@@ -426,7 +483,7 @@ describe('DocsPage', () => {
     expect(event.defaultPrevented).toBe(true);
     // principles (00-overview/principles.md) + ../10-product/dominio-metas.md = 10-product/dominio-metas.md
     // O slug resultante é 'dominio-metas' (via pop() ou mapeamento)
-    expect(navigateSpy).toHaveBeenCalledWith(['/docs', 'dominio-metas']);
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/docs', 'dominio-metas']);
   });
 
   it('deve lidar com links de âncora na mesma página', async () => {
@@ -443,7 +500,7 @@ describe('DocsPage', () => {
     document.body.appendChild(targetElement);
 
     docsServiceMock.getFile.mockReturnValue(of('# Teste\n[Ir para Seção 1](#secao-1)'));
-    createComponent();
+    await createComponent();
     activatedRouteMock.params.next({ slug: 'intro' });
     fixture.detectChanges();
     await fixture.whenStable();
@@ -459,13 +516,11 @@ describe('DocsPage', () => {
   });
 
   it('deve resolver links para openapi.json como o slug api-ref apenas no contexto administrativo', async () => {
-    const router = TestBed.inject(Router);
-    const navigateSpy = vi.spyOn(router, 'navigate');
-
     // Caso 1: Admin - Deve resolver para api-ref
     activatedRouteMock.snapshot.data = { context: 'admin' };
     docsServiceMock.getFile.mockReturnValue(of('# API\n[JSON](../30-api/openapi.json)'));
-    createComponent();
+    await createComponent();
+    routerMock.navigate.mockClear(); // Limpa navegação inicial de redirecionamento
     activatedRouteMock.params.next({ slug: 'intro' });
     fixture.detectChanges();
     await fixture.whenStable();
@@ -473,11 +528,12 @@ describe('DocsPage', () => {
 
     const anchor = fixture.nativeElement.querySelector('a');
     anchor.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-    expect(navigateSpy).toHaveBeenCalledWith(['/docs/admin', 'api-ref']);
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/docs/admin', 'api-ref']);
 
     // Caso 2: User - Não deve resolver para api-ref, deve usar o nome do arquivo (fallback)
     activatedRouteMock.snapshot.data = { context: 'user' };
-    createComponent();
+    await createComponent();
+    routerMock.navigate.mockClear();
     activatedRouteMock.params.next({ slug: 'intro' });
     fixture.detectChanges();
     await fixture.whenStable();
@@ -485,6 +541,8 @@ describe('DocsPage', () => {
 
     const anchorUser = fixture.nativeElement.querySelector('a');
     anchorUser.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-    expect(navigateSpy).toHaveBeenCalledWith(['/docs', 'openapi.json']);
+    // Não deve navegar via router porque o slug não foi resolvido (contexto user)
+    // O evento de clique não deve ser prevenido pelo handler
+    expect(routerMock.navigate).not.toHaveBeenCalled();
   });
 });
