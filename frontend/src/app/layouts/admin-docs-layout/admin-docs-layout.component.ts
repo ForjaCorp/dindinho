@@ -101,22 +101,28 @@ export class AdminDocsLayoutComponent {
           link: '/docs/admin/architecture',
         },
         {
-          id: 'naming',
-          label: 'Nomenclatura',
-          icon: 'pi-tag',
-          link: '/docs/admin/naming',
-        },
-        {
           id: 'adr',
           label: 'ADRs',
           icon: 'pi-book',
           link: '/docs/admin/adr',
         },
         {
-          id: 'frontend',
-          label: 'Padrões Frontend',
+          id: 'frontend-standards',
+          label: 'Padrões de Frontend',
           icon: 'pi-desktop',
           link: '/docs/admin/frontend-standards',
+        },
+        {
+          id: 'backend-standards',
+          label: 'Padrões de Backend',
+          icon: 'pi-server',
+          link: '/docs/admin/backend-standards',
+        },
+        {
+          id: 'naming',
+          label: 'Convenções de Nomenclatura',
+          icon: 'pi-tag',
+          link: '/docs/admin/naming',
         },
         {
           id: 'tests',

@@ -322,6 +322,10 @@ export class DocsPage {
         path: '20-arquitetura/padroes-frontend.md',
         slug: 'frontend-standards',
       },
+      'backend-standards': {
+        path: '20-arquitetura/padroes-backend.md',
+        slug: 'backend-standards',
+      },
       'guia-documentacao': { path: 'admin/guia-documentacao.md', slug: 'guia-documentacao' },
       'guia-contribuicao': { path: 'admin/contribuicao.md', slug: 'guia-contribuicao' },
       principios: { path: '00-geral/principios.md', slug: 'principios' },
