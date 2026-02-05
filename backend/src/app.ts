@@ -4,10 +4,11 @@ import Fastify, {
   FastifyReply,
   FastifyError,
 } from "fastify";
-import { ZodError } from "zod";
+import { ZodError, ZodIssue } from "zod";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
 import rateLimit from "@fastify/rate-limit";
+import helmet from "@fastify/helmet";
 import underPressure from "@fastify/under-pressure";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
@@ -142,6 +143,11 @@ export function buildApp(): FastifyInstance {
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
 
+  app.register(helmet, {
+    contentSecurityPolicy: process.env.NODE_ENV === "production",
+    crossOriginEmbedderPolicy: process.env.NODE_ENV === "production",
+  });
+
   app.register(underPressure, {
     maxEventLoopDelay: 5000,
     maxHeapUsedBytes: 500000000,
@@ -182,21 +188,23 @@ export function buildApp(): FastifyInstance {
     credentials: true,
   });
 
-  app.register(rateLimit, {
-    max: Number(process.env.RATE_LIMIT_MAX) || 100,
-    timeWindow: process.env.RATE_LIMIT_TIME_WINDOW || "1 minute",
-    allowList: process.env.RATE_LIMIT_ALLOWLIST
-      ? process.env.RATE_LIMIT_ALLOWLIST.split(",")
-      : undefined,
-    keyGenerator: (request) => {
-      const xRealIp = request.headers["x-real-ip"];
-      return Array.isArray(xRealIp) ? xRealIp[0] : xRealIp || request.ip;
-    },
-  });
+  if (process.env.NODE_ENV !== "test") {
+    app.register(rateLimit, {
+      max: Number(process.env.RATE_LIMIT_MAX) || 100,
+      timeWindow: process.env.RATE_LIMIT_TIME_WINDOW || "1 minute",
+      allowList: process.env.RATE_LIMIT_ALLOWLIST
+        ? process.env.RATE_LIMIT_ALLOWLIST.split(",")
+        : undefined,
+      keyGenerator: (request) => {
+        const xRealIp = request.headers["x-real-ip"];
+        return Array.isArray(xRealIp) ? xRealIp[0] : xRealIp || request.ip;
+      },
+    });
+  }
 
   app.setErrorHandler(
     (error: FastifyError, request: FastifyRequest, reply: FastifyReply) => {
-      const { validation, code, message, statusCode = 500 } = error;
+      const { code, message, statusCode = 500 } = error;
       const { id: requestId } = request;
       const isDev = process.env.NODE_ENV !== "production";
 
@@ -204,6 +212,8 @@ export function buildApp(): FastifyInstance {
       request.log.error(
         {
           err: error,
+          validation: error.validation,
+          statusCode: error.statusCode,
           requestId,
           url: request.url,
           method: request.method,
@@ -211,15 +221,66 @@ export function buildApp(): FastifyInstance {
         "Erro capturado pelo ErrorHandler",
       );
 
-      // Erros de validação do Zod
-      if (error instanceof ZodError) {
-        return reply.status(422).send(
+      // Erros de validação (Zod ou Fastify)
+      if (
+        error instanceof ZodError ||
+        error.validation ||
+        error.statusCode === 400 ||
+        error.code === "FST_ERR_VALIDATION"
+      ) {
+        // Tenta extrair issues do Zod ou do Fastify
+        const rawIssues =
+          error instanceof ZodError ? error.issues : error.validation;
+
+        let issues: ZodIssue[] | undefined;
+
+        // Se for erro do Fastify/AJV, tenta mapear para o formato que o frontend espera (ZodIssue)
+        if (Array.isArray(rawIssues)) {
+          issues = rawIssues.map((issue) => {
+            const issueObj = issue as unknown as Record<string, unknown>;
+            // Se já for formato Zod (tem code e path no topo), mantém
+            if (
+              typeof issueObj.code === "string" &&
+              Array.isArray(issueObj.path)
+            ) {
+              return issue as unknown as ZodIssue;
+            }
+
+            // Se for formato Fastify/AJV, tenta extrair do params.issue ou criar um compatível
+            const params = issueObj.params as
+              | Record<string, unknown>
+              | undefined;
+            const zodIssue = params?.issue as
+              | Record<string, unknown>
+              | undefined;
+
+            if (
+              zodIssue &&
+              typeof zodIssue.code === "string" &&
+              Array.isArray(zodIssue.path)
+            ) {
+              return zodIssue as unknown as ZodIssue;
+            }
+
+            return {
+              code: "custom",
+              path:
+                typeof issueObj.instancePath === "string"
+                  ? issueObj.instancePath.split("/").filter(Boolean)
+                  : [],
+              message:
+                (issueObj.message as string | undefined) || "Campo inválido",
+            } as unknown as ZodIssue;
+          });
+        }
+
+        return reply.code(422).send(
           buildApiErrorResponse({
             statusCode: 422,
             message: "Os dados fornecidos são inválidos.",
             requestId,
             code: "VALIDATION_ERROR",
-            issues: validation,
+            issues,
           }),
         );
       }
