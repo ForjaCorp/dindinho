@@ -1,3 +1,6 @@
+import 'reflect-metadata';
+import '@angular/compiler';
+
 // Mock para localStorage no ambiente de teste (Node.js)
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
