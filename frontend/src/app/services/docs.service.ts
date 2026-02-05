@@ -56,6 +56,159 @@ export class DocsService {
   /** URL do asset local com a especificação OpenAPI empacotada */
   private readonly bundledOpenApiJsonUrl = '/assets/docs/30-api/openapi.json';
 
+  /** Mapeamento centralizado de Slugs <-> Caminhos de Arquivos */
+  private static readonly DOCS_MAPPING: Record<
+    'admin' | 'user',
+    Record<string, { path: string; slug: string }>
+  > = {
+    admin: {
+      intro: { path: 'admin/intro.md', slug: 'intro' },
+      architecture: { path: '20-arquitetura/intro.md', slug: 'architecture' },
+      naming: { path: '20-arquitetura/convencoes-nomenclatura.md', slug: 'naming' },
+      tests: { path: '20-arquitetura/estrategia-testes.md', slug: 'tests' },
+      adr: { path: '20-arquitetura/adr/intro.md', slug: 'adr' },
+      roadmap: { path: '90-planejamento/roadmap-evolucao.md', slug: 'roadmap' },
+      'test-plan-e2e': {
+        path: '90-planejamento/em-discussao/plano-testes-e2e.md',
+        slug: 'test-plan-e2e',
+      },
+      'plano-testes': {
+        path: '90-planejamento/em-discussao/plano-testes-e2e.md',
+        slug: 'plano-testes',
+      },
+      'evolucao-rotas': {
+        path: '90-planejamento/em-discussao/evolucao-rotas.md',
+        slug: 'evolucao-rotas',
+      },
+      'planejamento-metas': {
+        path: '90-planejamento/em-discussao/planejamento-metas.md',
+        slug: 'planejamento-metas',
+      },
+      'sistema-convites': {
+        path: '90-planejamento/em-discussao/sistema-convites.md',
+        slug: 'sistema-convites',
+      },
+      'plan-routing': {
+        path: '90-planejamento/em-discussao/evolucao-rotas.md',
+        slug: 'plan-routing',
+      },
+      'plan-accounts': {
+        path: '90-planejamento/concluido/filtro-contas.md',
+        slug: 'plan-accounts',
+      },
+      'plan-notifications': {
+        path: '90-planejamento/em-discussao/notificacoes.md',
+        slug: 'plan-notifications',
+      },
+      'plan-goals': {
+        path: '90-planejamento/em-discussao/planejamento-metas.md',
+        slug: 'plan-goals',
+      },
+      'plan-url-sync': {
+        path: '90-planejamento/concluido/sincronizacao-url.md',
+        slug: 'plan-url-sync',
+      },
+      'plan-invites': {
+        path: '90-planejamento/em-discussao/sistema-convites.md',
+        slug: 'plan-invites',
+      },
+      'plan-time-filter': {
+        path: '90-planejamento/concluido/filtro-temporal.md',
+        slug: 'plan-time-filter',
+      },
+      'plan-documentation': {
+        path: '90-planejamento/concluido/plano-documentacao.md',
+        slug: 'plan-documentation',
+      },
+      'fix-docs-access': {
+        path: '90-planejamento/concluido/acesso-docs.md',
+        slug: 'fix-docs-access',
+      },
+      deploy: { path: '50-operacoes/deploy.md', slug: 'deploy' },
+      ops: { path: '50-operacoes/guia-operacoes.md', slug: 'ops' },
+      reports: { path: '40-plataformas/pwa/relatorios.md', slug: 'reports' },
+      auth: { path: '30-api/autenticacao-tecnica.md', slug: 'auth' },
+      'dominio-contas': { path: '10-produto/contas/regras-negocio.md', slug: 'dominio-contas' },
+      'dominio-auth': { path: '10-produto/autenticacao/regras-negocio.md', slug: 'dominio-auth' },
+      'dominio-transacoes': {
+        path: '10-produto/transacoes/regras-negocio.md',
+        slug: 'dominio-transacoes',
+      },
+      'dominio-relatorios': {
+        path: '10-produto/relatorios/regras-negocio.md',
+        slug: 'dominio-relatorios',
+      },
+      'dominio-colaboracao': {
+        path: '10-produto/colaboracao/regras-negocio.md',
+        slug: 'dominio-colaboracao',
+      },
+      'dominio-metas': { path: '10-produto/metas/regras-negocio.md', slug: 'dominio-metas' },
+      'frontend-standards': {
+        path: '20-arquitetura/padroes-frontend.md',
+        slug: 'frontend-standards',
+      },
+      'backend-standards': {
+        path: '20-arquitetura/padroes-backend.md',
+        slug: 'backend-standards',
+      },
+      'guia-documentacao': { path: 'admin/guia-documentacao.md', slug: 'guia-documentacao' },
+      'guia-contribuicao': { path: 'admin/contribuicao.md', slug: 'guia-contribuicao' },
+      principios: { path: '00-geral/principios.md', slug: 'principios' },
+      'codigo-conduta': { path: '00-geral/codigo-conduta.md', slug: 'codigo-conduta' },
+      'product-intro': { path: '00-geral/intro.md', slug: 'product-intro' },
+      logs: { path: '50-operacoes/logs-e-monitoramento.md', slug: 'logs' },
+    },
+    user: {
+      intro: { path: 'user/intro.md', slug: 'intro' },
+      'product-intro': { path: '00-geral/intro.md', slug: 'product-intro' },
+      principles: { path: '00-geral/principios.md', slug: 'principles' },
+      faq: { path: '00-geral/faq.md', slug: 'faq' },
+      principios: { path: '00-geral/principios.md', slug: 'principios' },
+      'codigo-conduta': { path: '00-geral/codigo-conduta.md', slug: 'codigo-conduta' },
+      'dominio-contas': { path: '10-produto/contas/guia-usuario.md', slug: 'dominio-contas' },
+      'dominio-auth': { path: '10-produto/autenticacao/guia-usuario.md', slug: 'dominio-auth' },
+      'dominio-transacoes': {
+        path: '10-produto/transacoes/guia-usuario.md',
+        slug: 'dominio-transacoes',
+      },
+      'dominio-relatorios': {
+        path: '10-produto/relatorios/guia-usuario.md',
+        slug: 'dominio-relatorios',
+      },
+      'dominio-colaboracao': {
+        path: '10-produto/colaboracao/guia-usuario.md',
+        slug: 'dominio-colaboracao',
+      },
+      'dominio-metas': { path: '10-produto/metas/guia-usuario.md', slug: 'dominio-metas' },
+    },
+  };
+
+  /**
+   * Resolve o caminho do arquivo Markdown a partir de um contexto e slug.
+   *
+   * @param context - Contexto ('admin' | 'user')
+   * @param slug - Slug amigável
+   * @returns Caminho do arquivo ou null
+   */
+  resolvePathFromSlug(context: 'admin' | 'user', slug: string): string | null {
+    return DocsService.DOCS_MAPPING[context]?.[slug]?.path ?? null;
+  }
+
+  /**
+   * Resolve o slug a partir de um contexto e caminho de arquivo.
+   *
+   * @param context - Contexto ('admin' | 'user')
+   * @param path - Caminho do arquivo
+   * @returns Slug amigável ou null
+   */
+  resolveSlugFromPath(context: 'admin' | 'user', path: string): string | null {
+    const mapping = DocsService.DOCS_MAPPING[context];
+    if (!mapping) return null;
+
+    const entry = Object.values(mapping).find((m) => m.path === path);
+    return entry?.slug ?? null;
+  }
+
   /**
    * Carrega um arquivo do diretório `docs/` empacotado como asset.
    * Suporta arquivos Markdown (.md) e JSON (.json).

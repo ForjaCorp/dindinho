@@ -11,6 +11,7 @@ import { ActivatedRoute, Params, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { MarkdownComponent } from 'ngx-markdown';
 import { DocsService, OpenApiDocument, OpenApiOperation } from '../../app/services/docs.service';
+import { BaseDocsLayoutComponent } from '../../app/layouts/base-docs-layout/base-docs-layout.component';
 
 /**
  * Interface para os parâmetros de rota do DocsPage.
@@ -244,135 +245,9 @@ export class DocsPage {
   private readonly router = inject(Router);
   private readonly docs = inject(DocsService);
   private readonly viewportScroller = inject(ViewportScroller);
+  private readonly layout = inject(BaseDocsLayoutComponent, { optional: true });
 
   private readonly OPENAPI_PATH = '__openapi__';
-
-  /** Mapeamento centralizado de Slugs <-> Caminhos de Arquivos */
-  private static readonly DOCS_MAPPING: Record<
-    'admin' | 'user',
-    Record<string, { path: string; slug: string }>
-  > = {
-    admin: {
-      intro: { path: 'admin/intro.md', slug: 'intro' },
-      architecture: { path: '20-arquitetura/intro.md', slug: 'architecture' },
-      naming: { path: '20-arquitetura/convencoes-nomenclatura.md', slug: 'naming' },
-      tests: { path: '20-arquitetura/estrategia-testes.md', slug: 'tests' },
-      adr: { path: '20-arquitetura/adr/intro.md', slug: 'adr' },
-      roadmap: { path: '90-planejamento/roadmap-evolucao.md', slug: 'roadmap' },
-      'test-plan-e2e': {
-        path: '90-planejamento/em-discussao/plano-testes-e2e.md',
-        slug: 'test-plan-e2e',
-      },
-      'plano-testes': {
-        path: '90-planejamento/em-discussao/plano-testes-e2e.md',
-        slug: 'plano-testes',
-      },
-      'evolucao-rotas': {
-        path: '90-planejamento/em-discussao/evolucao-rotas.md',
-        slug: 'evolucao-rotas',
-      },
-      'planejamento-metas': {
-        path: '90-planejamento/em-discussao/planejamento-metas.md',
-        slug: 'planejamento-metas',
-      },
-      'sistema-convites': {
-        path: '90-planejamento/em-discussao/sistema-convites.md',
-        slug: 'sistema-convites',
-      },
-      'plan-routing': {
-        path: '90-planejamento/em-discussao/evolucao-rotas.md',
-        slug: 'plan-routing',
-      },
-      'plan-accounts': {
-        path: '90-planejamento/concluido/filtro-contas.md',
-        slug: 'plan-accounts',
-      },
-      'plan-notifications': {
-        path: '90-planejamento/em-discussao/notificacoes.md',
-        slug: 'plan-notifications',
-      },
-      'plan-goals': {
-        path: '90-planejamento/em-discussao/planejamento-metas.md',
-        slug: 'plan-goals',
-      },
-      'plan-url-sync': {
-        path: '90-planejamento/concluido/sincronizacao-url.md',
-        slug: 'plan-url-sync',
-      },
-      'plan-invites': {
-        path: '90-planejamento/em-discussao/sistema-convites.md',
-        slug: 'plan-invites',
-      },
-      'plan-time-filter': {
-        path: '90-planejamento/concluido/filtro-temporal.md',
-        slug: 'plan-time-filter',
-      },
-      'plan-documentation': {
-        path: '90-planejamento/concluido/plano-documentacao.md',
-        slug: 'plan-documentation',
-      },
-      'fix-docs-access': {
-        path: '90-planejamento/concluido/acesso-docs.md',
-        slug: 'fix-docs-access',
-      },
-      deploy: { path: '50-operacoes/deploy.md', slug: 'deploy' },
-      ops: { path: '50-operacoes/guia-operacoes.md', slug: 'ops' },
-      reports: { path: '40-plataformas/pwa/relatorios.md', slug: 'reports' },
-      auth: { path: '30-api/autenticacao-tecnica.md', slug: 'auth' },
-      'dominio-contas': { path: '10-produto/contas/regras-negocio.md', slug: 'dominio-contas' },
-      'dominio-auth': { path: '10-produto/autenticacao/regras-negocio.md', slug: 'dominio-auth' },
-      'dominio-transacoes': {
-        path: '10-produto/transacoes/regras-negocio.md',
-        slug: 'dominio-transacoes',
-      },
-      'dominio-relatorios': {
-        path: '10-produto/relatorios/regras-negocio.md',
-        slug: 'dominio-relatorios',
-      },
-      'dominio-colaboracao': {
-        path: '10-produto/colaboracao/regras-negocio.md',
-        slug: 'dominio-colaboracao',
-      },
-      'dominio-metas': { path: '10-produto/metas/regras-negocio.md', slug: 'dominio-metas' },
-      'frontend-standards': {
-        path: '20-arquitetura/padroes-frontend.md',
-        slug: 'frontend-standards',
-      },
-      'backend-standards': {
-        path: '20-arquitetura/padroes-backend.md',
-        slug: 'backend-standards',
-      },
-      'guia-documentacao': { path: 'admin/guia-documentacao.md', slug: 'guia-documentacao' },
-      'guia-contribuicao': { path: 'admin/contribuicao.md', slug: 'guia-contribuicao' },
-      principios: { path: '00-geral/principios.md', slug: 'principios' },
-      'codigo-conduta': { path: '00-geral/codigo-conduta.md', slug: 'codigo-conduta' },
-      'product-intro': { path: '00-geral/intro.md', slug: 'product-intro' },
-      logs: { path: '50-operacoes/logs-e-monitoramento.md', slug: 'logs' },
-    },
-    user: {
-      intro: { path: 'user/intro.md', slug: 'intro' },
-      'product-intro': { path: '00-geral/intro.md', slug: 'product-intro' },
-      principles: { path: '00-geral/principios.md', slug: 'principles' },
-      faq: { path: '00-geral/faq.md', slug: 'faq' },
-      principios: { path: '00-geral/principios.md', slug: 'principios' },
-      'codigo-conduta': { path: '00-geral/codigo-conduta.md', slug: 'codigo-conduta' },
-      'dominio-contas': { path: '10-produto/contas/guia-usuario.md', slug: 'dominio-contas' },
-      'dominio-auth': { path: '10-produto/autenticacao/guia-usuario.md', slug: 'dominio-auth' },
-      'dominio-transacoes': {
-        path: '10-produto/transacoes/guia-usuario.md',
-        slug: 'dominio-transacoes',
-      },
-      'dominio-relatorios': {
-        path: '10-produto/relatorios/guia-usuario.md',
-        slug: 'dominio-relatorios',
-      },
-      'dominio-colaboracao': {
-        path: '10-produto/colaboracao/guia-usuario.md',
-        slug: 'dominio-colaboracao',
-      },
-      'dominio-metas': { path: '10-produto/metas/guia-usuario.md', slug: 'dominio-metas' },
-    },
-  };
 
   /** Signals de rota para reagir a mudanças de URL */
   private readonly params = toSignal(this.route.params, { initialValue: {} as DocsRouteParams });
@@ -393,52 +268,41 @@ export class DocsPage {
   /** Tags associadas ao documento */
   protected readonly tags = signal<string[]>([]);
 
-  /** Breadcrumbs baseados no caminho do arquivo */
+  /** Breadcrumbs baseados na navegação (sidebar) */
   protected readonly breadcrumbs = computed(() => {
-    const path = this.selectedPath();
-    if (!path || path === this.OPENAPI_PATH) return [];
+    const slug = this.slug();
 
-    const segments = path.split('/');
-    const breadcrumbs: { label: string; active: boolean }[] = [];
+    // Se for OpenAPI, mostra breadcrumb fixo
+    if (this.isOpenApi() || slug === 'api-ref') {
+      return [
+        { label: 'Infraestrutura & API', active: false },
+        { label: 'Referência de API', active: true },
+      ];
+    }
 
-    // Mapeamento de nomes de pastas para labels amigáveis
-    const folderLabels: Record<string, string> = {
-      '00-geral': 'Geral',
-      '10-produto': 'Produto',
-      '20-arquitetura': 'Arquitetura',
-      '30-api': 'API',
-      '40-plataformas': 'Plataformas',
-      '50-operacoes': 'Operações',
-      '90-planejamento': 'Planejamento',
-      admin: 'Admin',
-      user: 'Usuário',
-      pwa: 'PWA',
-      adr: 'ADR',
-      concluido: 'Concluído',
-      'em-discussao': 'Em Discussão',
-    };
+    if (!slug) return [];
 
-    segments.forEach((segment, index) => {
-      const isLast = index === segments.length - 1;
-      let label = segment.replace('.md', '');
-
-      // Se for uma pasta conhecida, usa o label amigável
-      if (folderLabels[label]) {
-        label = folderLabels[label];
-      } else {
-        // Tenta limpar o nome do arquivo (ex: 10-autenticacao -> Autenticação)
-        label = label
-          .replace(/^\d+-/, '') // Remove prefixo numérico (ex: 10-)
-          .replace(/-/g, ' ') // Substitui hifens por espaços
-          .split(' ')
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
+    // Tenta encontrar a categoria e o item na sidebar via layout
+    if (this.layout) {
+      const categories = this.layout.getCategories();
+      for (const category of categories) {
+        const item = category.items.find((i) => i.link.endsWith(`/${slug}`));
+        if (item) {
+          return [
+            { label: category.label, active: false },
+            { label: item.label, active: true },
+          ];
+        }
       }
+    }
 
-      breadcrumbs.push({ label, active: isLast });
-    });
+    // Fallback: se não encontrar na sidebar, tenta usar o título do frontmatter
+    const currentTitle = this.title();
+    if (currentTitle) {
+      return [{ label: currentTitle, active: true }];
+    }
 
-    return breadcrumbs;
+    return [];
   });
 
   /** Tracking function para as tags */
@@ -519,68 +383,83 @@ export class DocsPage {
       .sort((a, b) => a.tag.localeCompare(b.tag));
   });
 
+  /** Efeito para carregar o conteúdo baseado na rota */
   constructor() {
-    // Escuta mudanças no slug ou no queryParam 'path'
-    effect(() => {
-      const params = this.params();
-      const queryParams = this.queryParams();
-      const routeData = this.route.snapshot.data;
+    effect(
+      () => {
+        const params = this.params();
+        const queryParams = this.queryParams();
+        const context = this.route.snapshot.data['context'] || 'user';
 
-      const slugValue = params?.['slug'];
-      const queryPath = queryParams?.['path'];
-      const context = routeData?.['context'];
+        const slug = params.slug || null;
+        let filePath = queryParams.path || '';
 
-      this.slug.set(slugValue || null);
+        // Se não houver slug nem path, redireciona para a intro do contexto
+        if (!slug && !filePath) {
+          this.router.navigate([context === 'admin' ? '/docs/admin/intro' : '/docs/intro'], {
+            replaceUrl: true,
+          });
+          return;
+        }
 
-      // Determina o caminho final (slug tem prioridade para a nova estrutura)
-      let finalPath = '';
-
-      if (slugValue) {
-        finalPath = this.mapSlugToPath(slugValue, context);
-      } else if (queryPath) {
-        finalPath = queryPath;
-      } else {
-        // Fallback para a introdução se nada for informado
-        finalPath = context === 'admin' ? 'admin/intro.md' : 'user/intro.md';
-      }
-
-      this.selectedPath.set(finalPath);
-    });
-
-    effect((onCleanup) => {
-      const path = this.selectedPath();
-      if (!path) return;
-
-      this.isLoading.set(true);
-      this.error.set(null);
-
-      const sub = (
-        path === this.OPENAPI_PATH ? this.docs.getOpenApi() : this.docs.getFile(path)
-      ).subscribe({
-        next: (content) => {
-          if (typeof content === 'string') {
-            this.parseMarkdown(content);
-            this.openApiDoc.set(null);
-          } else {
-            this.markdown.set('');
-            this.openApiDoc.set(content);
-            this.title.set(''); // Título agora é renderizado internamente para customização
-            this.description.set('');
-            this.tags.set([]);
+        // Se houver slug, resolve o path
+        if (slug) {
+          const resolvedPath = this.docs.resolvePathFromSlug(context, slug);
+          if (resolvedPath) {
+            filePath = resolvedPath;
+          } else if (slug === 'api-ref' && context === 'admin') {
+            filePath = this.OPENAPI_PATH;
           }
+        }
+
+        // Se chegamos aqui sem filePath, é um erro
+        if (!filePath) {
+          this.error.set('Documento não encontrado');
           this.isLoading.set(false);
-        },
-        error: (_err) => {
+          return;
+        }
+
+        this.slug.set(slug);
+        this.selectedPath.set(filePath);
+        this.loadContent(filePath);
+      },
+      { allowSignalWrites: true },
+    );
+  }
+
+  /**
+   * Carrega o conteúdo (Markdown ou OpenAPI) baseado no caminho.
+   *
+   * @param path - Caminho do arquivo ou identificador especial (OPENAPI_PATH)
+   */
+  private loadContent(path: string): void {
+    this.isLoading.set(true);
+    this.error.set(null);
+
+    const request$ = path === this.OPENAPI_PATH ? this.docs.getOpenApi() : this.docs.getFile(path);
+
+    request$.subscribe({
+      next: (content) => {
+        if (typeof content === 'string') {
+          this.parseMarkdown(content);
+          this.openApiDoc.set(null);
+        } else {
           this.markdown.set('');
-          this.error.set(`Não foi possível carregar o documento: ${path}`);
-          this.title.set('Erro de Carregamento');
+          this.openApiDoc.set(content);
+          this.title.set('');
           this.description.set('');
           this.tags.set([]);
-          this.isLoading.set(false);
-        },
-      });
-
-      onCleanup(() => sub.unsubscribe());
+        }
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.markdown.set('');
+        this.error.set(`Não foi possível carregar o documento: ${path}`);
+        this.title.set('Erro de Carregamento');
+        this.description.set('');
+        this.tags.set([]);
+        this.isLoading.set(false);
+      },
     });
   }
 
@@ -653,13 +532,16 @@ export class DocsPage {
       targetPath = this.normalizePath(`${currentDir}/${cleanHref}`);
     }
 
-    // 4. Busca o slug nos mapeamentos
-    const context = (this.route.snapshot.data['context'] as 'admin' | 'user') || 'user';
-    return this.findSlugByPath(targetPath, context);
+    // Adiciona .md de volta para comparação se não tiver
+    const fullPath = targetPath.endsWith('.md') ? targetPath : `${targetPath}.md`;
+
+    // 4. Busca o slug nos mapeamentos via serviço
+    const context = this.route.snapshot.data['context'] || 'user';
+    return this.docs.resolveSlugFromPath(context, fullPath);
   }
 
   /**
-   * Normaliza um caminho removendo segmentos ./ e ../
+   * Normaliza caminhos com ../ ou ./
    */
   private normalizePath(path: string): string {
     const segments = path.split('/');
@@ -677,50 +559,9 @@ export class DocsPage {
   }
 
   /**
-   * Inverte a busca de slug por caminho físico.
-   * Busca apenas no contexto atual para garantir isolamento.
-   */
-  private findSlugByPath(targetPath: string, context: 'admin' | 'user' = 'user'): string | null {
-    // Caso especial para arquivos OpenAPI - APENAS ADMIN
-    if (targetPath.endsWith('openapi.json') && context === 'admin') {
-      return 'api-ref';
-    }
-
-    const pathWithExt = targetPath.endsWith('.md') ? targetPath : `${targetPath}.md`;
-
-    // Busca apenas no contexto atual
-    const currentMapping = DocsPage.DOCS_MAPPING[context];
-    const foundInCurrent = Object.values(currentMapping).find((m) => m.path === pathWithExt);
-    if (foundInCurrent) return foundInCurrent.slug;
-
-    // Fallback: nome do arquivo sem extensão
-    return targetPath.split('/').pop() || null;
-  }
-
-  /**
-   * Mapeia um slug amigável da URL para o caminho real do arquivo na pasta de assets.
-   * @param slug - O identificador amigável da rota
-   * @param context - O contexto da rota (ex: 'admin')
-   * @returns O caminho relativo do arquivo .md ou constante especial
-   */
-  private mapSlugToPath(slug: string, context: 'admin' | 'user' = 'user'): string {
-    // Caso especial para OpenAPI - APENAS ADMIN
-    if ((slug === 'openapi' || slug === 'api-ref') && context === 'admin') {
-      return this.OPENAPI_PATH;
-    }
-
-    // Busca apenas no contexto atual
-    const currentMapping = DocsPage.DOCS_MAPPING[context];
-    if (currentMapping[slug]) return currentMapping[slug].path;
-
-    // Fallback: assume que o slug já é o caminho parcial ou nome do arquivo
-    return slug;
-  }
-
-  /**
-   * Realiza o parsing manual de metadados (frontmatter) no início de arquivos Markdown.
-   * Extrai título, descrição e tags.
-   * @param content - Conteúdo bruto do arquivo Markdown
+   * Processa o conteúdo Markdown, extraindo frontmatter se presente.
+   *
+   * @param content - Conteúdo Markdown bruto
    */
   private parseMarkdown(content: string): void {
     // Parse manual ultra-simples de frontmatter (apenas para exibição)

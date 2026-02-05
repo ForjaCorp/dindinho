@@ -510,8 +510,17 @@ export class BaseDocsLayoutComponent implements OnInit {
   @Input() searchArrowHighlightClass = 'group-hover:text-indigo-400';
   @Input() searchKbdHighlightClass = 'group-hover/search:text-indigo-500';
   @Input() searchMobileHighlightClass = 'hover:text-indigo-600';
-  @Input() currentContext: 'public' | 'user' | 'admin' = 'public';
+  /** Contexto atual do layout (admin ou user) */
+  @Input() currentContext: 'admin' | 'user' = 'user';
   @Input() categories: SidebarCategory[] = [];
+
+  /**
+   * Fornece as categorias para os componentes filhos (como DocsPage).
+   * @returns Categorias configuradas no layout
+   */
+  getCategories(): SidebarCategory[] {
+    return this.categories;
+  }
 
   @ViewChild('searchInput') searchInput?: ElementRef<HTMLInputElement>;
 
