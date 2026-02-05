@@ -1,0 +1,61 @@
+---
+id: refatoracao-roles-permissoes
+title: "Refatoração de Roles e Permissões"
+description: "Plano para separar roles de sistema (RBAC global) de permissões de recursos (contas compartilhadas)."
+audience: ["dev", "arquitetura"]
+visibility: "interno"
+status: "em-discussao"
+owners: ["engineering"]
+tags: ["arquitetura", "segurança", "rbac", "refatoração"]
+mvp: false
+createdAt: "2026-02-05"
+---
+
+# Planejamento: Refatoração de Roles e Permissões
+
+## 📝 Contexto e Problema
+
+- **Cenário Atual**: O ecossistema Dindinho utiliza um único `enum Role` (VIEWER, EDITOR, ADMIN) tanto para níveis de sistema (acesso administrativo global) quanto para níveis de recurso (permissões dentro de uma conta específica).
+- **Necessidade de Mudança**: Esta ambiguidade semântica impede o princípio de menor privilégio. Um usuário que é "Editor" de uma conta não deveria ter sua role global confundida com permissões administrativas do sistema (como acesso ao Docs Admin). Precisamos de uma separação clara entre "quem o usuário é no sistema" e "o que o usuário pode fazer em um recurso".
+
+## 🚀 Proposta de Solução
+
+- **Visão Geral**: Criar dois domínios distintos de autorização:
+  1.  **SystemRole**: Define o papel global do usuário (USER, ADMIN).
+  2.  **ResourcePermission**: Define a capacidade do usuário sobre um recurso/conta (VIEWER, EDITOR, OWNER).
+- **Alternativas Consideradas**: Manter o enum atual e adicionar prefixos (ex: `SYS_ADMIN`, `ACC_EDITOR`). No entanto, a separação em enums distintos no TypeScript e colunas distintas no banco de dados é mais robusta e evita erros de atribuição acidental.
+
+## 📅 Cronograma de Execução (Fases)
+
+### Fase 1: Contratos e Shared Package
+
+- [ ] Definir `SystemRole` e `ResourcePermission` no `auth.schema.ts`.
+- [ ] Atualizar o `loginResponseSchema` para refletir a nova estrutura.
+- **Critérios de Aceite**: O pacote `@dindinho/shared` exporta os novos enums e os tipos de resposta de login estão atualizados.
+
+### Fase 2: Backend e Banco de Dados
+
+- [ ] Criar migração Prisma para alterar `User.role` e `AccountAccess.role`.
+- [ ] Implementar script de migração de dados (mapear ADMIN local para OWNER).
+- [ ] Atualizar middlewares de autorização para validar o domínio correto (System vs Resource).
+- **Critérios de Aceite**: Banco de dados atualizado e testes de integração do backend passando com a nova estrutura.
+
+### Fase 3: Frontend e UX
+
+- [ ] Atualizar `AuthService` e o signal de usuário logado.
+- [ ] Refatorar Guards de rota para usar `SystemRole`.
+- [ ] Atualizar componentes de UI (layouts de admin e dashboard) para validar permissões específicas.
+- **Critérios de Aceite**: Navegação funcional e componentes administrativos visíveis apenas para `SystemRole.ADMIN`.
+
+## 🏗️ Impacto Técnico
+
+- **Banco de Dados**: Migração necessária para renomear enums e converter dados existentes na tabela `User` e `AccountAccess`.
+- **API**: Mudança no contrato do objeto `user` retornado no login/me (quebra de contrato controlada).
+- **Frontend**: Mudança na lógica de visibilidade de componentes e guards de rota.
+
+## ✅ Definição de Pronto (DoD)
+
+- [ ] Código testado (unitário/integração).
+- [ ] Documentação atualizada (Tier User/Admin).
+- [ ] Lint/Typecheck sem erros.
+- [ ] Revisado por outro par.
