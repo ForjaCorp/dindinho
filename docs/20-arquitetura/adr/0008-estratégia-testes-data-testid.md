@@ -2,7 +2,7 @@
 id: adr-0008-estratégia-testes-data-testid
 title: "ADR 0008: Estratégia de Testes e Uso de data-testid"
 description: "Padronização da organização dos testes e uso de atributos data-testid para garantir testes resilientes a mudanças de layout."
-audience: ["dev", "qa"]
+audience: ["dev", "arquitetura"]
 visibility: "interno"
 status: "estável"
 owners: ["engineering"]

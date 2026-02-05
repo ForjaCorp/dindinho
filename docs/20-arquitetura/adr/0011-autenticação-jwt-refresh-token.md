@@ -2,7 +2,7 @@
 id: adr-0011-autenticação-jwt-refresh-token
 title: "ADR 0011: Estratégia de Autenticação (JWT + Refresh Token)"
 description: "Implementação de autenticação stateless usando JSON Web Tokens (JWT) com rotação de refresh tokens para segurança e persistência de sessão."
-audience: ["dev", "segurança"]
+audience: ["dev", "arquitetura"]
 visibility: "interno"
 status: "estável"
 owners: ["engineering"]

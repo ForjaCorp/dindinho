@@ -2,7 +2,7 @@
 id: adr-0009-animações-nativas-css
 title: "ADR 0009: Uso de Animações Nativas CSS (PrimeNG v21+)"
 description: "Decisão de abandonar o módulo legatário de animações do Angular em favor das animações nativas de CSS gerenciadas pelo PrimeNG v21+."
-audience: ["dev", "frontend"]
+audience: ["dev", "arquitetura"]
 visibility: "interno"
 status: "estável"
 owners: ["engineering"]

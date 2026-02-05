@@ -2,7 +2,7 @@
 id: adr-0010-modelagem-tabela-extensão
 title: "ADR 0010: Modelagem de Dados via Tabela de Extensão"
 description: "Uso do padrão de composição de tabelas (1:1) para estender entidades base com atributos específicos de subtipos."
-audience: ["dev", "arquitetura", "backend"]
+audience: ["dev", "arquitetura"]
 visibility: "interno"
 status: "estável"
 owners: ["engineering"]
