@@ -63,15 +63,10 @@ Estes itens já possuem planejamento iniciado ou são essenciais para o fechamen
 
 ---
 
-## 📱 Mobile & PWA (Acessibilidade e Canal Principal)
+### 8. PWA Full (Progressive Web App)
 
-Garantindo que o Dindinho esteja sempre à mão do usuário no seu canal mais provável de uso.
-
-### 4. PWA Full (Progressive Web App)
-
-- **Descrição**: Transformar a aplicação Angular em um PWA completo com suporte a offline e instalação.
-- **Arquitetura**: Implementação de Service Workers (@angular/pwa), manifesto de app e estratégia de cache.
-- **Impacto**: **Canal Primário.** Melhora o engajamento e permite o uso como um app real sem depender de lojas.
+- **Status**: [Em Discussão](./em-discussao/pwa-full.md)
+- **Foco**: Transformar a aplicação Angular em um PWA completo com suporte a offline e instalação.
 
 ---
 
