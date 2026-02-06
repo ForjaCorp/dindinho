@@ -35,6 +35,10 @@ describe('DashboardComponent', () => {
   let apiServiceMock: {
     getHello: ReturnType<typeof vi.fn>;
     getTransactions: ReturnType<typeof vi.fn>;
+    get: ReturnType<typeof vi.fn>;
+    post: ReturnType<typeof vi.fn>;
+    patch: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
   };
   let accountServiceMock: {
     accounts: ReturnType<typeof vi.fn>;
@@ -72,6 +76,10 @@ describe('DashboardComponent', () => {
     apiServiceMock = {
       getHello: vi.fn(() => of(apiResponse)),
       getTransactions: vi.fn(() => of({ items: [], nextCursorId: null })),
+      get: vi.fn(() => of([])),
+      post: vi.fn(() => of({})),
+      patch: vi.fn(() => of({})),
+      delete: vi.fn(() => of({})),
     };
 
     accountServiceMock = {
@@ -142,7 +150,7 @@ describe('DashboardComponent', () => {
     const shortcutsSection = fixture.nativeElement.querySelector(
       '[data-testid="quick-links-section"]',
     );
-    const textosEsperados = ['Contas', 'Cartões', 'Relatórios', 'Ajustes'];
+    const textosEsperados = ['Contas', 'Cartões', 'Relatórios', 'Convites'];
 
     textosEsperados.forEach((texto) => {
       expect(shortcutsSection.textContent).toContain(texto);

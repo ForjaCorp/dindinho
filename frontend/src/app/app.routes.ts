@@ -164,6 +164,11 @@ export const routes: Routes = [
         loadComponent: () => import('../pages/reports/reports.page').then((m) => m.ReportsPage),
         data: { title: 'Relatórios', maxWidth: '5xl' },
       },
+      {
+        path: 'invites',
+        loadComponent: () => import('../pages/invites/invites.page').then((m) => m.InvitesPage),
+        data: { title: 'Central de Convites', maxWidth: '5xl' },
+      },
       // Outras rotas autenticadas virão aqui (accounts, reports, profile)
     ],
   },

@@ -133,6 +133,7 @@ export const accountSchema = z.object({
   icon: z.string(),
   type: AccountTypeEnum,
   ownerId: z.string(),
+  ownerName: z.string().optional(),
   permission: z.nativeEnum(ResourcePermission).optional(),
   balance: z.coerce.number().optional().default(0),
   creditCardInfo: z

@@ -4,7 +4,7 @@ title: "Sistema de Convites (Colaboração Multi-contas)"
 description: "Planejamento para implementação do sistema de convites por e-mail, permitindo compartilhar múltiplas carteiras com diferentes permissões."
 audience: ["dev", "ops"]
 visibility: "interno"
-status: "em-andamento"
+status: "concluido"
 owners: ["engineering"]
 tags: ["planejamento", "rfc", "colaboração", "convites"]
 mvp: true
@@ -41,7 +41,9 @@ O sistema permite que um usuário convide outros colaboradores para compartilhar
 - [x] Criar tabelas `Invite` e `InviteAccount` no Prisma.
 - [x] Implementar as relações no `User` e `Account`.
 - [x] Criar migração e atualizar o cliente Prisma.
-- **Critérios de Aceite**: Banco de Dados pronto para armazenar convites vinculados a múltiplas contas com as novas roles de recurso (`ResourcePermission`).
+- **Critérios de Aceite**:
+  - [x] Banco de Dados pronto para armazenar convites vinculados a múltiplas contas.
+  - [x] Uso das novas roles de recurso (`ResourcePermission`).
 
 ### Fase 2: API de Gestão de Convites (Backend)
 
@@ -50,15 +52,20 @@ O sistema permite que um usuário convide outros colaboradores para compartilhar
 - [x] Endpoint `PATCH /api/invites/:id`: Atualiza o status do convite (`ACCEPTED` ou `REJECTED`).
 - [x] Endpoint `DELETE /api/invites/:id`: Permite ao `OWNER` revogar um convite pendente.
 - [x] Centralização de tratamento de erros e validação de domínio.
-- **Critérios de Aceite**: Fluxo completo de criação, listagem, aceite e revogação via API respeitando os novos enums.
+- **Critérios de Aceite**:
+  - [x] Fluxo completo de criação, listagem, aceite e revogação via API.
+  - [x] Respeito aos novos enums de permissão.
+  - [x] Lógica de auto-link no signup implementada e testada.
 
 ### Fase 3: Interface de Colaboração (Frontend)
 
-- [ ] Modal de "Compartilhar Carteira" com seleção múltipla, `ResourcePermission` (VIEWER/EDITOR) e geração de link.
-- [ ] Central de Convites no Perfil/Configurações.
-- [ ] Feedback visual de "Carteira Compartilhada" na listagem de contas.
-- [ ] Atualização da listagem de contas para incluir contas compartilhadas via `AccountAccess`.
-- **Critérios de Aceite**: Usuário consegue convidar e aceitar convites de forma intuitiva no PWA usando a nova arquitetura de permissões.
+- [x] Modal de "Compartilhar Carteira" com seleção múltipla, `ResourcePermission` (VIEWER/EDITOR) e geração de link.
+- [x] Central de Convites no Perfil/Configurações.
+- [x] Feedback visual de "Carteira Compartilhada" na listagem de contas.
+- [x] Atualização da listagem de contas para incluir contas compartilhadas via `AccountAccess`.
+- **Critérios de Aceite**:
+  - [x] Usuário consegue convidar e aceitar convites de forma intuitiva no PWA usando a nova arquitetura de permissões.
+  - [x] Exibição clara de quem é o proprietário e quem são os colaboradores de cada conta.
 
 ## 🏗️ Impacto Técnico
 
@@ -70,9 +77,9 @@ O sistema permite que um usuário convide outros colaboradores para compartilhar
   - Lógica de transação: Ao aceitar, deve-se criar N registros em `AccountAccess` e marcar o convite como `ACCEPTED`.
   - Atualização do `AccountsService.findAllByUserId` para incluir acessos compartilhados.
 - **Frontend**:
-  - Novo serviço `InviteService`.
-  - Atualização do `AccountService` para lidar com permissões de edição/exclusão baseadas na role.
-  - Lógica de captura de convite via URL query params.
+  - [x] Novo serviço `InviteService`.
+  - [x] Atualização do `AccountService` para lidar com permissões de edição/exclusão baseadas na role.
+  - [x] Lógica de captura de convite via URL query params.
 
 ## ✅ Definição de Pronto (DoD)
 

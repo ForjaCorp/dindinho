@@ -4,7 +4,7 @@ title: "Domínio: Colaboração e Compartilhamento"
 description: "Gestão de acessos compartilhados, convites entre usuários e permissões de visualização e edição em carteiras."
 audience: ["dev", "usuário"]
 visibility: "público"
-status: "em-progresso"
+status: "concluido"
 owners: ["engineering"]
 tags: ["colaboração", "convites", "compartilhamento"]
 mvp: true
@@ -62,7 +62,7 @@ O sistema utiliza três entidades principais para gerenciar a colaboração:
   - `POST /api/invites`: Criação de convites.
   - `GET /api/invites/pending`: Listagem para o destinatário.
   - `PATCH /api/invites/:id`: Aceite ou rejeição (via campo `status`).
-  - `DELETE /api/invites/:id`: Revogação pelo remetente.
+  - `DELETE /api/invites/:id`: Cancelamento pelo remetente (apenas convites pendentes).
 - **Contratos**: Referência aos schemas em `@dindinho/shared/src/schemas/invite.schema.ts`.
 
 ## 🔗 Links Úteis

@@ -17,6 +17,9 @@ type AccountWithAccess = Prisma.AccountGetPayload<{
     accessList: {
       select: { permission: true };
     };
+    owner: {
+      select: { name: true };
+    };
   };
 }>;
 
@@ -406,6 +409,7 @@ export class AccountsService {
         icon: account.icon,
         type: account.type,
         ownerId: account.ownerId,
+        permission: ResourcePermission.OWNER,
         creditCardInfo: account.creditCardInfo
           ? {
               ...account.creditCardInfo,

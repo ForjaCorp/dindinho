@@ -96,7 +96,7 @@ describe("InvitesService", () => {
         systemRole: SystemRole.USER,
         createdAt: new Date(),
         updatedAt: new Date(),
-        phone: null,
+        phone: "+5511999999999",
         avatarUrl: null,
       } as User);
 

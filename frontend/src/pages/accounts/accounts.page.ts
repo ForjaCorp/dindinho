@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, OnInit } from '@a
 import { CommonModule } from '@angular/common';
 import { AccountService } from '../../app/services/account.service';
 import { CreateAccountDialogComponent } from '../../app/components/accounts/create-account-dialog.component';
+import { ShareAccountDialogComponent } from '../../app/components/accounts/share-account-dialog.component';
 import { AccountCardComponent } from '../../app/components/accounts/account-card.component';
 import { EmptyStateComponent } from '../../app/components/empty-state.component';
 import { PageHeaderComponent } from '../../app/components/page-header.component';
@@ -17,6 +18,7 @@ import { AccountDTO } from '@dindinho/shared';
   imports: [
     CommonModule,
     CreateAccountDialogComponent,
+    ShareAccountDialogComponent,
     AccountCardComponent,
     EmptyStateComponent,
     PageHeaderComponent,
@@ -75,11 +77,13 @@ import { AccountDTO } from '@dindinho/shared';
             [account]="account"
             (edit)="onEditAccount(dialog, $event)"
             (openTransactions)="onOpenTransactions($event)"
+            (share)="onShareAccount(shareDialog, $event)"
           />
         }
       </div>
 
       <app-create-account-dialog #dialog />
+      <app-share-account-dialog #shareDialog />
     </div>
   `,
   styles: [
@@ -106,6 +110,10 @@ export class AccountsPage implements OnInit {
 
   protected onEditAccount(dialog: CreateAccountDialogComponent, account: AccountDTO) {
     dialog.showForEdit(account);
+  }
+
+  protected onShareAccount(dialog: ShareAccountDialogComponent, account: AccountDTO) {
+    dialog.open([account.id]);
   }
 
   protected onOpenTransactions(account: AccountDTO) {

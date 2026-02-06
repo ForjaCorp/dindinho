@@ -12,7 +12,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
-import { AccountDTO } from '@dindinho/shared';
+import { AccountDTO, ResourcePermission } from '@dindinho/shared';
 
 @Component({
   selector: 'app-account-card',
@@ -51,9 +51,26 @@ import { AccountDTO } from '@dindinho/shared';
         </div>
 
         <div class="flex items-start gap-2 relative">
-          <span [class]="tagClass()" [attr.data-testid]="accountTypeTestId()">{{
-            typeLabel()
-          }}</span>
+          <div class="flex flex-col items-end gap-1">
+            <span [class]="tagClass()" [attr.data-testid]="accountTypeTestId()">{{
+              typeLabel()
+            }}</span>
+            @if (account().permission !== ResourcePermission.OWNER) {
+              <div class="flex flex-col items-end">
+                <span
+                  class="text-[9px] font-bold uppercase tracking-tight px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200"
+                  title="Conta compartilhada"
+                >
+                  Compartilhada
+                </span>
+                @if (account().ownerName) {
+                  <span class="text-[8px] text-slate-400 mt-0.5 truncate max-w-[80px]">
+                    por {{ account().ownerName }}
+                  </span>
+                }
+              </div>
+            }
+          </div>
 
           @if (actionsOpen()) {
             <div
@@ -82,16 +99,31 @@ import { AccountDTO } from '@dindinho/shared';
                 Transações
               </button>
 
-              <button
-                type="button"
-                [attr.data-testid]="accountEditTestId()"
-                class="w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors flex items-center gap-2"
-                aria-label="Editar"
-                (click)="onEditClick($event)"
-              >
-                <i class="pi pi-pencil text-sm"></i>
-                Editar
-              </button>
+              @if (account().permission !== ResourcePermission.VIEWER) {
+                <button
+                  type="button"
+                  [attr.data-testid]="accountEditTestId()"
+                  class="w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors flex items-center gap-2"
+                  aria-label="Editar"
+                  (click)="onEditClick($event)"
+                >
+                  <i class="pi pi-pencil text-sm"></i>
+                  Editar
+                </button>
+              }
+
+              @if (account().permission === ResourcePermission.OWNER) {
+                <button
+                  type="button"
+                  [attr.data-testid]="accountShareTestId()"
+                  class="w-full px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors flex items-center gap-2"
+                  aria-label="Compartilhar"
+                  (click)="onShareClick($event)"
+                >
+                  <i class="pi pi-share-alt text-sm"></i>
+                  Compartilhar
+                </button>
+              }
             </div>
           }
         </div>
@@ -168,7 +200,9 @@ export class AccountCardComponent {
 
   readonly edit = output<AccountDTO>();
   readonly openTransactions = output<AccountDTO>();
+  readonly share = output<AccountDTO>();
 
+  protected readonly ResourcePermission = ResourcePermission;
   protected readonly actionsOpen = signal(false);
   protected readonly suppressNextClick = signal(false);
 
@@ -222,6 +256,7 @@ export class AccountCardComponent {
   accountCaptionTestId = computed(() => `account-caption-${this.account().id}`);
   accountTransactionsTestId = computed(() => `account-transactions-${this.account().id}`);
   accountEditTestId = computed(() => `account-edit-${this.account().id}`);
+  accountShareTestId = computed(() => `account-share-${this.account().id}`);
   accountMenuTestId = computed(() => `account-menu-${this.account().id}`);
   menuId = computed(() => `account-menu-${this.instanceId}`);
 
@@ -450,5 +485,11 @@ export class AccountCardComponent {
     event.stopPropagation();
     this.actionsOpen.set(false);
     this.openTransactions.emit(this.account());
+  }
+
+  protected onShareClick(event: Event) {
+    event.stopPropagation();
+    this.actionsOpen.set(false);
+    this.share.emit(this.account());
   }
 }

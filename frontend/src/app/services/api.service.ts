@@ -107,8 +107,12 @@ export class ApiService {
    * @param data Dados do novo usuário
    * @returns Observable com dados do usuário criado
    */
-  signup(data: CreateUserDTO): Observable<unknown> {
+  createUser(data: CreateUserDTO): Observable<unknown> {
     return this.http.post(`${this.baseUrl}/users`, data);
+  }
+
+  signup(data: CreateUserDTO): Observable<unknown> {
+    return this.createUser(data);
   }
 
   joinWaitlist(data: CreateWaitlistDTO): Observable<{ message: string }> {
@@ -169,8 +173,16 @@ export class ApiService {
     return this.http.get<AccountDTO[]>(`${this.baseUrl}/accounts`);
   }
 
+  getAccount(id: string): Observable<AccountDTO> {
+    return this.http.get<AccountDTO>(`${this.baseUrl}/accounts/${id}`);
+  }
+
   updateAccount(id: string, data: UpdateAccountDTO): Observable<AccountDTO> {
     return this.http.patch<AccountDTO>(`${this.baseUrl}/accounts/${id}`, data);
+  }
+
+  deleteAccount(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/accounts/${id}`);
   }
 
   createTransaction(data: CreateTransactionDTO): Observable<TransactionDTO | TransactionDTO[]> {
@@ -233,16 +245,16 @@ export class ApiService {
   updateTransaction(
     id: string,
     data: UpdateTransactionDTO,
-    scope?: UpdateTransactionScopeDTO,
+    scope: UpdateTransactionScopeDTO = 'ONE',
   ): Observable<TransactionDTO> {
     return this.http.patch<TransactionDTO>(`${this.baseUrl}/transactions/${id}`, data, {
-      params: scope ? { scope } : {},
+      params: { scope },
     });
   }
 
   deleteTransaction(
     id: string,
-    scope: DeleteTransactionScopeDTO,
+    scope: DeleteTransactionScopeDTO = 'ONE',
   ): Observable<DeleteTransactionResponseDTO> {
     return this.http.delete<DeleteTransactionResponseDTO>(`${this.baseUrl}/transactions/${id}`, {
       params: { scope },
@@ -257,12 +269,40 @@ export class ApiService {
     return this.http.post<CategoryDTO>(`${this.baseUrl}/categories`, data);
   }
 
+  updateCategory(id: string, data: CreateCategoryDTO): Observable<CategoryDTO> {
+    return this.http.patch<CategoryDTO>(`${this.baseUrl}/categories/${id}`, data);
+  }
+
+  deleteCategory(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/categories/${id}`);
+  }
+
   getAllowlist(adminKey: string): Observable<AllowlistItem[]> {
     return this.http.get<AllowlistItem[]>(`${this.baseUrl}/allowlist`, {
       headers: {
         'x-admin-key': adminKey,
       },
     });
+  }
+
+  /**
+   * Métodos genéricos para chamadas à API
+   * @description Facilita chamadas para novos endpoints sem precisar criar métodos específicos
+   */
+  get<T>(path: string): Observable<T> {
+    return this.http.get<T>(`${this.baseUrl}/${path}`);
+  }
+
+  post<T>(path: string, data: unknown): Observable<T> {
+    return this.http.post<T>(`${this.baseUrl}/${path}`, data);
+  }
+
+  patch<T>(path: string, data: unknown): Observable<T> {
+    return this.http.patch<T>(`${this.baseUrl}/${path}`, data);
+  }
+
+  delete<T>(path: string): Observable<T> {
+    return this.http.delete<T>(`${this.baseUrl}/${path}`);
   }
 
   addAllowlistEmail(adminKey: string, email: string): Observable<AllowlistItem> {
