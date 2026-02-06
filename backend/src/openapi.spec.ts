@@ -23,11 +23,11 @@ describe("OpenAPI Documentation", () => {
     if (typeof location !== "string") {
       throw new Error("Header Location ausente na resposta de /api/docs");
     }
-    expect(location).toContain("docs/static/index.html");
+    expect(location).toBe("/api/docs/");
 
     const htmlResponse = await app.inject({
       method: "GET",
-      url: "/api/docs/static/index.html",
+      url: "/api/docs/",
     });
 
     expect(htmlResponse.statusCode).toBe(200);
@@ -130,7 +130,7 @@ describe("OpenAPI Documentation", () => {
     });
 
     expect(response.statusCode).toBe(302);
-    expect(response.headers.location).toContain("docs/static/index.html");
+    expect(response.headers.location).toBe("/api/docs/");
 
     process.env.NODE_ENV = originalEnv;
     process.env.ENABLE_SWAGGER = originalEnable;

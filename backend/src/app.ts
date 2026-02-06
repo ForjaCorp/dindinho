@@ -136,9 +136,27 @@ export function buildApp(): FastifyInstance {
     transform: jsonSchemaTransform,
   });
 
-  app.register(authPlugin);
+  // Swagger UI - Documentação da API
+  if (
+    process.env.NODE_ENV !== "production" ||
+    process.env.ENABLE_SWAGGER === "true"
+  ) {
+    app.addHook("onRequest", async (request, reply) => {
+      if (request.url === "/api/docs") {
+        await reply.redirect("/api/docs/");
+      }
+    });
 
-  app.register(healthRoutes);
+    app.register(swaggerUi, {
+      routePrefix: "/api/docs",
+      uiConfig: {
+        docExpansion: "list",
+        deepLinking: false,
+      },
+    });
+  }
+
+  app.register(authPlugin);
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
@@ -188,7 +206,10 @@ export function buildApp(): FastifyInstance {
     credentials: true,
   });
 
-  if (process.env.NODE_ENV !== "test") {
+  if (
+    process.env.NODE_ENV !== "test" ||
+    process.env.ENABLE_RATE_LIMIT_IN_TESTS === "true"
+  ) {
     app.register(rateLimit, {
       max: Number(process.env.RATE_LIMIT_MAX) || 100,
       timeWindow: process.env.RATE_LIMIT_TIME_WINDOW || "1 minute",
@@ -197,7 +218,10 @@ export function buildApp(): FastifyInstance {
         : undefined,
       keyGenerator: (request) => {
         const xRealIp = request.headers["x-real-ip"];
-        return Array.isArray(xRealIp) ? xRealIp[0] : xRealIp || request.ip;
+        const ip = Array.isArray(xRealIp)
+          ? xRealIp[0]
+          : xRealIp || request.ip || "127.0.0.1";
+        return ip;
       },
     });
   }
@@ -344,20 +368,6 @@ export function buildApp(): FastifyInstance {
   app.register(
     async (api: FastifyInstance) => {
       const typedApi = api.withTypeProvider<ZodTypeProvider>();
-
-      // Swagger UI - Documentação da API (Somente em desenvolvimento ou se explicitamente habilitado)
-      if (
-        process.env.NODE_ENV !== "production" ||
-        process.env.ENABLE_SWAGGER === "true"
-      ) {
-        typedApi.register(swaggerUi, {
-          routePrefix: "/docs",
-          uiConfig: {
-            docExpansion: "list",
-            deepLinking: false,
-          },
-        });
-      }
 
       // Registro de rotas sequencial para garantir ordem de inicialização
       typedApi.log.debug("Iniciando registro de rotas da API...");
