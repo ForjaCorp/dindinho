@@ -67,12 +67,12 @@ O sistema permite que um usuário convide outros colaboradores para compartilhar
   - [x] Usuário consegue convidar e aceitar convites de forma intuitiva no PWA usando a nova arquitetura de permissões.
   - [x] Exibição clara de quem é o proprietário e quem são os colaboradores de cada conta.
 
-### Fase 4: Robustez e Escalabilidade (Pós-MVP)
+### Fase 4: Robustez e Escalabilidade
 
-- [ ] **Idempotência na Criação**: Implementar verificação no `createInvite` para invalidar convites pendentes anteriores para o mesmo par e-mail/conta, evitando redundância.
-- [ ] **Desacoplamento do Onboarding**: Extrair a lógica de auto-link (atualmente no `UsersService`) para um serviço especializado ou utilizar Domain Events.
-- [ ] **Tokens Únicos de Convite**: Persistir um token único no convite para permitir links curtos e seguros, desacoplados do ID interno do banco.
-- [ ] **Auditoria de Acessos**: Implementar logs de auditoria detalhados (quem aceitou, quando e quais permissões foram concedidas).
+- [x] **Idempotência na Criação**: Implementar verificação no `createInvite` para invalidar convites pendentes anteriores para o mesmo par e-mail/conta, evitando redundância.
+- [x] **Desacoplamento do Onboarding**: Extrair a lógica de auto-link (atualmente no `UsersService`) para um serviço especializado ou utilizar Domain Events.
+- [x] **Tokens Únicos de Convite**: Persistir um token único no convite para permitir links curtos e seguros, desacoplados do ID interno do banco.
+- [x] **Auditoria de Acessos**: Implementar logs de auditoria detalhados (quem aceitou, quando e quais permissões foram concedidas).
 
 ## 🏗️ Impacto Técnico
 
