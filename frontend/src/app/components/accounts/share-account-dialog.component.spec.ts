@@ -96,7 +96,7 @@ describe('ShareAccountDialogComponent', () => {
   });
 
   it('deve submeter o formulário com sucesso', () => {
-    const mockInvite = { id: 'invite-123' };
+    const mockInvite = { id: 'invite-123', token: 'token-123' };
     inviteServiceMock.createInvite.mockReturnValue(of(mockInvite));
 
     component.form.patchValue({
@@ -118,7 +118,7 @@ describe('ShareAccountDialogComponent', () => {
         summary: 'Sucesso',
       }),
     );
-    expect(component.inviteLink()).toContain('invite-123');
+    expect(component.inviteLink()).toContain('token-123');
   });
 
   it('deve exibir erro ao falhar na submissão', () => {
