@@ -1,10 +1,7 @@
-import {
-  PrismaClient,
-  InviteStatus as PrismaInviteStatus,
-  ResourcePermission as PrismaResourcePermission,
-} from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { CreateUserDTO } from "@dindinho/shared";
+import { OnboardingService } from "./onboarding.service";
 
 export class SignupNotAllowedError extends Error {
   readonly statusCode = 403;
@@ -31,7 +28,14 @@ export class UsersService {
    * Cria uma nova instância do serviço de usuários
    * @param {PrismaClient} prisma - Instância do Prisma Client
    */
-  constructor(private prisma: PrismaClient) {}
+  constructor(
+    private prisma: PrismaClient,
+    private onboardingService?: OnboardingService,
+  ) {
+    if (!this.onboardingService) {
+      this.onboardingService = new OnboardingService(prisma);
+    }
+  }
 
   /**
    * Cria um novo usuário no sistema
@@ -76,38 +80,12 @@ export class UsersService {
         },
       });
 
-      // 3.2 Buscar convites pendentes e não expirados para este e-mail
-      const pendingInvites = await tx.invite.findMany({
-        where: {
-          email: emailNormalized,
-          status: PrismaInviteStatus.PENDING,
-          expiresAt: { gt: new Date() },
-        },
-        include: {
-          accounts: true,
-        },
-      });
-
-      // 3.3 Processar cada convite (auto-link)
-      for (const invite of pendingInvites) {
-        // Atualizar convite para ACEITO
-        await tx.invite.update({
-          where: { id: invite.id },
-          data: { status: PrismaInviteStatus.ACCEPTED },
-        });
-
-        // Criar acessos às contas
-        if (invite.accounts.length > 0) {
-          await tx.accountAccess.createMany({
-            data: invite.accounts.map((a) => ({
-              accountId: a.accountId,
-              userId: newUser.id,
-              permission: a.permission as PrismaResourcePermission,
-            })),
-            skipDuplicates: true,
-          });
-        }
-      }
+      // 3.2 Processar convites pendentes (auto-link) via serviço especializado
+      await this.onboardingService!.processPendingInvites(
+        newUser.id,
+        emailNormalized,
+        tx,
+      );
 
       return newUser;
     });
