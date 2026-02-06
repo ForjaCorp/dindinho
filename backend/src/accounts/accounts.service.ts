@@ -2,14 +2,23 @@ import {
   PrismaClient,
   TransactionType,
   AccountType,
-  ResourcePermission,
   Prisma,
 } from "@prisma/client";
 import {
   AccountDTO,
   CreateAccountDTO,
   UpdateAccountDTO,
+  ResourcePermission,
 } from "@dindinho/shared";
+
+type AccountWithAccess = Prisma.AccountGetPayload<{
+  include: {
+    creditCardInfo: true;
+    accessList: {
+      select: { permission: true };
+    };
+  };
+}>;
 
 /**
  * Erro base para operações de conta.
@@ -238,7 +247,13 @@ export class AccountsService {
           },
         ],
       },
-      include: { creditCardInfo: true },
+      include: {
+        creditCardInfo: true,
+        accessList: {
+          where: { userId },
+          select: { permission: true },
+        },
+      },
     });
 
     if (!account) {
@@ -310,6 +325,11 @@ export class AccountsService {
       icon: account.icon,
       type: account.type,
       ownerId: account.ownerId,
+      permission:
+        account.ownerId === userId
+          ? ResourcePermission.OWNER
+          : ((account as AccountWithAccess).accessList?.[0]
+              ?.permission as ResourcePermission),
       creditCardInfo: account.creditCardInfo
         ? {
             ...account.creditCardInfo,
@@ -428,7 +448,13 @@ export class AccountsService {
             },
           ],
         },
-        include: { creditCardInfo: true },
+        include: {
+          creditCardInfo: true,
+          accessList: {
+            where: { userId },
+            select: { permission: true },
+          },
+        },
         orderBy: { createdAt: "asc" },
       });
 
@@ -501,6 +527,11 @@ export class AccountsService {
         icon: a.icon,
         type: a.type,
         ownerId: a.ownerId,
+        permission:
+          a.ownerId === userId
+            ? ResourcePermission.OWNER
+            : ((a as AccountWithAccess).accessList?.[0]
+                ?.permission as ResourcePermission),
         creditCardInfo: a.creditCardInfo
           ? (() => {
               const limit = a.creditCardInfo?.limit

@@ -294,7 +294,13 @@ describe("AccountsService", () => {
             },
           ],
         },
-        include: { creditCardInfo: true },
+        include: {
+          creditCardInfo: true,
+          accessList: {
+            where: { userId },
+            select: { permission: true },
+          },
+        },
         orderBy: { createdAt: "asc" },
       });
 
@@ -306,6 +312,7 @@ describe("AccountsService", () => {
         icon: mockAccounts[0].icon,
         type: mockAccounts[0].type,
         ownerId: mockAccounts[0].ownerId,
+        permission: "OWNER",
         creditCardInfo: null,
         balance: 130,
         createdAt: mockAccounts[0].createdAt.toISOString(),
@@ -318,6 +325,7 @@ describe("AccountsService", () => {
         icon: mockAccounts[1].icon,
         type: mockAccounts[1].type,
         ownerId: mockAccounts[1].ownerId,
+        permission: "OWNER",
         creditCardInfo: {
           ...mockAccounts[1].creditCardInfo,
           limit: 5000,
@@ -426,6 +434,7 @@ describe("AccountsService", () => {
         icon: "pi-wallet",
         type: "STANDARD",
         ownerId: userId,
+        permission: "OWNER",
         creditCardInfo: null,
         balance: 130,
         createdAt: "2026-01-01T00:00:00.000Z",
