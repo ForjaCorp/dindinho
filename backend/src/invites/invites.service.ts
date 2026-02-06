@@ -4,6 +4,7 @@ import {
   ResourcePermission as PrismaResourcePermission,
   Prisma,
 } from "@prisma/client";
+import { randomBytes } from "crypto";
 import {
   CreateInviteDTO,
   InviteDTO,
@@ -97,13 +98,31 @@ export class InvitesService {
       );
     }
 
-    // 2. Criar o convite e as associações
+    // 2. Idempotência: Invalida convites pendentes anteriores para este e-mail que contenham estas contas
+    await this.prisma.invite.updateMany({
+      where: {
+        email: data.email.toLowerCase(),
+        status: PrismaInviteStatus.PENDING,
+        accounts: {
+          some: {
+            accountId: { in: data.accounts.map((a) => a.accountId) },
+          },
+        },
+      },
+      data: {
+        status: PrismaInviteStatus.EXPIRED,
+      },
+    });
+
+    // 3. Criar o convite e as associações
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + (data.expiresInDays || 7));
+    const token = randomBytes(32).toString("hex");
 
-    const invite = await this.prisma.invite.create({
+    const invite = (await this.prisma.invite.create({
       data: {
         email: data.email.toLowerCase(),
+        token,
         senderId,
         status: PrismaInviteStatus.PENDING,
         expiresAt,
@@ -120,7 +139,7 @@ export class InvitesService {
           include: { account: { select: { name: true } } },
         },
       },
-    });
+    })) as InviteWithRelations;
 
     return this.mapToDTO(invite);
   }
@@ -218,14 +237,38 @@ export class InvitesService {
       });
 
       // 2. Criar entradas no AccountAccess
-      await tx.accountAccess.createMany({
-        data: i.accounts.map((a) => ({
-          accountId: a.accountId,
+      for (const a of i.accounts) {
+        await tx.accountAccess.upsert({
+          where: {
+            accountId_userId: {
+              accountId: a.accountId,
+              userId,
+            },
+          },
+          create: {
+            accountId: a.accountId,
+            userId,
+            permission: a.permission as PrismaResourcePermission,
+          },
+          update: {
+            permission: a.permission as PrismaResourcePermission,
+          },
+        });
+
+        // 3. Registrar auditoria para cada conta
+        await this.logAudit(
           userId,
-          permission: a.permission as PrismaResourcePermission,
-        })),
-        skipDuplicates: true, // Caso já tenha acesso por outro convite
-      });
+          "INVITE_ACCEPTED",
+          "ACCOUNT",
+          a.accountId,
+          {
+            inviteId,
+            permission: a.permission,
+            senderId: i.senderId,
+          },
+          tx,
+        );
+      }
 
       return i;
     });
@@ -250,12 +293,32 @@ export class InvitesService {
   }
 
   /**
+   * Busca um convite pelo token
+   */
+  async getInviteByToken(token: string): Promise<InviteDTO> {
+    const invite = (await this.prisma.invite.findUnique({
+      where: { token },
+      include: {
+        sender: { select: { id: true, name: true } },
+        accounts: {
+          include: { account: { select: { name: true } } },
+        },
+      },
+    })) as InviteWithRelations | null;
+
+    if (!invite) throw new InviteNotFoundError(token);
+
+    return this.mapToDTO(invite);
+  }
+
+  /**
    * Helper para mapear o modelo do Prisma para o DTO do shared
    * @private
    */
   private mapToDTO(invite: InviteWithRelations): InviteDTO {
     return {
       id: invite.id,
+      token: invite.token,
       email: invite.email,
       sender: {
         id: invite.sender.id,
@@ -270,5 +333,29 @@ export class InvitesService {
         permission: a.permission as unknown as ResourcePermission,
       })),
     };
+  }
+
+  /**
+   * Registra um evento de auditoria
+   * @private
+   */
+  private async logAudit(
+    userId: string,
+    action: string,
+    resourceType: string,
+    resourceId: string,
+    details?: Record<string, unknown>,
+    tx?: Prisma.TransactionClient,
+  ): Promise<void> {
+    const client = tx || this.prisma;
+    await (client as PrismaClient).auditLog.create({
+      data: {
+        userId,
+        action,
+        resourceType,
+        resourceId,
+        details: (details as Prisma.InputJsonValue) || Prisma.JsonNull,
+      },
+    });
   }
 }

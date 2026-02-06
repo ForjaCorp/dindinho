@@ -18,130 +18,21 @@ import { z } from "zod";
  */
 export async function invitesRoutes(app: FastifyInstance) {
   const service = new InvitesService(prisma);
-
-  /**
-   * Hook global para este prefixo: verifica o token antes de qualquer handler.
-   */
-  app.addHook("onRequest", async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      const statusCode = 401;
-      return reply.code(statusCode).send({
-        statusCode,
-        error: getHttpErrorLabel(statusCode),
-        message: "Token inválido ou expirado",
-        code: "INVALID_TOKEN",
-      });
-    }
-  });
-
   const appZod = app.withTypeProvider<ZodTypeProvider>();
 
   /**
-   * Rota para criação de novo convite
-   * @route POST /api/invites
-   */
-  appZod.post(
-    "/",
-    {
-      schema: {
-        summary: "Criar convite",
-        tags: ["invites"],
-        body: createInviteSchema,
-        response: {
-          201: inviteResponseSchema,
-          400: apiErrorResponseSchema,
-          401: apiErrorResponseSchema,
-          403: apiErrorResponseSchema,
-          500: apiErrorResponseSchema,
-        },
-      },
-    },
-    async (request, reply) => {
-      try {
-        const { sub: userId } = request.user as { sub: string };
-        const invite = await service.createInvite(userId, request.body);
-        return reply.status(201).send(invite);
-      } catch (error) {
-        return handleError(reply, error);
-      }
-    },
-  );
-
-  /**
-   * Lista convites enviados
-   * @route GET /api/invites/sent
+   * Rota pública para buscar convite pelo token
+   * @route GET /api/invites/t/:token
    */
   appZod.get(
-    "/sent",
+    "/t/:token",
     {
       schema: {
-        summary: "Listar convites enviados",
+        summary: "Buscar convite pelo token",
         tags: ["invites"],
-        response: {
-          200: z.array(inviteResponseSchema),
-          401: apiErrorResponseSchema,
-          500: apiErrorResponseSchema,
-        },
-      },
-    },
-    async (request, reply) => {
-      try {
-        const { sub: userId } = request.user as { sub: string };
-        const invites = await service.listSentInvites(userId);
-        return reply.send(invites);
-      } catch (error) {
-        return handleError(reply, error);
-      }
-    },
-  );
-
-  /**
-   * Lista convites recebidos
-   * @route GET /api/invites/pending
-   */
-  appZod.get(
-    "/pending",
-    {
-      schema: {
-        summary: "Listar convites pendentes",
-        tags: ["invites"],
-        response: {
-          200: z.array(inviteResponseSchema),
-          401: apiErrorResponseSchema,
-          500: apiErrorResponseSchema,
-        },
-      },
-    },
-    async (request, reply) => {
-      try {
-        const { email } = request.user as { email: string };
-        const invites = await service.listReceivedInvites(email);
-        return reply.send(invites);
-      } catch (error) {
-        return handleError(reply, error);
-      }
-    },
-  );
-
-  /**
-   * Atualiza status de um convite (Aceitar/Rejeitar)
-   * @route PATCH /api/invites/:id
-   */
-  appZod.patch(
-    "/:id",
-    {
-      schema: {
-        summary: "Atualizar status do convite",
-        tags: ["invites"],
-        params: z.object({ id: z.string().uuid() }),
-        body: updateInviteStatusSchema,
+        params: z.object({ token: z.string() }),
         response: {
           200: inviteResponseSchema,
-          400: apiErrorResponseSchema,
-          401: apiErrorResponseSchema,
-          403: apiErrorResponseSchema,
           404: apiErrorResponseSchema,
           500: apiErrorResponseSchema,
         },
@@ -149,17 +40,8 @@ export async function invitesRoutes(app: FastifyInstance) {
     },
     async (request, reply) => {
       try {
-        const { sub: userId, email } = request.user as {
-          sub: string;
-          email: string;
-        };
-        const { id } = request.params as { id: string };
-        const invite = await service.updateInviteStatus(
-          userId,
-          email,
-          id,
-          request.body,
-        );
+        const { token } = request.params as { token: string };
+        const invite = await service.getInviteByToken(token);
         return reply.send(invite);
       } catch (error) {
         return handleError(reply, error);
@@ -168,36 +50,186 @@ export async function invitesRoutes(app: FastifyInstance) {
   );
 
   /**
-   * Remove um convite enviado
-   * @route DELETE /api/invites/:id
+   * Rotas protegidas
    */
-  appZod.delete(
-    "/:id",
-    {
-      schema: {
-        summary: "Remover convite",
-        tags: ["invites"],
-        params: z.object({ id: z.string().uuid() }),
-        response: {
-          204: z.null(),
-          401: apiErrorResponseSchema,
-          403: apiErrorResponseSchema,
-          404: apiErrorResponseSchema,
-          500: apiErrorResponseSchema,
+  app.register(async (protectedRoutes) => {
+    protectedRoutes.addHook("onRequest", async (request, reply) => {
+      try {
+        await request.jwtVerify();
+      } catch {
+        const statusCode = 401;
+        return reply.code(statusCode).send({
+          statusCode,
+          error: getHttpErrorLabel(statusCode),
+          message: "Token inválido ou expirado",
+          code: "INVALID_TOKEN",
+        });
+      }
+    });
+
+    const protectedZod = protectedRoutes.withTypeProvider<ZodTypeProvider>();
+
+    /**
+     * Rota para criação de novo convite
+     * @route POST /api/invites
+     */
+    protectedZod.post(
+      "/",
+      {
+        schema: {
+          summary: "Criar convite",
+          tags: ["invites"],
+          body: createInviteSchema,
+          response: {
+            201: inviteResponseSchema,
+            400: apiErrorResponseSchema,
+            401: apiErrorResponseSchema,
+            403: apiErrorResponseSchema,
+            500: apiErrorResponseSchema,
+          },
         },
       },
-    },
-    async (request, reply) => {
-      try {
-        const { sub: userId } = request.user as { sub: string };
-        const { id } = request.params as { id: string };
-        await service.deleteInvite(userId, id);
-        return reply.status(204).send(null);
-      } catch (error) {
-        return handleError(reply, error);
-      }
-    },
-  );
+      async (request, reply) => {
+        try {
+          const { sub: userId } = request.user as { sub: string };
+          const invite = await service.createInvite(userId, request.body);
+          return reply.status(201).send(invite);
+        } catch (error) {
+          return handleError(reply, error);
+        }
+      },
+    );
+
+    /**
+     * Lista convites enviados
+     * @route GET /api/invites/sent
+     */
+    protectedZod.get(
+      "/sent",
+      {
+        schema: {
+          summary: "Listar convites enviados",
+          tags: ["invites"],
+          response: {
+            200: z.array(inviteResponseSchema),
+            401: apiErrorResponseSchema,
+            500: apiErrorResponseSchema,
+          },
+        },
+      },
+      async (request, reply) => {
+        try {
+          const { sub: userId } = request.user as { sub: string };
+          const invites = await service.listSentInvites(userId);
+          return reply.send(invites);
+        } catch (error) {
+          return handleError(reply, error);
+        }
+      },
+    );
+
+    /**
+     * Lista convites recebidos
+     * @route GET /api/invites/pending
+     */
+    protectedZod.get(
+      "/pending",
+      {
+        schema: {
+          summary: "Listar convites pendentes",
+          tags: ["invites"],
+          response: {
+            200: z.array(inviteResponseSchema),
+            401: apiErrorResponseSchema,
+            500: apiErrorResponseSchema,
+          },
+        },
+      },
+      async (request, reply) => {
+        try {
+          const { email } = request.user as { email: string };
+          const invites = await service.listReceivedInvites(email);
+          return reply.send(invites);
+        } catch (error) {
+          return handleError(reply, error);
+        }
+      },
+    );
+
+    /**
+     * Atualiza status de um convite (Aceitar/Rejeitar)
+     * @route PATCH /api/invites/:id
+     */
+    protectedZod.patch(
+      "/:id",
+      {
+        schema: {
+          summary: "Atualizar status do convite",
+          tags: ["invites"],
+          params: z.object({ id: z.string().uuid() }),
+          body: updateInviteStatusSchema,
+          response: {
+            200: inviteResponseSchema,
+            400: apiErrorResponseSchema,
+            401: apiErrorResponseSchema,
+            403: apiErrorResponseSchema,
+            404: apiErrorResponseSchema,
+            500: apiErrorResponseSchema,
+          },
+        },
+      },
+      async (request, reply) => {
+        try {
+          const { sub: userId, email } = request.user as {
+            sub: string;
+            email: string;
+          };
+          const { id } = request.params as { id: string };
+          const invite = await service.updateInviteStatus(
+            userId,
+            email,
+            id,
+            request.body,
+          );
+          return reply.send(invite);
+        } catch (error) {
+          return handleError(reply, error);
+        }
+      },
+    );
+
+    /**
+     * Remove um convite enviado
+     * @route DELETE /api/invites/:id
+     */
+    protectedZod.delete(
+      "/:id",
+      {
+        schema: {
+          summary: "Remover convite",
+          tags: ["invites"],
+          params: z.object({ id: z.string().uuid() }),
+          response: {
+            204: z.null(),
+            401: apiErrorResponseSchema,
+            403: apiErrorResponseSchema,
+            404: apiErrorResponseSchema,
+            500: apiErrorResponseSchema,
+          },
+        },
+      },
+      async (request, reply) => {
+        try {
+          const { sub: userId } = request.user as { sub: string };
+          const { id } = request.params as { id: string };
+          await service.deleteInvite(userId, id);
+          return reply.status(204).send(null);
+        } catch (error) {
+          return handleError(reply, error);
+        }
+      },
+    );
+  });
 }
 
 /**
