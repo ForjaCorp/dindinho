@@ -4,7 +4,7 @@ title: "Sistema de Convites (Colaboração Multi-contas)"
 description: "Planejamento para implementação do sistema de convites por e-mail, permitindo compartilhar múltiplas carteiras com diferentes permissões."
 audience: ["dev", "ops"]
 visibility: "interno"
-status: "em-andamento"
+status: "concluido"
 owners: ["engineering"]
 tags: ["planejamento", "rfc", "colaboração", "convites"]
 mvp: true
