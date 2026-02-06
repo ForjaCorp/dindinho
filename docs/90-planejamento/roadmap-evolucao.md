@@ -36,12 +36,27 @@ Estes itens já possuem planejamento iniciado ou são essenciais para o fechamen
 - **Status**: [Em Andamento](./em-discussao/planejamento-metas.md)
 - **Foco**: Implementação do motor de cálculo para Limites de Gastos e Objetivos de Poupança.
 
-### 3. Sistema de Notificações
+### 3. Perfil do Usuário e Preferências
+
+- **Status**: [Em Discussão](./em-discussao/perfil-usuario.md)
+- **Foco**: Gestão de dados cadastrais, avatar e preferências de UI (moeda, tema).
+
+### 4. Portal de Administração Centralizado
+
+- **Status**: [Em Discussão](./em-discussao/portal-admin.md)
+- **Foco**: Unificação de Allowlist e monitoramento em uma área restrita.
+
+### 5. Sistema de Notificações
 
 - **Status**: [Em Discussão](./em-discussao/notificacoes.md)
 - **Foco**: Central de notificações in-app e push para alertas financeiros e convites.
 
-### 4. Evolução de Roteamento e API
+### 6. Privacidade e Criptografia E2E
+
+- **Status**: [Em Discussão](./em-discussao/criptografia-privacidade.md)
+- **Foco**: Criptografia na camada de aplicação para dados sensíveis.
+
+### 7. Evolução de Roteamento e API
 
 - **Status**: [Pendente](./em-discussao/evolucao-rotas.md)
 - **Foco**: Padronização de slugs, versionamento de API e melhorias na navegação do portal.
