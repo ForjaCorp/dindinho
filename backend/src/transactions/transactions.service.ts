@@ -1,7 +1,7 @@
 import {
   PrismaClient,
   Prisma,
-  Role,
+  ResourcePermission,
   TransactionType,
   AccountType,
   RecurrenceFrequency,
@@ -286,12 +286,13 @@ export class TransactionsService {
           userId,
         },
       },
-      select: { role: true },
+      select: { permission: true },
     });
 
     if (
       !access ||
-      (access.role !== Role.EDITOR && access.role !== Role.ADMIN)
+      (access.permission !== ResourcePermission.EDITOR &&
+        access.permission !== ResourcePermission.OWNER)
     ) {
       throw new ForbiddenError(
         "Sem permissão para lançar transações nesta conta",
@@ -358,12 +359,13 @@ export class TransactionsService {
           userId,
         },
       },
-      select: { role: true },
+      select: { permission: true },
     });
 
     if (
       !access ||
-      (access.role !== Role.EDITOR && access.role !== Role.ADMIN)
+      (access.permission !== ResourcePermission.EDITOR &&
+        access.permission !== ResourcePermission.OWNER)
     ) {
       throw new ForbiddenError(
         "Sem permissão para lançar transações nesta conta",

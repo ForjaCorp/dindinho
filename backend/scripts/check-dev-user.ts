@@ -25,7 +25,7 @@ async function main() {
         id: true,
         email: true,
         name: true,
-        role: true,
+        systemRole: true,
         createdAt: true,
       },
     });
@@ -35,7 +35,7 @@ async function main() {
       writeOut(`   ID: ${user.id}`);
       writeOut(`   Email: ${user.email}`);
       writeOut(`   Nome: ${user.name}`);
-      writeOut(`   Role: ${user.role}`);
+      writeOut(`   System Role: ${user.systemRole}`);
       writeOut(`   Criado em: ${user.createdAt}`);
       writeOut("\nCredenciais padrão:");
       writeOut(`   Email: ${email}`);

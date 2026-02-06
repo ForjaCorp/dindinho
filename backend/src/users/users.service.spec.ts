@@ -10,7 +10,12 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { DeepMockProxy, mockReset } from "vitest-mock-extended";
-import { PrismaClient, Role, User, SignupAllowlist } from "@prisma/client";
+import {
+  PrismaClient,
+  SystemRole,
+  User,
+  SignupAllowlist,
+} from "@prisma/client";
 
 import { SignupNotAllowedError, UsersService } from "./users.service";
 
@@ -55,7 +60,7 @@ describe("UsersService", () => {
       passwordHash: "hashed-password",
       avatarUrl: null,
       phone: "+5511999999999",
-      role: Role.VIEWER,
+      systemRole: SystemRole.USER,
       createdAt: mockDate,
       updatedAt: mockDate,
     } as User);
@@ -103,7 +108,7 @@ describe("UsersService", () => {
       passwordHash: "hash",
       avatarUrl: null,
       phone: null,
-      role: Role.VIEWER,
+      systemRole: SystemRole.USER,
       createdAt: new Date(),
       updatedAt: new Date(),
     } as User);

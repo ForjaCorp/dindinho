@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { mockReset, DeepMockProxy } from "vitest-mock-extended";
-import { PrismaClient, Role, User } from "@prisma/client";
+import { PrismaClient, SystemRole, User } from "@prisma/client";
 
 vi.mock("../lib/prisma", async () => {
   const { mockDeep } = await import("vitest-mock-extended");
@@ -25,7 +25,7 @@ const createMockUser = (overrides?: Partial<User>): User => ({
   passwordHash: "hash",
   avatarUrl: null,
   phone: null,
-  role: Role.VIEWER,
+  systemRole: SystemRole.USER,
   createdAt: new Date(),
   updatedAt: new Date(),
   ...overrides,

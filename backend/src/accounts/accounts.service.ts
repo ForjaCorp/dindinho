@@ -2,7 +2,7 @@ import {
   PrismaClient,
   TransactionType,
   AccountType,
-  Role,
+  ResourcePermission,
   Prisma,
 } from "@prisma/client";
 import {
@@ -201,12 +201,13 @@ export class AccountsService {
           userId,
         },
       },
-      select: { role: true },
+      select: { permission: true },
     });
 
     if (
       !access ||
-      (access.role !== Role.EDITOR && access.role !== Role.ADMIN)
+      (access.permission !== ResourcePermission.EDITOR &&
+        access.permission !== ResourcePermission.OWNER)
     ) {
       throw new PermissionDeniedError("editar");
     }

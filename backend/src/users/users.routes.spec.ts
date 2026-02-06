@@ -17,7 +17,7 @@ import {
   afterAll,
 } from "vitest";
 import { DeepMockProxy, mockReset } from "vitest-mock-extended";
-import { PrismaClient, Role, User } from "@prisma/client";
+import { PrismaClient, SystemRole, User } from "@prisma/client";
 
 vi.mock("../lib/prisma", async () => {
   const { mockDeep } = await import("vitest-mock-extended");
@@ -67,7 +67,7 @@ describe("Users Routes", () => {
       phone: "+5511999999999",
       passwordHash: "hash-seguro",
       avatarUrl: null,
-      role: Role.VIEWER,
+      systemRole: SystemRole.USER,
       createdAt: new Date(),
       updatedAt: new Date(),
     } as User);
@@ -121,7 +121,8 @@ describe("Users Routes", () => {
       email: "duplicado@teste.com",
       passwordHash: "hash",
       avatarUrl: null,
-      role: Role.VIEWER,
+      phone: null,
+      systemRole: SystemRole.USER,
       createdAt: new Date(),
       updatedAt: new Date(),
     } as User);
