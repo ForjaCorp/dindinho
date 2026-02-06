@@ -1,5 +1,5 @@
 ---
-id: pwa-full-experience
+id: planejamento-pwa
 title: "PWA Full (Progressive Web App)"
 description: "Transformação do Dindinho em uma experiência mobile completa através de tecnologias PWA, incluindo suporte offline, instalação e performance aprimorada."
 audience: ["dev", "produto", "usuário", "arquitetura"]
@@ -23,8 +23,8 @@ createdAt: "2026-02-06"
 - **Visão Geral**: Transformar o Dindinho em uma aplicação PWA de elite, utilizando APIs modernas do navegador para mimetizar o comportamento nativo (Look & Feel, Gestos e Integrações).
 - **Diferenciais Magistrais**:
   1.  **App Shell Instantâneo**: Carregamento sub-segundo via Service Workers.
-  2.  **Integração com SO**: Web Share API, Badging API (notificações no ícone) e App Shortcuts.
-  3.  **UX Nativa**: Scroll elástico, haptic feedback (vibração em ações críticas) e transições de página fluidas.
+  2.  **Integração com SO**: Web Share API, suporte à Badging API e App Shortcuts.
+  3.  **UX Nativa**: Scroll elástico, haptic feedback (vibração em ações de UI) e transições de página fluidas.
   4.  **Sincronização em Segundo Plano**: Background Sync API para garantir que transações feitas offline sejam enviadas assim que a rede retornar.
 
 ## 📅 Cronograma de Execução (Fases)
@@ -44,13 +44,13 @@ createdAt: "2026-02-06"
 - [ ] **Persistência Local**: Usar IndexedDB (via `Dexie.js` ou similar) para cache pesado de transações e categorias.
 - **Critérios de Aceite**: 100% de funcionalidade de leitura offline e criação de transações resiliente a quedas de rede.
 
-### Fase 3: Integrações de Hardware e Sistema
+### Fase 3: Integrações de Hardware e Sistema (Capacidades Técnicas)
 
-- [ ] **Haptic Feedback**: Vibrar levemente ao confirmar uma transação ou encontrar um erro (Vibration API).
-- [ ] **Badging API**: Exibir contador de convites pendentes no ícone do app na home screen.
+- [ ] **Haptic Feedback**: Vibrar levemente ao confirmar uma transação ou encontrar um erro de validação (Vibration API).
+- [ ] **Badging API**: Implementar infraestrutura para permitir que o app exiba contadores no ícone (delegando a lógica para módulos de serviço).
 - [ ] **Web Share API**: Permitir compartilhar comprovantes de transação ou links de convite usando a folha de compartilhamento nativa do sistema.
 - [ ] **Safe Area Insets**: Ajustar o CSS para respeitar notches e barras de navegação (env(safe-area-inset-\*)).
-- **Critérios de Aceite**: O app interage com o sistema operacional como um cidadão nativo.
+- **Critérios de Aceite**: O app disponibiliza APIs de sistema para uso interno e interage como um cidadão nativo.
 
 ### Fase 4: UX e Polimento "Magistral"
 
