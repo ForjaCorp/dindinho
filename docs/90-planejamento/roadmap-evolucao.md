@@ -28,7 +28,7 @@ Estes itens já possuem planejamento iniciado ou são essenciais para o fechamen
 
 ### 1. Sistema de Convites (Colaboração)
 
-- **Status**: [Em Andamento](./em-discussao/sistema-convites.md)
+- **Status**: [Em Andamento](./em-andamento/sistema-convites.md)
 - **Foco**: Fluxo de link de convite para compartilhar múltiplas contas com permissões (Viewer/Editor/Admin).
 
 ### 2. Metas de Economia Híbridas
