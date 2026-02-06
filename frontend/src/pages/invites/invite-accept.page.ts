@@ -55,6 +55,7 @@ import { SkeletonModule } from 'primeng/skeleton';
             <div class="flex flex-col items-center text-center gap-4 py-4">
               <div
                 class="w-20 h-20 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2"
+                aria-hidden="true"
               >
                 <i class="pi pi-envelope text-4xl"></i>
               </div>
@@ -67,8 +68,14 @@ import { SkeletonModule } from 'primeng/skeleton';
                 </p>
               </div>
 
-              <div class="w-full bg-slate-50 rounded-xl p-4 border border-slate-100 text-left">
-                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+              <div
+                class="w-full bg-slate-50 rounded-xl p-4 border border-slate-100 text-left"
+                aria-labelledby="accounts-list-title"
+              >
+                <p
+                  id="accounts-list-title"
+                  class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+                >
                   Contas incluídas
                 </p>
                 <div class="flex flex-col gap-2">
@@ -84,8 +91,9 @@ import { SkeletonModule } from 'primeng/skeleton';
               @if (inv.status !== 'PENDING') {
                 <div
                   class="w-full p-4 rounded-xl bg-amber-50 text-amber-700 border border-amber-100 text-sm flex items-center gap-3"
+                  role="alert"
                 >
-                  <i class="pi pi-exclamation-triangle"></i>
+                  <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
                   <p>Este convite já foi {{ getStatusLabel(inv.status) }}.</p>
                 </div>
               } @else {
@@ -98,38 +106,37 @@ import { SkeletonModule } from 'primeng/skeleton';
                         styleClass="w-full py-3"
                         [loading]="isSubmitting()"
                         (click)="onAccept()"
+                        data-testid="accept-invite-button"
+                        ariaLabel="Aceitar convite de {{ inv.sender.name }}"
                       />
                     } @else {
                       <div
-                        class="p-4 rounded-xl bg-red-50 text-red-700 border border-red-100 text-sm flex flex-col gap-2"
+                        class="p-3 rounded-lg bg-red-50 text-red-700 text-sm border border-red-100 mb-2"
+                        data-testid="wrong-user-warning"
+                        role="alert"
                       >
-                        <p class="font-semibold">E-mail incompatível</p>
-                        <p>
-                          Este convite foi enviado para <b>{{ inv.email }}</b
-                          >, mas você está logado como <b>{{ currentUserEmail() }}</b
-                          >.
-                        </p>
-                        <p-button
-                          label="Sair e usar outra conta"
-                          icon="pi pi-sign-out"
-                          severity="danger"
-                          [text]="true"
-                          (click)="onLogout()"
-                        />
+                        Este convite foi enviado para <b>{{ inv.email }}</b
+                        >, mas você está logado como <b>{{ currentUserEmail() }}</b
+                        >.
                       </div>
+                      <p-button
+                        label="Sair e Entrar com outro e-mail"
+                        icon="pi pi-sign-out"
+                        severity="secondary"
+                        styleClass="w-full"
+                        (click)="onLogout()"
+                        data-testid="logout-button"
+                      />
                     }
                   } @else {
                     <p-button
                       label="Entrar para Aceitar"
                       icon="pi pi-sign-in"
                       styleClass="w-full py-3"
-                      routerLink="/login"
+                      [routerLink]="['/auth/login']"
                       [queryParams]="{ returnUrl: currentUrl }"
+                      data-testid="login-to-accept-button"
                     />
-                    <p class="text-xs text-slate-400">
-                      Não tem uma conta?
-                      <a routerLink="/signup" class="text-indigo-600 font-bold">Cadastre-se</a>
-                    </p>
                   }
                 </div>
               }
@@ -141,6 +148,7 @@ import { SkeletonModule } from 'primeng/skeleton';
             <div class="flex flex-col items-center text-center gap-4 py-8">
               <div
                 class="w-16 h-16 rounded-full bg-red-50 text-red-600 flex items-center justify-center"
+                aria-hidden="true"
               >
                 <i class="pi pi-exclamation-circle text-3xl"></i>
               </div>
