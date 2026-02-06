@@ -74,9 +74,8 @@ createdAt: "2026-02-05"
 
 ## ✅ Definição de Pronto (DoD)
 
-- [ ] Código testado (unitário/integração).
-- [ ] Testes de Segurança: Validar que `SystemRole.ADMIN` não possui acesso a dados de `Account` sem um registro explícito em `AccountAccess`.
-- [ ] Documentação atualizada (Tier User/Admin).
-- [ ] Migração de dados executada com sucesso em ambiente de staging/desenvolvimento.
-- [ ] Lint/Typecheck sem erros.
-- [ ] Revisado por outro par.
+- [x] Código testado (unitário/integração).
+- [x] Testes de Segurança: Validar que `SystemRole.ADMIN` não possui acesso a dados de `Account` sem um registro explícito em `AccountAccess`.
+- [x] Documentação atualizada (Tier User/Admin).
+- [x] Migração de dados executada com sucesso em ambiente de staging/desenvolvimento.
+- [x] Lint/Typecheck sem erros.

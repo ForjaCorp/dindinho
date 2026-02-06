@@ -47,10 +47,17 @@ Referência no [schema.prisma](../../../backend/prisma/schema.prisma):
 - `SignupAllowlist`: Tabela de pré-autorização para novos cadastros durante o MVP.
 - `Waitlist`: Registro de interessados que ainda não possuem acesso.
 
-**Roles (Enum):**
+**Níveis de Acesso (Tiers):**
 
-- `USER`: Acesso padrão (Contas, Transações, Metas).
-- `ADMIN`: Acesso total e gerenciamento de plataforma.
+O sistema utiliza dois enums distintos para garantir o princípio de menor privilégio:
+
+1.  **SystemRole (Global):** Define o que o usuário é no ecossistema.
+    - `USER`: Acesso padrão ao PWA e funcionalidades de usuário final.
+    - `ADMIN`: Acesso ao Portal Administrativo, Documentação Interna e gestão global.
+2.  **ResourcePermission (Recurso):** Define o que o usuário pode fazer em um recurso específico (ex: Conta).
+    - `VIEWER`: Apenas leitura dos dados.
+    - `EDITOR`: Pode criar e editar transações.
+    - `OWNER`: Controle total, incluindo exclusão e gestão de colaboradores.
 
 ### Backend (Business Logic)
 

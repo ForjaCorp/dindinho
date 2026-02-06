@@ -33,31 +33,32 @@ O sistema permite que um usuário convide outros colaboradores para compartilhar
 
 ### Fase 0: Pré-requisito (Refatoração de Roles)
 
-- [ ] Implementar [Refatoração de Roles e Permissões](refatoracao-roles-permissoes.md) para separar `SystemRole` de `ResourcePermission`.
+- [x] Implementar [Refatoração de Roles e Permissões](refatoracao-roles-permissoes.md) para separar `SystemRole` de `ResourcePermission`.
+- [x] Definir ADR 0013: [Separação de Papéis de Sistema e Permissões de Recurso](../../20-arquitetura/adr/0013-separacao-roles-permissoes.md).
 
 ### Fase 1: Infraestrutura e Modelo de Dados
 
-- [ ] Criar tabelas `Invite` e `InviteAccount` no Prisma (Validar se já existem).
-- [ ] Implementar as relações no `User` e `Account`.
-- [ ] Criar migração e atualizar o cliente Prisma.
-- **Critérios de Aceite**: Banco de Dados pronto para armazenar convites vinculados a múltiplas contas.
+- [x] Criar tabelas `Invite` e `InviteAccount` no Prisma.
+- [x] Implementar as relações no `User` e `Account`.
+- [x] Criar migração e atualizar o cliente Prisma.
+- **Critérios de Aceite**: Banco de Dados pronto para armazenar convites vinculados a múltiplas contas com as novas roles de recurso (`ResourcePermission`).
 
 ### Fase 2: API de Gestão de Convites (Backend)
 
 - [ ] Endpoint `POST /api/invites`: Criação de convite e geração do link/ID.
 - [ ] Endpoint `GET /api/invites/pending`: Listar convites recebidos pelo usuário logado.
-- [ ] Endpoint `POST /api/invites/:id/accept`: Converte `InviteAccount` em registros de `AccountAccess`.
+- [ ] Endpoint `POST /api/invites/:id/accept`: Converte `InviteAccount` em registros de `AccountAccess` com as permissões de `ResourcePermission`.
 - [ ] Endpoint `POST /api/invites/:id/reject`: Marca convite como rejeitado.
 - [ ] Endpoint `DELETE /api/invites/:id`: Permite ao `OWNER` revogar um convite pendente.
-- **Critérios de Aceite**: Fluxo completo de criação, listagem, aceite e revogação via API.
+- **Critérios de Aceite**: Fluxo completo de criação, listagem, aceite e revogação via API respeitando os novos enums.
 
 ### Fase 3: Interface de Colaboração (Frontend)
 
-- [ ] Modal de "Compartilhar Carteira" com seleção múltipla, roles e geração de link.
+- [ ] Modal de "Compartilhar Carteira" com seleção múltipla, `ResourcePermission` (VIEWER/EDITOR) e geração de link.
 - [ ] Central de Convites no Perfil/Configurações.
 - [ ] Feedback visual de "Carteira Compartilhada" na listagem de contas.
 - [ ] Atualização da listagem de contas para incluir contas compartilhadas via `AccountAccess`.
-- **Critérios de Aceite**: Usuário consegue convidar e aceitar convites de forma intuitiva no PWA.
+- **Critérios de Aceite**: Usuário consegue convidar e aceitar convites de forma intuitiva no PWA usando a nova arquitetura de permissões.
 
 ## 🏗️ Impacto Técnico
 
