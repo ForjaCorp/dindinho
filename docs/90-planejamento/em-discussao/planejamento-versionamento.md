@@ -61,7 +61,7 @@ createdAt: "2026-02-06"
 
 - [ ] Todos os `package.json` possuem a mesma versão.
 - [ ] Script de unificação de versão testado e funcional.
-- [ ] Documentação de "Como fazer um Release" adicionada ao [Guia de Documentação](../admin/guia-documentacao.md).
+- [ ] Documentação de "Como fazer um Release" adicionada ao [Guia de Documentação](../../admin/guia-documentacao.md).
 - [ ] Primeiro "Release Candidate" gerado com sucesso via CI.
 
 > **STATUS: PLAN READY**
