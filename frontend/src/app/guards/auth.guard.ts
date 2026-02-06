@@ -24,14 +24,14 @@ export const authGuard: CanActivateFn = (route, state) => {
     });
   }
 
-  const requiredRole = route.data?.['requiredRole'] as typeof user.role | undefined;
-  const allowedRoles = route.data?.['roles'] as (typeof user.role)[] | undefined;
+  const requiredRole = route.data?.['requiredRole'] as typeof user.systemRole | undefined;
+  const allowedRoles = route.data?.['roles'] as (typeof user.systemRole)[] | undefined;
 
-  if (requiredRole && user.role !== requiredRole) {
+  if (requiredRole && user.systemRole !== requiredRole) {
     return router.createUrlTree(['/dashboard']);
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
+  if (allowedRoles && !allowedRoles.includes(user.systemRole)) {
     return router.createUrlTree(['/dashboard']);
   }
 
