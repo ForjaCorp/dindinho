@@ -135,21 +135,9 @@ export class DocsService {
         path: '90-planejamento/em-discussao/notificacoes.md',
         slug: 'notificacoes',
       },
-      'plan-routing': {
-        path: '90-planejamento/em-discussao/evolucao-rotas.md',
-        slug: 'plan-routing',
-      },
-      'plan-accounts': {
-        path: '90-planejamento/concluido/filtro-contas.md',
-        slug: 'plan-accounts',
-      },
       'plan-notifications': {
         path: '90-planejamento/em-discussao/notificacoes.md',
         slug: 'plan-notifications',
-      },
-      'plan-goals': {
-        path: '90-planejamento/em-discussao/planejamento-metas.md',
-        slug: 'plan-goals',
       },
       'plan-url-sync': {
         path: '90-planejamento/concluido/sincronizacao-url.md',
@@ -158,6 +146,22 @@ export class DocsService {
       'plan-invites': {
         path: '90-planejamento/concluido/sistema-convites.md',
         slug: 'plan-invites',
+      },
+      'plan-routing': {
+        path: '90-planejamento/em-discussao/evolucao-rotas.md',
+        slug: 'plan-routing',
+      },
+      'plan-accounts': {
+        path: '90-planejamento/concluido/filtro-contas.md',
+        slug: 'plan-accounts',
+      },
+      'plan-goals': {
+        path: '90-planejamento/em-discussao/planejamento-metas.md',
+        slug: 'plan-goals',
+      },
+      'plan-versioning': {
+        path: '90-planejamento/em-discussao/planejamento-versionamento.md',
+        slug: 'plan-versioning',
       },
       'refactor-roles': {
         path: '90-planejamento/concluido/refatoracao-roles-permissoes.md',
@@ -195,7 +199,11 @@ export class DocsService {
         path: '90-planejamento/em-discussao/pwa-full.md',
         slug: 'pwa-full',
       },
-      'plan-goals': {
+      'planejamento-pwa': {
+        path: '90-planejamento/em-discussao/pwa-full.md',
+        slug: 'planejamento-pwa',
+      },
+      'plan-time-filter': {
         path: '90-planejamento/concluido/filtro-temporal.md',
         slug: 'plan-time-filter',
       },

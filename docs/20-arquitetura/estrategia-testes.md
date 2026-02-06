@@ -77,7 +77,7 @@ Para rodar testes em modo watch durante o desenvolvimento:
 
 ## Pipeline de CI (GitHub Actions)
 
-Nossa integração contínua é automatizada via GitHub Actions e está definida em [.ci.yml](file:///home/vinicius/dev/dindinho/.github/workflows/ci.yml). O pipeline é otimizado para velocidade usando cache do Turbo e execução seletiva (apenas o que foi afetado em PRs).
+Nossa integração contínua é automatizada via GitHub Actions e está definida em [.ci.yml](../../.github/workflows/ci.yml). O pipeline é otimizado para velocidade usando cache do Turbo e execução seletiva (apenas o que foi afetado em PRs).
 
 ### Etapas do Pipeline
 
