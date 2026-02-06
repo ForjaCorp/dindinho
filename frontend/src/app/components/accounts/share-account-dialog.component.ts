@@ -271,9 +271,9 @@ export class ShareAccountDialogComponent {
             detail: 'Convite gerado com sucesso!',
           });
 
-          // Gera o link de convite (simulado - em prod seria uma URL real)
+          // Gera o link de convite com o novo token seguro
           const baseUrl = window.location.origin;
-          this.inviteLink.set(`${baseUrl}/invite/accept?id=${invite.id}`);
+          this.inviteLink.set(`${baseUrl}/invite/accept?token=${invite.token}`);
         },
         error: (err) => {
           this.messageService.add({

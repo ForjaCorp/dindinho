@@ -96,6 +96,21 @@ export class InviteService {
   }
 
   /**
+   * Busca um convite específico pelo Token (para captura via link público)
+   * @param token Token do convite
+   */
+  getInviteByToken(token: string): Observable<InviteDTO> {
+    this.setLoading(true);
+    return this.api.get<InviteDTO>(`invites/t/${token}`).pipe(
+      catchError((err) => {
+        this.handleError(err, 'Erro ao buscar convite');
+        return throwError(() => err);
+      }),
+      finalize(() => this.setLoading(false)),
+    );
+  }
+
+  /**
    * Carrega os convites enviados pelo usuário logado
    */
   loadSentInvites(): void {

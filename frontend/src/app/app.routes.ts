@@ -72,6 +72,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('../pages/public/onboarding.page').then((m) => m.OnboardingPage),
       },
+      {
+        path: 'invite/accept',
+        loadComponent: () =>
+          import('../pages/invites/invite-accept.page').then((m) => m.InviteAcceptPage),
+      },
     ],
   },
 
