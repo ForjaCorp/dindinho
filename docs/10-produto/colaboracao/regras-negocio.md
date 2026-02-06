@@ -61,7 +61,8 @@ O sistema utiliza três entidades principais para gerenciar a colaboração:
 - **Endpoints**:
   - `POST /api/invites`: Criação de convites.
   - `GET /api/invites/pending`: Listagem para o destinatário.
-  - `PATCH /api/invites/:id/status`: Aceite ou rejeição.
+  - `PATCH /api/invites/:id`: Aceite ou rejeição (via campo `status`).
+  - `DELETE /api/invites/:id`: Revogação pelo remetente.
 - **Contratos**: Referência aos schemas em `@dindinho/shared/src/schemas/invite.schema.ts`.
 
 ## 🔗 Links Úteis

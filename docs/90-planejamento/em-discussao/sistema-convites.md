@@ -45,11 +45,11 @@ O sistema permite que um usuário convide outros colaboradores para compartilhar
 
 ### Fase 2: API de Gestão de Convites (Backend)
 
-- [ ] Endpoint `POST /api/invites`: Criação de convite e geração do link/ID.
-- [ ] Endpoint `GET /api/invites/pending`: Listar convites recebidos pelo usuário logado.
-- [ ] Endpoint `POST /api/invites/:id/accept`: Converte `InviteAccount` em registros de `AccountAccess` com as permissões de `ResourcePermission`.
-- [ ] Endpoint `POST /api/invites/:id/reject`: Marca convite como rejeitado.
-- [ ] Endpoint `DELETE /api/invites/:id`: Permite ao `OWNER` revogar um convite pendente.
+- [x] Endpoint `POST /api/invites`: Criação de convite e geração do link/ID.
+- [x] Endpoint `GET /api/invites/pending`: Listar convites recebidos pelo usuário logado.
+- [x] Endpoint `PATCH /api/invites/:id`: Atualiza o status do convite (`ACCEPTED` ou `REJECTED`).
+- [x] Endpoint `DELETE /api/invites/:id`: Permite ao `OWNER` revogar um convite pendente.
+- [x] Centralização de tratamento de erros e validação de domínio.
 - **Critérios de Aceite**: Fluxo completo de criação, listagem, aceite e revogação via API respeitando os novos enums.
 
 ### Fase 3: Interface de Colaboração (Frontend)
@@ -76,8 +76,8 @@ O sistema permite que um usuário convide outros colaboradores para compartilhar
 
 ## ✅ Definição de Pronto (DoD)
 
-- [ ] Código testado (unitário no backend para lógica de aceite e auto-link no signup).
-- [ ] Documentação de domínio atualizada em `docs/10-product/colaboracao/regras-negocio.md`.
-- [ ] Validação de segurança: Impedir self-invite e garantir que apenas o `OWNER` da conta pode convidar.
-- [ ] Validação de permissões: Um `VIEWER` não pode editar transações de uma conta compartilhada.
-- [ ] Lint/Typecheck sem erros.
+- [x] Código testado (unitário no backend para lógica de aceite e auto-link no signup).
+- [x] Documentação de domínio atualizada em `docs/10-produto/colaboracao/regras-negocio.md`.
+- [x] Validação de segurança: Impedir self-invite e garantir que apenas o `OWNER` da conta pode convidar.
+- [x] Validação de permissões: Um `VIEWER` não pode editar transações de uma conta compartilhada.
+- [x] Lint/Typecheck sem erros.
