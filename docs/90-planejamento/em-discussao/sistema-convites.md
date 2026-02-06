@@ -20,30 +20,43 @@ createdAt: "2026-02-03"
 
 ## 🚀 Proposta de Solução
 
-O sistema permite que um usuário convide outros colaboradores para compartilhar uma ou mais carteiras através de um fluxo de e-mail com estado.
+O sistema permite que um usuário convide outros colaboradores para compartilhar uma ou mais carteiras. Para o MVP, utilizaremos um fluxo baseado em **Links de Convite** em vez de disparos diretos de e-mail, garantindo agilidade e simplicidade.
+
+### 🛠️ Decisões de Arquitetura (MVP)
+
+1.  **Identificação por E-mail**: O convite é vinculado ao e-mail do destinatário.
+2.  **Fluxo de Link**: O sistema gera um link único contendo o `inviteId`. O remetente compartilha este link manualmente (WhatsApp, E-mail, etc).
+3.  **Segurança por Autenticação**: O link só pode ser "reivindicado" por um usuário logado cujo e-mail coincida com o e-mail do convite.
+4.  **Auto-link no Signup**: No momento do cadastro, o sistema verifica proativamente se existem convites pendentes para o e-mail recém-criado e gera os `AccountAccess` automaticamente.
 
 ## 📅 Cronograma de Execução (Fases)
 
+### Fase 0: Pré-requisito (Refatoração de Roles)
+
+- [ ] Implementar [Refatoração de Roles e Permissões](refatoracao-roles-permissoes.md) para separar `SystemRole` de `ResourcePermission`.
+
 ### Fase 1: Infraestrutura e Modelo de Dados
 
-- [ ] Criar tabelas `Invite` e `InviteAccount` no Prisma.
+- [ ] Criar tabelas `Invite` e `InviteAccount` no Prisma (Validar se já existem).
 - [ ] Implementar as relações no `User` e `Account`.
 - [ ] Criar migração e atualizar o cliente Prisma.
 - **Critérios de Aceite**: Banco de Dados pronto para armazenar convites vinculados a múltiplas contas.
 
 ### Fase 2: API de Gestão de Convites (Backend)
 
-- [ ] Endpoint `POST /api/invites`: Enviar convite (valida se o remetente é dono das contas).
+- [ ] Endpoint `POST /api/invites`: Criação de convite e geração do link/ID.
 - [ ] Endpoint `GET /api/invites/pending`: Listar convites recebidos pelo usuário logado.
 - [ ] Endpoint `POST /api/invites/:id/accept`: Converte `InviteAccount` em registros de `AccountAccess`.
 - [ ] Endpoint `POST /api/invites/:id/reject`: Marca convite como rejeitado.
-- **Critérios de Aceite**: Fluxo completo de criação, listagem e aceite via API.
+- [ ] Endpoint `DELETE /api/invites/:id`: Permite ao `OWNER` revogar um convite pendente.
+- **Critérios de Aceite**: Fluxo completo de criação, listagem, aceite e revogação via API.
 
 ### Fase 3: Interface de Colaboração (Frontend)
 
-- [ ] Modal de "Compartilhar Carteira" com seleção múltipla e roles.
+- [ ] Modal de "Compartilhar Carteira" com seleção múltipla, roles e geração de link.
 - [ ] Central de Convites no Perfil/Configurações.
 - [ ] Feedback visual de "Carteira Compartilhada" na listagem de contas.
+- [ ] Atualização da listagem de contas para incluir contas compartilhadas via `AccountAccess`.
 - **Critérios de Aceite**: Usuário consegue convidar e aceitar convites de forma intuitiva no PWA.
 
 ## 🏗️ Impacto Técnico
@@ -54,13 +67,16 @@ O sistema permite que um usuário convide outros colaboradores para compartilhar
 - **API**:
   - Novos contratos Zod em `@dindinho/shared`.
   - Lógica de transação: Ao aceitar, deve-se criar N registros em `AccountAccess` e marcar o convite como `ACCEPTED`.
+  - Atualização do `AccountsService.findAllByUserId` para incluir acessos compartilhados.
 - **Frontend**:
   - Novo serviço `InviteService`.
   - Atualização do `AccountService` para lidar com permissões de edição/exclusão baseadas na role.
+  - Lógica de captura de convite via URL query params.
 
 ## ✅ Definição de Pronto (DoD)
 
-- [ ] Código testado (unitário no backend para lógica de aceite).
-- [ ] Documentação de domínio atualizada em `docs/10-product/dominio-colaboracao.md`.
-- [ ] Lint/Typecheck sem erros.
+- [ ] Código testado (unitário no backend para lógica de aceite e auto-link no signup).
+- [ ] Documentação de domínio atualizada em `docs/10-product/colaboracao/regras-negocio.md`.
+- [ ] Validação de segurança: Impedir self-invite e garantir que apenas o `OWNER` da conta pode convidar.
 - [ ] Validação de permissões: Um `VIEWER` não pode editar transações de uma conta compartilhada.
+- [ ] Lint/Typecheck sem erros.
