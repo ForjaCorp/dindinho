@@ -16,7 +16,7 @@ import { of } from 'rxjs';
 import { DashboardComponent } from './dashboard.page';
 import { ApiService } from '../app/services/api.service';
 import { AccountService } from '../app/services/account.service';
-import { ApiResponseDTO, TransactionDTO, AccountDTO } from '@dindinho/shared';
+import { ApiResponseDTO, TransactionDTO, AccountDTO, SystemRole } from '@dindinho/shared';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { CreateAccountDialogComponent } from '../app/components/accounts/create-account-dialog.component';
@@ -86,7 +86,7 @@ describe('DashboardComponent', () => {
         id: 'user-1',
         name: 'Usuário',
         email: 'user@example.com',
-        role: 'VIEWER',
+        systemRole: SystemRole.USER,
       }),
     };
 
@@ -546,7 +546,7 @@ describe('DashboardComponent', () => {
       id: 'admin-1',
       name: 'Admin',
       email: 'admin@example.com',
-      role: 'ADMIN',
+      systemRole: SystemRole.ADMIN,
     });
 
     fixture = TestBed.createComponent(DashboardComponent);
@@ -568,7 +568,7 @@ describe('DashboardComponent', () => {
       id: 'admin-1',
       name: 'Admin',
       email: 'admin@example.com',
-      role: 'ADMIN',
+      systemRole: SystemRole.ADMIN,
     });
 
     fixture = TestBed.createComponent(DashboardComponent);
@@ -593,7 +593,7 @@ describe('DashboardComponent', () => {
       id: 'user-1',
       name: 'Usuário',
       email: 'user@example.com',
-      role: 'VIEWER',
+      systemRole: SystemRole.USER,
     });
 
     fixture = TestBed.createComponent(DashboardComponent);

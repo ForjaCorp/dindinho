@@ -20,6 +20,7 @@ import {
   TransactionDTO,
   UpdateTransactionDTO,
   DeleteTransactionResponseDTO,
+  SystemRole,
 } from '@dindinho/shared';
 
 /**
@@ -46,7 +47,7 @@ describe('ApiService', () => {
       id: '1',
       name: 'Test User',
       email: 'test@example.com',
-      role: 'VIEWER',
+      systemRole: SystemRole.USER,
     },
     token: 'mock-jwt-token',
     refreshToken: 'mock-refresh-token',

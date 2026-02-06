@@ -13,6 +13,7 @@ import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
 import { ProfilePage } from './profile.page';
 import { AuthService, UserState } from '../app/services/auth.service';
+import { SystemRole } from '@dindinho/shared';
 
 const testBed = getTestBed();
 if (!testBed.platform) {
@@ -34,7 +35,7 @@ describe('ProfilePage', () => {
         id: 'user-1',
         name: 'Usuário Teste',
         email: 'test@example.com',
-        role: 'EDITOR',
+        systemRole: SystemRole.USER,
       }),
       logout: vi.fn(),
     };

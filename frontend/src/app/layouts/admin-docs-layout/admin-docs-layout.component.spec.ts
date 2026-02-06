@@ -7,6 +7,7 @@ import { signal, WritableSignal } from '@angular/core';
 import { AdminDocsLayoutComponent } from './admin-docs-layout.component';
 import { AuthService, UserState } from '../../services/auth.service';
 import { SidebarCategory, SidebarItem } from '../base-docs-layout/base-docs-layout.component';
+import { SystemRole } from '@dindinho/shared';
 
 const testBed = getTestBed();
 if (!testBed.platform) {
@@ -27,7 +28,7 @@ describe('AdminDocsLayoutComponent', () => {
       id: '1',
       name: 'Admin',
       email: 'admin@test.com',
-      role: 'ADMIN',
+      systemRole: SystemRole.ADMIN,
     });
     authServiceMock = {
       isAuthenticated: vi.fn(() => currentUserSignal() !== null),

@@ -264,7 +264,7 @@ export class DashboardComponent implements OnInit {
   // Signal reativo para o saldo total
   totalBalance = computed(() => this.accountService.totalBalance());
 
-  protected isAdmin = computed(() => this.authService.currentUser()?.role === 'ADMIN');
+  protected isAdmin = computed(() => this.authService.currentUser()?.systemRole === 'ADMIN');
 
   protected standardAccounts = computed(() =>
     this.accountService.accounts().filter((a: AccountDTO) => a.type === 'STANDARD'),

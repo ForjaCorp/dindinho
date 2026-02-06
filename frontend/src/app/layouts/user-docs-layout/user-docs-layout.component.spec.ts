@@ -6,6 +6,7 @@ import { provideRouter } from '@angular/router';
 import { signal, WritableSignal } from '@angular/core';
 import { UserDocsLayoutComponent } from './user-docs-layout.component';
 import { AuthService, UserState } from '../../services/auth.service';
+import { SystemRole } from '@dindinho/shared';
 
 const testBed = getTestBed();
 if (!testBed.platform) {
@@ -26,7 +27,7 @@ describe('UserDocsLayoutComponent', () => {
       id: '1',
       name: 'User',
       email: 'user@test.com',
-      role: 'VIEWER',
+      systemRole: SystemRole.USER,
     });
     authServiceMock = {
       isAuthenticated: vi.fn(() => currentUserSignal() !== null),
@@ -68,7 +69,7 @@ describe('UserDocsLayoutComponent', () => {
       id: '1',
       name: 'User',
       email: 'user@test.com',
-      role: 'VIEWER',
+      systemRole: SystemRole.USER,
     });
     fixture.detectChanges();
     let link = fixture.nativeElement.querySelector('[data-testid="admin-panel-link"]');
@@ -79,7 +80,7 @@ describe('UserDocsLayoutComponent', () => {
       id: '1',
       name: 'Admin',
       email: 'admin@test.com',
-      role: 'ADMIN',
+      systemRole: SystemRole.ADMIN,
     });
     fixture.detectChanges();
     link = fixture.nativeElement.querySelector('[data-testid="admin-panel-link"]');

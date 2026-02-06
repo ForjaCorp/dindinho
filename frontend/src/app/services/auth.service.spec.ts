@@ -17,7 +17,7 @@ import { Router, provideRouter } from '@angular/router';
 import { provideLocationMocks } from '@angular/common/testing';
 import { AuthService, UserState } from './auth.service';
 import { ApiService } from './api.service';
-import { LoginDTO, LoginResponseDTO } from '@dindinho/shared';
+import { LoginDTO, LoginResponseDTO, SystemRole } from '@dindinho/shared';
 import { of, throwError, firstValueFrom } from 'rxjs';
 import { AppError } from '../../app/models/error.model';
 
@@ -27,7 +27,7 @@ vi.mock('jwt-decode', () => ({
     sub: '1',
     email: 'test@example.com',
     name: 'Test User',
-    role: 'VIEWER',
+    systemRole: 'USER',
     iat: 1234567890,
     exp: 1234567890 + 3600,
   })),
@@ -45,7 +45,7 @@ describe('AuthService', () => {
     id: '1',
     name: 'Test User',
     email: 'test@example.com',
-    role: 'VIEWER',
+    systemRole: SystemRole.USER,
   };
 
   const mockLoginResponse: LoginResponseDTO = {
@@ -221,7 +221,7 @@ describe('AuthService', () => {
         id: '1',
         name: 'User',
         email: 'user@test.com',
-        role: 'VIEWER',
+        systemRole: SystemRole.USER,
       });
       expect(service.isAuthenticated()).toBe(true);
     });
