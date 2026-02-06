@@ -147,15 +147,33 @@ import { SkeletonModule } from 'primeng/skeleton';
           <p-card styleClass="shadow-lg border-0">
             <div class="flex flex-col items-center text-center gap-4 py-8">
               <div
-                class="w-16 h-16 rounded-full bg-red-50 text-red-600 flex items-center justify-center"
+                class="w-16 h-16 rounded-full flex items-center justify-center"
+                [ngClass]="{
+                  'bg-red-50 text-red-600': errorCode() !== 'INVITE_EXPIRED',
+                  'bg-amber-50 text-amber-600': errorCode() === 'INVITE_EXPIRED',
+                }"
                 aria-hidden="true"
               >
-                <i class="pi pi-exclamation-circle text-3xl"></i>
+                <i
+                  [class]="
+                    errorCode() === 'INVITE_EXPIRED'
+                      ? 'pi pi-clock text-3xl'
+                      : 'pi pi-exclamation-circle text-3xl'
+                  "
+                ></i>
               </div>
               <div>
-                <h2 class="text-xl font-bold text-slate-800">Convite não encontrado</h2>
+                <h2 class="text-xl font-bold text-slate-800">
+                  {{
+                    errorCode() === 'INVITE_EXPIRED' ? 'Convite Expirado' : 'Convite não encontrado'
+                  }}
+                </h2>
                 <p class="text-slate-500 mt-2">
-                  O link pode estar expirado ou o convite foi removido pelo remetente.
+                  {{
+                    errorCode() === 'INVITE_EXPIRED'
+                      ? 'Este link de convite não é mais válido pois expirou.'
+                      : 'O link pode estar incorreto ou o convite foi removido pelo remetente.'
+                  }}
                 </p>
               </div>
               <p-button label="Voltar ao início" icon="pi pi-home" routerLink="/" [text]="true" />
@@ -177,6 +195,7 @@ export class InviteAcceptPage implements OnInit {
   isLoading = signal(true);
   isSubmitting = signal(false);
   error = signal<string | null>(null);
+  errorCode = signal<string | null>(null);
 
   isAuthenticated = signal(false);
   currentUserEmail = signal<string | null>(null);
@@ -209,8 +228,9 @@ export class InviteAcceptPage implements OnInit {
         this.invite.set(inv);
         this.isLoading.set(false);
       },
-      error: () => {
-        this.error.set('Erro ao carregar convite');
+      error: (err) => {
+        this.error.set(err.error?.message || 'Erro ao carregar convite');
+        this.errorCode.set(err.error?.code || 'UNKNOWN_ERROR');
         this.isLoading.set(false);
       },
     });
