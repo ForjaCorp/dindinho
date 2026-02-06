@@ -91,7 +91,8 @@ describe("Serviço de RefreshToken", () => {
   });
 
   it("revokeToken remove token hash e retorna booleano", async () => {
-    const service = new RefreshTokenService(prismaMock, console, 7);
+    const mockLogger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
+    const service = new RefreshTokenService(prismaMock, mockLogger, 7);
     const raw = "some-token";
     const expectedHex = createHash("sha256").update(raw).digest("hex");
 
@@ -112,8 +113,13 @@ describe("Serviço de RefreshToken", () => {
     // o token é passado como Buffer; compare em hex
     expect(Buffer.from(callArg.where.token).toString("hex")).toBe(expectedHex);
 
-    prismaMock.refreshToken.delete.mockRejectedValue(new Error("fail"));
+    prismaMock.refreshToken.delete.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError("Record not found", {
+        code: "P2025",
+        clientVersion: "mock",
+      }),
+    );
     const ok2 = await service.revokeToken(raw);
-    expect(ok2).toBe(false);
+    expect(ok2).toBe(true); // Agora retorna true para P2025 (idempotência)
   });
 });

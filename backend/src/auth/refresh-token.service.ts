@@ -116,6 +116,12 @@ export class RefreshTokenService {
       this.logger.info(`Refresh token revoked`);
       return true;
     } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2025"
+      ) {
+        return true;
+      }
       this.logger.warn?.("Failed to revoke refresh token", err);
       return false;
     }
