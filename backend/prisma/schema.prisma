@@ -212,6 +212,7 @@ model DailySnapshot {
 
 model Invite {
   id        String   @id @default(uuid())
+  token     String   @unique
   email     String
   senderId  String
   sender    User     @relation("SentInvites", fields: [senderId], references: [id])
@@ -223,6 +224,20 @@ model Invite {
   accounts  InviteAccount[]
 
   @@index([email])
+  @@index([token])
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String
+  action       String
+  resourceType String
+  resourceId   String
+  details      Json?
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([resourceId])
 }
 
 model InviteAccount {
