@@ -52,8 +52,14 @@ export class InvitePermissionError extends InviteError {
 
 export class InviteStatusError extends InviteError {
   readonly statusCode = 400;
-  constructor(message: string) {
-    super(message, "INVITE_STATUS_ERROR");
+  constructor(message: string, code = "INVITE_STATUS_ERROR") {
+    super(message, code);
+  }
+}
+
+export class InviteExpiredError extends InviteStatusError {
+  constructor() {
+    super("Convite expirado", "INVITE_EXPIRED");
   }
 }
 
@@ -205,13 +211,15 @@ export class InvitesService {
     if (invite.email !== userEmail.toLowerCase())
       throw new InvitePermissionError();
     if (invite.status !== PrismaInviteStatus.PENDING) {
+      if (invite.status === PrismaInviteStatus.EXPIRED) {
+        throw new InviteExpiredError();
+      }
       throw new InviteStatusError(
         `Convite já está com status ${invite.status}`,
       );
     }
     if (new Date() > invite.expiresAt) {
-      // Opcional: atualizar para EXPIRED aqui
-      throw new InviteStatusError("Convite expirado");
+      throw new InviteExpiredError();
     }
 
     if (data.status === InviteStatus.REJECTED) {
@@ -341,6 +349,13 @@ export class InvitesService {
     })) as InviteWithRelations | null;
 
     if (!invite) throw new InviteNotFoundError(token);
+
+    if (
+      invite.status === PrismaInviteStatus.EXPIRED ||
+      new Date() > invite.expiresAt
+    ) {
+      throw new InviteExpiredError();
+    }
 
     return this.mapToDTO(invite);
   }

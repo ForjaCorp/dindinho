@@ -12,7 +12,7 @@ import {
 import {
   InvitesService,
   InvitePermissionError,
-  InviteStatusError,
+  InviteExpiredError,
   InviteWithRelations,
 } from "./invites.service";
 import {
@@ -187,7 +187,31 @@ describe("InvitesService", () => {
       );
     });
 
-    it("deve lançar erro se o convite estiver expirado", async () => {
+    it("deve buscar convite pelo token", async () => {
+      const token = "secure-token-123";
+      mockPrisma.invite.findUnique.mockResolvedValue({
+        id: "invite-1",
+        token,
+        email: receiverEmail,
+        senderId,
+        sender: { id: senderId, name: "Sender" },
+        accounts: [
+          { accountId, account: { name: "Acc" }, permission: "VIEWER" },
+        ],
+        status: "PENDING",
+        expiresAt: new Date(Date.now() + 10000),
+        createdAt: new Date(),
+      } as unknown as InviteWithRelations);
+
+      const result = await service.getInviteByToken(token);
+
+      expect(result.token).toBe(token);
+      expect(mockPrisma.invite.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { token } }),
+      );
+    });
+
+    it("deve lançar InviteExpiredError se o convite estiver expirado", async () => {
       mockPrisma.invite.findUnique.mockResolvedValue({
         email: receiverEmail,
         status: PrismaInviteStatus.PENDING,
@@ -198,7 +222,21 @@ describe("InvitesService", () => {
         service.updateInviteStatus(userId, receiverEmail, inviteId, {
           status: InviteStatus.ACCEPTED,
         }),
-      ).rejects.toThrow(InviteStatusError);
+      ).rejects.toThrow(InviteExpiredError);
+    });
+
+    it("deve lançar InviteExpiredError se o status já for EXPIRED", async () => {
+      mockPrisma.invite.findUnique.mockResolvedValue({
+        email: receiverEmail,
+        status: PrismaInviteStatus.EXPIRED,
+        expiresAt: new Date(Date.now() + 10000),
+      } as unknown as InviteWithRelations);
+
+      await expect(
+        service.updateInviteStatus(userId, receiverEmail, inviteId, {
+          status: InviteStatus.ACCEPTED,
+        }),
+      ).rejects.toThrow(InviteExpiredError);
     });
 
     it("deve lançar erro se o remetente não for mais dono das contas", async () => {
@@ -227,27 +265,17 @@ describe("InvitesService", () => {
   });
 
   describe("getInviteByToken", () => {
-    it("deve buscar convite pelo token", async () => {
-      const token = "secure-token-123";
+    it("deve lançar InviteExpiredError se o convite estiver expirado", async () => {
+      const token = "expired-token";
       mockPrisma.invite.findUnique.mockResolvedValue({
         id: "invite-1",
         token,
-        email: receiverEmail,
-        senderId,
-        sender: { id: senderId, name: "Sender" },
-        accounts: [
-          { accountId, account: { name: "Acc" }, permission: "VIEWER" },
-        ],
         status: "PENDING",
-        expiresAt: new Date(),
-        createdAt: new Date(),
+        expiresAt: new Date(Date.now() - 10000),
       } as unknown as InviteWithRelations);
 
-      const result = await service.getInviteByToken(token);
-
-      expect(result.token).toBe(token);
-      expect(mockPrisma.invite.findUnique).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { token } }),
+      await expect(service.getInviteByToken(token)).rejects.toThrow(
+        InviteExpiredError,
       );
     });
   });
