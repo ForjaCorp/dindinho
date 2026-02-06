@@ -4,7 +4,7 @@ title: "Sistema de Convites (Colaboração Multi-contas)"
 description: "Planejamento para implementação do sistema de convites por e-mail, permitindo compartilhar múltiplas carteiras com diferentes permissões."
 audience: ["dev", "ops"]
 visibility: "interno"
-status: "concluido"
+status: "em-andamento"
 owners: ["engineering"]
 tags: ["planejamento", "rfc", "colaboração", "convites"]
 mvp: true
@@ -66,6 +66,13 @@ O sistema permite que um usuário convide outros colaboradores para compartilhar
 - **Critérios de Aceite**:
   - [x] Usuário consegue convidar e aceitar convites de forma intuitiva no PWA usando a nova arquitetura de permissões.
   - [x] Exibição clara de quem é o proprietário e quem são os colaboradores de cada conta.
+
+### Fase 4: Robustez e Escalabilidade (Pós-MVP)
+
+- [ ] **Idempotência na Criação**: Implementar verificação no `createInvite` para invalidar convites pendentes anteriores para o mesmo par e-mail/conta, evitando redundância.
+- [ ] **Desacoplamento do Onboarding**: Extrair a lógica de auto-link (atualmente no `UsersService`) para um serviço especializado ou utilizar Domain Events.
+- [ ] **Tokens Únicos de Convite**: Persistir um token único no convite para permitir links curtos e seguros, desacoplados do ID interno do banco.
+- [ ] **Auditoria de Acessos**: Implementar logs de auditoria detalhados (quem aceitou, quando e quais permissões foram concedidas).
 
 ## 🏗️ Impacto Técnico
 
