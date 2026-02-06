@@ -76,19 +76,19 @@ O sistema permite que um usuário convide outros colaboradores para compartilhar
 
 ### Fase 5: Melhorias de Qualidade
 
-- [ ] **Segurança Avançada**:
+- [x] **Segurança Avançada**:
   - [x] Implementar Rate Limiting específico para rotas de tokens de convite públicos.
   - [x] Validar persistência e proteção contra IP spoofing em testes automatizados.
   - [x] Re-validar se o remetente ainda possui permissão de `OWNER` no momento em que o destinatário aceita o convite.
-- [ ] **UX e Fluxos Alternativos**:
-  - [ ] Diferenciar visualmente erros de "Convite Expirado" vs "Convite Não Encontrado".
+- [x] **UX e Fluxos Alternativos**:
+  - [x] Diferenciar visualmente erros de "Convite Expirado" vs "Convite Não Encontrado".
   - [x] Permitir que o usuário "reivindique" convites manualmente via token caso o auto-link falhe (ex: e-mail digitado com erro no cadastro).
 - [x] **Performance e Manutenção**:
   - [x] Implementar Cron Job para limpeza (hard delete ou arquivamento) de convites expirados há mais de 30 dias.
   - [x] Garantir atomicidade total (Transação Única) no processamento de múltiplos convites durante o onboarding.
-- [ ] **Observabilidade Profissional**:
+- [x] **Observabilidade Profissional**:
   - [x] Adicionar logs de auditoria para **Criação** e **Cancelamento** de convites.
-  - [ ] Indexar `accountId` nos logs de auditoria para permitir filtragem rápida por histórico de carteira.
+  - [x] Indexar `accountId` nos logs de auditoria para permitir filtragem rápida por histórico de carteira.
 
 ## 🏗️ Impacto Técnico
 
