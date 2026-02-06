@@ -29,6 +29,7 @@ import { categoriesRoutes } from "./categories/categories.routes";
 import { signupAllowlistRoutes } from "./signup-allowlist/signup-allowlist.routes";
 import { waitlistRoutes } from "./waitlist/waitlist.routes";
 import { reportsRoutes } from "./reports/reports.routes";
+import { invitesRoutes } from "./invites/invites.routes";
 import { RefreshTokenService } from "./auth/refresh-token.service";
 import { ApiErrorResponseDTO } from "@dindinho/shared";
 import { prisma } from "./lib/prisma";
@@ -388,6 +389,7 @@ export function buildApp(): FastifyInstance {
       await typedApi.register(transactionsRoutes, { prefix: "/transactions" });
       await typedApi.register(categoriesRoutes, { prefix: "/categories" });
       await typedApi.register(reportsRoutes, { prefix: "/reports" });
+      await typedApi.register(invitesRoutes, { prefix: "/invites" });
       await typedApi.register(waitlistRoutes, { prefix: "/waitlist" });
       await typedApi.register(signupAllowlistRoutes, {
         prefix: "/signup-allowlist",
