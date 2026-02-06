@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Invite, AccountAccess, AuditLog } from "@prisma/client";
 import { OnboardingService } from "./onboarding.service";
 import { mockDeep, mockReset } from "vitest-mock-extended";
 
@@ -32,10 +32,14 @@ describe("OnboardingService", () => {
         },
       ];
 
-      mockPrisma.invite.findMany.mockResolvedValue(pendingInvites as any);
-      mockPrisma.invite.update.mockResolvedValue({} as any);
-      mockPrisma.accountAccess.upsert.mockResolvedValue({} as any);
-      mockPrisma.auditLog.create.mockResolvedValue({} as any);
+      mockPrisma.invite.findMany.mockResolvedValue(
+        pendingInvites as unknown as Invite[],
+      );
+      mockPrisma.invite.update.mockResolvedValue({} as unknown as Invite);
+      mockPrisma.accountAccess.upsert.mockResolvedValue(
+        {} as unknown as AccountAccess,
+      );
+      mockPrisma.auditLog.create.mockResolvedValue({} as unknown as AuditLog);
 
       await service.processPendingInvites(userId, email);
 

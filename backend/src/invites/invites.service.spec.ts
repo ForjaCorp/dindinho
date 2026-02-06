@@ -4,8 +4,10 @@ import {
   InviteStatus as PrismaInviteStatus,
   ResourcePermission as PrismaResourcePermission,
   User,
-  SystemRole,
   Account,
+  AccountAccess,
+  AuditLog,
+  Prisma,
 } from "@prisma/client";
 import {
   InvitesService,
@@ -57,7 +59,9 @@ describe("InvitesService", () => {
       ] as Account[]);
 
       // Mock da expiração de convites anteriores
-      mockPrisma.invite.updateMany.mockResolvedValue({ count: 1 } as any);
+      mockPrisma.invite.updateMany.mockResolvedValue({
+        count: 1,
+      } as Prisma.BatchPayload);
 
       const mockInvite = {
         id: "invite-123",
@@ -153,8 +157,10 @@ describe("InvitesService", () => {
       mockPrisma.invite.update.mockResolvedValue(
         mockUpdatedInvite as unknown as InviteWithRelations,
       );
-      mockPrisma.accountAccess.upsert.mockResolvedValue({} as any);
-      mockPrisma.auditLog.create.mockResolvedValue({} as any);
+      mockPrisma.accountAccess.upsert.mockResolvedValue(
+        {} as unknown as AccountAccess,
+      );
+      mockPrisma.auditLog.create.mockResolvedValue({} as unknown as AuditLog);
 
       const result = await service.updateInviteStatus(
         userId,
@@ -206,7 +212,7 @@ describe("InvitesService", () => {
         status: "PENDING",
         expiresAt: new Date(),
         createdAt: new Date(),
-      } as any);
+      } as unknown as InviteWithRelations);
 
       const result = await service.getInviteByToken(token);
 
