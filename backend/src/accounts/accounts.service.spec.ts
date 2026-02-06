@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { PrismaClient, AccountType, Prisma, Account } from "@prisma/client";
+import {
+  PrismaClient,
+  AccountType,
+  Prisma,
+  Account,
+  AccountAccess,
+  ResourcePermission,
+} from "@prisma/client";
 import { AccountsService } from "./accounts.service";
 import { CreateAccountDTO, UpdateAccountDTO } from "@dindinho/shared";
 import { mockDeep, mockReset } from "vitest-mock-extended";
@@ -277,7 +284,16 @@ describe("AccountsService", () => {
       const result = await service.findAllByUserId(userId);
 
       expect(mockPrisma.account.findMany).toHaveBeenCalledWith({
-        where: { ownerId: userId },
+        where: {
+          OR: [
+            { ownerId: userId },
+            {
+              accessList: {
+                some: { userId },
+              },
+            },
+          ],
+        },
         include: { creditCardInfo: true },
         orderBy: { createdAt: "asc" },
       });
@@ -505,6 +521,76 @@ describe("AccountsService", () => {
 
       await expect(service.update(userId, accountId, payload)).rejects.toThrow(
         "Conta não encontrada",
+      );
+    });
+  });
+
+  describe("segurança e permissões", () => {
+    const userId = "user-123";
+    const otherUserId = "other-user";
+    const accountId = "account-123";
+
+    it("ADMIN não deve acessar contas alheias sem registro no AccountAccess", async () => {
+      // Simula uma conta de outro usuário
+      mockPrisma.account.findMany.mockResolvedValue([]);
+
+      const result = await service.findAllByUserId(otherUserId);
+      expect(result).toHaveLength(0);
+    });
+
+    it("EDITOR deve poder atualizar conta", async () => {
+      const payload: UpdateAccountDTO = { name: "Novo Nome" };
+
+      // Mock para assertCanWriteAccount
+      mockPrisma.account.findUnique.mockResolvedValueOnce({
+        id: accountId,
+        ownerId: "owner-id",
+      } as unknown as Account);
+
+      mockPrisma.accountAccess.findUnique.mockResolvedValueOnce({
+        permission: ResourcePermission.EDITOR,
+      } as unknown as AccountAccess);
+
+      // Mock para o restante do update
+      mockPrisma.account.findUnique.mockResolvedValueOnce({
+        id: accountId,
+        type: AccountType.STANDARD,
+      } as unknown as Account);
+
+      mockPrisma.account.update.mockResolvedValue({
+        id: accountId,
+      } as unknown as Account);
+      mockPrisma.account.findFirst.mockResolvedValue({
+        id: accountId,
+        name: "Novo Nome",
+        ownerId: "owner-id",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as unknown as Account);
+      (
+        mockPrisma.transaction.groupBy as unknown as {
+          mockResolvedValue: (val: unknown[]) => void;
+        }
+      ).mockResolvedValue([]);
+
+      const result = await service.update(userId, accountId, payload);
+      expect(result.name).toBe("Novo Nome");
+    });
+
+    it("VIEWER não deve poder atualizar conta", async () => {
+      const payload: UpdateAccountDTO = { name: "Novo Nome" };
+
+      mockPrisma.account.findUnique.mockResolvedValueOnce({
+        id: accountId,
+        ownerId: "owner-id",
+      } as unknown as Account);
+
+      mockPrisma.accountAccess.findUnique.mockResolvedValueOnce({
+        permission: ResourcePermission.VIEWER,
+      } as unknown as AccountAccess);
+
+      await expect(service.update(userId, accountId, payload)).rejects.toThrow(
+        "Sem permissão para editar as contas",
       );
     });
   });

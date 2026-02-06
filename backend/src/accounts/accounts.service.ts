@@ -418,7 +418,16 @@ export class AccountsService {
   async findAllByUserId(userId: string): Promise<AccountDTO[]> {
     try {
       const accounts = await this.prisma.account.findMany({
-        where: { ownerId: userId },
+        where: {
+          OR: [
+            { ownerId: userId },
+            {
+              accessList: {
+                some: { userId },
+              },
+            },
+          ],
+        },
         include: { creditCardInfo: true },
         orderBy: { createdAt: "asc" },
       });
