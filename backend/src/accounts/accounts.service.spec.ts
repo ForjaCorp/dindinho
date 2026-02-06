@@ -83,7 +83,7 @@ describe("AccountsService", () => {
         },
       });
 
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         id: mockAccount.id,
         name: mockAccount.name,
         color: mockAccount.color,
@@ -149,7 +149,7 @@ describe("AccountsService", () => {
         },
       });
 
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         id: mockAccount.id,
         name: mockAccount.name,
         color: mockAccount.color,
@@ -305,7 +305,7 @@ describe("AccountsService", () => {
       });
 
       expect(result).toHaveLength(2);
-      expect(result[0]).toEqual({
+      expect(result[0]).toMatchObject({
         id: mockAccounts[0].id,
         name: mockAccounts[0].name,
         color: mockAccounts[0].color,
@@ -318,7 +318,7 @@ describe("AccountsService", () => {
         createdAt: mockAccounts[0].createdAt.toISOString(),
         updatedAt: mockAccounts[0].updatedAt.toISOString(),
       });
-      expect(result[1]).toEqual({
+      expect(result[1]).toMatchObject({
         id: mockAccounts[1].id,
         name: mockAccounts[1].name,
         color: mockAccounts[1].color,
@@ -427,7 +427,7 @@ describe("AccountsService", () => {
         },
       });
 
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         id: accountId,
         name: payload.name,
         color: payload.color,

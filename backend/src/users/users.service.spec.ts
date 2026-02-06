@@ -15,6 +15,8 @@ import {
   SystemRole,
   User,
   SignupAllowlist,
+  AccountAccess,
+  AuditLog,
   Prisma,
 } from "@prisma/client";
 
@@ -144,6 +146,27 @@ describe("UsersService", () => {
       include: { accounts: true };
     }> & { accounts: { accountId: string; permission: string }[] })[]);
 
+    // Mock de upsert para accountAccess
+    prismaMock.accountAccess.upsert.mockResolvedValue({
+      id: "access-123",
+      accountId,
+      userId: validUuid,
+      permission: "EDITOR",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as AccountAccess);
+
+    // Mock de auditoria
+    prismaMock.auditLog.create.mockResolvedValue({
+      id: "log-123",
+      userId: validUuid,
+      action: "AUTO_LINK_INVITE",
+      resourceType: "ACCOUNT",
+      resourceId: accountId,
+      details: {},
+      createdAt: new Date(),
+    } as AuditLog);
+
     await usersService.create({
       name: "Convidado",
       email,
@@ -165,17 +188,32 @@ describe("UsersService", () => {
       data: { status: "ACCEPTED" },
     });
 
-    // Verificar se criou o acesso à conta
-    expect(prismaMock.accountAccess.createMany).toHaveBeenCalledWith({
-      data: [
-        {
+    // Verificar se criou o acesso à conta via upsert
+    expect(prismaMock.accountAccess.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          accountId_userId: {
+            accountId,
+            userId: validUuid,
+          },
+        },
+        create: {
           accountId,
           userId: validUuid,
           permission: "EDITOR",
         },
-      ],
-      skipDuplicates: true,
-    });
+      }),
+    );
+
+    // Verificar se registrou auditoria
+    expect(prismaMock.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "AUTO_LINK_INVITE",
+          resourceId: accountId,
+        }),
+      }),
+    );
   });
 
   /**

@@ -85,6 +85,7 @@ describe('InvitesPage', () => {
     const mockInvites: InviteDTO[] = [
       {
         id: '1',
+        token: 'token-1',
         email: 'destinatario@exemplo.com',
         sender: { id: 's-1', name: 'João' },
         status: InviteStatus.PENDING,
