@@ -37,8 +37,18 @@ export class CookieUtil {
       } else {
         const parts = hostname.split('.');
         if (parts.length >= 2) {
-          // Pega os dois últimos componentes (ex: dindinho.com ou dindinho.local)
-          const baseDomain = parts.slice(-2).join('.');
+          // Se for algo como staging.dindinho.com ou app.dindinho.com
+          // Queremos .dindinho.com
+          // Mas se for staging.dindinho (sem .com, comum em ambientes de dev/staging internos)
+          // Queremos .dindinho
+
+          // Lógica para detectar se é um domínio composto (ex: .com.br)
+          const isTldComposite =
+            parts.length >= 3 &&
+            ['com', 'net', 'org', 'edu', 'gov'].includes(parts[parts.length - 2]);
+
+          const sliceCount = isTldComposite ? -3 : -2;
+          const baseDomain = parts.slice(sliceCount).join('.');
           domain = `; domain=.${baseDomain}`;
         }
       }
