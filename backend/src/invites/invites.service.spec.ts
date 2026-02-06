@@ -33,6 +33,11 @@ describe("InvitesService", () => {
   beforeEach(() => {
     mockReset(mockPrisma);
     service = new InvitesService(mockPrisma);
+
+    // Mock global da transação para todos os testes
+    mockPrisma.$transaction.mockImplementation(async (fn) => {
+      return fn(mockPrisma);
+    });
   });
 
   afterEach(() => {
@@ -135,6 +140,11 @@ describe("InvitesService", () => {
         mockInvite as unknown as InviteWithRelations,
       );
 
+      // Mock da verificação de proprietário (sender ainda é OWNER)
+      mockPrisma.account.findMany.mockResolvedValue([
+        { id: accountId, ownerId: senderId },
+      ] as Account[]);
+
       const mockUpdatedInvite = {
         ...mockInvite,
         status: PrismaInviteStatus.ACCEPTED,
@@ -148,11 +158,6 @@ describe("InvitesService", () => {
           },
         ],
       };
-
-      // Mock da transação
-      mockPrisma.$transaction.mockImplementation(async (fn) => {
-        return fn(mockPrisma);
-      });
 
       mockPrisma.invite.update.mockResolvedValue(
         mockUpdatedInvite as unknown as InviteWithRelations,
@@ -194,6 +199,30 @@ describe("InvitesService", () => {
           status: InviteStatus.ACCEPTED,
         }),
       ).rejects.toThrow(InviteStatusError);
+    });
+
+    it("deve lançar erro se o remetente não for mais dono das contas", async () => {
+      const mockInvite = {
+        id: inviteId,
+        email: receiverEmail.toLowerCase(),
+        senderId,
+        status: PrismaInviteStatus.PENDING,
+        expiresAt: new Date(Date.now() + 10000),
+        accounts: [{ accountId, permission: PrismaResourcePermission.EDITOR }],
+      };
+
+      mockPrisma.invite.findUnique.mockResolvedValue(
+        mockInvite as unknown as InviteWithRelations,
+      );
+
+      // Mock da verificação de proprietário (sender NÃO é mais OWNER)
+      mockPrisma.account.findMany.mockResolvedValue([]);
+
+      await expect(
+        service.updateInviteStatus(userId, receiverEmail, inviteId, {
+          status: InviteStatus.ACCEPTED,
+        }),
+      ).rejects.toThrow(InvitePermissionError);
     });
   });
 

@@ -141,6 +141,12 @@ export class InvitesService {
       },
     })) as InviteWithRelations;
 
+    // 4. Registrar auditoria da criação
+    await this.logAudit(senderId, "INVITE_CREATED", "USER", data.email, {
+      inviteId: invite.id,
+      accountCount: data.accounts.length,
+    });
+
     return this.mapToDTO(invite);
   }
 
@@ -224,7 +230,21 @@ export class InvitesService {
 
     // Se ACCEPTED, realizar transação atômica
     const updated = await this.prisma.$transaction(async (tx) => {
-      // 1. Atualizar status do convite
+      // 1. Re-validar se o remetente ainda é OWNER das contas
+      const validAccounts = await tx.account.findMany({
+        where: {
+          id: { in: invite.accounts.map((a) => a.accountId) },
+          ownerId: invite.senderId,
+        },
+      });
+
+      if (validAccounts.length !== invite.accounts.length) {
+        throw new InvitePermissionError(
+          "O remetente original não possui mais permissão sobre uma ou mais contas deste convite",
+        );
+      }
+
+      // 2. Atualizar status do convite
       const i = await tx.invite.update({
         where: { id: inviteId },
         data: { status: PrismaInviteStatus.ACCEPTED },
@@ -236,7 +256,7 @@ export class InvitesService {
         },
       });
 
-      // 2. Criar entradas no AccountAccess
+      // 3. Criar entradas no AccountAccess
       for (const a of i.accounts) {
         await tx.accountAccess.upsert({
           where: {
@@ -255,7 +275,7 @@ export class InvitesService {
           },
         });
 
-        // 3. Registrar auditoria para cada conta
+        // 4. Registrar auditoria para cada conta
         await this.logAudit(
           userId,
           "INVITE_ACCEPTED",
@@ -287,8 +307,22 @@ export class InvitesService {
     if (!invite) throw new InviteNotFoundError(inviteId);
     if (invite.senderId !== senderId) throw new InvitePermissionError();
 
-    await this.prisma.invite.delete({
-      where: { id: inviteId },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.invite.delete({
+        where: { id: inviteId },
+      });
+
+      // Registrar auditoria do cancelamento
+      await this.logAudit(
+        senderId,
+        "INVITE_REVOKED",
+        "USER",
+        invite.email,
+        {
+          inviteId,
+        },
+        tx,
+      );
     });
   }
 
@@ -309,6 +343,32 @@ export class InvitesService {
     if (!invite) throw new InviteNotFoundError(token);
 
     return this.mapToDTO(invite);
+  }
+
+  /**
+   * Remove convites expirados há mais de X dias (padrão 30)
+   * Realiza hard delete para manter a tabela limpa, pois o log de auditoria
+   * já mantém o histórico das ações principais.
+   */
+  async cleanupExpiredInvites(daysOld = 30): Promise<number> {
+    const threshold = new Date();
+    threshold.setDate(threshold.getDate() - daysOld);
+
+    const result = await this.prisma.invite.deleteMany({
+      where: {
+        OR: [
+          { status: PrismaInviteStatus.EXPIRED },
+          { status: PrismaInviteStatus.REJECTED },
+          {
+            status: PrismaInviteStatus.PENDING,
+            expiresAt: { lt: new Date() },
+          },
+        ],
+        createdAt: { lt: threshold },
+      },
+    });
+
+    return result.count;
   }
 
   /**
