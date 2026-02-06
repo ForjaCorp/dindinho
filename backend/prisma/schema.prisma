@@ -238,6 +238,7 @@ model AuditLog {
 
   @@index([userId])
   @@index([resourceId])
+  @@index([resourceType, resourceId])
 }
 
 model InviteAccount {
