@@ -21,17 +21,27 @@ Este documento centraliza as futuras expansões do Dindinho, detalhando arquitet
 
 Estes itens já possuem planejamento iniciado ou são essenciais para o fechamento imediato do MVP.
 
+### 0. Refatoração de Roles e Permissões (Infra)
+
+- **Status**: [Em Andamento](./em-discussao/refatoracao-roles-permissoes.md)
+- **Foco**: Separação de SystemRole e ResourcePermission para suportar convites e multi-contas.
+
 ### 1. Sistema de Convites (Colaboração)
 
-- **Status**: [Pendente](./em-discussao/sistema-convites.md)
-- **Foco**: Fluxo de e-mail para compartilhar múltiplas contas com permissões (Viewer/Editor/Admin).
+- **Status**: [Em Andamento](./em-discussao/sistema-convites.md)
+- **Foco**: Fluxo de link de convite para compartilhar múltiplas contas com permissões (Viewer/Editor/Admin).
 
 ### 2. Metas de Economia Híbridas
 
 - **Status**: [Em Andamento](./em-discussao/planejamento-metas.md)
 - **Foco**: Implementação do motor de cálculo para Limites de Gastos e Objetivos de Poupança.
 
-### 3. Evolução de Roteamento e API
+### 3. Sistema de Notificações
+
+- **Status**: [Em Discussão](./em-discussao/notificacoes.md)
+- **Foco**: Central de notificações in-app e push para alertas financeiros e convites.
+
+### 4. Evolução de Roteamento e API
 
 - **Status**: [Pendente](./em-discussao/evolucao-rotas.md)
 - **Foco**: Padronização de slugs, versionamento de API e melhorias na navegação do portal.
