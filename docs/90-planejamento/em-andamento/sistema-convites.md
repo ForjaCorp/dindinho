@@ -74,6 +74,22 @@ O sistema permite que um usuário convide outros colaboradores para compartilhar
 - [x] **Tokens Únicos de Convite**: Persistir um token único no convite para permitir links curtos e seguros, desacoplados do ID interno do banco.
 - [x] **Auditoria de Acessos**: Implementar logs de auditoria detalhados (quem aceitou, quando e quais permissões foram concedidas).
 
+### Fase 5: Melhorias de Qualidade
+
+- [ ] **Segurança Avançada**:
+  - [x] Implementar Rate Limiting específico para rotas de tokens de convite públicos.
+  - [x] Validar persistência e proteção contra IP spoofing em testes automatizados.
+  - [ ] Re-validar se o remetente ainda possui permissão de `OWNER` no momento em que o destinatário aceita o convite.
+- [ ] **UX e Fluxos Alternativos**:
+  - [ ] Diferenciar visualmente erros de "Convite Expirado" vs "Convite Não Encontrado".
+  - [ ] Permitir que o usuário "reivindique" convites manualmente via token caso o auto-link falhe (ex: e-mail digitado com erro no cadastro).
+- [ ] **Performance e Manutenção**:
+  - [ ] Implementar Cron Job para limpeza (hard delete ou arquivamento) de convites expirados há mais de 30 dias.
+  - [ ] Garantir atomicidade total (Transação Única) no processamento de múltiplos convites durante o onboarding.
+- [ ] **Observabilidade Profissional**:
+  - [ ] Adicionar logs de auditoria para **Criação** e **Cancelamento** de convites.
+  - [ ] Indexar `accountId` nos logs de auditoria para permitir filtragem rápida por histórico de carteira.
+
 ## 🏗️ Impacto Técnico
 
 - **Banco de Dados**:

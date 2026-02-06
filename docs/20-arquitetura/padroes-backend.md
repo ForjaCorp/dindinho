@@ -40,6 +40,18 @@ Nunca retorne erros genéricos 500 para falhas de validação ou lógica.
 - **403 (Forbidden):** Usuário autenticado mas sem permissão para o recurso.
 - **404 (Not Found):** Recurso não encontrado.
 - **422 (Unprocessable Entity):** Erros de regra de negócio (ex: saldo insuficiente).
+- **429 (Too Many Requests):** Limite de requisições excedido (Rate Limiting).
+
+## 🛡️ Segurança e Resiliência (Rate Limiting)
+
+Para proteger a API contra abusos e ataques de força bruta, implementamos **Rate Limiting** no nível da aplicação usando o plugin `@fastify/rate-limit`.
+
+- **Escopo:** Aplicado globalmente em rotas sensíveis e especificamente em módulos críticos (ex: Convites).
+- **Identificação:** O limite é controlado por IP, respeitando o header `X-Real-IP` quando disponível (atrás de proxy).
+- **Configuração:** Os limites são parametrizáveis via variáveis de ambiente:
+  - `RATE_LIMIT_MAX`: Limite global (default: 100 req/min).
+  - `INVITE_RATE_LIMIT_MAX`: Limite para o sistema de convites (default: 20 req/min).
+- **Resposta:** Quando o limite é excedido, a API retorna um erro 429 com uma mensagem amigável e o código `TOO_MANY_REQUESTS`.
 
 ## 📊 Banco de Dados (Prisma & MariaDB)
 

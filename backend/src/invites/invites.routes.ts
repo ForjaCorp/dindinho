@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyReply } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
+import fastifyRateLimit from "@fastify/rate-limit";
 import { prisma } from "../lib/prisma";
 import { InvitesService, InviteError } from "./invites.service";
 import {
@@ -18,6 +19,33 @@ import { z } from "zod";
  */
 export async function invitesRoutes(app: FastifyInstance) {
   const service = new InvitesService(prisma);
+
+  /**
+   * Configuração de Rate Limit para rotas de convite
+   */
+  if (
+    process.env.NODE_ENV !== "test" ||
+    process.env.ENABLE_RATE_LIMIT_IN_TESTS === "true"
+  ) {
+    await app.register(fastifyRateLimit, {
+      max: Number(process.env.INVITE_RATE_LIMIT_MAX ?? "20"),
+      timeWindow: "1 minute",
+      keyGenerator: (request) =>
+        (request.headers["x-real-ip"] as string | undefined) || request.ip,
+      errorResponseBuilder: (request, _context) => {
+        const statusCode = 429;
+        return {
+          statusCode,
+          error: getHttpErrorLabel(statusCode),
+          message:
+            "Muitas tentativas de acesso aos convites. Tente novamente em 1 minuto.",
+          code: "TOO_MANY_REQUESTS",
+          requestId: request.id,
+        };
+      },
+    });
+  }
+
   const appZod = app.withTypeProvider<ZodTypeProvider>();
 
   /**
