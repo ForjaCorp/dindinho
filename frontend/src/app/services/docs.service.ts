@@ -200,7 +200,6 @@ export class DocsService {
     user: {
       intro: { path: 'user/intro.md', slug: 'intro' },
       'product-intro': { path: '00-geral/intro.md', slug: 'product-intro' },
-      principles: { path: '00-geral/principios.md', slug: 'principles' },
       faq: { path: '00-geral/faq.md', slug: 'faq' },
       principios: { path: '00-geral/principios.md', slug: 'principios' },
       'codigo-conduta': { path: '00-geral/codigo-conduta.md', slug: 'codigo-conduta' },

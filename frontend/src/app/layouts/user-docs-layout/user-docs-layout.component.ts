@@ -116,7 +116,7 @@ export class UserDocsLayoutComponent {
           link: '/docs/intro',
         },
         {
-          id: 'principles',
+          id: 'principios',
           label: 'Nossos Princípios',
           icon: 'pi-star',
           link: '/docs/principios',
