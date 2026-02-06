@@ -10,6 +10,7 @@ export * from "./schemas/backlog-item.schema";
 export * from "./schemas/doc-frontmatter.schema";
 export * from "./schemas/error.schema";
 export * from "./schemas/general.schema";
+export * from "./schemas/invite.schema";
 export * from "./schemas/report.schema";
 export * from "./schemas/transaction.schema";
 export * from "./schemas/user.schema";

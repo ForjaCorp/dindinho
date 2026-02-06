@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ResourcePermission } from "./auth.schema";
 
 /**
  * Enum para tipos de conta disponíveis no sistema.
@@ -132,6 +133,7 @@ export const accountSchema = z.object({
   icon: z.string(),
   type: AccountTypeEnum,
   ownerId: z.string(),
+  permission: z.nativeEnum(ResourcePermission).optional(),
   balance: z.coerce.number().optional().default(0),
   creditCardInfo: z
     .object({
