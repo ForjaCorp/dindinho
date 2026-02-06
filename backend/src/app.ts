@@ -364,6 +364,8 @@ export function buildApp(): FastifyInstance {
     },
   );
 
+  app.register(healthRoutes);
+
   // API v1
   app.register(
     async (api: FastifyInstance) => {
