@@ -50,6 +50,14 @@ describe("Users Routes", () => {
   beforeEach(() => {
     mockReset(prismaMock);
     process.env.SIGNUP_ALLOWLIST_ENABLED = "false";
+
+    // Mock padrão para transações
+    prismaMock.$transaction.mockImplementation(async (fn) => {
+      return fn(prismaMock);
+    });
+
+    // Mock padrão para convites pendentes (vazio)
+    prismaMock.invite.findMany.mockResolvedValue([]);
   });
 
   /**

@@ -1,4 +1,8 @@
-import { PrismaClient } from "@prisma/client";
+import {
+  PrismaClient,
+  InviteStatus as PrismaInviteStatus,
+  ResourcePermission as PrismaResourcePermission,
+} from "@prisma/client";
 import { hash } from "bcryptjs";
 import { CreateUserDTO } from "@dindinho/shared";
 
@@ -60,14 +64,52 @@ export class UsersService {
     // 2. Hash da senha
     const passwordHash = await hash(data.password, 8);
 
-    // 3. Criar usuário no banco
-    const user = await this.prisma.user.create({
-      data: {
-        name: data.name,
-        email: emailNormalized,
-        phone: data.phone,
-        passwordHash,
-      },
+    // 3. Criar usuário e processar convites pendentes em uma transação
+    const user = await this.prisma.$transaction(async (tx) => {
+      // 3.1 Criar usuário no banco
+      const newUser = await tx.user.create({
+        data: {
+          name: data.name,
+          email: emailNormalized,
+          phone: data.phone,
+          passwordHash,
+        },
+      });
+
+      // 3.2 Buscar convites pendentes e não expirados para este e-mail
+      const pendingInvites = await tx.invite.findMany({
+        where: {
+          email: emailNormalized,
+          status: PrismaInviteStatus.PENDING,
+          expiresAt: { gt: new Date() },
+        },
+        include: {
+          accounts: true,
+        },
+      });
+
+      // 3.3 Processar cada convite (auto-link)
+      for (const invite of pendingInvites) {
+        // Atualizar convite para ACEITO
+        await tx.invite.update({
+          where: { id: invite.id },
+          data: { status: PrismaInviteStatus.ACCEPTED },
+        });
+
+        // Criar acessos às contas
+        if (invite.accounts.length > 0) {
+          await tx.accountAccess.createMany({
+            data: invite.accounts.map((a) => ({
+              accountId: a.accountId,
+              userId: newUser.id,
+              permission: a.permission as PrismaResourcePermission,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
+
+      return newUser;
     });
 
     // 4. Retornar usuário sem a senha (segurança)
