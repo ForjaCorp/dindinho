@@ -33,7 +33,7 @@ O sistema permite que um usuário convide outros colaboradores para compartilhar
 
 ### Fase 0: Pré-requisito (Refatoração de Roles)
 
-- [x] Implementar [Refatoração de Roles e Permissões](../em-discussao/refatoracao-roles-permissoes.md) para separar `SystemRole` de `ResourcePermission`.
+- [x] Implementar [Refatoração de Roles e Permissões](./refatoracao-roles-permissoes.md) para separar `SystemRole` de `ResourcePermission`.
 - [x] Definir ADR 0013: [Separação de Papéis de Sistema e Permissões de Recurso](../../20-arquitetura/adr/0013-separacao-roles-permissoes.md).
 
 ### Fase 1: Infraestrutura e Modelo de Dados

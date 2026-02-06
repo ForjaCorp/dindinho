@@ -2,7 +2,7 @@
 id: pwa-full-experience
 title: "PWA Full (Progressive Web App)"
 description: "Transformação do Dindinho em uma experiência mobile completa através de tecnologias PWA, incluindo suporte offline, instalação e performance aprimorada."
-audience: ["dev", "ux"]
+audience: ["dev", "produto", "usuário", "arquitetura"]
 visibility: "interno"
 status: "em-discussao"
 owners: ["engineering"]

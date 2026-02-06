@@ -23,12 +23,12 @@ Estes itens já possuem planejamento iniciado ou são essenciais para o fechamen
 
 ### 0. Refatoração de Roles e Permissões (Infra)
 
-- **Status**: [Em Andamento](./em-discussao/refatoracao-roles-permissoes.md)
+- **Status**: [Concluído](./concluido/refatoracao-roles-permissoes.md)
 - **Foco**: Separação de SystemRole e ResourcePermission para suportar convites e multi-contas.
 
 ### 1. Sistema de Convites (Colaboração)
 
-- **Status**: [Em Andamento](./em-andamento/sistema-convites.md)
+- **Status**: [Concluído](./concluido/sistema-convites.md)
 - **Foco**: Fluxo de link de convite para compartilhar múltiplas contas com permissões (Viewer/Editor/Admin).
 
 ### 2. Metas de Economia Híbridas

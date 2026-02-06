@@ -71,6 +71,6 @@ O sistema utiliza quatro entidades principais para gerenciar a colaboração:
 
 ## 🔗 Links Úteis
 
-- [Planejamento: Sistema de Convites](../../90-planejamento/em-andamento/sistema-convites.md)
+- [Planejamento: Sistema de Convites](../../90-planejamento/concluido/sistema-convites.md)
 - [Esquema de Banco de Dados](../../../backend/prisma/schema.prisma)
 - [Domínio: Contas](../contas/regras-negocio.md)

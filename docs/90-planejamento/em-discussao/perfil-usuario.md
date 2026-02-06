@@ -2,7 +2,7 @@
 id: pagina-perfil-preferencias
 title: "Perfil do Usuário e Preferências"
 description: "Criação da página de perfil para gestão de dados pessoais, configurações de conta e preferências de uso."
-audience: ["dev", "ux"]
+audience: ["dev", "produto", "usuário", "arquitetura"]
 visibility: "interno"
 status: "em-discussao"
 owners: ["engineering"]

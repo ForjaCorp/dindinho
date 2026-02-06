@@ -4,7 +4,7 @@ title: "Refatoração de Roles e Permissões"
 description: "Plano para separar roles de sistema (RBAC global) de permissões de recursos (contas compartilhadas)."
 audience: ["dev", "arquitetura"]
 visibility: "interno"
-status: "em-andamento"
+status: "concluido"
 owners: ["engineering"]
 tags: ["arquitetura", "segurança", "rbac", "refatoração"]
 mvp: false
