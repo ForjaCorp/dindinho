@@ -44,6 +44,7 @@ export type CreateInviteDTO = z.infer<typeof createInviteSchema>;
  */
 export const inviteResponseSchema = z.object({
   id: z.string().uuid(),
+  token: z.string(),
   email: z.string().email(),
   sender: z.object({
     id: z.string().uuid(),
