@@ -99,6 +99,13 @@ export function buildApp(): FastifyInstance {
   app.register(fastifyJwt, {
     secret: process.env.JWT_SECRET || "fallback-secret-for-dev",
     sign: { expiresIn: "15m" },
+    messages: {
+      badRequestErrorMessage: "Format is Authorization: Bearer [token]",
+      noAuthorizationInHeaderMessage: "No Authorization header was found",
+      authorizationTokenExpiredMessage: "Authorization token expired",
+      authorizationTokenInvalid: (err) =>
+        `Authorization token is invalid: ${err.message}`,
+    },
   });
 
   // Swagger - Documentação da API (Global para capturar todas as rotas)

@@ -12,10 +12,15 @@ enum AccountType {
   CREDIT
 }
 
-enum Role {
+enum SystemRole {
+  USER
+  ADMIN
+}
+
+enum ResourcePermission {
   VIEWER
   EDITOR
-  ADMIN
+  OWNER
 }
 
 enum InviteStatus {
@@ -50,7 +55,7 @@ model User {
   name         String
   phone        String?
   avatarUrl    String?
-  role         Role     @default(VIEWER)
+  systemRole   SystemRole @default(USER)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -99,7 +104,7 @@ model AccountAccess {
   id       String @id @default(uuid())
   accountId String
   userId   String
-  role     Role   @default(VIEWER)
+  permission ResourcePermission @default(VIEWER)
 
   account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id])
@@ -224,7 +229,7 @@ model InviteAccount {
   id        String @id @default(uuid())
   inviteId  String
   accountId String
-  role      Role   @default(VIEWER)
+  permission ResourcePermission @default(VIEWER)
 
   invite  Invite  @relation(fields: [inviteId], references: [id], onDelete: Cascade)
   account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)

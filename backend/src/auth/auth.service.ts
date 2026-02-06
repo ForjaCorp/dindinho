@@ -1,6 +1,6 @@
-import { PrismaClient, Role } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { compare } from "bcryptjs";
-import { LoginDTO } from "@dindinho/shared";
+import { LoginDTO, SystemRole } from "@dindinho/shared";
 import { RefreshTokenService } from "./refresh-token.service";
 import { sign } from "jsonwebtoken";
 
@@ -34,7 +34,7 @@ export interface AuthResult {
   id: string;
   name: string;
   email: string;
-  role: Role;
+  systemRole: SystemRole;
   refreshToken: string;
 }
 
@@ -87,7 +87,7 @@ export class AuthService {
       id: user.id,
       name: user.name,
       email: user.email,
-      role: user.role,
+      systemRole: user.systemRole as SystemRole,
       refreshToken,
     };
   }
@@ -145,7 +145,7 @@ export class AuthService {
       {
         name: user.name,
         email: user.email,
-        role: user.role,
+        systemRole: user.systemRole,
       },
       process.env.JWT_SECRET as string,
       {
