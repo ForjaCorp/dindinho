@@ -39,13 +39,13 @@ import { RouterOutlet, RouterLink } from '@angular/router';
             class="hover:text-emerald-600 transition-colors"
             >Preços</a
           >
-          <a
+          <button
             data-testid="nav-principles"
-            routerLink="/docs/public/principles"
-            routerLinkActive="text-emerald-600"
-            class="hover:text-emerald-600 transition-colors"
-            >Princípios</a
+            (click)="goToDocs('/docs/public/principles')"
+            class="hover:text-emerald-600 transition-colors cursor-pointer bg-transparent border-none font-medium p-0"
           >
+            Princípios
+          </button>
           <a
             data-testid="nav-faq"
             routerLink="/faq"
@@ -105,9 +105,12 @@ import { RouterOutlet, RouterLink } from '@angular/router';
             <ul class="space-y-2 text-sm text-slate-500">
               <li><a routerLink="/pricing" class="hover:text-emerald-600">Preços</a></li>
               <li>
-                <a routerLink="/docs/public/principles" class="hover:text-emerald-600"
-                  >Princípios</a
+                <button
+                  (click)="goToDocs('/docs/public/principles')"
+                  class="hover:text-emerald-600 cursor-pointer bg-transparent border-none p-0 text-sm text-slate-500"
                 >
+                  Princípios
+                </button>
               </li>
               <li><a routerLink="/onboarding" class="hover:text-emerald-600">Como funciona</a></li>
             </ul>
@@ -131,4 +134,13 @@ import { RouterOutlet, RouterLink } from '@angular/router';
     </div>
   `,
 })
-export class PublicLayoutComponent {}
+export class PublicLayoutComponent {
+  /**
+   * Redireciona para o subdomínio de documentação.
+   */
+  goToDocs(path: string): void {
+    const origin = window.location.origin;
+    const docsOrigin = origin.replace('://', '://docs.');
+    window.location.href = `${docsOrigin}${path}`;
+  }
+}

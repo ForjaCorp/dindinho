@@ -1,3 +1,9 @@
+/**
+ * @file Rotas de transações da aplicação
+ * @description Define os endpoints para criação, listagem, atualização e exclusão de transações
+ * @module transactions.routes
+ */
+
 import { FastifyInstance } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
@@ -23,6 +29,14 @@ import {
 import { getHttpErrorLabel } from "../lib/get-http-error-label";
 import { ForbiddenError, NotFoundError } from "../lib/domain-exceptions";
 
+/**
+ * Configura as rotas relacionadas a transações
+ * @async
+ * @function transactionsRoutes
+ * @description Registra os endpoints de gestão de transações na instância do Fastify
+ * @param {FastifyInstance} app - Instância do Fastify onde as rotas serão registradas
+ * @returns {Promise<void>} Promise vazia após configuração das rotas
+ */
 export async function transactionsRoutes(app: FastifyInstance) {
   const service = new TransactionsService(prisma);
 
@@ -73,6 +87,12 @@ export async function transactionsRoutes(app: FastifyInstance) {
 
   app.addHook("onRequest", app.authenticate);
 
+  /**
+   * Rota para criação de nova transação ou transferência
+   * @route POST /api/transactions
+   * @description Cria uma nova transação (receita/despesa) ou transferência entre contas
+   * @access Private
+   */
   app.withTypeProvider<ZodTypeProvider>().post(
     "/",
     {
@@ -147,11 +167,17 @@ export async function transactionsRoutes(app: FastifyInstance) {
     },
   );
 
+  /**
+   * Rota para listagem de transações com filtros e paginação
+   * @route GET /api/transactions
+   * @description Retorna uma lista paginada de transações baseada nos filtros fornecidos
+   * @access Private
+   */
   app.withTypeProvider<ZodTypeProvider>().get(
     "/",
     {
       schema: {
-        summary: "Listar transações por conta",
+        summary: "Listar transações",
         tags: ["transactions"],
         querystring: listTransactionsQuerySchema,
         response: {
@@ -214,6 +240,12 @@ export async function transactionsRoutes(app: FastifyInstance) {
     },
   );
 
+  /**
+   * Rota para obter detalhes de uma transação específica
+   * @route GET /api/transactions/:id
+   * @description Retorna os dados detalhados de uma única transação pelo seu ID
+   * @access Private
+   */
   app.withTypeProvider<ZodTypeProvider>().get(
     "/:id",
     {
@@ -259,6 +291,12 @@ export async function transactionsRoutes(app: FastifyInstance) {
     },
   );
 
+  /**
+   * Rota para atualização de uma transação ou série de transações
+   * @route PATCH /api/transactions/:id
+   * @description Atualiza os dados de uma transação. Pode afetar uma única transação ou todas as futuras em caso de recorrência
+   * @access Private
+   */
   app.withTypeProvider<ZodTypeProvider>().patch(
     "/:id",
     {
@@ -312,6 +350,12 @@ export async function transactionsRoutes(app: FastifyInstance) {
     },
   );
 
+  /**
+   * Rota para exclusão de uma transação ou série de transações
+   * @route DELETE /api/transactions/:id
+   * @description Remove uma transação. Pode remover uma única transação ou todas as futuras em caso de recorrência
+   * @access Private
+   */
   app.withTypeProvider<ZodTypeProvider>().delete(
     "/:id",
     {

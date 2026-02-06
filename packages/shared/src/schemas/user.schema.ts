@@ -61,3 +61,21 @@ export const createUserSchema = z.object({
  * }
  */
 export type CreateUserDTO = z.infer<typeof createUserSchema>;
+
+/**
+ * Esquema de resposta para criação de usuário (sem dados sensíveis)
+ * @constant {z.ZodObject} createUserResponseSchema
+ */
+export const createUserResponseSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  email: z.string().email(),
+  phone: z.string(),
+  createdAt: z.string().datetime(),
+});
+
+/**
+ * Tipo TypeScript derivado do schema de resposta
+ * @typedef {Object} CreateUserResponseDTO
+ */
+export type CreateUserResponseDTO = z.infer<typeof createUserResponseSchema>;

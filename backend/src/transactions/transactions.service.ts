@@ -26,38 +26,78 @@ class InternalError extends Error {
   }
 }
 
+/**
+ * Adiciona meses a uma data.
+ * @param {Date} date - Data base.
+ * @param {number} monthsToAdd - Quantidade de meses a adicionar.
+ * @returns {Date} Nova data calculada.
+ */
 const addMonths = (date: Date, monthsToAdd: number) => {
   const d = new Date(date);
   d.setMonth(d.getMonth() + monthsToAdd);
   return d;
 };
 
+/**
+ * Adiciona dias a uma data.
+ * @param {Date} date - Data base.
+ * @param {number} daysToAdd - Quantidade de dias a adicionar.
+ * @returns {Date} Nova data calculada.
+ */
 const addDays = (date: Date, daysToAdd: number) => {
   const d = new Date(date);
   d.setDate(d.getDate() + daysToAdd);
   return d;
 };
 
+/**
+ * Adiciona dias a uma data usando milissegundos para maior precisão.
+ * @param {Date} date - Data base.
+ * @param {number} daysToAdd - Quantidade de dias a adicionar.
+ * @returns {Date} Nova data calculada.
+ */
 const addDaysByMs = (date: Date, daysToAdd: number) =>
   new Date(date.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
 
+/**
+ * Adiciona anos a uma data.
+ * @param {Date} date - Data base.
+ * @param {number} yearsToAdd - Quantidade de anos a adicionar.
+ * @returns {Date} Nova data calculada.
+ */
 const addYears = (date: Date, yearsToAdd: number) => {
   const d = new Date(date);
   d.setFullYear(d.getFullYear() + yearsToAdd);
   return d;
 };
 
+/**
+ * Formata uma data para o padrão de mês de fatura (YYYY-MM).
+ * @param {Date} date - Data para formatar.
+ * @returns {string} String no formato YYYY-MM em UTC.
+ */
 const formatInvoiceMonth = (date: Date) => {
   const y = date.getUTCFullYear();
   const m = String(date.getUTCMonth() + 1).padStart(2, "0");
   return `${y}-${m}`;
 };
 
+/**
+ * Converte uma string de mês de fatura para um objeto Date.
+ * @param {string} invoiceMonth - String no formato YYYY-MM.
+ * @returns {Date} Data no primeiro dia do mês em UTC.
+ */
 const parseInvoiceMonthToDate = (invoiceMonth: string) => {
   const [y, m] = invoiceMonth.split("-").map((v) => Number(v));
   return new Date(Date.UTC(y, m - 1, 1, 0, 0, 0));
 };
 
+/**
+ * Converte um ISO day (YYYY-MM-DD) no início do dia em UTC.
+ * @param {string} value - String no formato YYYY-MM-DD.
+ * @param {number | null} tzOffsetMinutes - Offset do fuso horário em minutos.
+ * @returns {Date | null} Objeto Date ou null se inválido.
+ */
 const parseIsoDayToUtcStartOfDay = (
   value: string,
   tzOffsetMinutes: number | null,
@@ -92,11 +132,23 @@ const parseIsoDayToUtcStartOfDay = (
   return new Date(utcStartMs + offsetMs);
 };
 
+/**
+ * Adiciona meses a um mês de fatura (YYYY-MM).
+ * @param {string} invoiceMonth - Mês de fatura inicial.
+ * @param {number} monthsToAdd - Quantidade de meses a adicionar.
+ * @returns {string} Novo mês de fatura formatado.
+ */
 const addInvoiceMonths = (invoiceMonth: string, monthsToAdd: number) => {
   const base = parseInvoiceMonthToDate(invoiceMonth);
   return formatInvoiceMonth(addMonths(base, monthsToAdd));
 };
 
+/**
+ * Calcula o mês de fatura para uma compra baseada no dia de fechamento.
+ * @param {Date} purchaseDate - Data da compra.
+ * @param {number} closingDay - Dia de fechamento da fatura.
+ * @returns {string} Mês de fatura resultante (YYYY-MM).
+ */
 const computeInvoiceMonth = (purchaseDate: Date, closingDay: number) => {
   const utcDay = purchaseDate.getUTCDate();
   const base = new Date(
@@ -112,6 +164,11 @@ const computeInvoiceMonth = (purchaseDate: Date, closingDay: number) => {
   return formatInvoiceMonth(utcDay > closingDay ? addMonths(base, 1) : base);
 };
 
+/**
+ * Converte um modelo de transação do Prisma para um DTO de saída.
+ * @param {Transaction} t - Modelo da transação.
+ * @returns {TransactionDTO} DTO formatado.
+ */
 const toTransactionDTO = (t: Transaction): TransactionDTO => ({
   id: t.id,
   accountId: t.accountId,
@@ -134,12 +191,23 @@ const toTransactionDTO = (t: Transaction): TransactionDTO => ({
   updatedAt: new Date(t.updatedAt).toISOString(),
 });
 
+/**
+ * Serviço responsável pela lógica de negócio de transações
+ * @class TransactionsService
+ * @description Gerencia operações de criação, listagem, atualização e exclusão de transações e transferências
+ */
 export class TransactionsService {
   private snapshotService: SnapshotService;
   constructor(private prisma: PrismaClient) {
     this.snapshotService = new SnapshotService(prisma);
   }
 
+  /**
+   * Garante que uma conta do tipo cartão de crédito possua informações de fatura
+   * @private
+   * @param {Object} account - Dados da conta a serem validados
+   * @throws {InternalError} Caso a conta seja de crédito mas não possua closingDay
+   */
   private ensureCreditCardInfo(account: {
     type: AccountType;
     creditCardInfo: CreditCardInfo | null;
@@ -153,6 +221,13 @@ export class TransactionsService {
     }
   }
 
+  /**
+   * Trata erros conhecidos do Prisma durante a criação de registros
+   * @private
+   * @param {unknown} error - Erro capturado
+   * @throws {NotFoundError} Caso algum recurso relacionado não seja encontrado
+   * @throws {unknown} Caso seja um erro não mapeado
+   */
   private handlePrismaCreateError(error: unknown): never {
     if (typeof error === "object" && error !== null && "statusCode" in error) {
       throw error;
@@ -182,6 +257,16 @@ export class TransactionsService {
     throw error;
   }
 
+  /**
+   * Busca uma conta e valida se o usuário tem permissão de escrita (EDITOR ou ADMIN)
+   * @private
+   * @async
+   * @param {string} userId - ID do usuário realizando a operação
+   * @param {string} accountId - ID da conta alvo
+   * @returns {Promise<Account>} Dados da conta com informações de cartão de crédito
+   * @throws {NotFoundError} Caso a conta não exista
+   * @throws {ForbiddenError} Caso o usuário não tenha permissão de escrita
+   */
   private async getWritableAccount(userId: string, accountId: string) {
     const account = await this.prisma.account.findUnique({
       where: { id: accountId },
@@ -216,6 +301,14 @@ export class TransactionsService {
     return account;
   }
 
+  /**
+   * Valida se o usuário tem permissão de leitura em uma conta
+   * @private
+   * @async
+   * @param {string} userId - ID do usuário
+   * @param {string} accountId - ID da conta
+   * @throws {ForbiddenError} Caso o usuário não tenha acesso à conta
+   */
   private async assertCanReadAccount(userId: string, accountId: string) {
     const account = await this.prisma.account.findFirst({
       where: {
@@ -237,6 +330,15 @@ export class TransactionsService {
     }
   }
 
+  /**
+   * Valida se o usuário tem permissão de escrita em uma conta
+   * @private
+   * @async
+   * @param {string} userId - ID do usuário
+   * @param {string} accountId - ID da conta
+   * @throws {NotFoundError} Caso a conta não exista
+   * @throws {ForbiddenError} Caso o usuário não tenha permissão de escrita
+   */
   private async assertCanWriteAccount(userId: string, accountId: string) {
     const account = await this.prisma.account.findUnique({
       where: { id: accountId },
@@ -269,6 +371,15 @@ export class TransactionsService {
     }
   }
 
+  /**
+   * Valida se o usuário tem permissão para usar uma categoria específica
+   * @private
+   * @async
+   * @param {string} userId - ID do usuário
+   * @param {string} categoryId - ID da categoria
+   * @throws {NotFoundError} Caso a categoria não exista
+   * @throws {ForbiddenError} Caso a categoria pertença a outro usuário
+   */
   private async assertCategoryAccess(userId: string, categoryId: string) {
     const category = await this.prisma.category.findUnique({
       where: { id: categoryId },
@@ -280,6 +391,15 @@ export class TransactionsService {
     }
   }
 
+  /**
+   * Cria uma nova transação, transferência, parcelamento ou recorrência
+   * @async
+   * @param {string} userId - ID do usuário criando a transação
+   * @param {CreateTransactionDTO} data - Dados da transação
+   * @returns {Promise<TransactionDTO | TransactionDTO[]>} Transação criada ou lista de transações (em caso de parcelamento/recorrência/transferência)
+   * @throws {ForbiddenError} Em caso de regras de negócio violadas
+   * @throws {NotFoundError} Caso conta ou categoria não existam
+   */
   async create(
     userId: string,
     data: CreateTransactionDTO,
@@ -527,6 +647,16 @@ export class TransactionsService {
     }
   }
 
+  /**
+   * Lista transações de uma conta específica em um intervalo de tempo (Legado)
+   * @async
+   * @param {string} userId - ID do usuário
+   * @param {Object} input - Filtros de conta e data
+   * @param {string} input.accountId - ID da conta
+   * @param {string} [input.from] - Data inicial (ISO)
+   * @param {string} [input.to] - Data final (ISO)
+   * @returns {Promise<TransactionDTO[]>} Lista de transações encontradas
+   */
   async listByAccount(
     userId: string,
     input: { accountId: string; from?: string; to?: string },
@@ -557,6 +687,14 @@ export class TransactionsService {
     return txs.map(toTransactionDTO);
   }
 
+  /**
+   * Lista transações com filtros avançados e paginação por cursor
+   * @async
+   * @param {string} userId - ID do usuário
+   * @param {Object} input - Parâmetros de filtro e paginação
+   * @returns {Promise<{ items: TransactionDTO[]; nextCursorId: string | null }>} Lista paginada de transações
+   * @throws {ForbiddenError} Caso o usuário tente acessar contas sem permissão
+   */
   async list(
     userId: string,
     input: {
@@ -748,6 +886,14 @@ export class TransactionsService {
     return { items, nextCursorId };
   }
 
+  /**
+   * Busca os detalhes de uma transação específica por ID
+   * @async
+   * @param {string} userId - ID do usuário
+   * @param {string} id - ID da transação
+   * @returns {Promise<TransactionDTO>} Dados da transação
+   * @throws {NotFoundError} Caso a transação não exista ou o usuário não tenha acesso
+   */
   async getById(userId: string, id: string): Promise<TransactionDTO> {
     const tx = await this.prisma.transaction.findFirst({
       where: {
@@ -769,6 +915,17 @@ export class TransactionsService {
     return toTransactionDTO(tx);
   }
 
+  /**
+   * Atualiza uma transação ou série de transações (recorrência/parcelamento)
+   * @async
+   * @param {string} userId - ID do usuário realizando a atualização
+   * @param {string} id - ID da transação base
+   * @param {UpdateTransactionDTO} data - Novos dados da transação
+   * @param {UpdateTransactionScopeDTO} [scope="ONE"] - Escopo da atualização (única, futuras ou todas)
+   * @returns {Promise<TransactionDTO>} Transação atualizada
+   * @throws {NotFoundError} Caso a transação não exista
+   * @throws {ForbiddenError} Caso o usuário não tenha permissão de escrita
+   */
   async update(
     userId: string,
     id: string,
@@ -979,6 +1136,16 @@ export class TransactionsService {
     return toTransactionDTO(updated);
   }
 
+  /**
+   * Exclui uma transação ou série de transações (recorrência/parcelamento)
+   * @async
+   * @param {string} userId - ID do usuário realizando a exclusão
+   * @param {string} id - ID da transação base
+   * @param {DeleteTransactionScopeDTO} scope - Escopo da exclusão (única, futuras ou todas)
+   * @returns {Promise<{ deletedIds: string[] }>} Lista de IDs excluídos
+   * @throws {NotFoundError} Caso a transação não exista
+   * @throws {ForbiddenError} Caso o usuário não tenha permissão de escrita
+   */
   async delete(
     userId: string,
     id: string,

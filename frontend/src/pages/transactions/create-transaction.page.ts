@@ -195,6 +195,7 @@ const categoryIconOptions = [
   'pi-car',
   'pi-home',
   'pi-briefcase',
+  'pi-bullseye',
   'pi-ticket',
   'pi-heart',
   'pi-bolt',

@@ -1,151 +1,213 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterLink } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
+import {
+  BaseDocsLayoutComponent,
+  SidebarCategory,
+} from '../base-docs-layout/base-docs-layout.component';
 
 /**
  * @description
- * Layout para documentação de usuários autenticados.
+ * Layout para documentação pública e de usuários.
  * Oferece navegação lateral e contexto de uso do sistema.
+ * Estende o BaseDocsLayoutComponent com configurações unificadas.
  */
 @Component({
   selector: 'app-user-docs-layout',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, BaseDocsLayoutComponent, RouterLink],
   template: `
-    <div data-testid="user-docs-layout" class="flex flex-col h-dvh bg-slate-50 font-sans">
-      <!-- Header -->
-      <header
-        data-testid="user-docs-header"
-        class="h-16 border-b border-slate-200 bg-white flex items-center px-6 justify-between sticky top-0 z-20"
-      >
-        <div class="flex items-center gap-3">
-          <a data-testid="docs-logo" routerLink="/dashboard" class="flex items-center gap-2">
-            <div
-              class="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center text-white font-bold"
-            >
-              D
-            </div>
-            <span class="font-bold text-slate-900 tracking-tight"
-              >Dindinho <span class="text-emerald-600 font-medium">Docs</span></span
-            >
-          </a>
-        </div>
-
-        <div class="flex items-center gap-4">
-          <a
-            data-testid="btn-back-app"
-            routerLink="/dashboard"
-            class="text-sm font-medium text-slate-600 hover:text-emerald-600 transition-colors"
-          >
-            Voltar para o App
-          </a>
-        </div>
-      </header>
-
-      <div class="flex-1 flex overflow-hidden">
-        <!-- Sidebar -->
-        <aside
-          data-testid="user-docs-sidebar"
-          class="w-64 border-r border-slate-200 bg-white hidden md:flex flex-col"
+    <app-base-docs-layout
+      testId="user-docs-layout"
+      logoLink="/docs"
+      logoLetter="D"
+      logoBgClass="bg-emerald-600"
+      logoTextClass="text-emerald-600"
+      logoSubtitle="Docs"
+      badgeText="Documentação"
+      footerText="Dindinho v1.0.0"
+      activeLinkClass="bg-emerald-50 text-emerald-700 font-bold"
+      searchResultHoverClass="hover:bg-emerald-50"
+      searchResultActiveClass="bg-emerald-50"
+      searchIconHighlightClass="group-hover:text-emerald-600"
+      searchTextHighlightClass="group-hover:text-emerald-700"
+      searchArrowHighlightClass="group-hover:text-emerald-400"
+      searchKbdHighlightClass="group-hover/search:text-emerald-500"
+      searchMobileHighlightClass="hover:text-emerald-600"
+      accentTextClass="text-emerald-500"
+      accentFocusClass="focus:ring-emerald-500/20"
+      currentContext="user"
+      [categories]="categories"
+    >
+      <div sidebarFooter class="flex flex-col gap-2">
+        <!-- Site Institucional -->
+        <button
+          (click)="goToLanding()"
+          aria-label="Ir para o site institucional"
+          class="flex items-center gap-2 px-3 py-2 text-[11px] font-bold text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-all group"
         >
-          <nav class="flex-1 overflow-y-auto p-4 space-y-1">
-            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
-              Guia do Usuário
+          <i
+            class="pi pi-external-link text-[10px] text-slate-400 group-hover:text-emerald-500"
+            aria-hidden="true"
+          ></i>
+          <span aria-hidden="true">Site Institucional</span>
+        </button>
+
+        <!-- Acesso Rápido Admin (se for admin) -->
+        @if (isAdmin()) {
+          <a
+            routerLink="/docs/admin/intro"
+            data-testid="admin-panel-link"
+            aria-label="Acessar o painel administrativo de documentação"
+            class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-all border border-slate-200/60 bg-white shadow-sm group/admin"
+          >
+            <div class="flex items-center gap-2" aria-hidden="true">
+              <i class="pi pi-shield text-indigo-500 text-xs"></i>
+              <span class="text-[11px] font-bold text-slate-700">Painel Admin</span>
             </div>
+            <i
+              class="pi pi-arrow-right text-[8px] text-slate-300 group-hover/admin:translate-x-0.5 transition-transform"
+              aria-hidden="true"
+            ></i>
+          </a>
+        }
 
-            <a
-              data-testid="nav-intro"
-              routerLink="/docs/user/intro"
-              routerLinkActive="bg-emerald-50 text-emerald-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-info-circle"></i> Introdução
-            </a>
-
-            <a
-              data-testid="nav-principles"
-              routerLink="/docs/user/principles"
-              routerLinkActive="bg-emerald-50 text-emerald-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-star"></i> Nossos Princípios
-            </a>
-
-            <div class="pt-4 text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
-              Domínios do Produto
-            </div>
-
-            <a
-              data-testid="nav-auth"
-              routerLink="/docs/user/dominio-auth"
-              routerLinkActive="bg-emerald-50 text-emerald-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-lock"></i> Autenticação
-            </a>
-
-            <a
-              data-testid="nav-accounts"
-              routerLink="/docs/user/dominio-contas"
-              routerLinkActive="bg-emerald-50 text-emerald-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-wallet"></i> Contas e Saldos
-            </a>
-
-            <a
-              data-testid="nav-transactions"
-              routerLink="/docs/user/dominio-transacoes"
-              routerLinkActive="bg-emerald-50 text-emerald-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-list"></i> Transações
-            </a>
-
-            <a
-              data-testid="nav-reports"
-              routerLink="/docs/user/dominio-relatorios"
-              routerLinkActive="bg-emerald-50 text-emerald-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-chart-pie"></i> Relatórios
-            </a>
-
-            <a
-              data-testid="nav-collaboration"
-              routerLink="/docs/user/dominio-colaboracao"
-              routerLinkActive="bg-emerald-50 text-emerald-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-users"></i> Colaboração
-            </a>
-
-            <a
-              data-testid="nav-metas"
-              routerLink="/docs/user/dominio-metas"
-              routerLinkActive="bg-emerald-50 text-emerald-700 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              <i class="pi pi-target"></i> Metas de Economia
-            </a>
-          </nav>
-
-          <div class="p-4 border-t border-slate-100 bg-slate-50/50">
-            <p class="text-[10px] text-slate-400 text-center uppercase font-bold tracking-tighter">
-              Dindinho v1.0.0
-            </p>
-          </div>
-        </aside>
-
-        <!-- Main Content -->
-        <main data-testid="user-docs-main" class="flex-1 overflow-y-auto bg-white">
-          <div class="max-w-4xl mx-auto px-6 py-10">
-            <router-outlet></router-outlet>
-          </div>
-        </main>
+        <!-- Entrar no Dindinho / Voltar -->
+        <button
+          (click)="goToApp()"
+          data-testid="back-to-app-button"
+          [attr.aria-label]="backButtonText()"
+          class="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-sm shadow-emerald-100 active:scale-95"
+        >
+          <i [class]="'pi ' + backButtonIcon() + ' text-[10px]'" aria-hidden="true"></i>
+          <span aria-hidden="true">{{ backButtonText() }}</span>
+        </button>
       </div>
-    </div>
+    </app-base-docs-layout>
   `,
 })
-export class UserDocsLayoutComponent {}
+export class UserDocsLayoutComponent {
+  protected readonly auth = inject(AuthService);
+
+  protected readonly isAdmin = computed(() => {
+    const user = this.auth.currentUser();
+    return user?.role === 'ADMIN';
+  });
+
+  protected readonly backButtonText = computed(() =>
+    this.auth.isAuthenticated() ? 'Voltar para a Plataforma' : 'Entrar no Dindinho',
+  );
+
+  protected readonly backButtonIcon = computed(() =>
+    this.auth.isAuthenticated() ? 'pi-arrow-left' : 'pi-sign-in',
+  );
+
+  protected categories: SidebarCategory[] = [
+    {
+      id: 'guia',
+      label: 'Guia do Usuário',
+      items: [
+        {
+          id: 'intro',
+          label: 'Introdução',
+          icon: 'pi-home',
+          link: '/docs/intro',
+        },
+        {
+          id: 'principios',
+          label: 'Nossos Princípios',
+          icon: 'pi-star',
+          link: '/docs/principios',
+        },
+        {
+          id: 'faq',
+          label: 'Perguntas Frequentes',
+          icon: 'pi-question-circle',
+          link: '/docs/faq',
+        },
+        {
+          id: 'codigo-conduta',
+          label: 'Código de Conduta',
+          icon: 'pi-shield',
+          link: '/docs/codigo-conduta',
+        },
+      ],
+    },
+    {
+      id: 'dominios',
+      label: 'Como usar o Dindinho',
+      items: [
+        {
+          id: 'auth',
+          label: 'Acesso e Perfil',
+          icon: 'pi-lock',
+          link: '/docs/dominio-auth',
+        },
+        {
+          id: 'accounts',
+          label: 'Contas e Cartões',
+          icon: 'pi-wallet',
+          link: '/docs/dominio-contas',
+        },
+        {
+          id: 'transactions',
+          label: 'Lançamentos e Extrato',
+          icon: 'pi-list',
+          link: '/docs/dominio-transacoes',
+        },
+        {
+          id: 'reports',
+          label: 'Gráficos e Relatórios',
+          icon: 'pi-chart-bar',
+          link: '/docs/dominio-relatorios',
+        },
+        {
+          id: 'collaboration',
+          label: 'Colaboração e Família',
+          icon: 'pi-users',
+          link: '/docs/dominio-colaboracao',
+        },
+        {
+          id: 'metas',
+          label: 'Metas e Objetivos',
+          icon: 'pi-bullseye',
+          link: '/docs/dominio-metas',
+        },
+      ],
+    },
+  ];
+
+  /**
+   * Redireciona para a landing page (site institucional).
+   * Por enquanto, redireciona para a home do domínio principal.
+   */
+  goToLanding(): void {
+    const origin = window.location.origin;
+    if (origin.includes('://docs.')) {
+      const mainOrigin = origin.replace('docs.', '');
+      window.location.href = mainOrigin;
+    } else {
+      window.location.href = '/';
+    }
+  }
+
+  /**
+   * Redireciona o usuário para o dashboard principal ou home page.
+   * Remove o subdomínio 'docs.' da origem atual (preservando protocolo e porta).
+   */
+  goToApp(): void {
+    const origin = window.location.origin;
+    const isAuthenticated = this.auth.isAuthenticated();
+    const targetPath = isAuthenticated ? '/dashboard' : '/login';
+
+    if (origin.includes('://docs.')) {
+      const mainOrigin = origin.replace('://docs.', '://');
+      window.location.href = `${mainOrigin}${targetPath}`;
+    } else {
+      // Se já estiver no domínio principal (desenvolvimento), apenas navega
+      window.location.href = targetPath;
+    }
+  }
+}

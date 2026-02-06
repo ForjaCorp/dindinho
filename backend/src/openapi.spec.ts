@@ -1,4 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+vi.hoisted(() => {
+  process.env.DATABASE_URL = "mysql://user:pass@localhost:3306/dindinho";
+  process.env.JWT_SECRET = "test-secret";
+});
+
 import { buildApp } from "./app";
 
 describe("OpenAPI Documentation", () => {
@@ -17,11 +23,11 @@ describe("OpenAPI Documentation", () => {
     if (typeof location !== "string") {
       throw new Error("Header Location ausente na resposta de /api/docs");
     }
-    expect(location).toContain("docs/static/index.html");
+    expect(location).toBe("/api/docs/");
 
     const htmlResponse = await app.inject({
       method: "GET",
-      url: "/api/docs/static/index.html",
+      url: "/api/docs/",
     });
 
     expect(htmlResponse.statusCode).toBe(200);
@@ -86,21 +92,26 @@ describe("OpenAPI Documentation", () => {
     }
   });
 
-  it("NÃO deve servir Swagger UI em /api/docs quando em produção", async () => {
+  it("NÃO deve servir Swagger UI nem JSON em /api/docs quando em produção", async () => {
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = "production";
     process.env.ENABLE_SWAGGER = "false";
 
     const app = buildApp();
 
-    const response = await app.inject({
+    // Testa UI
+    const uiResponse = await app.inject({
       method: "GET",
       url: "/api/docs",
     });
+    expect(uiResponse.statusCode).toBe(404);
 
-    // Quando o Swagger está desabilitado, a rota /api/docs não deve ser registrada
-    // O Fastify retornará 404 se o prefixo /api registrar outras rotas, ou a resposta do handler de erro
-    expect(response.statusCode).toBe(404);
+    // Testa JSON
+    const jsonResponse = await app.inject({
+      method: "GET",
+      url: "/api/docs/json",
+    });
+    expect(jsonResponse.statusCode).toBe(404);
 
     process.env.NODE_ENV = originalEnv;
   });
@@ -119,7 +130,7 @@ describe("OpenAPI Documentation", () => {
     });
 
     expect(response.statusCode).toBe(302);
-    expect(response.headers.location).toContain("docs/static/index.html");
+    expect(response.headers.location).toBe("/api/docs/");
 
     process.env.NODE_ENV = originalEnv;
     process.env.ENABLE_SWAGGER = originalEnable;

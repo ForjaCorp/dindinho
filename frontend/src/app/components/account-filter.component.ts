@@ -32,7 +32,7 @@ import { AccountService } from '../services/account.service';
         display="chip"
         [maxSelectedLabels]="1"
         aria-label="Contas"
-        [attr.data-testid]="'account-filter-multiselect'"
+        data-testid="account-filter-multiselect"
       />
     </div>
   `,

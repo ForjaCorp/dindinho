@@ -9,14 +9,37 @@ import {
 import { CsvHelper } from "../lib/csv-helper";
 import { SnapshotService } from "./snapshot.service";
 
+/**
+ * Serviço responsável pela geração de relatórios financeiros e processamento de dados para analytics.
+ * @class ReportsService
+ * @description Fornece métodos para extrair insights sobre gastos, fluxo de caixa e evolução de saldo.
+ */
 export class ReportsService {
+  /**
+   * Serviço interno para gerenciamento de snapshots diários de saldo.
+   * @private
+   */
   private snapshotService: SnapshotService;
+
+  /**
+   * Cache de promessas de warmup por conta para evitar processamento duplicado simultâneo.
+   * @private
+   */
   private warmupByAccountId = new Map<string, Promise<void>>();
 
+  /**
+   * @param {PrismaClient} prisma - Instância do cliente Prisma.
+   */
   constructor(private prisma: PrismaClient) {
     this.snapshotService = new SnapshotService(prisma);
   }
 
+  /**
+   * Converte uma data para o início do dia em UTC.
+   * @private
+   * @param {Date} input - Data de entrada.
+   * @returns {Date} Data no início do dia (00:00:00.000) em UTC.
+   */
   private toUtcStartOfDay(input: Date): Date {
     const d = new Date(input);
     d.setUTCHours(0, 0, 0, 0);
@@ -25,6 +48,10 @@ export class ReportsService {
 
   /**
    * Soma dias usando milissegundos para preservar o offset aplicado no Date.
+   * @private
+   * @param {Date} date - Data base.
+   * @param {number} days - Número de dias a adicionar.
+   * @returns {Date} Nova data calculada.
    */
   private addDaysByMs(date: Date, days: number): Date {
     return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
@@ -33,6 +60,10 @@ export class ReportsService {
   /**
    * Converte um ISO day (YYYY-MM-DD) no início do dia em UTC,
    * ajustando para que o intervalo represente o dia local do usuário.
+   * @private
+   * @param {string} value - String no formato YYYY-MM-DD.
+   * @param {number | null} tzOffsetMinutes - Offset do fuso horário em minutos.
+   * @returns {Date | null} Objeto Date ou null se inválido.
    */
   private parseIsoDayToUtcStartOfDay(
     value: string,
@@ -69,11 +100,10 @@ export class ReportsService {
   }
 
   /**
-   * Normaliza filtros de período.
-   *
-   * - Se vier `startDay/endDay`, converte para o intervalo [start, endExclusive)
-   *   considerando `tzOffsetMinutes`.
-   * - Caso contrário, preserva `startDate/endDate` (DateTime) para compatibilidade.
+   * Normaliza filtros de período para intervalos UTC consistentes.
+   * @private
+   * @param {ReportFilterDTO} filters - Filtros recebidos na requisição.
+   * @returns {Object} Objeto com start, end e endExclusive (para filtros de banco).
    */
   private normalizeReportUtcDayRange(filters: ReportFilterDTO): {
     start: Date | null;
@@ -160,6 +190,13 @@ export class ReportsService {
     return { start: startInstant, end: endInstant, endExclusive: null };
   }
 
+  /**
+   * Calcula a diferença de dias entre duas datas UTC (inclusive).
+   * @private
+   * @param {Date} start - Data de início.
+   * @param {Date} end - Data de fim.
+   * @returns {number} Quantidade de dias no intervalo.
+   */
   private daysBetweenUtcInclusive(start: Date, end: Date): number {
     const startUtc = Date.UTC(
       start.getUTCFullYear(),
@@ -175,6 +212,13 @@ export class ReportsService {
     return diffDays + 1;
   }
 
+  /**
+   * Adiciona dias a uma data UTC, retornando o início do dia resultante.
+   * @private
+   * @param {Date} date - Data base.
+   * @param {number} days - Quantidade de dias a adicionar.
+   * @returns {Date} Nova data calculada.
+   */
   private addUtcDays(date: Date, days: number): Date {
     const d = new Date(date);
     d.setUTCDate(d.getUTCDate() + days);
@@ -182,6 +226,12 @@ export class ReportsService {
     return d;
   }
 
+  /**
+   * Retorna o final da semana (domingo) para uma data UTC.
+   * @private
+   * @param {Date} date - Data de referência.
+   * @returns {Date} Data do último dia da semana (domingo).
+   */
   private endOfWeekUtc(date: Date): Date {
     const d = this.toUtcStartOfDay(date);
     const day = d.getUTCDay();
@@ -189,11 +239,25 @@ export class ReportsService {
     return this.addUtcDays(d, daysToAdd);
   }
 
+  /**
+   * Retorna o final do mês para uma data UTC.
+   * @private
+   * @param {Date} date - Data de referência.
+   * @returns {Date} Data do último dia do mês.
+   */
   private endOfMonthUtc(date: Date): Date {
     const d = this.toUtcStartOfDay(date);
     return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0));
   }
 
+  /**
+   * Gera uma lista de datas que representam o fim de cada período (semana/mês).
+   * @private
+   * @param {Date} rangeStart - Data de início do intervalo total.
+   * @param {Date} rangeEnd - Data de fim do intervalo total.
+   * @param {Exclude<BalanceHistoryGranularity, "DAY">} granularity - Granularidade desejada (WEEK ou MONTH).
+   * @returns {Date[]} Array de datas representando os fins de período.
+   */
   private listPeriodEndDates(
     rangeStart: Date,
     rangeEnd: Date,
@@ -216,6 +280,13 @@ export class ReportsService {
     return endDates;
   }
 
+  /**
+   * Infere a granularidade ideal do gráfico baseada na duração do período.
+   * @private
+   * @param {Date} rangeStart - Data de início.
+   * @param {Date} rangeEnd - Data de fim.
+   * @returns {BalanceHistoryGranularity} Granularidade recomendada (DAY, WEEK ou MONTH).
+   */
   private inferBalanceHistoryGranularity(
     rangeStart: Date,
     rangeEnd: Date,
@@ -227,6 +298,13 @@ export class ReportsService {
     return "MONTH";
   }
 
+  /**
+   * Computa o label para exibição no gráfico de histórico.
+   * @private
+   * @param {string} isoDate - Data no formato ISO (YYYY-MM-DD).
+   * @param {BalanceHistoryGranularity} granularity - Granularidade aplicada.
+   * @returns {string} Label formatado (YYYY-MM para meses, YYYY-MM-DD para o resto).
+   */
   private computeBalanceHistoryLabel(
     isoDate: string,
     granularity: BalanceHistoryGranularity,
@@ -237,6 +315,16 @@ export class ReportsService {
     return isoDate;
   }
 
+  /**
+   * Garante que os snapshots diários de saldo estejam atualizados para o período solicitado.
+   * Verifica a versão do cálculo e se há lacunas no histórico.
+   * @private
+   * @async
+   * @param {string} accountId - ID da conta.
+   * @param {Date} rangeStart - Data de início do período.
+   * @param {Date} rangeEnd - Data de fim do período.
+   * @returns {Promise<void>}
+   */
   private async ensureSnapshotsForAccount(
     accountId: string,
     rangeStart: Date,
@@ -311,7 +399,11 @@ export class ReportsService {
   }
 
   /**
-   * Agrega gastos por categoria
+   * Agrega gastos por categoria no período selecionado.
+   * @async
+   * @param {string} userId - ID do usuário.
+   * @param {ReportFilterDTO} filters - Filtros de período e contas.
+   * @returns {Promise<SpendingByCategoryDTO>} Dados formatados para o gráfico de pizza.
    */
   async getSpendingByCategory(
     userId: string,
@@ -357,7 +449,11 @@ export class ReportsService {
   }
 
   /**
-   * Agrega fluxo de caixa (Entradas vs Saídas)
+   * Agrega fluxo de caixa (Entradas vs Saídas) por mês.
+   * @async
+   * @param {string} userId - ID do usuário.
+   * @param {ReportFilterDTO} filters - Filtros de período e contas.
+   * @returns {Promise<CashFlowDTO>} Dados comparativos de receitas e despesas.
    */
   async getCashFlow(
     userId: string,
@@ -409,7 +505,11 @@ export class ReportsService {
   }
 
   /**
-   * Retorna histórico de saldo acumulado usando Snapshots
+   * Retorna histórico de saldo acumulado usando snapshots diários.
+   * @async
+   * @param {string} userId - ID do usuário.
+   * @param {ReportFilterDTO} filters - Filtros de período, contas e granularidade.
+   * @returns {Promise<BalanceHistoryDTO>} Pontos do gráfico de evolução de saldo.
    */
   async getBalanceHistory(
     userId: string,
@@ -557,7 +657,11 @@ export class ReportsService {
   }
 
   /**
-   * Gera CSV das transações filtradas
+   * Gera o conteúdo CSV para as transações que correspondem aos filtros.
+   * @async
+   * @param {string} userId - ID do usuário.
+   * @param {ReportFilterDTO} filters - Filtros de busca.
+   * @returns {Promise<string>} String formatada em CSV.
    */
   async exportTransactionsCsv(
     userId: string,
@@ -601,7 +705,11 @@ export class ReportsService {
   }
 
   /**
-   * Constrói o filtro base para transações
+   * Constrói o objeto de filtro base (where) para o Prisma.
+   * @private
+   * @param {string} userId - ID do usuário.
+   * @param {ReportFilterDTO} filters - Filtros da requisição.
+   * @returns {Prisma.TransactionWhereInput} Objeto de filtro para o Prisma.
    */
   private buildBaseWhere(
     userId: string,

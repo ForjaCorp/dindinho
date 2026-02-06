@@ -15,6 +15,7 @@ import { provideRouter } from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { providePrimeNG } from 'primeng/config';
 import { MessageService } from 'primeng/api';
+import { provideMarkdown } from 'ngx-markdown';
 import Aura from '@primeuix/themes/aura';
 import { routes } from './app.routes';
 import { authInterceptor } from './interceptors/auth.interceptor';
@@ -43,6 +44,9 @@ export const appConfig: ApplicationConfig = {
 
     // Configuração do HttpClient com Fetch e interceptores
     provideHttpClient(withFetch(), withInterceptors([authInterceptor, httpErrorInterceptor])),
+
+    // Configuração do Markdown para renderização de documentação
+    provideMarkdown(),
 
     // Configuração do PrimeNG com o tema Aura
     providePrimeNG({

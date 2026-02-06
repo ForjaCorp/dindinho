@@ -101,7 +101,7 @@ describe('TimeFilterComponent', () => {
     fixture.detectChanges();
 
     const title = fixture.nativeElement.querySelector(
-      '[data-testid="time-filter-sheet"] h2',
+      '[data-testid="time-filter-sheet-title"]',
     ) as HTMLElement | null;
     expect(title).toBeTruthy();
     expect((title?.textContent ?? '').replace(/\s+/g, ' ').trim()).toBe('Período');
@@ -114,7 +114,7 @@ describe('TimeFilterComponent', () => {
     fixture.detectChanges();
 
     const titleAfter = fixture.nativeElement.querySelector(
-      '[data-testid="time-filter-sheet"] h2',
+      '[data-testid="time-filter-sheet-title"]',
     ) as HTMLElement | null;
     expect(titleAfter).toBeTruthy();
     expect((titleAfter?.textContent ?? '').replace(/\s+/g, ' ').trim()).toBe('Fatura');

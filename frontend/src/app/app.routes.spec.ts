@@ -1,10 +1,12 @@
+import '@angular/compiler'; // Import necessário para JIT no ambiente de teste
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { routes } from './app.routes';
 import { authGuard } from './guards/auth.guard';
 import { guestGuard } from './guards/guest.guard';
+import { subdomainGuard } from './guards/subdomain.guard';
 import { Route } from '@angular/router';
 import { AuthLayoutComponent } from './layouts/auth-layout/auth-layout.component';
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
@@ -29,16 +31,28 @@ describe('Rotas da aplicação', () => {
     expect(Array.isArray(routesList)).toBe(true);
   });
 
-  it('deve redirecionar rota inicial para login', () => {
+  it('deve redirecionar rota inicial baseada no subdomínio', () => {
     const initialRoute = routesList.find((route) => route.path === '' && route.redirectTo);
     expect(initialRoute).toBeDefined();
-    expect(initialRoute?.redirectTo).toBe('login');
-    expect(initialRoute?.pathMatch).toBe('full');
+    expect(typeof initialRoute?.redirectTo).toBe('function');
+    expect(initialRoute?.canActivate).toContain(subdomainGuard);
+
+    // Mock do hostname para testar a função redirectTo
+    const redirectTo = initialRoute?.redirectTo as () => string;
+
+    vi.stubGlobal('location', { hostname: 'dindinho.forjacorp.com' });
+    expect(redirectTo()).toBe('login');
+
+    vi.stubGlobal('location', { hostname: 'docs.dindinho.forjacorp.com' });
+    expect(redirectTo()).toBe('docs/intro');
+
+    vi.unstubAllGlobals();
   });
 
-  it('deve ter rota de layout de auth com guest guard', () => {
+  it('deve ter rota de layout de auth com guest guard e subdomain guard', () => {
     const authRoute = routesList.find((route) => route.component === AuthLayoutComponent);
     expect(authRoute).toBeDefined();
+    expect(authRoute?.canActivate).toContain(subdomainGuard);
     expect(authRoute?.children).toBeDefined();
 
     const loginChild = authRoute?.children?.find((child) => child.path === 'login');
@@ -47,10 +61,11 @@ describe('Rotas da aplicação', () => {
     expect(loginChild?.canActivate).toContain(guestGuard);
   });
 
-  it('deve ter rota de layout principal com auth guard', () => {
+  it('deve ter rota de layout principal com auth guard e subdomain guard', () => {
     const mainRoute = routesList.find((route) => route.component === MainLayoutComponent);
     expect(mainRoute).toBeDefined();
     expect(mainRoute?.canActivate).toContain(authGuard);
+    expect(mainRoute?.canActivate).toContain(subdomainGuard);
     expect(mainRoute?.children).toBeDefined();
 
     const dashboardChild = mainRoute?.children?.find((child) => child.path === 'dashboard');
@@ -82,5 +97,14 @@ describe('Rotas da aplicação', () => {
     const wildcardRoute = routesList.find((route) => route.path === '**');
     expect(wildcardRoute).toBeDefined();
     expect(wildcardRoute?.redirectTo).toBe('login');
+  });
+
+  it('deve redirecionar docs vazio para intro', () => {
+    const docsRoute = routesList.find((route) => route.path === 'docs');
+    expect(docsRoute).toBeDefined();
+    const emptyChild = docsRoute?.children?.find((child) => child.path === '');
+    expect(emptyChild).toBeDefined();
+    expect(emptyChild?.redirectTo).toBe('intro');
+    expect(emptyChild?.pathMatch).toBe('full');
   });
 });

@@ -1,8 +1,10 @@
 import { Component, ChangeDetectionStrategy, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, Router } from '@angular/router';
+import { RouterOutlet } from '@angular/router';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
+import { AuthService } from './services/auth.service';
+import { CookieUtil } from './utils/cookie.util';
 
 /**
  * @description
@@ -13,7 +15,6 @@ import { MessageService } from 'primeng/api';
  * - Manter a navegação principal
  *
  * @class App
- * @implements {OnInit}
  */
 @Component({
   selector: 'app-root',
@@ -27,23 +28,40 @@ import { MessageService } from 'primeng/api';
   `,
 })
 export class App implements OnInit {
-  private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
 
   ngOnInit(): void {
-    this.handleDocsSubdomain();
+    this.handleTokenInUrl();
   }
 
   /**
-   * Detecta se o acesso é via subdomínio 'docs' e redireciona para a rota /docs
-   * se estivermos na raiz do site.
+   * Verifica se há um access_token no fragmento da URL (passado em localhost)
+   * e o armazena nos cookies/localStorage para restaurar a sessão.
    */
-  private handleDocsSubdomain(): void {
-    const hostname = window.location.hostname;
-    const isDocsSubdomain = hostname.startsWith('docs.');
-    const isRootPath = window.location.pathname === '/' || window.location.pathname === '';
+  private handleTokenInUrl(): void {
+    if (typeof window === 'undefined') return;
 
-    if (isDocsSubdomain && isRootPath) {
-      this.router.navigate(['/docs']);
+    const hash = window.location.hash;
+    if (hash.includes('access_token=')) {
+      const params = new URLSearchParams(hash.substring(1));
+      const token = params.get('access_token');
+
+      if (token) {
+        // Armazena o token para o subdomínio atual
+        CookieUtil.set('dindinho_token', token, 7);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('dindinho_token', token);
+        }
+
+        // Limpa o fragmento da URL para segurança e estética
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+
+        // Força a restauração da sessão no AuthService
+        // Como o Signal é inicializado no construtor, precisamos atualizar manualmente
+        // ou deixar o refresh/navegação cuidar disso.
+        // O login do AuthService faz isso, mas aqui estamos apenas restaurando.
+        location.reload(); // Recarrega para garantir que o AuthService pegue o novo token
+      }
     }
   }
 }

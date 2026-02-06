@@ -1,12 +1,18 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+
+vi.hoisted(() => {
+  process.env.DATABASE_URL = "mysql://user:pass@localhost:3306/dindinho";
+  process.env.JWT_SECRET = "test-secret";
+});
+
 import { buildApp } from "./app";
 
 describe("Rate Limit", () => {
   let app: ReturnType<typeof buildApp>;
 
   beforeEach(async () => {
-    vi.stubEnv("JWT_SECRET", "test-secret");
     vi.stubEnv("TRUST_PROXY", "true");
+    vi.stubEnv("ENABLE_RATE_LIMIT_IN_TESTS", "true");
     app = buildApp();
     await app.ready();
   });

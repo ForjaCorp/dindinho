@@ -1,3 +1,9 @@
+/**
+ * @file Rotas de categorias da aplicação
+ * @description Define os endpoints para criação e listagem de categorias de transações
+ * @module categories.routes
+ */
+
 import { FastifyInstance } from "fastify";
 import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { z } from "zod";
@@ -11,6 +17,12 @@ import { CategoriesService } from "./categories.service";
 import { getHttpErrorLabel } from "../lib/get-http-error-label";
 import { ForbiddenError, NotFoundError } from "../lib/domain-exceptions";
 
+/**
+ * Configura as rotas relacionadas a categorias.
+ * @async
+ * @function categoriesRoutes
+ * @param {FastifyInstance} app - Instância do Fastify
+ */
 export async function categoriesRoutes(app: FastifyInstance) {
   const service = new CategoriesService(prisma);
 
@@ -28,6 +40,12 @@ export async function categoriesRoutes(app: FastifyInstance) {
     }
   });
 
+  /**
+   * Rota para listagem de categorias
+   * @route GET /api/categories
+   * @description Retorna todas as categorias do usuário e as categorias globais
+   * @access Private
+   */
   app.withTypeProvider<ZodTypeProvider>().get(
     "/",
     {
@@ -46,6 +64,12 @@ export async function categoriesRoutes(app: FastifyInstance) {
     },
   );
 
+  /**
+   * Rota para criação de categoria
+   * @route POST /api/categories
+   * @description Cria uma nova categoria para o usuário autenticado
+   * @access Private
+   */
   app.withTypeProvider<ZodTypeProvider>().post(
     "/",
     {

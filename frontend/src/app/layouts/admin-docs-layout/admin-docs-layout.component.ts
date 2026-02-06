@@ -1,239 +1,354 @@
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterLink } from '@angular/router';
+import {
+  BaseDocsLayoutComponent,
+  SidebarCategory,
+} from '../base-docs-layout/base-docs-layout.component';
+import { AuthService } from '../../services/auth.service';
 
 /**
  * @description
  * Layout para documentação técnica e administrativa.
- * Restrito a desenvolvedores e administradores.
+ * Estende o BaseDocsLayoutComponent com configurações específicas de Admin.
  */
 @Component({
   selector: 'app-admin-docs-layout',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, BaseDocsLayoutComponent, RouterLink],
   template: `
-    <div
-      data-testid="admin-docs-layout"
-      class="flex flex-col h-dvh bg-slate-900 font-sans text-slate-300"
+    <app-base-docs-layout
+      [testId]="'admin-docs-layout'"
+      [logoLink]="'/docs/admin/intro'"
+      [logoLetter]="'A'"
+      [logoBgClass]="'bg-indigo-600'"
+      [logoTextClass]="'text-indigo-600'"
+      [logoSubtitle]="'Interno'"
+      [badgeText]="'Docs Admin'"
+      [footerText]="'Dindinho Interno v1.0.0'"
+      [activeLinkClass]="'bg-indigo-50 text-indigo-700 font-bold'"
+      currentContext="admin"
+      [categories]="categories"
     >
-      <!-- Admin Header -->
-      <header
-        data-testid="admin-docs-header"
-        class="h-16 border-b border-slate-800 bg-slate-900 flex items-center px-6 justify-between sticky top-0 z-20"
-      >
-        <div class="flex items-center gap-3">
-          <a data-testid="admin-logo" routerLink="/dashboard" class="flex items-center gap-2">
-            <div
-              class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold"
-            >
-              A
-            </div>
-            <span class="font-bold text-white tracking-tight"
-              >Dindinho <span class="text-indigo-400 font-medium">Internal</span></span
-            >
-          </a>
-          <span
-            class="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 text-[10px] font-bold uppercase tracking-widest border border-indigo-500/20"
-            >Admin Docs</span
-          >
-        </div>
-
-        <div class="flex items-center gap-4">
-          <a
-            data-testid="btn-back-app"
-            routerLink="/dashboard"
-            class="text-sm font-medium text-slate-400 hover:text-white transition-colors"
-          >
-            Voltar para o App
-          </a>
-        </div>
-      </header>
-
-      <div class="flex-1 flex overflow-hidden">
-        <!-- Sidebar -->
-        <aside
-          data-testid="admin-docs-sidebar"
-          class="w-64 border-r border-slate-800 bg-slate-900 hidden md:flex flex-col"
+      <div sidebarFooter class="flex flex-col gap-2">
+        <!-- Visão do Usuário (Acesso Rápido) -->
+        <a
+          routerLink="/docs/intro"
+          data-testid="user-view-link"
+          aria-label="Ir para a visão pública do usuário"
+          class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 transition-all border border-slate-200/60 bg-white shadow-sm group/user"
         >
-          <nav class="flex-1 overflow-y-auto p-4 space-y-1">
-            <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2">
-              Engenharia
-            </div>
-
-            <a
-              data-testid="nav-arch"
-              routerLink="/docs/admin/architecture"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
-            >
-              <i class="pi pi-sitemap"></i> Arquitetura
-            </a>
-
-            <a
-              data-testid="nav-adr"
-              routerLink="/docs/admin/adr"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
-            >
-              <i class="pi pi-book"></i> ADRs
-            </a>
-
-            <a
-              data-testid="nav-roadmap"
-              routerLink="/docs/admin/roadmap"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
-            >
-              <i class="pi pi-map"></i> Roadmap
-            </a>
-
-            <a
-              data-testid="nav-test-plan-e2e"
-              routerLink="/docs/admin/test-plan-e2e"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
-            >
-              <i class="pi pi-check-square"></i> Plano E2E
-            </a>
-
-            <div
-              class="pt-6 text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2"
-            >
-              Infraestrutura
-            </div>
-
-            <a
-              data-testid="nav-ops"
-              routerLink="/docs/admin/ops"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
-            >
-              <i class="pi pi-cog"></i> Operações
-            </a>
-
-            <a
-              data-testid="nav-api-ref"
-              routerLink="/docs/admin/api-ref"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
-            >
-              <i class="pi pi-code"></i> API Reference
-            </a>
-
-            <div
-              class="pt-6 text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2"
-            >
-              Domínios (Técnico)
-            </div>
-
-            <a
-              data-testid="nav-dominio-auth"
-              routerLink="/docs/admin/dominio-auth"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
-            >
-              <i class="pi pi-lock"></i> Auth & Security
-            </a>
-
-            <a
-              data-testid="nav-dominio-contas"
-              routerLink="/docs/admin/dominio-contas"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
-            >
-              <i class="pi pi-wallet"></i> Accounts & Cards
-            </a>
-
-            <a
-              data-testid="nav-dominio-collab"
-              routerLink="/docs/admin/dominio-colaboracao"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
-            >
-              <i class="pi pi-users"></i> Collaboration & Invites
-            </a>
-
-            <div
-              class="pt-6 text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2"
-            >
-              API & Contratos
-            </div>
-
-            <a
-              data-testid="nav-openapi"
-              routerLink="/docs/admin/openapi"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
-            >
-              <i class="pi pi-code"></i> OpenAPI Spec
-            </a>
-
-            <a
-              data-testid="nav-swagger"
-              routerLink="/docs/admin/swagger"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
-            >
-              <i class="pi pi-external-link"></i> Swagger UI
-            </a>
-
-            <div
-              class="pt-6 text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2"
-            >
-              Domínios de Produto
-            </div>
-
-            <a
-              data-testid="nav-dom-colab"
-              routerLink="/docs/admin/dominio-colaboracao"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
-            >
-              <i class="pi pi-users"></i> Colaboração
-            </a>
-
-            <a
-              data-testid="nav-dom-metas"
-              routerLink="/docs/admin/dominio-metas"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
-            >
-              <i class="pi pi-target"></i> Metas de Economia
-            </a>
-
-            <div
-              class="pt-6 text-[10px] font-bold text-slate-500 uppercase tracking-widest px-3 mb-2"
-            >
-              Infra & Ops
-            </div>
-
-            <a
-              data-testid="nav-deploy"
-              routerLink="/docs/admin/deploy"
-              routerLinkActive="bg-indigo-500/10 text-indigo-400 font-semibold"
-              class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
-            >
-              <i class="pi pi-cloud-upload"></i> Deploy & Coolify
-            </a>
-          </nav>
-
-          <div class="p-4 border-t border-slate-800 bg-slate-950/50">
-            <div class="flex items-center justify-between text-[10px] text-slate-500 font-mono">
-              <span>ENV: PROD</span>
-              <span>v1.0.0-build.42</span>
-            </div>
+          <div class="flex items-center gap-2" aria-hidden="true">
+            <i class="pi pi-eye text-emerald-500 text-xs"></i>
+            <span class="text-[11px] font-bold text-slate-700">Visão do Usuário</span>
           </div>
-        </aside>
+          <i
+            class="pi pi-arrow-right text-[8px] text-slate-300 group-hover/user:translate-x-0.5 transition-transform"
+            aria-hidden="true"
+          ></i>
+        </a>
 
-        <!-- Main Content -->
-        <main data-testid="admin-docs-main" class="flex-1 overflow-y-auto bg-slate-950">
-          <div class="max-w-5xl mx-auto px-8 py-12">
-            <router-outlet></router-outlet>
-          </div>
-        </main>
+        <!-- Entrar no Dindinho / Voltar -->
+        <button
+          (click)="goToApp()"
+          data-testid="back-to-app-button"
+          [attr.aria-label]="backButtonText()"
+          class="flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-sm shadow-indigo-100 active:scale-95"
+        >
+          <i [class]="'pi ' + backButtonIcon() + ' text-[10px]'" aria-hidden="true"></i>
+          <span aria-hidden="true">{{ backButtonText() }}</span>
+        </button>
       </div>
-    </div>
+    </app-base-docs-layout>
   `,
 })
-export class AdminDocsLayoutComponent {}
+export class AdminDocsLayoutComponent {
+  private readonly auth = inject(AuthService);
+
+  protected readonly backButtonText = computed(() =>
+    this.auth.isAuthenticated() ? 'Voltar para a Plataforma' : 'Entrar no Dindinho',
+  );
+
+  protected readonly backButtonIcon = computed(() =>
+    this.auth.isAuthenticated() ? 'pi-arrow-left' : 'pi-sign-in',
+  );
+
+  protected categories: SidebarCategory[] = [
+    {
+      id: 'geral',
+      label: 'Geral',
+      items: [
+        {
+          id: 'intro',
+          label: 'Introdução',
+          icon: 'pi-home',
+          link: '/docs/admin/intro',
+        },
+        {
+          id: 'codigo-conduta',
+          label: 'Código de Conduta',
+          icon: 'pi-shield',
+          link: '/docs/admin/codigo-conduta',
+        },
+      ],
+    },
+    {
+      id: 'engenharia',
+      label: 'Engenharia',
+      items: [
+        {
+          id: 'arch',
+          label: 'Arquitetura',
+          icon: 'pi-sitemap',
+          link: '/docs/admin/architecture',
+        },
+        {
+          id: 'adr',
+          label: 'ADRs',
+          icon: 'pi-book',
+          link: '/docs/admin/adr',
+        },
+        {
+          id: 'naming',
+          label: 'Convenções de Nomenclatura',
+          icon: 'pi-tag',
+          link: '/docs/admin/naming',
+        },
+        {
+          id: 'frontend-standards',
+          label: 'Padrões de Frontend',
+          icon: 'pi-desktop',
+          link: '/docs/admin/frontend-standards',
+        },
+        {
+          id: 'backend-standards',
+          label: 'Padrões de Backend',
+          icon: 'pi-server',
+          link: '/docs/admin/backend-standards',
+        },
+        {
+          id: 'tests',
+          label: 'Testes e QA',
+          icon: 'pi-check-circle',
+          link: '/docs/admin/tests',
+        },
+        {
+          id: 'guia-contribuicao',
+          label: 'Como Contribuir',
+          icon: 'pi-plus-circle',
+          link: '/docs/admin/guia-contribuicao',
+        },
+        {
+          id: 'guia-doc',
+          label: 'Guia de Documentação',
+          icon: 'pi-book',
+          link: '/docs/admin/guia-documentacao',
+        },
+      ],
+    },
+    {
+      id: 'produto',
+      label: 'Domínios do Produto',
+      items: [
+        {
+          id: 'auth',
+          label: 'Autenticação',
+          icon: 'pi-lock',
+          link: '/docs/admin/auth',
+        },
+        {
+          id: 'contas',
+          label: 'Contas e Cartões',
+          icon: 'pi-wallet',
+          link: '/docs/admin/dominio-contas',
+        },
+        {
+          id: 'transacoes',
+          label: 'Transações',
+          icon: 'pi-list',
+          link: '/docs/admin/dominio-transacoes',
+        },
+        {
+          id: 'relatorios',
+          label: 'Relatórios',
+          icon: 'pi-chart-bar',
+          link: '/docs/admin/dominio-relatorios',
+        },
+        {
+          id: 'colaboracao',
+          label: 'Colaboração',
+          icon: 'pi-users',
+          link: '/docs/admin/dominio-colaboracao',
+        },
+        {
+          id: 'metas',
+          label: 'Metas de Economia',
+          icon: 'pi-bullseye',
+          link: '/docs/admin/dominio-metas',
+        },
+      ],
+    },
+    {
+      id: 'estrategia',
+      label: 'Visão & Estratégia',
+      items: [
+        {
+          id: 'roadmap',
+          label: 'Roadmap de Evolução',
+          icon: 'pi-map',
+          link: '/docs/admin/roadmap',
+        },
+      ],
+    },
+    {
+      id: 'backlog',
+      label: 'Evolução & Backlog',
+      isBacklog: true,
+      items: [
+        {
+          id: 'fix-docs-access',
+          label: 'Acesso Docs (Fix)',
+          icon: 'pi-wrench',
+          link: '/docs/admin/fix-docs-access',
+          status: 'ANDAMENTO',
+          priority: 'alta',
+          owner: 'engineering',
+          isBacklog: true,
+        },
+        {
+          id: 'plan-invites',
+          label: 'Sistema de Convites',
+          icon: 'pi-user-plus',
+          link: '/docs/admin/sistema-convites',
+          status: 'DISCUSSAO',
+          priority: 'alta',
+          owner: 'product',
+          isBacklog: true,
+        },
+        {
+          id: 'plan-goals',
+          label: 'Planejamento de Metas',
+          icon: 'pi-flag',
+          link: '/docs/admin/planejamento-metas',
+          status: 'DISCUSSAO',
+          priority: 'alta',
+          owner: 'product',
+          isBacklog: true,
+        },
+        {
+          id: 'plan-routing',
+          label: 'Evolução de Rotas',
+          icon: 'pi-directions',
+          link: '/docs/admin/evolucao-rotas',
+          status: 'PENDENTE',
+          priority: 'alta',
+          owner: 'engineering',
+          isBacklog: true,
+        },
+        {
+          id: 'test-plan',
+          label: 'Plano de Testes E2E',
+          icon: 'pi-check-square',
+          link: '/docs/admin/plano-testes',
+          status: 'PENDENTE',
+          priority: 'media',
+          owner: 'engineering',
+          isBacklog: true,
+        },
+
+        {
+          id: 'plan-notifications',
+          label: 'Sistema de Notificações',
+          icon: 'pi-bell',
+          link: '/docs/admin/plan-notifications',
+          status: 'DISCUSSAO',
+          priority: 'media',
+          owner: 'product',
+          isBacklog: true,
+        },
+        {
+          id: 'plan-url-sync',
+          label: 'Sincronização de URL',
+          icon: 'pi-sync',
+          link: '/docs/admin/plan-url-sync',
+          status: 'CONCLUIDO',
+          priority: 'alta',
+          owner: 'engineering',
+          isBacklog: true,
+        },
+        {
+          id: 'plan-accounts',
+          label: 'Filtro de Contas',
+          icon: 'pi-filter',
+          link: '/docs/admin/plan-accounts',
+          status: 'CONCLUIDO',
+          priority: 'alta',
+          owner: 'engineering',
+          isBacklog: true,
+        },
+        {
+          id: 'plan-time-filter',
+          label: 'Filtro Temporal',
+          icon: 'pi-calendar',
+          link: '/docs/admin/plan-time-filter',
+          status: 'CONCLUIDO',
+          priority: 'alta',
+          owner: 'engineering',
+          isBacklog: true,
+        },
+        {
+          id: 'plan-documentation',
+          label: 'Plano de Documentação',
+          icon: 'pi-book',
+          link: '/docs/admin/plan-documentation',
+          status: 'CONCLUIDO',
+          priority: 'alta',
+          owner: 'engineering',
+          isBacklog: true,
+        },
+      ],
+    },
+    {
+      id: 'infra',
+      label: 'Infraestrutura & API',
+      items: [
+        {
+          id: 'api-ref',
+          label: 'Referência de API',
+          icon: 'pi-code',
+          link: '/docs/admin/api-ref',
+        },
+        {
+          id: 'deploy',
+          label: 'Processo de Deploy',
+          icon: 'pi-cloud-upload',
+          link: '/docs/admin/deploy',
+        },
+        {
+          id: 'ops',
+          label: 'Guia de Operações',
+          icon: 'pi-cog',
+          link: '/docs/admin/ops',
+        },
+      ],
+    },
+  ];
+
+  /**
+   * Redireciona o usuário para o domínio principal da aplicação (Dashboard).
+   * Remove o subdomínio 'docs.' da origem atual (preservando protocolo e porta).
+   */
+  goToApp(): void {
+    const origin = window.location.origin;
+    const isAuthenticated = this.auth.isAuthenticated();
+    const targetPath = isAuthenticated ? '/dashboard' : '/login';
+
+    if (origin.includes('://docs.')) {
+      const mainOrigin = origin.replace('://docs.', '://');
+      window.location.href = `${mainOrigin}${targetPath}`;
+    } else {
+      window.location.href = targetPath;
+    }
+  }
+}

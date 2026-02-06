@@ -1,24 +1,33 @@
 /**
  * @file Estilos globais da aplicação Dindinho.
- * 
+ *
  * Este arquivo contém estilos CSS globais que são aplicados em toda a aplicação.
- * 
+ *
  * Estrutura:
- * 1. Importações de bibliotecas de terceiros
- * 2. Estilos globais e reset
+ * 1. Ícones e bibliotecas
+ * 2. Reset e estilos base
  * 3. Variáveis CSS personalizadas
  * 4. Estilos base para elementos HTML
- * 
+ * 5. Tipografia
+ * 6. Utilidades globais
+ * 7. Animações
+ */
+/*
  * Observações:
  * - Evite adicionar estilos específicos de componentes aqui
  * - Use este arquivo apenas para estilos verdadeiramente globais
  * - Considere usar Tailwind para a maioria dos estilos
  */
 
-/* 1. Importações de bibliotecas */
-@import 'tailwindcss';
-
 /* 2. Reset e estilos base */
+@import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+/* PrismJS Theme for Syntax Highlighting */
+@import 'prismjs/themes/prism-tomorrow.css';
+@import 'prismjs/plugins/line-numbers/prism-line-numbers.css';
+
+/* 3. Variáveis CSS personalizadas */
 :root {
   /* Cores da marca */
   --color-primary: #10b981; /* emerald-500 */
@@ -34,7 +43,7 @@
   --spacing-unit: 0.25rem; /* 4px */
 }
 
-/* 3. Estilos base */
+/* 4. Estilos base */
 body {
   @apply bg-gray-50 text-gray-800 antialiased;
   font-family:
@@ -45,7 +54,7 @@ body {
   line-height: 1.5;
 }
 
-/* 4. Tipografia responsiva */
+/* 5. Tipografia */
 h1,
 h2,
 h3,
@@ -53,11 +62,6 @@ h4,
 h5,
 h6 {
   @apply font-bold text-gray-900 leading-tight;
-}
-
-/* 5. Links */
-a {
-  @apply text-emerald-600 hover:text-emerald-700 transition-colors;
 }
 
 /* 6. Utilidades globais */
@@ -79,5 +83,5 @@ a {
   animation: fadeIn 0.3s ease-in-out;
 }
 
-/* 8. Ícones */
+/* 1. Ícones e bibliotecas */
 @import 'primeicons/primeicons.css';

@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { guestGuard } from './guards/guest.guard';
+import { subdomainGuard } from './guards/subdomain.guard';
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
 import { AuthLayoutComponent } from './layouts/auth-layout/auth-layout.component';
 import { PublicLayoutComponent } from './layouts/public-layout/public-layout.component';
@@ -18,14 +19,21 @@ export const routes: Routes = [
   // Redirecionamento inicial
   {
     path: '',
-    redirectTo: 'login',
     pathMatch: 'full',
+    redirectTo: () => {
+      const hostname = window.location.hostname;
+      if (hostname.startsWith('docs.')) {
+        return 'docs/intro'; // Nova rota principal unificada
+      }
+      return 'login';
+    },
   },
 
   // Rotas Públicas (Sem Header/Footer)
   {
     path: '',
     component: AuthLayoutComponent,
+    canActivate: [subdomainGuard],
     children: [
       {
         path: 'login',
@@ -44,6 +52,7 @@ export const routes: Routes = [
   {
     path: '',
     component: PublicLayoutComponent,
+    canActivate: [subdomainGuard],
     children: [
       {
         path: 'faq',
@@ -63,18 +72,14 @@ export const routes: Routes = [
         loadComponent: () =>
           import('../pages/public/onboarding.page').then((m) => m.OnboardingPage),
       },
-      {
-        path: 'docs/public/:slug',
-        loadComponent: () => import('../pages/docs/docs.page').then((m) => m.DocsPage),
-      },
     ],
   },
 
-  // Documentação de Usuário (Protegida)
+  // Documentação (Pública/Usuário)
   {
-    path: 'docs/user',
+    path: 'docs',
     component: UserDocsLayoutComponent,
-    canActivate: [authGuard],
+    canActivate: [subdomainGuard],
     children: [
       {
         path: '',
@@ -84,6 +89,7 @@ export const routes: Routes = [
       {
         path: ':slug',
         loadComponent: () => import('../pages/docs/docs.page').then((m) => m.DocsPage),
+        data: { context: 'user' },
       },
     ],
   },
@@ -92,17 +98,18 @@ export const routes: Routes = [
   {
     path: 'docs/admin',
     component: AdminDocsLayoutComponent,
-    canActivate: [authGuard],
-    data: { roles: ['ADMIN'] },
+    canActivate: [subdomainGuard, authGuard],
+    data: { roles: ['ADMIN'], context: 'admin' },
     children: [
       {
         path: '',
-        redirectTo: 'architecture',
+        redirectTo: 'intro',
         pathMatch: 'full',
       },
       {
         path: ':slug',
         loadComponent: () => import('../pages/docs/docs.page').then((m) => m.DocsPage),
+        data: { context: 'admin' },
       },
     ],
   },
@@ -111,17 +118,12 @@ export const routes: Routes = [
   {
     path: '',
     component: MainLayoutComponent,
-    canActivate: [authGuard],
+    canActivate: [subdomainGuard, authGuard],
     children: [
       {
         path: 'dashboard',
         loadComponent: () => import('../pages/dashboard.page').then((m) => m.DashboardComponent),
         data: { maxWidth: '5xl' },
-      },
-      {
-        path: 'docs',
-        loadComponent: () => import('../pages/docs/docs.page').then((m) => m.DocsPage),
-        data: { title: 'Documentação' },
       },
       {
         path: 'accounts',

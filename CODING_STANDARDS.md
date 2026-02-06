@@ -179,6 +179,14 @@ describe("Componente", () => {
   - Contratos compartilhados: schemas/DTOs em `packages/shared`
 - Evitar duplicação: preferir links entre documentos e uma única fonte de verdade por assunto
 
+### Documentação (Docs-as-Code)
+
+- **Linguagem:** 100% em Português (PT-BR), exceto termos técnicos universais (ex: _deploy_, _auth_, _database_).
+- **Metadados (Frontmatter):**
+  - `tags`: Devem ser curtas e em português quando houver correspondente claro (ex: `planejamento` em vez de `planning`, `segurança` em vez de `security`).
+  - `status`: Usar valores padronizados (`rascunho`, `em-progresso`, `estável`).
+- **Sidebar/Navegação:** Labels devem ser amigáveis ao usuário final ou desenvolvedor, sempre em português.
+
 ### JSDoc
 
 - Meta: cobertura alta de documentação em APIs públicas, contratos e fluxos críticos

@@ -10,8 +10,8 @@ describe("docFrontmatterSchema", () => {
     title: "Documento de Teste",
     description: "Uma descrição de teste.",
     audience: ["dev"],
-    visibility: "internal",
-    status: "draft",
+    visibility: "interno",
+    status: "rascunho",
     owners: ["user-1"],
     tags: ["tag1", "tag2"],
     mvp: false,
@@ -33,15 +33,15 @@ describe("docFrontmatterSchema", () => {
     const minimalData = {
       id: "doc-2",
       title: "Minimal Doc",
-      audience: ["product"],
+      audience: ["produto"],
       owners: ["user-2"],
       createdAt: "2024-02-01",
     };
     const result = docFrontmatterSchema.safeParse(minimalData);
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.visibility).toBe("internal");
-      expect(result.data.status).toBe("draft");
+      expect(result.data.visibility).toBe("interno");
+      expect(result.data.status).toBe("rascunho");
       expect(result.data.mvp).toBe(false);
       expect(result.data.tags).toEqual([]);
       expect(result.data.links).toEqual({

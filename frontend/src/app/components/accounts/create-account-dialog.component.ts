@@ -36,11 +36,13 @@ import { MessageService } from 'primeng/api';
       [draggable]="false"
       [resizable]="false"
       (onHide)="resetForm()"
+      data-testid="create-account-dialog"
     >
       <form
         [formGroup]="form"
         (ngSubmit)="onSubmit()"
         class="flex flex-col gap-4 mt-2 max-h-[70vh] overflow-y-auto overflow-x-hidden px-1"
+        data-testid="create-account-form"
       >
         <div class="flex flex-col gap-2">
           @if (mode() === 'create') {
@@ -53,6 +55,7 @@ import { MessageService } from 'primeng/api';
               aria-label="Tipo de conta"
               [allowEmpty]="false"
               [unselectable]="true"
+              data-testid="account-type-select"
             />
           }
         </div>
@@ -66,11 +69,16 @@ import { MessageService } from 'primeng/api';
               formControlName="name"
               placeholder="Ex: Conta Principal"
               class="w-full"
+              data-testid="account-name-input"
             />
           </div>
           <div class="flex flex-col gap-2 shrink-0">
             <label for="color" class="font-medium text-slate-700 text-sm">Cor</label>
-            <p-colorPicker formControlName="color" appendTo="body" />
+            <p-colorPicker
+              formControlName="color"
+              appendTo="body"
+              data-testid="account-color-picker"
+            />
           </div>
         </div>
 
@@ -87,6 +95,7 @@ import { MessageService } from 'primeng/api';
               locale="pt-BR"
               placeholder="R$ 0,00"
               class="w-full"
+              data-testid="account-initial-balance-input"
             />
           </div>
         }
@@ -94,6 +103,7 @@ import { MessageService } from 'primeng/api';
         @if (isCredit()) {
           <div
             class="p-3 sm:p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col gap-3 sm:gap-4 animate-fade-in"
+            data-testid="credit-card-fields"
           >
             <div class="flex flex-col sm:flex-row gap-3">
               <div class="flex-1 flex flex-col gap-2">
@@ -109,6 +119,7 @@ import { MessageService } from 'primeng/api';
                   buttonLayout="horizontal"
                   placeholder="10"
                   class="w-full"
+                  data-testid="credit-card-closing-day"
                 />
               </div>
               <div class="flex-1 flex flex-col gap-2">
@@ -124,6 +135,7 @@ import { MessageService } from 'primeng/api';
                   buttonLayout="horizontal"
                   placeholder="15"
                   class="w-full"
+                  data-testid="credit-card-due-day"
                 />
               </div>
             </div>
@@ -138,6 +150,7 @@ import { MessageService } from 'primeng/api';
                 locale="pt-BR"
                 placeholder="R$ 0,00"
                 class="w-full"
+                data-testid="credit-card-limit-input"
               />
             </div>
           </div>
@@ -150,6 +163,7 @@ import { MessageService } from 'primeng/api';
             (onClick)="visible.set(false)"
             severity="secondary"
             class="sm:flex-initial"
+            data-testid="cancel-account-button"
           />
           <p-button
             [label]="mode() === 'create' ? 'Criar' : 'Salvar'"
@@ -158,6 +172,7 @@ import { MessageService } from 'primeng/api';
             [disabled]="form.invalid"
             icon="pi pi-check"
             class="sm:flex-initial"
+            data-testid="submit-account-button"
           />
         </div>
       </form>

@@ -4,10 +4,11 @@ import Fastify, {
   FastifyReply,
   FastifyError,
 } from "fastify";
-import { ZodError } from "zod";
+import { ZodError, ZodIssue } from "zod";
 import cors from "@fastify/cors";
 import fastifyJwt from "@fastify/jwt";
 import rateLimit from "@fastify/rate-limit";
+import helmet from "@fastify/helmet";
 import underPressure from "@fastify/under-pressure";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
@@ -135,12 +136,35 @@ export function buildApp(): FastifyInstance {
     transform: jsonSchemaTransform,
   });
 
-  app.register(authPlugin);
+  // Swagger UI - Documentação da API
+  if (
+    process.env.NODE_ENV !== "production" ||
+    process.env.ENABLE_SWAGGER === "true"
+  ) {
+    app.addHook("onRequest", async (request, reply) => {
+      if (request.url === "/api/docs") {
+        await reply.redirect("/api/docs/");
+      }
+    });
 
-  app.register(healthRoutes);
+    app.register(swaggerUi, {
+      routePrefix: "/api/docs",
+      uiConfig: {
+        docExpansion: "list",
+        deepLinking: false,
+      },
+    });
+  }
+
+  app.register(authPlugin);
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
+
+  app.register(helmet, {
+    contentSecurityPolicy: process.env.NODE_ENV === "production",
+    crossOriginEmbedderPolicy: process.env.NODE_ENV === "production",
+  });
 
   app.register(underPressure, {
     maxEventLoopDelay: 5000,
@@ -164,7 +188,8 @@ export function buildApp(): FastifyInstance {
       if (process.env.NODE_ENV !== "production") {
         if (
           origin.startsWith("http://localhost:") ||
-          origin.startsWith("http://127.0.0.1:")
+          origin.startsWith("http://127.0.0.1:") ||
+          origin.includes(".localhost:")
         ) {
           cb(null, true);
           return;
@@ -181,21 +206,29 @@ export function buildApp(): FastifyInstance {
     credentials: true,
   });
 
-  app.register(rateLimit, {
-    max: Number(process.env.RATE_LIMIT_MAX) || 100,
-    timeWindow: process.env.RATE_LIMIT_TIME_WINDOW || "1 minute",
-    allowList: process.env.RATE_LIMIT_ALLOWLIST
-      ? process.env.RATE_LIMIT_ALLOWLIST.split(",")
-      : undefined,
-    keyGenerator: (request) => {
-      const xRealIp = request.headers["x-real-ip"];
-      return Array.isArray(xRealIp) ? xRealIp[0] : xRealIp || request.ip;
-    },
-  });
+  if (
+    process.env.NODE_ENV !== "test" ||
+    process.env.ENABLE_RATE_LIMIT_IN_TESTS === "true"
+  ) {
+    app.register(rateLimit, {
+      max: Number(process.env.RATE_LIMIT_MAX) || 100,
+      timeWindow: process.env.RATE_LIMIT_TIME_WINDOW || "1 minute",
+      allowList: process.env.RATE_LIMIT_ALLOWLIST
+        ? process.env.RATE_LIMIT_ALLOWLIST.split(",")
+        : undefined,
+      keyGenerator: (request) => {
+        const xRealIp = request.headers["x-real-ip"];
+        const ip = Array.isArray(xRealIp)
+          ? xRealIp[0]
+          : xRealIp || request.ip || "127.0.0.1";
+        return ip;
+      },
+    });
+  }
 
   app.setErrorHandler(
     (error: FastifyError, request: FastifyRequest, reply: FastifyReply) => {
-      const { validation, code, message, statusCode = 500 } = error;
+      const { code, message, statusCode = 500 } = error;
       const { id: requestId } = request;
       const isDev = process.env.NODE_ENV !== "production";
 
@@ -203,6 +236,8 @@ export function buildApp(): FastifyInstance {
       request.log.error(
         {
           err: error,
+          validation: error.validation,
+          statusCode: error.statusCode,
           requestId,
           url: request.url,
           method: request.method,
@@ -210,15 +245,66 @@ export function buildApp(): FastifyInstance {
         "Erro capturado pelo ErrorHandler",
       );
 
-      // Erros de validação do Zod
-      if (error instanceof ZodError) {
-        return reply.status(422).send(
+      // Erros de validação (Zod ou Fastify)
+      if (
+        error instanceof ZodError ||
+        error.validation ||
+        error.statusCode === 400 ||
+        error.code === "FST_ERR_VALIDATION"
+      ) {
+        // Tenta extrair issues do Zod ou do Fastify
+        const rawIssues =
+          error instanceof ZodError ? error.issues : error.validation;
+
+        let issues: ZodIssue[] | undefined;
+
+        // Se for erro do Fastify/AJV, tenta mapear para o formato que o frontend espera (ZodIssue)
+        if (Array.isArray(rawIssues)) {
+          issues = rawIssues.map((issue) => {
+            const issueObj = issue as unknown as Record<string, unknown>;
+            // Se já for formato Zod (tem code e path no topo), mantém
+            if (
+              typeof issueObj.code === "string" &&
+              Array.isArray(issueObj.path)
+            ) {
+              return issue as unknown as ZodIssue;
+            }
+
+            // Se for formato Fastify/AJV, tenta extrair do params.issue ou criar um compatível
+            const params = issueObj.params as
+              | Record<string, unknown>
+              | undefined;
+            const zodIssue = params?.issue as
+              | Record<string, unknown>
+              | undefined;
+
+            if (
+              zodIssue &&
+              typeof zodIssue.code === "string" &&
+              Array.isArray(zodIssue.path)
+            ) {
+              return zodIssue as unknown as ZodIssue;
+            }
+
+            return {
+              code: "custom",
+              path:
+                typeof issueObj.instancePath === "string"
+                  ? issueObj.instancePath.split("/").filter(Boolean)
+                  : [],
+              message:
+                (issueObj.message as string | undefined) || "Campo inválido",
+            } as unknown as ZodIssue;
+          });
+        }
+
+        return reply.code(422).send(
           buildApiErrorResponse({
             statusCode: 422,
             message: "Os dados fornecidos são inválidos.",
             requestId,
             code: "VALIDATION_ERROR",
-            issues: validation,
+            issues,
           }),
         );
       }
@@ -278,24 +364,12 @@ export function buildApp(): FastifyInstance {
     },
   );
 
+  app.register(healthRoutes);
+
   // API v1
   app.register(
     async (api: FastifyInstance) => {
       const typedApi = api.withTypeProvider<ZodTypeProvider>();
-
-      // Swagger UI - Documentação da API (Somente em desenvolvimento ou se explicitamente habilitado)
-      if (
-        process.env.NODE_ENV !== "production" ||
-        process.env.ENABLE_SWAGGER === "true"
-      ) {
-        typedApi.register(swaggerUi, {
-          routePrefix: "/docs",
-          uiConfig: {
-            docExpansion: "list",
-            deepLinking: false,
-          },
-        });
-      }
 
       // Registro de rotas sequencial para garantir ordem de inicialização
       typedApi.log.debug("Iniciando registro de rotas da API...");
