@@ -4,12 +4,12 @@ title: "Correção da Experiência de Acesso à Documentação e Redirecionament
 description: "Melhoria no fluxo de redirecionamento pós-login para documentação e isolamento do subdomínio de docs."
 audience: ["dev", "ops", "produto"]
 visibility: "interno"
-status: "em-progresso"
+status: "concluido"
 owners: ["engineering"]
 tags: ["planejamento", "ux", "autenticação", "roteamento"]
 mvp: true
 createdAt: "2026-02-04"
-updatedAt: "2026-02-04"
+updatedAt: "2026-02-06"
 ---
 
 # Planejamento: Correção da Experiência de Acesso à Documentação
