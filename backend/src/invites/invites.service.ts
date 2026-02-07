@@ -157,7 +157,10 @@ export class InvitesService {
   }
 
   /**
-   * Lista convites enviados pelo usuário
+   * Lista convites enviados pelo usuário.
+   * @async
+   * @param {string} senderId - ID do usuário remetente.
+   * @returns {Promise<InviteDTO[]>} Lista de DTOs de convites enviados.
    */
   async listSentInvites(senderId: string): Promise<InviteDTO[]> {
     const invites = await this.prisma.invite.findMany({
@@ -175,7 +178,10 @@ export class InvitesService {
   }
 
   /**
-   * Lista convites recebidos pelo usuário (baseado no email)
+   * Lista convites recebidos pelo usuário (baseado no email).
+   * @async
+   * @param {string} userEmail - E-mail do usuário destinatário.
+   * @returns {Promise<InviteDTO[]>} Lista de DTOs de convites recebidos.
    */
   async listReceivedInvites(userEmail: string): Promise<InviteDTO[]> {
     const invites = await this.prisma.invite.findMany({
@@ -193,8 +199,13 @@ export class InvitesService {
   }
 
   /**
-   * Atualiza o status de um convite (Aceitar/Rejeitar)
+   * Atualiza o status de um convite (Aceitar/Rejeitar).
    * @async
+   * @param {string} userId - ID do usuário que está respondendo.
+   * @param {string} userEmail - E-mail do usuário que está respondendo.
+   * @param {string} inviteId - ID do convite.
+   * @param {UpdateInviteStatusDTO} data - Novos dados de status.
+   * @returns {Promise<InviteDTO>} DTO do convite atualizado.
    */
   async updateInviteStatus(
     userId: string,
@@ -305,7 +316,11 @@ export class InvitesService {
   }
 
   /**
-   * Remove/Cancela um convite enviado
+   * Remove ou cancela um convite enviado.
+   * @async
+   * @param {string} senderId - ID do usuário remetente que está cancelando.
+   * @param {string} inviteId - ID do convite a ser removido.
+   * @returns {Promise<void>}
    */
   async deleteInvite(senderId: string, inviteId: string): Promise<void> {
     const invite = await this.prisma.invite.findUnique({
@@ -335,7 +350,12 @@ export class InvitesService {
   }
 
   /**
-   * Busca um convite pelo token
+   * Busca um convite pelo seu token de segurança.
+   * @async
+   * @param {string} token - Token do convite.
+   * @returns {Promise<InviteDTO>} DTO do convite encontrado.
+   * @throws {InviteNotFoundError} Se o convite não existir.
+   * @throws {InviteExpiredError} Se o convite estiver expirado.
    */
   async getInviteByToken(token: string): Promise<InviteDTO> {
     const invite = (await this.prisma.invite.findUnique({
@@ -361,9 +381,11 @@ export class InvitesService {
   }
 
   /**
-   * Remove convites expirados há mais de X dias (padrão 30)
-   * Realiza hard delete para manter a tabela limpa, pois o log de auditoria
-   * já mantém o histórico das ações principais.
+   * Remove convites expirados ou rejeitados há mais de X dias.
+   * @async
+   * @description Realiza a limpeza periódica da tabela de convites.
+   * @param {number} [daysOld=30] - Número de dias para considerar um convite antigo.
+   * @returns {Promise<number>} Quantidade de convites removidos.
    */
   async cleanupExpiredInvites(daysOld = 30): Promise<number> {
     const threshold = new Date();
@@ -387,8 +409,10 @@ export class InvitesService {
   }
 
   /**
-   * Helper para mapear o modelo do Prisma para o DTO do shared
+   * Converte o modelo do Prisma com relações para um DTO de convite.
    * @private
+   * @param {InviteWithRelations} invite - Modelo do Prisma carregado com relações.
+   * @returns {InviteDTO} DTO formatado para a API.
    */
   private mapToDTO(invite: InviteWithRelations): InviteDTO {
     return {
@@ -411,8 +435,15 @@ export class InvitesService {
   }
 
   /**
-   * Registra um evento de auditoria
+   * Registra um evento de auditoria no sistema.
    * @private
+   * @async
+   * @param {string} userId - ID do usuário que realizou a ação.
+   * @param {string} action - Nome da ação realizada.
+   * @param {string} resourceType - Tipo de recurso afetado.
+   * @param {string} resourceId - ID do recurso afetado.
+   * @param {Record<string, unknown>} [details] - Detalhes adicionais em JSON.
+   * @param {Prisma.TransactionClient} [tx] - Cliente de transação opcional.
    */
   private async logAudit(
     userId: string,
@@ -422,15 +453,26 @@ export class InvitesService {
     details?: Record<string, unknown>,
     tx?: Prisma.TransactionClient,
   ): Promise<void> {
-    const client = tx || this.prisma;
-    await (client as PrismaClient).auditLog.create({
-      data: {
-        userId,
-        action,
-        resourceType,
-        resourceId,
-        details: (details as Prisma.InputJsonValue) || Prisma.JsonNull,
-      },
-    });
+    if (tx) {
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action,
+          resourceType,
+          resourceId,
+          details: (details as Prisma.InputJsonValue) || Prisma.JsonNull,
+        },
+      });
+    } else {
+      await this.prisma.auditLog.create({
+        data: {
+          userId,
+          action,
+          resourceType,
+          resourceId,
+          details: (details as Prisma.InputJsonValue) || Prisma.JsonNull,
+        },
+      });
+    }
   }
 }

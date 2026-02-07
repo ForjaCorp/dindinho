@@ -68,7 +68,7 @@ export class OnboardingService {
           });
 
           // 2.3 Registrar auditoria
-          await (prisma as PrismaClient).auditLog.create({
+          await prisma.auditLog.create({
             data: {
               userId,
               action: "AUTO_LINK_INVITE",
@@ -78,7 +78,7 @@ export class OnboardingService {
                 inviteId: invite.id,
                 permission: account.permission,
                 reason: "Signup auto-link",
-              },
+              } as Prisma.InputJsonValue,
             },
           });
         }
