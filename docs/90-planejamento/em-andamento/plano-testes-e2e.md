@@ -15,66 +15,56 @@ createdAt: "2026-02-03"
 
 Este documento define a estratégia, ferramentas e cenários de teste para garantir que o Dindinho funcione perfeitamente do ponto de vista do usuário final.
 
----
+## � Contexto e Problema
 
-## 🛠️ Ferramentas Recomendadas
+- **Cenário Atual**: O projeto possui testes unitários e de integração, mas carece de uma validação completa que simule a jornada real do usuário no navegador.
+- **Por que agora?**: Com a evolução do sistema de convites e multi-contas, a complexidade dos fluxos aumentou, exigindo uma rede de segurança que valide a integração entre Frontend, Backend e Banco de Dados em tempo real.
 
-- **Playwright Test Runner**: Escolhido pela sua velocidade nativa, suporte a múltiplos navegadores (Chromium, Firefox, WebKit), sharding nativo e geração de artefatos (vídeos/traces).
-- **Prisma (Test DB)**: Utilização de um banco de dados de teste isolado (MySQL efêmero via Docker).
-- **Turborepo**: Orquestração da execução paralela entre frontend e backend durante o ciclo de testes.
+## 🚀 Proposta de Solução
 
----
+- **Visão Geral**: Implementar uma suíte de testes E2E robusta utilizando **Playwright Test Runner**, integrada ao Turborepo e rodando contra uma instância efêmera de **MySQL** via Docker.
+- **Diferencial**: Uso de **API-First Setup** para preparação de dados e **reuso de estado de autenticação** para máxima velocidade.
 
-## 🏗️ Arquitetura Técnica e Infraestrutura
+## 📅 Cronograma de Execução (Fases)
 
-Para que os testes sejam confiáveis e rápidos, a arquitetura deve suportar:
+### Fase 1: Infraestrutura e Base Técnica
 
-1.  **Orquestração de Ambiente:**
-    - Uso de `docker-compose.test.yml` para subir Frontend, Backend e um banco MySQL efêmero.
-    - **Global Setup/Teardown:** O Playwright gerencia o ciclo de vida do ambiente, garantindo que o banco de dados seja migrado e os serviços estejam saudáveis antes de iniciar.
-2.  **Estratégia de Dados (State Management):**
-    - **API-First Setup:** Usar chamadas de API (via `request` do Playwright) para criar o estado necessário (usuário, contas) antes de testar a UI, acelerando a execução.
-    - **Banco de Dados Isolado:** Cada worker do Playwright pode operar em um esquema/instância isolada para evitar conflitos de dados em execuções paralelas.
-3.  **Autenticação Eficiente:**
-    - Reuso de estado de autenticação (`storageState`) para evitar login repetitivo em cada teste, economizando ~5s por cenário.
+- [ ] Configurar `@playwright/test` na raiz do monorepo.
+- [ ] Criar `docker-compose.test.yml` com imagem MySQL 8.0.
+- [ ] Implementar `global-setup.ts` para orquestração de ambiente (Migrate + Services Check).
+- [ ] Configurar scripts de execução no `package.json` principal via Turbo.
+- **Critérios de Aceite**:
+  - [ ] Comando `npm run test:e2e` sobe o ambiente, roda um teste "smoke" e encerra com sucesso.
+  - [ ] Traces e Vídeos são gerados corretamente em caso de falha.
 
-## 🗺️ Jornadas Críticas (Cenários de Teste)
+### Fase 2: Autenticação e Onboarding
 
-### 1. Autenticação & Onboarding
+- [ ] Implementar script de setup de autenticação (`storageState`).
+- [ ] Criar testes para o fluxo de Registro de Novo Usuário.
+- [ ] Criar testes para Login e Redirecionamento Pós-Auth.
+- [ ] Validar tour inicial e criação da primeira conta.
+- **Critérios de Aceite**:
+  - [ ] Fluxo de onboarding validado 100% (do form ao dashboard).
+  - [ ] Persistência de sessão verificada entre recarregamentos de página.
 
-- **Cenário**: Novo usuário se registra, confirma e-mail e completa o tour inicial.
-- **Validação**: Verificar se o perfil foi criado corretamente e se o redirecionamento para o dashboard ocorreu.
-- **Técnico**: Validar persistência no banco e disparo de e-mail (mock/Mailpit).
+### Fase 3: Jornadas de Transações e Colaboração
 
-### 2. Gestão de Transações (Otimizado)
+- [ ] Implementar testes para criação, edição e exclusão de Transações.
+- [ ] Validar atualização de saldo em tempo real no Dashboard.
+- [ ] Criar testes para o Sistema de Convites (Gerar link -> Aceitar -> Ver conta compartilhada).
+- **Critérios de Aceite**:
+  - [ ] CRUD de transações validado com sucesso.
+  - [ ] Fluxo de colaboração (convites) testado entre dois usuários distintos.
 
-- **Cenário**: Criar uma transação de despesa, editar o valor e depois excluí-la.
-- **Validação**: O saldo da conta deve ser atualizado em tempo real no dashboard.
-- **Técnico**: Interceptar chamadas via `page.route` para simular falhas de rede e verificar resiliência.
+## 🏗️ Impacto Técnico
 
----
+- **Banco de Dados**: Necessário garantir que as migrações Prisma sejam aplicadas ao MySQL efêmero antes dos testes.
+- **API**: O backend deve ser iniciado em modo `test` (se necessário) para mocks de e-mail/Mailpit.
+- **Frontend**: Exigência rigorosa de atributos `data-testid` em todos os elementos interativos.
 
-## 🚀 Integração com CI/CD
+## ✅ Definição de Pronto (DoD)
 
-- **Artifacts:** Gravação de vídeo e trace (Playwright Trace Viewer) apenas em falhas no GitHub Actions.
-- **Sharding:** Divisão dos testes em múltiplos containers no CI caso o tempo ultrapasse 5 min.
-
----
-
-## 📈 Métricas de Sucesso
-
-- **Cobertura de Fluxos Críticos**: 100% das jornadas descritas acima devem estar automatizadas.
-- **Tempo de Execução**: A suíte completa deve rodar em menos de 5 minutos no CI.
-- **Flakiness**: Zero tolerância para testes intermitentes. Testes instáveis devem ser corrigidos ou removidos imediatamente.
-
----
-
-## 🔗 Links Relacionados
-
-- [Padrões de Frontend](../../20-arquitetura/padroes-frontend.md)
-- [Padrões de Backend](../../20-arquitetura/padroes-backend.md)
-- [Roadmap de Evolução](../roadmap-evolucao.md)
-
----
-
-> **Nota:** A implementação deste plano depende da estabilização da Fase 5 do projeto.
+- [ ] Código testado (unitário/integração).
+- [ ] Documentação atualizada (Tier User/Admin).
+- [ ] Lint/Typecheck sem erros.
+- [ ] Revisado por outro par.
