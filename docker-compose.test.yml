@@ -1,0 +1,14 @@
+services:
+  db-test:
+    image: mysql:8.0
+    container_name: dindinho_mysql_test
+    restart: always
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: dindinho_test
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10

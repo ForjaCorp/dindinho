@@ -25,6 +25,7 @@
     "typecheck": "turbo run typecheck",
     "test:unit": "turbo run test:unit",
     "test:integration": "turbo run test:integration",
+    "test:e2e": "npx playwright test",
     "quality:precommit": "lint-staged",
     "quality:prepush": "turbo run typecheck build test:integration --continue",
     "quality:ci": "turbo run lint typecheck build test test:integration --continue",
@@ -42,7 +43,10 @@
   "author": "Forja Corp",
   "license": "ISC",
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.2.1",
     "@vitest/coverage-v8": "^4.0.18",
+    "dotenv": "^17.2.4",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.7.4",
