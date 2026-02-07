@@ -11,7 +11,7 @@ mvp: true
 createdAt: "2026-02-03"
 ---
 
-# 🧪 Plano de Testes E2E (End-to-End) [EM ANDAMENTO]
+# Planejamento: Plano de Testes E2E (End-to-End) [EM ANDAMENTO]
 
 Este documento define a estratégia, ferramentas e cenários de teste para garantir que o Dindinho funcione perfeitamente do ponto de vista do usuário final.
 
