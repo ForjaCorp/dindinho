@@ -108,11 +108,11 @@ export class DocsService {
       },
       roadmap: { path: '90-planejamento/roadmap-evolucao.md', slug: 'roadmap' },
       'test-plan-e2e': {
-        path: '90-planejamento/em-discussao/plano-testes-e2e.md',
+        path: '90-planejamento/em-andamento/plano-testes-e2e.md',
         slug: 'test-plan-e2e',
       },
       'plano-testes': {
-        path: '90-planejamento/em-discussao/plano-testes-e2e.md',
+        path: '90-planejamento/em-andamento/plano-testes-e2e.md',
         slug: 'plano-testes',
       },
       'evolucao-rotas': {

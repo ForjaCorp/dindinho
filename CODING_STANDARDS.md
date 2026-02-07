@@ -78,6 +78,14 @@
 - Evitar arrow functions em templates
 - Para imagens estáticas, preferir `NgOptimizedImage`
 
+### Testes
+
+- **Testes Unitários/Integração**: Usar Vitest (`*.spec.ts`).
+- **Testes E2E**: Usar Playwright (`tests/e2e/*.spec.ts`).
+- **Seletores**: SEMPRE usar `data-testid` para selecionar elementos no DOM em testes (ADR 0008).
+- **Linguagem**: Descrições de testes em Português (PT-BR).
+- **E2E Infrastructure**: Os testes E2E rodam contra um banco MySQL dedicado (porta 3307) orquestrado automaticamente pelo Playwright via `docker-compose.test.yml`.
+
 ### Acessibilidade
 
 - Passar em checks AXE

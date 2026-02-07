@@ -96,6 +96,13 @@ Para garantir uma experiência de usuário consistente e compartilhável:
 - Docker & Docker Compose
 - npm (workspaces)
 
+### Comandos Principais
+
+- `npm run setup:dev`: Sobe o banco, roda migrações e seed
+- `npm run dev`: Inicia frontend e backend em modo desenvolvimento
+- `npm test`: Roda todos os testes unitários e de integração
+- `npm run test:e2e`: Roda os testes End-to-End (Playwright)
+
 ### Variáveis de Ambiente (Backend)
 
 Crie um arquivo `.env` na raiz do backend:

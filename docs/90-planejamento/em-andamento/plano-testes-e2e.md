@@ -15,7 +15,7 @@ createdAt: "2026-02-03"
 
 Este documento define a estratégia, ferramentas e cenários de teste para garantir que o Dindinho funcione perfeitamente do ponto de vista do usuário final.
 
-## � Contexto e Problema
+## 🎯 Contexto e Problema
 
 - **Cenário Atual**: O projeto possui testes unitários e de integração, mas carece de uma validação completa que simule a jornada real do usuário no navegador.
 - **Por que agora?**: Com a evolução do sistema de convites e multi-contas, a complexidade dos fluxos aumentou, exigindo uma rede de segurança que valide a integração entre Frontend, Backend e Banco de Dados em tempo real.
@@ -29,13 +29,13 @@ Este documento define a estratégia, ferramentas e cenários de teste para garan
 
 ### Fase 1: Infraestrutura e Base Técnica
 
-- [ ] Configurar `@playwright/test` na raiz do monorepo.
-- [ ] Criar `docker-compose.test.yml` com imagem MySQL 8.0.
-- [ ] Implementar `global-setup.ts` para orquestração de ambiente (Migrate + Services Check).
-- [ ] Configurar scripts de execução no `package.json` principal via Turbo.
+- [x] Configurar `@playwright/test` na raiz do monorepo.
+- [x] Criar `docker-compose.test.yml` com imagem MySQL 8.0.
+- [x] Implementar `global-setup.ts` para orquestração de ambiente (Migrate + Services Check).
+- [x] Configurar scripts de execução no `package.json` principal via Turbo.
 - **Critérios de Aceite**:
-  - [ ] Comando `npm run test:e2e` sobe o ambiente, roda um teste "smoke" e encerra com sucesso.
-  - [ ] Traces e Vídeos são gerados corretamente em caso de falha.
+  - [x] Comando `npm run test:e2e` sobe o ambiente, roda um teste "smoke" e encerra com sucesso.
+  - [x] Traces e Vídeos são gerados corretamente em caso de falha.
 
 ### Fase 2: Autenticação e Onboarding
 
