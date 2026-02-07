@@ -124,8 +124,28 @@ export class DocsService {
         slug: 'planejamento-metas',
       },
       'sistema-convites': {
-        path: '90-planejamento/em-discussao/sistema-convites.md',
+        path: '90-planejamento/concluido/sistema-convites.md',
         slug: 'sistema-convites',
+      },
+      'refatoracao-roles-permissoes': {
+        path: '90-planejamento/concluido/refatoracao-roles-permissoes.md',
+        slug: 'refatoracao-roles-permissoes',
+      },
+      notificacoes: {
+        path: '90-planejamento/em-discussao/notificacoes.md',
+        slug: 'notificacoes',
+      },
+      'plan-notifications': {
+        path: '90-planejamento/em-discussao/notificacoes.md',
+        slug: 'plan-notifications',
+      },
+      'plan-url-sync': {
+        path: '90-planejamento/concluido/sincronizacao-url.md',
+        slug: 'plan-url-sync',
+      },
+      'plan-invites': {
+        path: '90-planejamento/concluido/sistema-convites.md',
+        slug: 'plan-invites',
       },
       'plan-routing': {
         path: '90-planejamento/em-discussao/evolucao-rotas.md',
@@ -135,21 +155,53 @@ export class DocsService {
         path: '90-planejamento/concluido/filtro-contas.md',
         slug: 'plan-accounts',
       },
-      'plan-notifications': {
-        path: '90-planejamento/em-discussao/notificacoes.md',
-        slug: 'plan-notifications',
-      },
       'plan-goals': {
         path: '90-planejamento/em-discussao/planejamento-metas.md',
         slug: 'plan-goals',
       },
-      'plan-url-sync': {
-        path: '90-planejamento/concluido/sincronizacao-url.md',
-        slug: 'plan-url-sync',
+      'plan-versioning': {
+        path: '90-planejamento/em-discussao/planejamento-versionamento.md',
+        slug: 'plan-versioning',
       },
-      'plan-invites': {
-        path: '90-planejamento/em-discussao/sistema-convites.md',
-        slug: 'plan-invites',
+      'refactor-roles': {
+        path: '90-planejamento/concluido/refatoracao-roles-permissoes.md',
+        slug: 'refactor-roles',
+      },
+      'user-profile': {
+        path: '90-planejamento/em-discussao/perfil-usuario.md',
+        slug: 'user-profile',
+      },
+      'perfil-usuario': {
+        path: '90-planejamento/em-discussao/perfil-usuario.md',
+        slug: 'perfil-usuario',
+      },
+      'admin-portal': {
+        path: '90-planejamento/em-discussao/portal-admin.md',
+        slug: 'admin-portal',
+      },
+      'portal-admin': {
+        path: '90-planejamento/em-discussao/portal-admin.md',
+        slug: 'portal-admin',
+      },
+      'crypto-privacy': {
+        path: '90-planejamento/em-discussao/criptografia-privacidade.md',
+        slug: 'crypto-privacy',
+      },
+      'criptografia-privacidade': {
+        path: '90-planejamento/em-discussao/criptografia-privacidade.md',
+        slug: 'criptografia-privacidade',
+      },
+      'pwa-experience': {
+        path: '90-planejamento/em-discussao/pwa-full.md',
+        slug: 'pwa-experience',
+      },
+      'pwa-full': {
+        path: '90-planejamento/em-discussao/pwa-full.md',
+        slug: 'pwa-full',
+      },
+      'planejamento-pwa': {
+        path: '90-planejamento/em-discussao/pwa-full.md',
+        slug: 'planejamento-pwa',
       },
       'plan-time-filter': {
         path: '90-planejamento/concluido/filtro-temporal.md',

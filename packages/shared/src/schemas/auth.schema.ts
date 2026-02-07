@@ -1,6 +1,25 @@
 import { z } from "zod";
 
 /**
+ * Enum para papéis de sistema (nível global)
+ * @enum {string}
+ */
+export enum SystemRole {
+  USER = "USER",
+  ADMIN = "ADMIN",
+}
+
+/**
+ * Enum para permissões de recurso (nível de conta)
+ * @enum {string}
+ */
+export enum ResourcePermission {
+  VIEWER = "VIEWER",
+  EDITOR = "EDITOR",
+  OWNER = "OWNER",
+}
+
+/**
  * Esquema de validação para autenticação de usuário
  * @constant {z.ZodObject} loginSchema
  * @property {string} email - Email do usuário (deve ser um email válido)
@@ -54,7 +73,7 @@ export const loginResponseSchema = z.object({
     id: z.string(),
     name: z.string(),
     email: z.string(),
-    role: z.enum(["VIEWER", "EDITOR", "ADMIN"]),
+    systemRole: z.nativeEnum(SystemRole),
   }),
 });
 

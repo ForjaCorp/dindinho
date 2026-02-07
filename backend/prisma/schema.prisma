@@ -12,10 +12,15 @@ enum AccountType {
   CREDIT
 }
 
-enum Role {
+enum SystemRole {
+  USER
+  ADMIN
+}
+
+enum ResourcePermission {
   VIEWER
   EDITOR
-  ADMIN
+  OWNER
 }
 
 enum InviteStatus {
@@ -50,7 +55,7 @@ model User {
   name         String
   phone        String?
   avatarUrl    String?
-  role         Role     @default(VIEWER)
+  systemRole   SystemRole @default(USER)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -99,7 +104,7 @@ model AccountAccess {
   id       String @id @default(uuid())
   accountId String
   userId   String
-  role     Role   @default(VIEWER)
+  permission ResourcePermission @default(VIEWER)
 
   account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id])
@@ -207,6 +212,7 @@ model DailySnapshot {
 
 model Invite {
   id        String   @id @default(uuid())
+  token     String   @unique
   email     String
   senderId  String
   sender    User     @relation("SentInvites", fields: [senderId], references: [id])
@@ -218,13 +224,28 @@ model Invite {
   accounts  InviteAccount[]
 
   @@index([email])
+  @@index([token])
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String
+  action       String
+  resourceType String
+  resourceId   String
+  details      Json?
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([resourceId])
+  @@index([resourceType, resourceId])
 }
 
 model InviteAccount {
   id        String @id @default(uuid())
   inviteId  String
   accountId String
-  role      Role   @default(VIEWER)
+  permission ResourcePermission @default(VIEWER)
 
   invite  Invite  @relation(fields: [inviteId], references: [id], onDelete: Cascade)
   account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)

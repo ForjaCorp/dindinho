@@ -16,7 +16,7 @@ import { of } from 'rxjs';
 import { DashboardComponent } from './dashboard.page';
 import { ApiService } from '../app/services/api.service';
 import { AccountService } from '../app/services/account.service';
-import { ApiResponseDTO, TransactionDTO, AccountDTO } from '@dindinho/shared';
+import { ApiResponseDTO, TransactionDTO, AccountDTO, SystemRole } from '@dindinho/shared';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { CreateAccountDialogComponent } from '../app/components/accounts/create-account-dialog.component';
@@ -35,6 +35,10 @@ describe('DashboardComponent', () => {
   let apiServiceMock: {
     getHello: ReturnType<typeof vi.fn>;
     getTransactions: ReturnType<typeof vi.fn>;
+    get: ReturnType<typeof vi.fn>;
+    post: ReturnType<typeof vi.fn>;
+    patch: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
   };
   let accountServiceMock: {
     accounts: ReturnType<typeof vi.fn>;
@@ -72,6 +76,10 @@ describe('DashboardComponent', () => {
     apiServiceMock = {
       getHello: vi.fn(() => of(apiResponse)),
       getTransactions: vi.fn(() => of({ items: [], nextCursorId: null })),
+      get: vi.fn(() => of([])),
+      post: vi.fn(() => of({})),
+      patch: vi.fn(() => of({})),
+      delete: vi.fn(() => of({})),
     };
 
     accountServiceMock = {
@@ -86,7 +94,7 @@ describe('DashboardComponent', () => {
         id: 'user-1',
         name: 'Usuário',
         email: 'user@example.com',
-        role: 'VIEWER',
+        systemRole: SystemRole.USER,
       }),
     };
 
@@ -142,7 +150,7 @@ describe('DashboardComponent', () => {
     const shortcutsSection = fixture.nativeElement.querySelector(
       '[data-testid="quick-links-section"]',
     );
-    const textosEsperados = ['Contas', 'Cartões', 'Relatórios', 'Ajustes'];
+    const textosEsperados = ['Contas', 'Cartões', 'Relatórios', 'Convites'];
 
     textosEsperados.forEach((texto) => {
       expect(shortcutsSection.textContent).toContain(texto);
@@ -546,7 +554,7 @@ describe('DashboardComponent', () => {
       id: 'admin-1',
       name: 'Admin',
       email: 'admin@example.com',
-      role: 'ADMIN',
+      systemRole: SystemRole.ADMIN,
     });
 
     fixture = TestBed.createComponent(DashboardComponent);
@@ -568,7 +576,7 @@ describe('DashboardComponent', () => {
       id: 'admin-1',
       name: 'Admin',
       email: 'admin@example.com',
-      role: 'ADMIN',
+      systemRole: SystemRole.ADMIN,
     });
 
     fixture = TestBed.createComponent(DashboardComponent);
@@ -593,7 +601,7 @@ describe('DashboardComponent', () => {
       id: 'user-1',
       name: 'Usuário',
       email: 'user@example.com',
-      role: 'VIEWER',
+      systemRole: SystemRole.USER,
     });
 
     fixture = TestBed.createComponent(DashboardComponent);

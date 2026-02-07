@@ -10,7 +10,15 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { DeepMockProxy, mockReset } from "vitest-mock-extended";
-import { PrismaClient, Role, User, SignupAllowlist } from "@prisma/client";
+import {
+  PrismaClient,
+  SystemRole,
+  User,
+  SignupAllowlist,
+  AccountAccess,
+  AuditLog,
+  Prisma,
+} from "@prisma/client";
 
 import { SignupNotAllowedError, UsersService } from "./users.service";
 
@@ -37,6 +45,14 @@ describe("UsersService", () => {
     mockReset(prismaMock);
     usersService = new UsersService(prismaMock);
     process.env.SIGNUP_ALLOWLIST_ENABLED = "false";
+
+    // Mock padrão para transações
+    prismaMock.$transaction.mockImplementation(async (fn) => {
+      return fn(prismaMock);
+    });
+
+    // Mock padrão para convites pendentes (vazio)
+    prismaMock.invite.findMany.mockResolvedValue([]);
   });
 
   /**
@@ -55,7 +71,7 @@ describe("UsersService", () => {
       passwordHash: "hashed-password",
       avatarUrl: null,
       phone: "+5511999999999",
-      role: Role.VIEWER,
+      systemRole: SystemRole.USER,
       createdAt: mockDate,
       updatedAt: mockDate,
     } as User);
@@ -92,6 +108,115 @@ describe("UsersService", () => {
   });
 
   /**
+   * Testa o auto-link de convites pendentes no signup
+   * @test {UsersService.create} Deve vincular convites pendentes automaticamente ao criar usuário
+   */
+  it("deve vincular convites pendentes automaticamente ao criar usuário", async () => {
+    const validUuid = "550e8400-e29b-41d4-a716-446655440000";
+    const mockDate = new Date();
+    const email = "convidado@example.com";
+    const accountId = "account-123";
+
+    prismaMock.user.findUnique.mockResolvedValue(null);
+    prismaMock.user.create.mockResolvedValue({
+      id: validUuid,
+      name: "Convidado",
+      email,
+      passwordHash: "hashed-password",
+      avatarUrl: null,
+      phone: "+5511999999999",
+      systemRole: SystemRole.USER,
+      createdAt: mockDate,
+      updatedAt: mockDate,
+    } as User);
+
+    // Mock de convite pendente
+    prismaMock.invite.findMany.mockResolvedValue([
+      {
+        id: "invite-1",
+        email,
+        status: "PENDING",
+        expiresAt: new Date(Date.now() + 10000),
+        senderId: "sender-123",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        accounts: [{ accountId, permission: "EDITOR" }],
+      },
+    ] as unknown as (Prisma.InviteGetPayload<{
+      include: { accounts: true };
+    }> & { accounts: { accountId: string; permission: string }[] })[]);
+
+    // Mock de upsert para accountAccess
+    prismaMock.accountAccess.upsert.mockResolvedValue({
+      id: "access-123",
+      accountId,
+      userId: validUuid,
+      permission: "EDITOR",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as AccountAccess);
+
+    // Mock de auditoria
+    prismaMock.auditLog.create.mockResolvedValue({
+      id: "log-123",
+      userId: validUuid,
+      action: "AUTO_LINK_INVITE",
+      resourceType: "ACCOUNT",
+      resourceId: accountId,
+      details: {},
+      createdAt: new Date(),
+    } as AuditLog);
+
+    await usersService.create({
+      name: "Convidado",
+      email,
+      password: "senha123",
+      phone: "+5511999999999",
+      acceptedTerms: true,
+    });
+
+    // Verificar se buscou convites
+    expect(prismaMock.invite.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ email }),
+      }),
+    );
+
+    // Verificar se atualizou o convite
+    expect(prismaMock.invite.update).toHaveBeenCalledWith({
+      where: { id: "invite-1" },
+      data: { status: "ACCEPTED" },
+    });
+
+    // Verificar se criou o acesso à conta via upsert
+    expect(prismaMock.accountAccess.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          accountId_userId: {
+            accountId,
+            userId: validUuid,
+          },
+        },
+        create: {
+          accountId,
+          userId: validUuid,
+          permission: "EDITOR",
+        },
+      }),
+    );
+
+    // Verificar se registrou auditoria
+    expect(prismaMock.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "AUTO_LINK_INVITE",
+          resourceId: accountId,
+        }),
+      }),
+    );
+  });
+
+  /**
    * Testa a tentativa de criar usuário com email duplicado
    * @test {UsersService.create} Deve lançar erro quando email já existe
    */
@@ -102,8 +227,8 @@ describe("UsersService", () => {
       email: "duplicado@example.com",
       passwordHash: "hash",
       avatarUrl: null,
-      phone: null,
-      role: Role.VIEWER,
+      phone: "+5511999999999",
+      systemRole: SystemRole.USER,
       createdAt: new Date(),
       updatedAt: new Date(),
     } as User);

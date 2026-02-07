@@ -78,6 +78,7 @@ describe("Rotas de Contas", () => {
       expect(response.statusCode).toBe(201);
       const body = JSON.parse(response.body);
       expect(body.name).toBe(validAccount.name);
+      expect(body.permission).toBe("OWNER");
       expect(body.creditCardInfo.limit).toBe(5000);
     });
 

@@ -19,7 +19,12 @@ import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AccountService } from './account.service';
 import { ApiService } from './api.service';
-import { CreateAccountDTO, AccountDTO, UpdateAccountDTO } from '@dindinho/shared';
+import {
+  CreateAccountDTO,
+  AccountDTO,
+  UpdateAccountDTO,
+  ResourcePermission,
+} from '@dindinho/shared';
 
 describe('AccountService', () => {
   let service: AccountService;
@@ -39,6 +44,7 @@ describe('AccountService', () => {
       icon: 'pi-wallet',
       type: 'STANDARD',
       ownerId: 'user-123',
+      permission: ResourcePermission.OWNER,
       balance: 1000.0,
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
@@ -50,6 +56,7 @@ describe('AccountService', () => {
       icon: 'pi-credit-card',
       type: 'CREDIT',
       ownerId: 'user-123',
+      permission: ResourcePermission.OWNER,
       balance: 500.5,
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',
@@ -232,6 +239,7 @@ describe('AccountService', () => {
       icon: 'pi-money-bill',
       type: 'STANDARD',
       ownerId: 'user-123',
+      permission: ResourcePermission.OWNER,
       balance: 0,
       createdAt: '2024-01-01T00:00:00.000Z',
       updatedAt: '2024-01-01T00:00:00.000Z',

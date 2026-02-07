@@ -72,6 +72,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('../pages/public/onboarding.page').then((m) => m.OnboardingPage),
       },
+      {
+        path: 'invite/accept',
+        loadComponent: () =>
+          import('../pages/invites/invite-accept.page').then((m) => m.InviteAcceptPage),
+      },
     ],
   },
 
@@ -163,6 +168,11 @@ export const routes: Routes = [
         path: 'reports',
         loadComponent: () => import('../pages/reports/reports.page').then((m) => m.ReportsPage),
         data: { title: 'Relatórios', maxWidth: '5xl' },
+      },
+      {
+        path: 'invites',
+        loadComponent: () => import('../pages/invites/invites.page').then((m) => m.InvitesPage),
+        data: { title: 'Central de Convites', maxWidth: '5xl' },
       },
       // Outras rotas autenticadas virão aqui (accounts, reports, profile)
     ],

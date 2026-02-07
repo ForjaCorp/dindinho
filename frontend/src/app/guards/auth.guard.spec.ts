@@ -9,6 +9,7 @@ import { runInInjectionContext, EnvironmentInjector } from '@angular/core';
 import { authGuard } from './auth.guard';
 import { AuthService, UserState } from '../services/auth.service';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
+import { SystemRole } from '@dindinho/shared';
 
 const testBed = getTestBed();
 if (!testBed.platform) {
@@ -64,7 +65,7 @@ describe('authGuard', () => {
       id: '1',
       name: 'User',
       email: 'user@test.com',
-      role: 'VIEWER',
+      systemRole: SystemRole.USER,
     };
     vi.spyOn(authService, 'currentUser').mockReturnValue(user);
 
@@ -133,12 +134,12 @@ describe('authGuard', () => {
       id: '1',
       name: 'User',
       email: 'user@test.com',
-      role: 'VIEWER',
+      systemRole: SystemRole.USER,
     };
     vi.spyOn(authService, 'currentUser').mockReturnValue(user);
 
     const routeWithRole = {
-      data: { requiredRole: 'ADMIN' },
+      data: { requiredRole: SystemRole.ADMIN },
     } as unknown as ActivatedRouteSnapshot;
 
     const result = runInInjectionContext(injector, () =>
@@ -155,12 +156,12 @@ describe('authGuard', () => {
       id: '1',
       name: 'User',
       email: 'user@test.com',
-      role: 'ADMIN',
+      systemRole: SystemRole.ADMIN,
     };
     vi.spyOn(authService, 'currentUser').mockReturnValue(user);
 
     const routeWithRole = {
-      data: { requiredRole: 'ADMIN' },
+      data: { requiredRole: SystemRole.ADMIN },
     } as unknown as ActivatedRouteSnapshot;
 
     const result = runInInjectionContext(injector, () =>
@@ -176,12 +177,12 @@ describe('authGuard', () => {
       id: '1',
       name: 'User',
       email: 'user@test.com',
-      role: 'EDITOR',
+      systemRole: SystemRole.USER,
     };
     vi.spyOn(authService, 'currentUser').mockReturnValue(user);
 
     const routeWithRoles = {
-      data: { roles: ['VIEWER', 'EDITOR'] },
+      data: { roles: [SystemRole.USER, SystemRole.ADMIN] },
     } as unknown as ActivatedRouteSnapshot;
 
     const result = runInInjectionContext(injector, () =>
@@ -197,12 +198,12 @@ describe('authGuard', () => {
       id: '1',
       name: 'User',
       email: 'user@test.com',
-      role: 'VIEWER',
+      systemRole: SystemRole.USER,
     };
     vi.spyOn(authService, 'currentUser').mockReturnValue(user);
 
     const routeWithRoles = {
-      data: { roles: ['ADMIN'] },
+      data: { roles: [SystemRole.ADMIN] },
     } as unknown as ActivatedRouteSnapshot;
 
     const result = runInInjectionContext(injector, () =>

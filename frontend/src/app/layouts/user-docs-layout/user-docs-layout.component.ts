@@ -93,7 +93,7 @@ export class UserDocsLayoutComponent {
 
   protected readonly isAdmin = computed(() => {
     const user = this.auth.currentUser();
-    return user?.role === 'ADMIN';
+    return user?.systemRole === 'ADMIN';
   });
 
   protected readonly backButtonText = computed(() =>

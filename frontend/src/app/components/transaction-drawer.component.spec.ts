@@ -1,8 +1,9 @@
-import { Component, ViewChild, signal } from '@angular/core';
+// @vitest-environment jsdom
 import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { of } from 'rxjs';
+import { By } from '@angular/platform-browser';
 import { TransactionDrawerComponent } from './transaction-drawer.component';
 import { ApiService } from '../services/api.service';
 import { AccountService } from '../services/account.service';
@@ -13,36 +14,9 @@ if (!testBed.platform) {
   testBed.initTestEnvironment(BrowserTestingModule, platformBrowserTesting());
 }
 
-@Component({
-  standalone: true,
-  imports: [TransactionDrawerComponent],
-  template: `
-    <app-transaction-drawer
-      (updated)="lastUpdated.set($event)"
-      (deleted)="lastDeletedIds.set($event)"
-    />
-  `,
-})
-class TransactionDrawerHostComponent {
-  @ViewChild(TransactionDrawerComponent)
-  drawer!: TransactionDrawerComponent;
-
-  readonly lastUpdated = signal<TransactionDTO | null>(null);
-  readonly lastDeletedIds = signal<string[] | null>(null);
-}
-
 describe('TransactionDrawerComponent', () => {
-  let fixture: ComponentFixture<TransactionDrawerHostComponent>;
-
-  interface DrawerHarness {
-    visible: () => boolean;
-    onSave: () => void;
-    form: {
-      controls: {
-        description: { setValue: (v: string) => void; markAsDirty: () => void };
-      };
-    };
-  }
+  let component: TransactionDrawerComponent;
+  let fixture: ComponentFixture<TransactionDrawerComponent>;
 
   const accountId = 'account-1';
   const tx: TransactionDTO = {
@@ -72,6 +46,7 @@ describe('TransactionDrawerComponent', () => {
   ];
 
   beforeEach(async () => {
+    TestBed.resetTestingModule();
     const apiServiceMock = {
       getCategories: vi.fn(() => of(categories)),
       getTransactionById: vi.fn(() => of(tx)),
@@ -84,54 +59,67 @@ describe('TransactionDrawerComponent', () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [TransactionDrawerHostComponent],
+      imports: [TransactionDrawerComponent],
       providers: [
         { provide: ApiService, useValue: apiServiceMock },
         { provide: AccountService, useValue: accountServiceMock },
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(TransactionDrawerHostComponent);
+    fixture = TestBed.createComponent(TransactionDrawerComponent);
+    component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
-  it('deve abrir e carregar a transação ao chamar show()', () => {
-    const host = fixture.componentInstance;
-    host.drawer.show(tx.id);
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('deve abrir e carregar a transação ao chamar show()', async () => {
+    component.show(tx.id);
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
-    const drawer = host.drawer as unknown as DrawerHarness;
-
-    expect(drawer.visible()).toBe(true);
-    expect(fixture.nativeElement.querySelector('[data-testid="transaction-drawer"]')).toBeTruthy();
+    const comp = component as unknown as { visible: () => boolean };
+    expect(comp.visible()).toBe(true);
+    const drawerEl = fixture.debugElement.query(By.css('[data-testid="transaction-drawer"]'));
+    expect(drawerEl).toBeTruthy();
     expect(fixture.nativeElement.textContent).toContain('Café');
   });
 
   it('deve salvar alterações e emitir updated', async () => {
-    const host = fixture.componentInstance;
-    host.drawer.show(tx.id);
+    const api = TestBed.inject(ApiService);
+    const updateSpy = vi.spyOn(api, 'updateTransaction');
+
+    let emitted: TransactionDTO | null = null;
+    component.updated.subscribe((val: unknown) => (emitted = val as TransactionDTO));
+
+    component.show(tx.id);
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
-    await new Promise<void>((resolve) => queueMicrotask(() => resolve()));
+    const comp = component as unknown as {
+      form: {
+        controls: { description: { setValue: (v: string) => void; markAsDirty: () => void } };
+      };
+      onSave: () => void;
+    };
+    comp.form.controls.description.setValue('Mercado');
+    comp.form.controls.description.markAsDirty();
     fixture.detectChanges();
 
-    const drawer = host.drawer as unknown as DrawerHarness;
-    drawer.form.controls.description.setValue('Mercado');
-    drawer.form.controls.description.markAsDirty();
+    comp.onSave();
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
-    drawer.onSave();
-    fixture.detectChanges();
-
-    await new Promise<void>((resolve) => queueMicrotask(() => resolve()));
-    fixture.detectChanges();
-
-    expect(host.lastUpdated()?.description).toBe('Mercado');
+    expect(updateSpy).toHaveBeenCalled();
+    expect((emitted as TransactionDTO | null)?.description).toBe('Mercado');
   });
 
-  it('deve excluir com escopo selecionado e emitir deleted', () => {
-    const host = fixture.componentInstance;
-
+  it('deve excluir com escopo selecionado e emitir deleted', async () => {
     const recurringTx: TransactionDTO = {
       ...tx,
       id: 'tx-rec-1',
@@ -140,43 +128,67 @@ describe('TransactionDrawerComponent', () => {
       totalInstallments: 3,
     };
 
-    const api = TestBed.inject(ApiService) as unknown as {
-      getTransactionById: ReturnType<typeof vi.fn>;
-      deleteTransaction: ReturnType<typeof vi.fn>;
+    const api = TestBed.inject(ApiService);
+    const apiMock = api as unknown as {
+      getTransactionById: { mockReturnValueOnce: (val: unknown) => void };
+      deleteTransaction: { mockReturnValueOnce: (val: unknown) => void };
     };
-    api.getTransactionById.mockReturnValueOnce(of(recurringTx));
-    api.deleteTransaction.mockReturnValueOnce(of({ deletedIds: [recurringTx.id] }));
+    apiMock.getTransactionById.mockReturnValueOnce(of(recurringTx));
+    apiMock.deleteTransaction.mockReturnValueOnce(of({ deletedIds: [recurringTx.id] }));
 
-    host.drawer.show(recurringTx.id);
+    let emittedIds: string[] | null = null;
+    component.deleted.subscribe((val: string[]) => (emittedIds = val));
+
+    component.show(recurringTx.id);
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
-    const deleteBtnHost = fixture.nativeElement.querySelector(
-      '[data-testid="transaction-delete-btn"]',
-    ) as HTMLElement;
-    const deleteBtn = (deleteBtnHost.querySelector('button') ?? deleteBtnHost) as HTMLElement;
-    deleteBtn.click();
+    // Clicar no botão de excluir para abrir o diálogo de confirmação
+    const deleteBtn = fixture.debugElement.query(By.css('[data-testid="transaction-delete-btn"]'));
+    deleteBtn.triggerEventHandler('onClick', null);
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
-    const scopeAll = fixture.nativeElement.querySelector(
+    // Selecionar escopo "ALL"
+    // Usar document.querySelector como fallback caso o PrimeNG tenha movido o diálogo para o body
+    const scopeAllEl = document.querySelector(
       '[data-testid="delete-scope-all"] input',
     ) as HTMLInputElement;
-    scopeAll.click();
+    if (scopeAllEl) {
+      scopeAllEl.click();
+    } else {
+      const scopeAll = fixture.debugElement.query(By.css('[data-testid="delete-scope-all"] input'));
+      scopeAll.nativeElement.click();
+    }
     fixture.detectChanges();
 
-    const confirmHost = fixture.nativeElement.querySelector(
-      '[data-testid="transaction-delete-confirm"]',
-    ) as HTMLElement;
-    const confirm = (confirmHost.querySelector('button') ?? confirmHost) as HTMLElement;
-    confirm.click();
+    // Confirmar exclusão
+    const confirmBtn = fixture.debugElement.query(
+      By.css('[data-testid="transaction-delete-confirm"]'),
+    );
+
+    // Se não achou no debugElement, o triggerEventHandler não vai funcionar.
+    // Vamos tentar achar o componente do p-button se estiver no body.
+    if (confirmBtn) {
+      confirmBtn.triggerEventHandler('onClick', null);
+    } else {
+      // Fallback para clique nativo se o componente não for achado pelo debugElement
+      const nativeConfirm = document.querySelector(
+        '[data-testid="transaction-delete-confirm"] button',
+      ) as HTMLElement;
+      nativeConfirm?.click();
+    }
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
     expect(api.deleteTransaction).toHaveBeenCalledWith(recurringTx.id, 'ALL');
-    expect(host.lastDeletedIds()).toEqual([recurringTx.id]);
+    expect(emittedIds).toEqual([recurringTx.id]);
   });
 
   it('deve salvar com escopo selecionado quando transação tem série', async () => {
-    const host = fixture.componentInstance;
-
     const recurringTx: TransactionDTO = {
       ...tx,
       id: 'tx-rec-1',
@@ -185,34 +197,37 @@ describe('TransactionDrawerComponent', () => {
       totalInstallments: 3,
     };
 
-    const api = TestBed.inject(ApiService) as unknown as {
-      getTransactionById: ReturnType<typeof vi.fn>;
-      updateTransaction: ReturnType<typeof vi.fn>;
+    const api = TestBed.inject(ApiService);
+    const apiMock = api as unknown as {
+      getTransactionById: { mockReturnValueOnce: (val: unknown) => void };
+      updateTransaction: { mockReturnValueOnce: (val: unknown) => void };
     };
-    api.getTransactionById.mockReturnValueOnce(of(recurringTx));
-    api.updateTransaction.mockReturnValueOnce(of({ ...recurringTx, description: 'Mercado' }));
+    apiMock.getTransactionById.mockReturnValueOnce(of(recurringTx));
+    apiMock.updateTransaction.mockReturnValueOnce(of({ ...recurringTx, description: 'Mercado' }));
 
-    host.drawer.show(recurringTx.id);
+    component.show(recurringTx.id);
+    fixture.detectChanges();
+    await fixture.whenStable();
     fixture.detectChanges();
 
-    await new Promise<void>((resolve) => queueMicrotask(() => resolve()));
+    const comp = component as unknown as {
+      form: {
+        controls: { description: { setValue: (v: string) => void; markAsDirty: () => void } };
+      };
+      onSave: () => void;
+    };
+    comp.form.controls.description.setValue('Mercado');
+    comp.form.controls.description.markAsDirty();
     fixture.detectChanges();
 
-    const drawer = host.drawer as unknown as DrawerHarness;
-    drawer.form.controls.description.setValue('Mercado');
-    drawer.form.controls.description.markAsDirty();
+    // Selecionar escopo "ALL" para atualização
+    const scopeAll = fixture.debugElement.query(By.css('[data-testid="update-scope-all"] input'));
+    scopeAll.nativeElement.click();
     fixture.detectChanges();
 
-    const scopeAll = fixture.nativeElement.querySelector(
-      '[data-testid="update-scope-all"] input',
-    ) as HTMLInputElement;
-    scopeAll.click();
+    comp.onSave();
     fixture.detectChanges();
-
-    drawer.onSave();
-    fixture.detectChanges();
-
-    await new Promise<void>((resolve) => queueMicrotask(() => resolve()));
+    await fixture.whenStable();
     fixture.detectChanges();
 
     expect(api.updateTransaction).toHaveBeenCalledWith(

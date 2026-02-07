@@ -29,7 +29,7 @@ interface JwtPayload {
   name: string;
   /** Endereço de e-mail do usuário */
   email: string;
-  role: UserState['role'];
+  systemRole: UserState['systemRole'];
   /** Timestamp (em segundos) de quando o token expira */
   exp: number;
 }
@@ -339,7 +339,7 @@ export class AuthService {
       const decoded = jwtDecode<JwtPayload>(token);
 
       // 3. Validação do payload
-      if (!decoded || !decoded.sub || !decoded.name || !decoded.email || !decoded.role) {
+      if (!decoded || !decoded.sub || !decoded.name || !decoded.email || !decoded.systemRole) {
         return null;
       }
 
@@ -353,7 +353,7 @@ export class AuthService {
         id: decoded.sub,
         name: decoded.name,
         email: decoded.email,
-        role: decoded.role,
+        systemRole: decoded.systemRole,
       };
     } catch (err) {
       this.logger.debug('Falha ao decodificar token:', err);

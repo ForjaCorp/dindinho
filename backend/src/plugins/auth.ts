@@ -18,11 +18,17 @@ declare module "fastify" {
 
 declare module "@fastify/jwt" {
   interface FastifyJWT {
+    payload: {
+      sub?: string;
+      name?: string;
+      email?: string;
+      systemRole?: string;
+    };
     user: {
       sub: string;
       name: string;
       email: string;
-      role: string;
+      systemRole: string;
     };
   }
 }
@@ -50,10 +56,10 @@ const authPlugin = fastifyPlugin(async (app: FastifyInstance) => {
       await request.jwtVerify();
       const user = await prisma.user.findUnique({
         where: { id: request.user.sub },
-        select: { role: true },
+        select: { systemRole: true },
       });
 
-      if (user?.role !== "ADMIN") {
+      if (user?.systemRole !== "ADMIN") {
         const statusCode = 403;
         reply.code(statusCode).send({
           statusCode,

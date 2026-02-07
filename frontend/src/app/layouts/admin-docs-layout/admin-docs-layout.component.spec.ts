@@ -6,6 +6,8 @@ import { provideRouter } from '@angular/router';
 import { signal, WritableSignal } from '@angular/core';
 import { AdminDocsLayoutComponent } from './admin-docs-layout.component';
 import { AuthService, UserState } from '../../services/auth.service';
+import { SidebarCategory, SidebarItem } from '../base-docs-layout/base-docs-layout.component';
+import { SystemRole } from '@dindinho/shared';
 
 const testBed = getTestBed();
 if (!testBed.platform) {
@@ -26,7 +28,7 @@ describe('AdminDocsLayoutComponent', () => {
       id: '1',
       name: 'Admin',
       email: 'admin@test.com',
-      role: 'ADMIN',
+      systemRole: SystemRole.ADMIN,
     });
     authServiceMock = {
       isAuthenticated: vi.fn(() => currentUserSignal() !== null),
@@ -74,5 +76,22 @@ describe('AdminDocsLayoutComponent', () => {
 
     const button = fixture.nativeElement.querySelector('[data-testid="back-to-app-button"]');
     expect(button.getAttribute('aria-label')).toBe('Entrar no Dindinho');
+  });
+
+  it('deve garantir que todos os plannings críticos estão na sidebar', () => {
+    const categories = component['categories'];
+    const backlogItems = categories.find((c: SidebarCategory) => c.id === 'backlog')?.items || [];
+
+    const criticalPlans = [
+      { id: 'plan-invites', label: 'Sistema de Convites' },
+      { id: 'refactor-roles', label: 'Refatoração de Roles' },
+      { id: 'plan-notifications', label: 'Sistema de Notificações' },
+      { id: 'plan-goals', label: 'Planejamento de Metas' },
+    ];
+
+    criticalPlans.forEach((plan) => {
+      const item = backlogItems.find((i: SidebarItem) => i.id === plan.id);
+      expect(item, `O planning ${plan.label} (${plan.id}) deve estar na sidebar`).toBeTruthy();
+    });
   });
 });

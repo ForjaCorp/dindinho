@@ -9,7 +9,7 @@ import fastifyJwt from "@fastify/jwt";
 import { DeepMockProxy, mockDeep, mockReset } from "vitest-mock-extended";
 import {
   PrismaClient,
-  Role,
+  SystemRole,
   SignupAllowlist,
   User,
   Prisma,
@@ -90,7 +90,7 @@ describe("Rotas de allowlist de cadastro", () => {
 
   it("deve adicionar email na allowlist com JWT admin", async () => {
     prismaMock.user.findUnique.mockResolvedValue({
-      role: Role.ADMIN,
+      systemRole: SystemRole.ADMIN,
     } as unknown as User);
     prismaMock.signupAllowlist.upsert.mockResolvedValue({
       id: "123e4567-e89b-12d3-a456-426614174001",
@@ -119,7 +119,7 @@ describe("Rotas de allowlist de cadastro", () => {
 
   it("deve negar acesso com JWT sem role admin", async () => {
     prismaMock.user.findUnique.mockResolvedValue({
-      role: Role.VIEWER,
+      systemRole: SystemRole.USER,
     } as unknown as User);
 
     const response = await app.inject({

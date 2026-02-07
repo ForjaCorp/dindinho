@@ -21,32 +21,55 @@ Este documento centraliza as futuras expansões do Dindinho, detalhando arquitet
 
 Estes itens já possuem planejamento iniciado ou são essenciais para o fechamento imediato do MVP.
 
+### 0. Refatoração de Roles e Permissões (Infra)
+
+- **Status**: [Concluído](./concluido/refatoracao-roles-permissoes.md)
+- **Foco**: Separação de SystemRole e ResourcePermission para suportar convites e multi-contas.
+
 ### 1. Sistema de Convites (Colaboração)
 
-- **Status**: [Pendente](./em-discussao/sistema-convites.md)
-- **Foco**: Fluxo de e-mail para compartilhar múltiplas contas com permissões (Viewer/Editor/Admin).
+- **Status**: [Concluído](./concluido/sistema-convites.md)
+- **Foco**: Fluxo de link de convite para compartilhar múltiplas contas com permissões (Viewer/Editor/Admin).
 
 ### 2. Metas de Economia Híbridas
 
 - **Status**: [Em Andamento](./em-discussao/planejamento-metas.md)
 - **Foco**: Implementação do motor de cálculo para Limites de Gastos e Objetivos de Poupança.
 
-### 3. Evolução de Roteamento e API
+### 3. Perfil do Usuário e Preferências
+
+- **Status**: [Em Discussão](./em-discussao/perfil-usuario.md)
+- **Foco**: Gestão de dados cadastrais, avatar e preferências de UI (moeda, tema).
+
+### 4. Portal de Administração Centralizado
+
+- **Status**: [Em Discussão](./em-discussao/portal-admin.md)
+- **Foco**: Unificação de Allowlist e monitoramento em uma área restrita.
+
+### 5. PWA Full (Progressive Web App)
+
+- **Status**: [Em Discussão](./em-discussao/pwa-full.md)
+- **Foco**: Transformar a aplicação Angular em um PWA completo com suporte a offline, instalação e APIs de hardware (Vibration/Badging). **Assenta a base necessária para o Sistema de Notificações.**
+
+### 6. Sistema de Notificações
+
+- **Status**: [Em Discussão](./em-discussao/notificacoes.md)
+- **Foco**: Central de notificações in-app e push para alertas financeiros e convites. **Depende da infraestrutura de Service Worker do PWA.**
+
+### 7. Privacidade e Criptografia E2E
+
+- **Status**: [Em Discussão](./em-discussao/criptografia-privacidade.md)
+- **Foco**: Criptografia na camada de aplicação para dados sensíveis.
+
+### 8. Evolução de Roteamento e API
 
 - **Status**: [Pendente](./em-discussao/evolucao-rotas.md)
 - **Foco**: Padronização de slugs, versionamento de API e melhorias na navegação do portal.
 
----
+### 9. Padronização de Versionamento (SemVer)
 
-## 📱 Mobile & PWA (Acessibilidade e Canal Principal)
-
-Garantindo que o Dindinho esteja sempre à mão do usuário no seu canal mais provável de uso.
-
-### 4. PWA Full (Progressive Web App)
-
-- **Descrição**: Transformar a aplicação Angular em um PWA completo com suporte a offline e instalação.
-- **Arquitetura**: Implementação de Service Workers (@angular/pwa), manifesto de app e estratégia de cache.
-- **Impacto**: **Canal Primário.** Melhora o engajamento e permite o uso como um app real sem depender de lojas.
+- **Status**: [Em Discussão](./em-discussao/planejamento-versionamento.md)
+- **Foco**: Unificar o versionamento de todos os pacotes do monorepo e automatizar releases.
 
 ---
 

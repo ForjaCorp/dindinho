@@ -14,7 +14,7 @@ import { LoginComponent } from './login.page';
 import { AuthService, UserState } from '../../app/services/auth.service';
 import { ErrorMapper } from '../../app/utils/error-mapper';
 import { of, throwError, Subject } from 'rxjs';
-import { LoginDTO, LoginResponseDTO } from '@dindinho/shared';
+import { LoginDTO, LoginResponseDTO, SystemRole } from '@dindinho/shared';
 import { By } from '@angular/platform-browser';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
@@ -35,7 +35,7 @@ describe('LoginComponent', () => {
     id: '1',
     name: 'Test User',
     email: 'test@example.com',
-    role: 'VIEWER',
+    systemRole: SystemRole.USER,
   };
 
   const mockToken = 'test-token';

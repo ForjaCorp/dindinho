@@ -29,6 +29,8 @@ import { categoriesRoutes } from "./categories/categories.routes";
 import { signupAllowlistRoutes } from "./signup-allowlist/signup-allowlist.routes";
 import { waitlistRoutes } from "./waitlist/waitlist.routes";
 import { reportsRoutes } from "./reports/reports.routes";
+import { invitesRoutes } from "./invites/invites.routes";
+import { InvitesService } from "./invites/invites.service";
 import { RefreshTokenService } from "./auth/refresh-token.service";
 import { ApiErrorResponseDTO } from "@dindinho/shared";
 import { prisma } from "./lib/prisma";
@@ -99,6 +101,13 @@ export function buildApp(): FastifyInstance {
   app.register(fastifyJwt, {
     secret: process.env.JWT_SECRET || "fallback-secret-for-dev",
     sign: { expiresIn: "15m" },
+    messages: {
+      badRequestErrorMessage: "Format is Authorization: Bearer [token]",
+      noAuthorizationInHeaderMessage: "No Authorization header was found",
+      authorizationTokenExpiredMessage: "Authorization token expired",
+      authorizationTokenInvalid: (err) =>
+        `Authorization token is invalid: ${err.message}`,
+    },
   });
 
   // Swagger - Documentação da API (Global para capturar todas as rotas)
@@ -381,6 +390,7 @@ export function buildApp(): FastifyInstance {
       await typedApi.register(transactionsRoutes, { prefix: "/transactions" });
       await typedApi.register(categoriesRoutes, { prefix: "/categories" });
       await typedApi.register(reportsRoutes, { prefix: "/reports" });
+      await typedApi.register(invitesRoutes, { prefix: "/invites" });
       await typedApi.register(waitlistRoutes, { prefix: "/waitlist" });
       await typedApi.register(signupAllowlistRoutes, {
         prefix: "/signup-allowlist",
@@ -429,6 +439,49 @@ export function buildApp(): FastifyInstance {
     app.ready().then(() => {
       refreshTokenService.cleanupExpiredTokens().catch((err) => {
         app.log.error({ err }, "Erro na limpeza inicial de refresh tokens");
+      });
+    });
+  }
+
+  // Limpeza de Convites Expirados
+  const invitesService = new InvitesService(prisma);
+  if (
+    String(process.env.ENABLE_INVITE_CLEANUP).toLowerCase() === "true" &&
+    process.env.NODE_ENV !== "test"
+  ) {
+    const intervalMinutes =
+      Number(process.env.INVITE_CLEANUP_INTERVAL_MINUTES) || 1440; // Padrão: 1 dia
+    const intervalMs = intervalMinutes * 60 * 1000;
+
+    app.log.info(
+      { intervalMinutes },
+      "Agendando limpeza automática de convites expirados",
+    );
+
+    const inviteCleanupInterval = setInterval(async () => {
+      try {
+        const count = await invitesService.cleanupExpiredInvites();
+        if (count > 0) {
+          app.log.info(
+            { count },
+            "Limpeza automática de convites expirados concluída",
+          );
+        }
+      } catch (err) {
+        app.log.error({ err }, "Erro na limpeza automática de convites");
+      }
+    }, intervalMs);
+
+    inviteCleanupInterval.unref();
+
+    app.addHook("onClose", async () => {
+      clearInterval(inviteCleanupInterval);
+    });
+
+    // Executa uma vez na inicialização
+    app.ready().then(() => {
+      invitesService.cleanupExpiredInvites().catch((err) => {
+        app.log.error({ err }, "Erro na limpeza inicial de convites");
       });
     });
   }

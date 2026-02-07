@@ -1,14 +1,17 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import {
-  PrismaClient,
-  TransactionType,
-  AccountType,
-  Category,
-  Account,
-  Transaction,
-} from "@prisma/client";
-import { mockDeep, DeepMockProxy } from "vitest-mock-extended";
 import { TransactionsService } from "./transactions.service";
+import { PrismaClient } from "@prisma/client";
+import { mockDeep, DeepMockProxy } from "vitest-mock-extended";
+import {
+  TransactionType,
+  Transaction,
+  Account,
+  ResourcePermission,
+  Category,
+  AccountType,
+  AccountAccess,
+} from "@prisma/client";
+import { ForbiddenError } from "../lib/domain-exceptions";
 
 describe("TransactionsService", () => {
   let service: TransactionsService;
@@ -17,6 +20,162 @@ describe("TransactionsService", () => {
   beforeEach(() => {
     prisma = mockDeep<PrismaClient>();
     service = new TransactionsService(prisma);
+  });
+
+  describe("Permissões", () => {
+    const userId = "user-1";
+    const accountId = "acc-1";
+    const otherUserId = "user-2";
+
+    it("deve permitir criar transação se for OWNER da conta", async () => {
+      const txDate = new Date();
+      prisma.category.findUnique.mockResolvedValue({
+        id: "cat-1",
+        userId: userId,
+      } as unknown as Category);
+
+      prisma.account.findUnique.mockResolvedValue({
+        id: accountId,
+        ownerId: userId,
+        type: AccountType.STANDARD,
+      } as unknown as Account);
+
+      prisma.transaction.create.mockResolvedValue({
+        id: "tx-1",
+        amount: { toNumber: () => 100 },
+        date: txDate,
+        type: TransactionType.EXPENSE,
+        isPaid: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as unknown as Transaction);
+
+      const result = await service.create(userId, {
+        accountId,
+        categoryId: "cat-1",
+        amount: 100,
+        type: "EXPENSE",
+        isPaid: true,
+        date: txDate.toISOString(),
+        description: "Teste",
+      });
+
+      expect(result).toBeDefined();
+    });
+
+    it("deve permitir criar transação se for EDITOR da conta", async () => {
+      const txDate = new Date();
+      prisma.category.findUnique.mockResolvedValue({
+        id: "cat-1",
+        userId: null, // Categoria global
+      } as unknown as Category);
+
+      prisma.account.findUnique.mockResolvedValue({
+        id: accountId,
+        ownerId: otherUserId,
+        type: AccountType.STANDARD,
+      } as unknown as Account);
+
+      prisma.accountAccess.findUnique.mockResolvedValue({
+        permission: ResourcePermission.EDITOR,
+      } as unknown as AccountAccess);
+
+      prisma.transaction.create.mockResolvedValue({
+        id: "tx-1",
+        amount: { toNumber: () => 100 },
+        date: txDate,
+        type: TransactionType.EXPENSE,
+        isPaid: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as unknown as Transaction);
+
+      const result = await service.create(userId, {
+        accountId,
+        categoryId: "cat-1",
+        amount: 100,
+        type: "EXPENSE",
+        isPaid: true,
+        date: txDate.toISOString(),
+        description: "Teste",
+      });
+
+      expect(result).toBeDefined();
+    });
+
+    it("deve negar criação de transação se for VIEWER da conta", async () => {
+      const txDate = new Date();
+      prisma.category.findUnique.mockResolvedValue({
+        id: "cat-1",
+        userId: null,
+      } as unknown as Category);
+
+      prisma.account.findUnique.mockResolvedValue({
+        id: accountId,
+        ownerId: otherUserId,
+        type: AccountType.STANDARD,
+      } as unknown as Account);
+
+      prisma.accountAccess.findUnique.mockResolvedValue({
+        permission: ResourcePermission.VIEWER,
+      } as unknown as AccountAccess);
+
+      await expect(
+        service.create(userId, {
+          accountId,
+          categoryId: "cat-1",
+          amount: 100,
+          type: "EXPENSE",
+          isPaid: true,
+          date: txDate.toISOString(),
+          description: "Teste",
+        }),
+      ).rejects.toThrow(ForbiddenError);
+    });
+
+    it("deve negar atualização de transação se for VIEWER da conta", async () => {
+      const txId = "tx-1";
+      prisma.transaction.findUnique.mockResolvedValue({
+        id: txId,
+        accountId,
+      } as unknown as Transaction);
+
+      prisma.account.findUnique.mockResolvedValue({
+        id: accountId,
+        ownerId: otherUserId,
+        type: AccountType.STANDARD,
+      } as unknown as Account);
+
+      prisma.accountAccess.findUnique.mockResolvedValue({
+        permission: ResourcePermission.VIEWER,
+      } as unknown as AccountAccess);
+
+      await expect(
+        service.update(userId, txId, { description: "Novo" }),
+      ).rejects.toThrow(ForbiddenError);
+    });
+
+    it("deve negar exclusão de transação se for VIEWER da conta", async () => {
+      const txId = "tx-1";
+      prisma.transaction.findUnique.mockResolvedValue({
+        id: txId,
+        accountId,
+      } as unknown as Transaction);
+
+      prisma.account.findUnique.mockResolvedValue({
+        id: accountId,
+        ownerId: otherUserId,
+        type: AccountType.STANDARD,
+      } as unknown as Account);
+
+      prisma.accountAccess.findUnique.mockResolvedValue({
+        permission: ResourcePermission.VIEWER,
+      } as unknown as AccountAccess);
+
+      await expect(service.delete(userId, txId, "ONE")).rejects.toThrow(
+        ForbiddenError,
+      );
+    });
   });
 
   it("deve criar uma transação de despesa simples", async () => {

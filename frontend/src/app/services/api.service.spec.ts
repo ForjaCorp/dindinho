@@ -20,6 +20,7 @@ import {
   TransactionDTO,
   UpdateTransactionDTO,
   DeleteTransactionResponseDTO,
+  SystemRole,
 } from '@dindinho/shared';
 
 /**
@@ -46,7 +47,7 @@ describe('ApiService', () => {
       id: '1',
       name: 'Test User',
       email: 'test@example.com',
-      role: 'VIEWER',
+      systemRole: SystemRole.USER,
     },
     token: 'mock-jwt-token',
     refreshToken: 'mock-refresh-token',
@@ -84,6 +85,7 @@ describe('ApiService', () => {
   const mockAccounts: AccountDTO[] = [mockAccount];
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         ApiService,
@@ -563,7 +565,11 @@ describe('ApiService', () => {
         expect(response).toEqual(responseBody);
       });
 
-      const req = httpMock.expectOne(`http://localhost:3333/api/transactions/${id}`);
+      const req = httpMock.expectOne(
+        (r: HttpRequest<unknown>) =>
+          r.url === `http://localhost:3333/api/transactions/${id}` &&
+          r.params.get('scope') === 'ONE',
+      );
       expect(req.request.method).toBe('PATCH');
       expect(req.request.body).toEqual(payload);
       req.flush(responseBody);

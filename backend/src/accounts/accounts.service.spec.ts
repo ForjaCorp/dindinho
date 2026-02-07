@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { PrismaClient, AccountType, Prisma, Account } from "@prisma/client";
+import {
+  PrismaClient,
+  AccountType,
+  Prisma,
+  Account,
+  AccountAccess,
+  ResourcePermission,
+} from "@prisma/client";
 import { AccountsService } from "./accounts.service";
 import { CreateAccountDTO, UpdateAccountDTO } from "@dindinho/shared";
 import { mockDeep, mockReset } from "vitest-mock-extended";
@@ -76,7 +83,7 @@ describe("AccountsService", () => {
         },
       });
 
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         id: mockAccount.id,
         name: mockAccount.name,
         color: mockAccount.color,
@@ -142,7 +149,7 @@ describe("AccountsService", () => {
         },
       });
 
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         id: mockAccount.id,
         name: mockAccount.name,
         color: mockAccount.color,
@@ -277,31 +284,48 @@ describe("AccountsService", () => {
       const result = await service.findAllByUserId(userId);
 
       expect(mockPrisma.account.findMany).toHaveBeenCalledWith({
-        where: { ownerId: userId },
-        include: { creditCardInfo: true },
+        where: {
+          OR: [
+            { ownerId: userId },
+            {
+              accessList: {
+                some: { userId },
+              },
+            },
+          ],
+        },
+        include: {
+          creditCardInfo: true,
+          accessList: {
+            where: { userId },
+            select: { permission: true },
+          },
+        },
         orderBy: { createdAt: "asc" },
       });
 
       expect(result).toHaveLength(2);
-      expect(result[0]).toEqual({
+      expect(result[0]).toMatchObject({
         id: mockAccounts[0].id,
         name: mockAccounts[0].name,
         color: mockAccounts[0].color,
         icon: mockAccounts[0].icon,
         type: mockAccounts[0].type,
         ownerId: mockAccounts[0].ownerId,
+        permission: "OWNER",
         creditCardInfo: null,
         balance: 130,
         createdAt: mockAccounts[0].createdAt.toISOString(),
         updatedAt: mockAccounts[0].updatedAt.toISOString(),
       });
-      expect(result[1]).toEqual({
+      expect(result[1]).toMatchObject({
         id: mockAccounts[1].id,
         name: mockAccounts[1].name,
         color: mockAccounts[1].color,
         icon: mockAccounts[1].icon,
         type: mockAccounts[1].type,
         ownerId: mockAccounts[1].ownerId,
+        permission: "OWNER",
         creditCardInfo: {
           ...mockAccounts[1].creditCardInfo,
           limit: 5000,
@@ -403,13 +427,14 @@ describe("AccountsService", () => {
         },
       });
 
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         id: accountId,
         name: payload.name,
         color: payload.color,
         icon: "pi-wallet",
         type: "STANDARD",
         ownerId: userId,
+        permission: "OWNER",
         creditCardInfo: null,
         balance: 130,
         createdAt: "2026-01-01T00:00:00.000Z",
@@ -505,6 +530,76 @@ describe("AccountsService", () => {
 
       await expect(service.update(userId, accountId, payload)).rejects.toThrow(
         "Conta não encontrada",
+      );
+    });
+  });
+
+  describe("segurança e permissões", () => {
+    const userId = "user-123";
+    const otherUserId = "other-user";
+    const accountId = "account-123";
+
+    it("ADMIN não deve acessar contas alheias sem registro no AccountAccess", async () => {
+      // Simula uma conta de outro usuário
+      mockPrisma.account.findMany.mockResolvedValue([]);
+
+      const result = await service.findAllByUserId(otherUserId);
+      expect(result).toHaveLength(0);
+    });
+
+    it("EDITOR deve poder atualizar conta", async () => {
+      const payload: UpdateAccountDTO = { name: "Novo Nome" };
+
+      // Mock para assertCanWriteAccount
+      mockPrisma.account.findUnique.mockResolvedValueOnce({
+        id: accountId,
+        ownerId: "owner-id",
+      } as unknown as Account);
+
+      mockPrisma.accountAccess.findUnique.mockResolvedValueOnce({
+        permission: ResourcePermission.EDITOR,
+      } as unknown as AccountAccess);
+
+      // Mock para o restante do update
+      mockPrisma.account.findUnique.mockResolvedValueOnce({
+        id: accountId,
+        type: AccountType.STANDARD,
+      } as unknown as Account);
+
+      mockPrisma.account.update.mockResolvedValue({
+        id: accountId,
+      } as unknown as Account);
+      mockPrisma.account.findFirst.mockResolvedValue({
+        id: accountId,
+        name: "Novo Nome",
+        ownerId: "owner-id",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as unknown as Account);
+      (
+        mockPrisma.transaction.groupBy as unknown as {
+          mockResolvedValue: (val: unknown[]) => void;
+        }
+      ).mockResolvedValue([]);
+
+      const result = await service.update(userId, accountId, payload);
+      expect(result.name).toBe("Novo Nome");
+    });
+
+    it("VIEWER não deve poder atualizar conta", async () => {
+      const payload: UpdateAccountDTO = { name: "Novo Nome" };
+
+      mockPrisma.account.findUnique.mockResolvedValueOnce({
+        id: accountId,
+        ownerId: "owner-id",
+      } as unknown as Account);
+
+      mockPrisma.accountAccess.findUnique.mockResolvedValueOnce({
+        permission: ResourcePermission.VIEWER,
+      } as unknown as AccountAccess);
+
+      await expect(service.update(userId, accountId, payload)).rejects.toThrow(
+        "Sem permissão para editar as contas",
       );
     });
   });

@@ -38,6 +38,7 @@ import { EmptyStateComponent } from './empty-state.component';
               variant="compact"
               (openTransactions)="openTransactions.emit($event)"
               (edit)="edit.emit($event)"
+              (share)="share.emit($event)"
             />
           }
         </div>
@@ -57,6 +58,7 @@ export class DashboardCreditCardsSectionComponent {
   readonly create = output<void>();
   readonly edit = output<AccountDTO>();
   readonly openTransactions = output<AccountDTO>();
+  readonly share = output<AccountDTO>();
 
   readonly emptyDescription = computed(
     () => 'Clique em "Novo Cartão" para adicionar seu primeiro cartão de crédito',

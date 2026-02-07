@@ -2,14 +2,26 @@ import {
   PrismaClient,
   TransactionType,
   AccountType,
-  Role,
   Prisma,
 } from "@prisma/client";
 import {
   AccountDTO,
   CreateAccountDTO,
   UpdateAccountDTO,
+  ResourcePermission,
 } from "@dindinho/shared";
+
+type AccountWithAccess = Prisma.AccountGetPayload<{
+  include: {
+    creditCardInfo: true;
+    accessList: {
+      select: { permission: true };
+    };
+    owner: {
+      select: { name: true };
+    };
+  };
+}>;
 
 /**
  * Erro base para operações de conta.
@@ -201,12 +213,13 @@ export class AccountsService {
           userId,
         },
       },
-      select: { role: true },
+      select: { permission: true },
     });
 
     if (
       !access ||
-      (access.role !== Role.EDITOR && access.role !== Role.ADMIN)
+      (access.permission !== ResourcePermission.EDITOR &&
+        access.permission !== ResourcePermission.OWNER)
     ) {
       throw new PermissionDeniedError("editar");
     }
@@ -237,7 +250,13 @@ export class AccountsService {
           },
         ],
       },
-      include: { creditCardInfo: true },
+      include: {
+        creditCardInfo: true,
+        accessList: {
+          where: { userId },
+          select: { permission: true },
+        },
+      },
     });
 
     if (!account) {
@@ -309,6 +328,11 @@ export class AccountsService {
       icon: account.icon,
       type: account.type,
       ownerId: account.ownerId,
+      permission:
+        account.ownerId === userId
+          ? ResourcePermission.OWNER
+          : ((account as AccountWithAccess).accessList?.[0]
+              ?.permission as ResourcePermission),
       creditCardInfo: account.creditCardInfo
         ? {
             ...account.creditCardInfo,
@@ -385,6 +409,7 @@ export class AccountsService {
         icon: account.icon,
         type: account.type,
         ownerId: account.ownerId,
+        permission: ResourcePermission.OWNER,
         creditCardInfo: account.creditCardInfo
           ? {
               ...account.creditCardInfo,
@@ -417,8 +442,23 @@ export class AccountsService {
   async findAllByUserId(userId: string): Promise<AccountDTO[]> {
     try {
       const accounts = await this.prisma.account.findMany({
-        where: { ownerId: userId },
-        include: { creditCardInfo: true },
+        where: {
+          OR: [
+            { ownerId: userId },
+            {
+              accessList: {
+                some: { userId },
+              },
+            },
+          ],
+        },
+        include: {
+          creditCardInfo: true,
+          accessList: {
+            where: { userId },
+            select: { permission: true },
+          },
+        },
         orderBy: { createdAt: "asc" },
       });
 
@@ -491,6 +531,11 @@ export class AccountsService {
         icon: a.icon,
         type: a.type,
         ownerId: a.ownerId,
+        permission:
+          a.ownerId === userId
+            ? ResourcePermission.OWNER
+            : ((a as AccountWithAccess).accessList?.[0]
+                ?.permission as ResourcePermission),
         creditCardInfo: a.creditCardInfo
           ? (() => {
               const limit = a.creditCardInfo?.limit

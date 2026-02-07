@@ -1,7 +1,7 @@
 import {
   PrismaClient,
   Prisma,
-  Role,
+  ResourcePermission,
   TransactionType,
   AccountType,
   RecurrenceFrequency,
@@ -286,12 +286,13 @@ export class TransactionsService {
           userId,
         },
       },
-      select: { role: true },
+      select: { permission: true },
     });
 
     if (
       !access ||
-      (access.role !== Role.EDITOR && access.role !== Role.ADMIN)
+      (access.permission !== ResourcePermission.EDITOR &&
+        access.permission !== ResourcePermission.OWNER)
     ) {
       throw new ForbiddenError(
         "Sem permissão para lançar transações nesta conta",
@@ -358,12 +359,13 @@ export class TransactionsService {
           userId,
         },
       },
-      select: { role: true },
+      select: { permission: true },
     });
 
     if (
       !access ||
-      (access.role !== Role.EDITOR && access.role !== Role.ADMIN)
+      (access.permission !== ResourcePermission.EDITOR &&
+        access.permission !== ResourcePermission.OWNER)
     ) {
       throw new ForbiddenError(
         "Sem permissão para lançar transações nesta conta",
@@ -980,6 +982,12 @@ export class TransactionsService {
       }
 
       const accountIds = [...new Set(pair.map((t) => t.accountId))];
+
+      // Valida permissão de escrita em todas as contas envolvidas na transferência
+      for (const accId of accountIds) {
+        await this.assertCanWriteAccount(userId, accId);
+      }
+
       const accounts = await this.prisma.account.findMany({
         where: { id: { in: accountIds } },
         include: { creditCardInfo: true },
@@ -1171,6 +1179,13 @@ export class TransactionsService {
         select: { id: true, accountId: true, date: true },
       });
       const deletedIds = toDelete.map((t) => t.id);
+      const accountIds = [...new Set(toDelete.map((t) => t.accountId))];
+
+      // Valida permissão de escrita em todas as contas envolvidas na transferência
+      for (const accId of accountIds) {
+        await this.assertCanWriteAccount(userId, accId);
+      }
+
       await this.prisma.transaction.deleteMany({
         where: { transferId: tx.transferId },
       });

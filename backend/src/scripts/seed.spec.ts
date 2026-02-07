@@ -47,7 +47,7 @@ describe("Seed de Usuário Dev", () => {
 
     expect(prismaMock.user.create).toHaveBeenCalledTimes(1);
     const callArg = prismaMock.user.create.mock.calls[0][0];
-    expect(callArg.data.role).toBe("ADMIN");
+    expect(callArg.data.systemRole).toBe("ADMIN");
   });
 
   it("não deve criar usuário dev em produção", async () => {

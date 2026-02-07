@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { CreateUserDTO } from "@dindinho/shared";
+import { OnboardingService } from "./onboarding.service";
 
 export class SignupNotAllowedError extends Error {
   readonly statusCode = 403;
@@ -27,7 +28,14 @@ export class UsersService {
    * Cria uma nova instância do serviço de usuários
    * @param {PrismaClient} prisma - Instância do Prisma Client
    */
-  constructor(private prisma: PrismaClient) {}
+  constructor(
+    private prisma: PrismaClient,
+    private onboardingService?: OnboardingService,
+  ) {
+    if (!this.onboardingService) {
+      this.onboardingService = new OnboardingService(prisma);
+    }
+  }
 
   /**
    * Cria um novo usuário no sistema
@@ -60,14 +68,26 @@ export class UsersService {
     // 2. Hash da senha
     const passwordHash = await hash(data.password, 8);
 
-    // 3. Criar usuário no banco
-    const user = await this.prisma.user.create({
-      data: {
-        name: data.name,
-        email: emailNormalized,
-        phone: data.phone,
-        passwordHash,
-      },
+    // 3. Criar usuário e processar convites pendentes em uma transação
+    const user = await this.prisma.$transaction(async (tx) => {
+      // 3.1 Criar usuário no banco
+      const newUser = await tx.user.create({
+        data: {
+          name: data.name,
+          email: emailNormalized,
+          phone: data.phone,
+          passwordHash,
+        },
+      });
+
+      // 3.2 Processar convites pendentes (auto-link) via serviço especializado
+      await this.onboardingService!.processPendingInvites(
+        newUser.id,
+        emailNormalized,
+        tx,
+      );
+
+      return newUser;
     });
 
     // 4. Retornar usuário sem a senha (segurança)

@@ -44,10 +44,10 @@ export async function main() {
   });
 
   if (existingUser) {
-    if (existingUser.role !== "ADMIN") {
+    if (existingUser.systemRole !== "ADMIN") {
       await prisma.user.update({
         where: { email },
-        data: { role: "ADMIN" },
+        data: { systemRole: "ADMIN" },
       });
       writeOut(`Role do usuário ${email} atualizada para ADMIN`);
     } else {
@@ -73,7 +73,7 @@ export async function main() {
       name: "Desenvolvedor Dindinho",
       email,
       passwordHash,
-      role: "ADMIN",
+      systemRole: "ADMIN",
     },
   });
 

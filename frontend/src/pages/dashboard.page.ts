@@ -18,13 +18,16 @@ import {
   OnInit,
   ChangeDetectionStrategy,
   computed,
+  viewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../app/services/api.service';
 import { HealthCheckDTO, TransactionDTO, AccountDTO } from '@dindinho/shared';
 import { AccountService } from '../app/services/account.service';
+import { InviteService } from '../app/services/invite.service';
 import { CurrencyPipe } from '@angular/common';
 import { CreateAccountDialogComponent } from '../app/components/accounts/create-account-dialog.component';
+import { ShareAccountDialogComponent } from '../app/components/accounts/share-account-dialog.component';
 import { Router } from '@angular/router';
 import { DashboardBalanceCardComponent } from '../app/components/dashboard-balance-card.component';
 import { BackendStatusCardComponent } from '../app/components/backend-status-card.component';
@@ -42,6 +45,7 @@ import { AuthService } from '../app/services/auth.service';
     CommonModule,
     CurrencyPipe,
     CreateAccountDialogComponent,
+    ShareAccountDialogComponent,
     DashboardBalanceCardComponent,
     BackendStatusCardComponent,
     EmptyStateComponent,
@@ -58,6 +62,7 @@ import { AuthService } from '../app/services/auth.service';
         (create)="createAccountDialog.showForType('STANDARD')"
         (openTransactions)="onOpenTransactions($event)"
         (edit)="createAccountDialog.showForEdit($event)"
+        (share)="onShareAccount($event)"
       />
 
       <app-dashboard-credit-cards-section
@@ -65,9 +70,11 @@ import { AuthService } from '../app/services/auth.service';
         (create)="createAccountDialog.showForType('CREDIT')"
         (openTransactions)="onOpenTransactions($event)"
         (edit)="createAccountDialog.showForEdit($event)"
+        (share)="onShareAccount($event)"
       />
 
       <app-create-account-dialog #createAccountDialog />
+      <app-share-account-dialog #shareAccountDialog />
 
       <!-- Atalhos Rápidos -->
       <div data-testid="quick-links-section">
@@ -102,10 +109,13 @@ import { AuthService } from '../app/services/auth.service';
           </button>
 
           <button
+            data-testid="quick-link-reports"
+            type="button"
             class="flex flex-col items-center gap-2 p-2 active:scale-95 transition-transform group"
+            (click)="onOpenReports()"
           >
             <div
-              class="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center group-hover:bg-orange-100 transition-colors"
+              class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:bg-purple-100 transition-colors"
             >
               <i class="pi pi-chart-pie text-xl"></i>
             </div>
@@ -113,14 +123,24 @@ import { AuthService } from '../app/services/auth.service';
           </button>
 
           <button
-            class="flex flex-col items-center gap-2 p-2 active:scale-95 transition-transform group"
+            data-testid="quick-link-invites"
+            type="button"
+            class="flex flex-col items-center gap-2 p-2 active:scale-95 transition-transform group relative"
+            (click)="onOpenInvites()"
           >
             <div
-              class="w-12 h-12 rounded-2xl bg-gray-100 text-gray-600 flex items-center justify-center group-hover:bg-gray-200 transition-colors"
+              class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-100 transition-colors"
             >
-              <i class="pi pi-cog text-xl"></i>
+              <i class="pi pi-envelope text-xl"></i>
             </div>
-            <span class="text-xs font-medium text-slate-600">Ajustes</span>
+            <span class="text-xs font-medium text-slate-600">Convites</span>
+            @if (inviteService.pendingReceivedInvites().length > 0) {
+              <span
+                class="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white"
+              >
+                {{ inviteService.pendingReceivedInvites().length }}
+              </span>
+            }
           </button>
         </div>
       </div>
@@ -244,8 +264,11 @@ import { AuthService } from '../app/services/auth.service';
 export class DashboardComponent implements OnInit {
   private apiService = inject(ApiService);
   protected accountService = inject(AccountService);
+  protected inviteService = inject(InviteService);
   private router = inject(Router);
   private authService = inject(AuthService);
+
+  protected shareAccountDialog = viewChild.required(ShareAccountDialogComponent);
 
   apiData = signal<HealthCheckDTO | null>(null);
   error = signal<string | null>(null);
@@ -264,7 +287,7 @@ export class DashboardComponent implements OnInit {
   // Signal reativo para o saldo total
   totalBalance = computed(() => this.accountService.totalBalance());
 
-  protected isAdmin = computed(() => this.authService.currentUser()?.role === 'ADMIN');
+  protected isAdmin = computed(() => this.authService.currentUser()?.systemRole === 'ADMIN');
 
   protected standardAccounts = computed(() =>
     this.accountService.accounts().filter((a: AccountDTO) => a.type === 'STANDARD'),
@@ -279,6 +302,7 @@ export class DashboardComponent implements OnInit {
       this.checkBackendConnection();
     }
     this.loadAccounts();
+    this.inviteService.loadReceivedInvites();
     this.loadRecentTransactions();
   }
 
@@ -363,18 +387,30 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  protected onQuickAdd(type: 'INCOME' | 'EXPENSE') {
-    this.router.navigate(['/transactions/new'], {
-      queryParams: { type, openAmount: 1 },
-    });
-  }
-
   protected onOpenAccounts() {
     this.router.navigate(['/accounts']);
   }
 
   protected onOpenCards() {
     this.router.navigate(['/cards']);
+  }
+
+  protected onOpenReports() {
+    this.router.navigate(['/reports']);
+  }
+
+  protected onOpenInvites() {
+    this.router.navigate(['/invites']);
+  }
+
+  protected onShareAccount(account: AccountDTO) {
+    this.shareAccountDialog().open([account.id]);
+  }
+
+  protected onQuickAdd(type: 'INCOME' | 'EXPENSE') {
+    this.router.navigate(['/transactions/new'], {
+      queryParams: { type, openAmount: 1 },
+    });
   }
 
   protected onNewTransaction() {

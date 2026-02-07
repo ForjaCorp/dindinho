@@ -76,7 +76,7 @@ export async function authRoutes(
           {
             name: authResult.name,
             email: authResult.email,
-            role: authResult.role,
+            systemRole: authResult.systemRole,
           },
           { sub: authResult.id, expiresIn: "15m" },
         );
@@ -88,7 +88,7 @@ export async function authRoutes(
             id: authResult.id,
             name: authResult.name,
             email: authResult.email,
-            role: authResult.role,
+            systemRole: authResult.systemRole,
           },
         };
 
