@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { finalize, tap, catchError } from 'rxjs/operators';
-import { Observable, throwError } from 'rxjs';
+import { Observable, throwError, of } from 'rxjs';
 import { CreateInviteDTO, InviteDTO, UpdateInviteStatusDTO, InviteStatus } from '@dindinho/shared';
 import { ApiService } from './api.service';
 import { LoggerService } from './logger.service';
@@ -123,7 +123,7 @@ export class InviteService {
         }),
         catchError((err) => {
           this.handleError(err, 'Erro ao carregar convites enviados');
-          return throwError(() => err);
+          return of([]);
         }),
         finalize(() => this.setLoading(false)),
       )
@@ -143,7 +143,7 @@ export class InviteService {
         }),
         catchError((err) => {
           this.handleError(err, 'Erro ao carregar convites recebidos');
-          return throwError(() => err);
+          return of([]);
         }),
         finalize(() => this.setLoading(false)),
       )
