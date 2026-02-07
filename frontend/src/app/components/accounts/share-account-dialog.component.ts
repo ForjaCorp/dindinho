@@ -226,8 +226,8 @@ export class ShareAccountDialogComponent {
   });
 
   /**
-   * Abre o diálogo para uma ou mais contas
-   * @param accountIds IDs das contas pré-selecionadas
+   * Abre o diálogo para uma ou mais contas.
+   * @param {string[]} accountIds - IDs das contas pré-selecionadas.
    */
   open(accountIds: string[] = []) {
     this.resetForm();
@@ -235,7 +235,11 @@ export class ShareAccountDialogComponent {
     this.visible.set(true);
   }
 
-  resetForm() {
+  /**
+   * Reseta o formulário e limpa o link de convite gerado.
+   * @protected
+   */
+  protected resetForm() {
     this.form.reset({
       email: '',
       accountIds: [],
@@ -246,6 +250,7 @@ export class ShareAccountDialogComponent {
 
   /**
    * Submete o formulário para criar um novo convite.
+   * @description Valida os campos, chama o serviço de convites e gera o link seguro.
    */
   onSubmit() {
     if (this.form.invalid) return;
@@ -286,7 +291,8 @@ export class ShareAccountDialogComponent {
   }
 
   /**
-   * Copia o link de convite para a área de transferência.
+   * Copia o link de convite para a área de transferência do sistema.
+   * @description Utiliza o serviço Clipboard do Angular CDK e exibe uma notificação de sucesso.
    */
   copyToClipboard() {
     const link = this.inviteLink();

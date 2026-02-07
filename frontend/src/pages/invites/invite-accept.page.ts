@@ -133,7 +133,7 @@ import { SkeletonModule } from 'primeng/skeleton';
                       label="Entrar para Aceitar"
                       icon="pi pi-sign-in"
                       styleClass="w-full py-3"
-                      [routerLink]="['/auth/login']"
+                      [routerLink]="['/login']"
                       [queryParams]="{ returnUrl: currentUrl }"
                       data-testid="login-to-accept-button"
                     />
@@ -216,12 +216,21 @@ export class InviteAcceptPage implements OnInit {
     this.loadInvite(token);
   }
 
+  /**
+   * Verifica se o usuário atual está autenticado e qual seu e-mail.
+   * @private
+   */
   private checkAuth() {
     const user = this.authService.currentUser();
     this.isAuthenticated.set(!!user);
     this.currentUserEmail.set(user?.email || null);
   }
 
+  /**
+   * Carrega os dados do convite usando o token fornecido.
+   * @param token Token de segurança do convite.
+   * @private
+   */
   private loadInvite(token: string) {
     this.inviteService.getInviteByToken(token).subscribe({
       next: (inv) => {
@@ -236,10 +245,18 @@ export class InviteAcceptPage implements OnInit {
     });
   }
 
+  /**
+   * Verifica se o e-mail do convite coincide com o e-mail do usuário logado.
+   * @param inviteEmail E-mail destinatário do convite.
+   * @returns Verdadeiro se os e-mails coincidirem.
+   */
   isCorrectUser(inviteEmail: string): boolean {
     return inviteEmail.toLowerCase() === this.currentUserEmail()?.toLowerCase();
   }
 
+  /**
+   * Ação disparada ao clicar no botão de aceitar convite.
+   */
   onAccept() {
     const inv = this.invite();
     if (!inv) return;
@@ -267,11 +284,19 @@ export class InviteAcceptPage implements OnInit {
     });
   }
 
+  /**
+   * Realiza o logout do usuário atual.
+   */
   onLogout() {
     this.authService.logout();
     this.checkAuth();
   }
 
+  /**
+   * Obtém o rótulo legível em português para o status do convite.
+   * @param status Status do convite.
+   * @returns Rótulo formatado.
+   */
   getStatusLabel(status: string): string {
     switch (status) {
       case 'ACCEPTED':
