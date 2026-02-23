@@ -33,7 +33,7 @@ Estes itens já possuem planejamento iniciado ou são essenciais para o fechamen
 
 ### 2. Plano de Testes E2E (Qualidade)
 
-- **Status**: [Em Andamento](./em-andamento/plano-testes-e2e.md)
+- **Status**: [Concluído](./concluido/plano-testes-e2e.md)
 - **Foco**: Garantir a integridade dos fluxos críticos (Auth, Transações) com Playwright e MySQL efêmero.
 
 ### 3. Metas de Economia Híbridas
