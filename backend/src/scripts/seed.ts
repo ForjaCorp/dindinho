@@ -39,6 +39,16 @@ export async function main() {
     }
   }
 
+  const isDev = process.env.NODE_ENV !== "production";
+  const autoSeed = process.env.AUTO_SEED === "true";
+
+  if (!isDev && !autoSeed) {
+    writeOut(
+      "Seed de usuário dev ignorado fora do ambiente de desenvolvimento (use AUTO_SEED=true para forçar)",
+    );
+    return;
+  }
+
   const existingUser = await prisma.user.findUnique({
     where: { email },
   });
@@ -65,16 +75,6 @@ export async function main() {
     });
     writeOut(`Usuário de dev criado com sucesso: ${user.email}`);
     writeOut(`Senha: ${password}`);
-  }
-
-  const isDev = process.env.NODE_ENV !== "production";
-  const autoSeed = process.env.AUTO_SEED === "true";
-
-  if (!isDev && !autoSeed) {
-    writeOut(
-      "Seed de usuário dev ignorado fora do ambiente de desenvolvimento (use AUTO_SEED=true para forçar)",
-    );
-    return;
   }
 
   if (autoSeed) {
