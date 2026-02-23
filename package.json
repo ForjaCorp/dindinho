@@ -27,10 +27,15 @@
     "test:integration": "turbo run test:integration",
     "quality:precommit": "lint-staged",
     "quality:prepush": "turbo run typecheck build test:integration --continue",
-    "quality:ci": "turbo run lint typecheck build test test:integration --continue",
+    "quality:ci": "turbo run lint typecheck build test test:integration --continue && npm run test:e2e:ci",
     "install:all": "npm install",
     "setup:dev": "npm run db:up && npm run prisma:generate && npm run prisma:migrate && npm run seed",
     "setup:prod": "npm run prisma:generate && npm run prisma:deploy && npm run seed:prod",
+    "test:e2e": "docker compose -f docker-compose.test.yml up -d && npx playwright test --config=playwright.config.ts && docker compose -f docker-compose.test.yml down",
+    "test:e2e:ci": "docker compose -f docker-compose.test.yml up -d && npx playwright test --config=playwright.config.ts --reporter=dot && docker compose -f docker-compose.test.yml down",
+    "test:e2e:infra-up": "docker compose -f docker-compose.test.yml up -d --build",
+    "test:e2e:infra-down": "docker compose -f docker-compose.test.yml down -v",
+    "test:e2e:report": "npx playwright show-report",
     "prepare": "node -e \"if (process.env.HUSKY !== '0' && process.env.NODE_ENV !== 'production') { try { const husky = require('husky'); (husky.install || husky.default || (() => {}))() } catch (e) { if (e.code !== 'MODULE_NOT_FOUND') throw e } }\""
   },
   "keywords": [
@@ -43,6 +48,7 @@
   "license": "ISC",
   "devDependencies": {
     "@vitest/coverage-v8": "^4.0.18",
+    "@playwright/test": "^1.44.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.7.4",

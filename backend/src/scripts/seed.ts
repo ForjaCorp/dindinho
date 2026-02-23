@@ -53,7 +53,18 @@ export async function main() {
     } else {
       writeOut(`Usuário de dev já existe e é ADMIN: ${email}`);
     }
-    return;
+  } else {
+    const passwordHash = await hash(password, 8);
+    const user = await prisma.user.create({
+      data: {
+        name: "Desenvolvedor Dindinho",
+        email,
+        passwordHash,
+        systemRole: "ADMIN",
+      },
+    });
+    writeOut(`Usuário de dev criado com sucesso: ${user.email}`);
+    writeOut(`Senha: ${password}`);
   }
 
   const isDev = process.env.NODE_ENV !== "production";
@@ -66,17 +77,42 @@ export async function main() {
     return;
   }
 
-  const passwordHash = await hash(password, 8);
+  if (autoSeed) {
+    writeOut("AUTO_SEED enabled, creating E2E test users...");
+    const testUsers = [
+      {
+        email: "e2e@example.com",
+        name: "E2E Test User",
+        pass: "Dindinho#1234",
+      },
+      {
+        email: "e2e-inviter@example.com",
+        name: "E2E Inviter",
+        pass: "Dindinho#1234",
+      },
+      {
+        email: "e2e-invitee@example.com",
+        name: "E2E Invitee",
+        pass: "Dindinho#1234",
+      },
+    ];
 
-  const user = await prisma.user.create({
-    data: {
-      name: "Desenvolvedor Dindinho",
-      email,
-      passwordHash,
-      systemRole: "ADMIN",
-    },
-  });
-
-  writeOut(`Usuário de dev criado com sucesso: ${user.email}`);
-  writeOut(`Senha: ${password}`);
+    for (const tu of testUsers) {
+      const existing = await prisma.user.findUnique({
+        where: { email: tu.email },
+      });
+      if (!existing) {
+        const tuHash = await hash(tu.pass, 8);
+        await prisma.user.create({
+          data: {
+            name: tu.name,
+            email: tu.email,
+            passwordHash: tuHash,
+            systemRole: "USER",
+          },
+        });
+        writeOut(`Test user created: ${tu.email}`);
+      }
+    }
+  }
 }
