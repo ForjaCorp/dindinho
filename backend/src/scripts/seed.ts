@@ -98,20 +98,36 @@ export async function main() {
     ];
 
     for (const tu of testUsers) {
-      const existing = await prisma.user.findUnique({
+      let user = await prisma.user.findUnique({
         where: { email: tu.email },
+        include: { myAccounts: true },
       });
-      if (!existing) {
+
+      if (!user) {
         const tuHash = await hash(tu.pass, 8);
-        await prisma.user.create({
+        user = await prisma.user.create({
           data: {
             name: tu.name,
             email: tu.email,
             passwordHash: tuHash,
             systemRole: "USER",
           },
+          include: { myAccounts: true },
         });
         writeOut(`Test user created: ${tu.email}`);
+      }
+
+      if (user.myAccounts.length === 0) {
+        await prisma.account.create({
+          data: {
+            name: "Conta Padrão",
+            color: "#10b981",
+            icon: "pi-wallet",
+            type: "STANDARD",
+            ownerId: user.id,
+          },
+        });
+        writeOut(`Default account created for test user: ${tu.email}`);
       }
     }
   }
