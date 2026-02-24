@@ -12,7 +12,8 @@ export const subdomainGuard: CanActivateFn = (_route, state) => {
   const origin = window.location.origin;
 
   // 1. Detectar se estamos no subdomínio de documentação
-  const isDocsSubdomain = hostname.startsWith('docs.');
+  // Suporta: docs.dindinho.com, docs.localhost, 16.docs.dindinho.com, etc.
+  const isDocsSubdomain = hostname.includes('docs.') || hostname.includes('.docs.');
 
   if (isDocsSubdomain) {
     // No subdomínio 'docs.', só permitimos rotas de documentação ou auth básica
@@ -26,26 +27,26 @@ export const subdomainGuard: CanActivateFn = (_route, state) => {
       return true;
     }
 
-    // Se tentar acessar o app principal pelo subdomínio docs, redireciona para o domínio principal
-    const mainOrigin = origin.replace('://docs.', '://');
-    window.location.href = `${mainOrigin}${url}`;
-    return false;
+    // Se tentar acessar o app principal pelo subdomínio docs, e NÃO for um PR Preview (que tem domínios fixos por serviço)
+    // Redireciona para o domínio principal apenas se for o padrão prod/dev simples
+    if (hostname.startsWith('docs.')) {
+      const mainOrigin = origin.replace('://docs.', '://');
+      window.location.href = `${mainOrigin}${url}`;
+      return false;
+    }
+
+    return true;
   } else {
-    // No domínio principal, NÃO permitimos rotas de documentação
+    // No domínio principal, NÃO permitimos rotas de documentação (exceto se for localhost sem configuração de hosts)
     const isTryingDocs = url.startsWith('/docs');
 
     if (isTryingDocs) {
-      // Redireciona para o subdomínio docs
-      // Em produção: dindinho.com -> docs.dindinho.com
-      // Em desenvolvimento: localhost:4200 -> docs.localhost:4200 (se suportado) ou apenas informa
-      let docsOrigin: string;
       if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        // Para desenvolvimento, tentamos adicionar o prefixo docs. ao localhost
-        // Se o navegador não resolver, o dev precisará configurar o /etc/hosts
-        docsOrigin = origin.replace('://', '://docs.');
-      } else {
-        docsOrigin = origin.replace('://', '://docs.');
+        return true; // Permite docs em localhost sem subdomínio para facilitar dev
       }
+
+      // Redireciona para o subdomínio docs
+      const docsOrigin = origin.replace('://', '://docs.');
 
       window.location.href = `${docsOrigin}${url}`;
       return false;
