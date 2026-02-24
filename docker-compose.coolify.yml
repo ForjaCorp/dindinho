@@ -13,9 +13,7 @@ services:
       retries: 10
       start_period: 30s
     networks:
-      coolify:
-        aliases:
-          - db
+      - internal
     volumes:
       - dindinho-db-data:/var/lib/mysql
 
@@ -48,6 +46,7 @@ services:
       retries: 5
     networks:
       - coolify
+      - internal
 
   frontend:
     build:
@@ -93,6 +92,8 @@ networks:
   coolify:
     external: true
     name: coolify
+  internal:
+    driver: bridge
 
 volumes:
   dindinho-db-data:
