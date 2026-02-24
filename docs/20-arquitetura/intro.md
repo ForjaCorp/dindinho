@@ -100,3 +100,5 @@ O Dindinho segue a filosofia de **Infraestrutura Imutável**:
 - **Docker:** Tudo roda em containers, garantindo que o ambiente de dev seja idêntico ao de produção.
 - **Coolify:** Nossa plataforma de PaaS que gerencia o ciclo de vida do deploy, certificados SSL e banco de dados.
 - **PWA:** A aplicação é instalável e funciona offline, otimizada para dispositivos móveis.
+
+ <!-- Última revisão de infraestrutura: 24/02/2026 -->
