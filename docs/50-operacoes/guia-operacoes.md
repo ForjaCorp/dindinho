@@ -54,6 +54,9 @@ O Dindinho utiliza **Preview Environments** automáticos via Coolify. Cada Pull 
 - URL dinâmica baseada no ID do PR.
 - Limpeza automática após o merge/fechamento do PR.
 
+> [!IMPORTANT]
+> O deploy automático nos Previews exige que a opção **Automatic Deployments** esteja habilitada na aba **Advanced** das configurações do recurso no Coolify.
+
 ## 🧹 Manutenção e Jobs
 
 ### Limpeza de Refresh Tokens
