@@ -118,8 +118,8 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright Browsers (force)
+        run: npx playwright install --with-deps chromium --force
 
       - name: Run E2E Tests
         run: npm run test:e2e:ci
