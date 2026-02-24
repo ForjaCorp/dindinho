@@ -39,8 +39,9 @@ A arquitetura é dividida em três camadas principais coordenadas por um orquest
 
 ### 🗄️ Infraestrutura
 
-- **MySQL DB:** Banco de dados relacional para persistência.
+- **MySQL DB:** Banco de dados relacional para persistência (MariaDB).
 - **Docker/Coolify:** Empacotamento em containers e gerenciamento de deploy automático.
+- **CI/CD Quality Gate:** Pipeline paralelo com Sharding E2E e validação automática de PR Previews.
 
 ## 🚀 Pilares Arquiteturais
 

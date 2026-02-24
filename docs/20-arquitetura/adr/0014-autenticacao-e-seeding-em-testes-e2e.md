@@ -1,9 +1,14 @@
 ---
-id: adr-0014
-title: "ADR 0014: Autenticação e Seeding Básico em Testes E2E"
-status: "aceito"
-date: "2026-02-23"
-tags: ["arquitetura", "testes", "e2e", "autenticação"]
+id: adr-0014-autenticacao-e-seeding-e2e
+title: "ADR 0014: Autenticação e Seeding em Testes E2E"
+description: "Estratégia de autenticação global e seeding automatizado para garantir resiliência e velocidade nos testes Playwright."
+audience: ["dev", "arquitetura"]
+visibility: "interno"
+status: "estável"
+owners: ["engineering"]
+tags: ["arquitetura", "testes", "e2e", "autenticação", "playwright"]
+mvp: true
+createdAt: "2026-02-23"
 ---
 
 # ADR 0014: Autenticação e Seeding Básico em Testes E2E

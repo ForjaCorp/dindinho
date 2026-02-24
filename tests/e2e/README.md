@@ -305,36 +305,32 @@ O `global-setup.ts` salva sessão em `tests/e2e/state/auth.json`. Testes subsequ
 
 ## CI/CD Integration
 
-### GitHub Actions (Exemplo)
+### GitHub Actions
 
-```yaml
-name: E2E Tests
+O pipeline oficial está definido em `.github/workflows/ci.yml` e utiliza as seguintes otimizações:
 
-on: [push, pull_request]
+- **Paralelização**: Jobs de qualidade (`lint`, `test`, `typecheck`, `build`, `test:integration`, `docs:check`) rodam simultaneamente para feedback rápido.
+- **E2E Sharding**: Os testes E2E são divididos em 2 shards paralelos para reduzir o tempo total de execução.
+- **Quality Gate**: O job consolidado **Quality** garante que todos os checks (qualidade + E2E) passarem antes de permitir o merge.
+- **PR Previews**: Cada Pull Request gera um ambiente de validação isolado no Coolify com banco de dados próprio.
 
-jobs:
-  e2e:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
+### Execução via CLI (Exemplo Sharding)
 
-      - run: npm install
-      - run: npm run test:e2e:ci
+```bash
+# Rodar apenas a primeira metade dos testes
+npx playwright test --shard=1/2
 
-      - name: Upload Traces
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-traces
-          path: test-results/e2e/
-
-      - name: Publish Report
-        if: always()
-        uses: daun/playwright-report-action@v3
+# Rodar a segunda metade
+npx playwright test --shard=2/2
 ```
+
+### Artifacts (Reports e Traces)
+
+Em caso de falha no CI:
+
+1. Acesse a aba **Actions** do seu Pull Request.
+2. Localize o artefato `playwright-report-shard-X` nas conclusões do job.
+3. Baixe e abra o relatório localmente para depurar com o trace interativo.
 
 ### Environment Variables
 

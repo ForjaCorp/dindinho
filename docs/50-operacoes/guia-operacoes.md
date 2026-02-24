@@ -41,11 +41,18 @@ A infraestrutura é baseada em Docker e otimizada para ser gerenciada via [Cooli
 
 ### Variáveis de Ambiente Críticas
 
-| Variável       | Descrição                       | Exemplo                          |
-| :------------- | :------------------------------ | :------------------------------- |
-| `DATABASE_URL` | String de conexão com o banco   | `mysql://user:pass@host:3306/db` |
-| `JWT_SECRET`   | Chave para assinatura de tokens | `super-secret-key`               |
-| `FRONTEND_URL` | URL do frontend (para CORS)     | `https://app.dindinho.com.br`    |
+| `DATABASE_URL` | String de conexão com o banco | `mysql://user:pass@host:3306/db` |
+| `JWT_SECRET` | Chave para assinatura de tokens | `super-secret-key` |
+| `FRONTEND_URL` | URL do frontend (para CORS) | `https://app.dindinho.com.br` |
+| `COOLIFY_URL` | URL dinâmica injetada nos PRs | `https://pr-42.dindinho.com` |
+
+### Ambientes de Preview (Review)
+
+O Dindinho utiliza **Preview Environments** automáticos via Coolify. Cada Pull Request gera um ambiente isolado com:
+
+- Instância temporária de MariaDB.
+- URL dinâmica baseada no ID do PR.
+- Limpeza automática após o merge/fechamento do PR.
 
 ## 🧹 Manutenção e Jobs
 
