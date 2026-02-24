@@ -14,9 +14,7 @@ async function waitForUrl(url: string, timeoutMs = 60_000): Promise<boolean> {
     } catch (e) {
       // ignore and retry
     }
-    // wait 500ms
-    // eslint-disable-next-line no-await-in-loop
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 1000));
   }
   return false;
 }
@@ -53,24 +51,38 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
   try {
     const email = "e2e@example.com";
     const password = "Dindinho#1234";
+    // Aguarda o container frontend estar respondendo HTTP primeiro
+    console.log(`Aguardando frontend em ${baseUrl}...`);
+    const appReady = await waitForUrl(baseUrl, 120_000);
+    if (!appReady) {
+      console.error("Frontend não subiu a tempo.");
+      return;
+    }
 
     await page.goto(`${baseUrl}/login`);
 
     // Tenta autenticar via UI usando locator flexível
+    console.log(
+      "Aguardando carregamento da página de login e hidratação do Angular...",
+    );
+    await page.waitForSelector(
+      '[data-testid="login-email-input"], input#email, input[type="email"]',
+      { state: "visible", timeout: 60_000 },
+    );
     await page.waitForLoadState("networkidle");
     const emailLoc = page
       .locator(
-        'input[type="email"], input[name="email"], [data-testid*="login-email-input"]',
+        '[data-testid="login-email-input"], input#email, input[type="email"]',
       )
       .first();
     const passLoc = page
       .locator(
-        'input[type="password"], input[name="password"], [data-testid*="login-password-input"] input',
+        '[data-testid="login-password-input"] input, input#password, input[type="password"]',
       )
       .first();
     const submitLoc = page
       .locator(
-        'button[type="submit"], [data-testid*="submit"], p-button button',
+        '[data-testid="login-submit-button"], button[type="submit"], button:has-text("entrar"), button:has-text("login")',
       )
       .first();
 
@@ -80,9 +92,12 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       await submitLoc.click();
 
       // Aguardar uma navegação bem sucedida após o login
-      await page.waitForURL(/\/(dashboard|home|app)/, { timeout: 10_000 });
+      console.log("Aguardando redirecionamento pós-login...");
+      await page.waitForURL(/\/(dashboard|home|app)/, { timeout: 20_000 });
       await page.context().storageState({ path: stateFile });
-      console.log("Login no backend/frontend bem sucedido via UI headless.");
+      console.log(
+        "Login no backend/frontend bem sucedido via UI headless. Auth state salvo.",
+      );
     } else {
       console.warn(
         "Não foi possível encontrar inputs de login no frontend, criando auth state vazio.",
