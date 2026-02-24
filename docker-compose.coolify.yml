@@ -1,12 +1,32 @@
 services:
+  db:
+    image: mariadb:10.11
+    environment:
+      - MARIADB_ROOT_PASSWORD=${DATABASE_PASSWORD:-root}
+      - MARIADB_DATABASE=${DATABASE_NAME:-dindinho}
+    expose:
+      - "3306"
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "root", "-p${MARIADB_ROOT_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - coolify
+    volumes:
+      - dindinho-db-data:/var/lib/mysql
+
   backend:
     build:
       context: .
       dockerfile: backend/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=${DATABASE_URL:-mysql://root:root@db:3306/dindinho}
       - JWT_SECRET=${JWT_SECRET}
-      - FRONTEND_URL=${FRONTEND_URL}
+      - FRONTEND_URL=${FRONTEND_URL:-${COOLIFY_URL}}
       - ALLOWLIST_ADMIN_KEY=${ALLOWLIST_ADMIN_KEY}
       - SIGNUP_ALLOWLIST_ENABLED=${SIGNUP_ALLOWLIST_ENABLED}
       - ENABLE_REFRESH_CLEANUP=${ENABLE_REFRESH_CLEANUP}
@@ -25,6 +45,7 @@ services:
       retries: 5
     networks:
       - coolify
+
   frontend:
     build:
       context: .
@@ -32,7 +53,7 @@ services:
     depends_on:
       - backend
     environment:
-      FRONTEND_URL: ${FRONTEND_URL}
+      - FRONTEND_URL=${FRONTEND_URL:-${COOLIFY_URL}}
     expose:
       - "80"
     healthcheck:
@@ -52,7 +73,7 @@ services:
     depends_on:
       - backend
     environment:
-      FRONTEND_URL: ${FRONTEND_URL}
+      - FRONTEND_URL=${FRONTEND_URL:-${COOLIFY_URL}}
     expose:
       - "80"
     healthcheck:
@@ -69,3 +90,6 @@ networks:
   coolify:
     external: true
     name: coolify
+
+volumes:
+  dindinho-db-data:
