@@ -38,6 +38,14 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Cache Turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json', 'turbo.json', '**/package.json') }}
+          restore-keys: |
+            turbo-${{ runner.os }}-node${{ env.NODE_VERSION }}-
+
       - name: Build Shared Package
         run: npx turbo run build --filter=@dindinho/shared
 
@@ -81,6 +89,14 @@ jobs:
             **/node_modules
           key: node_modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
 
+      - name: Restore Turbo Cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json', 'turbo.json', '**/package.json') }}
+          restore-keys: |
+            turbo-${{ runner.os }}-node${{ env.NODE_VERSION }}-
+
       - name: Run Task
         env:
           DATABASE_URL: "mysql://root:root@localhost:3306/dindinho"
@@ -119,6 +135,14 @@ jobs:
             node_modules
             **/node_modules
           key: node_modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Restore Turbo Cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json', 'turbo.json', '**/package.json') }}
+          restore-keys: |
+            turbo-${{ runner.os }}-node${{ env.NODE_VERSION }}-
 
       - name: Cache Playwright Browsers
         uses: actions/cache@v4
