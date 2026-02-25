@@ -48,8 +48,8 @@
   "author": "Forja Corp",
   "license": "ISC",
   "devDependencies": {
-    "@vitest/coverage-v8": "^4.0.18",
     "@playwright/test": "^1.44.0",
+    "@vitest/coverage-v8": "^4.0.18",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.7.4",
@@ -71,16 +71,17 @@
     ]
   },
   "dependencies": {
-    "primeicons": "^7.0.0"
+    "primeicons": "^7.0.0",
+    "undici": "7.18.2"
   },
   "overrides": {
-    "@angular/build@21.1.0": {
+    "undici": "7.18.2",
+    "@angular/build": {
       "undici": "7.18.2"
     },
     "@prisma/dev@0.17.0": {
       "hono": "4.11.4"
     },
-    "hono": "4.11.4",
-    "undici": "7.18.2"
+    "hono": "4.11.4"
   }
 }
