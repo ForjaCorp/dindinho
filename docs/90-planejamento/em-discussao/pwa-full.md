@@ -68,6 +68,15 @@ createdAt: "2026-02-06"
   - Refatoração de CSS para suporte a Safe Areas e interações touch.
 - **Service Worker**: Lógica customizada para Background Sync.
 
+## 🧪 Testes E2E (Progressive Web App)
+
+Uma vez que o PWA esteja implementado, os testes E2E devem cobrir:
+
+- **Cenário**: Simular modo offline via Playwright (`page.offline()`), adicionar uma transação e depois voltar a ficar online.
+- **Validação**: Garantir que o Service Worker cacheou a requisição (Background Sync) e sincronizou com o backend assim que a conectividade foi restaurada.
+- **Técnico**: Validar se o `manifest.json` está sendo servido corretamente e se o Service Worker está registrado e ativo.
+- **Identidade**: Verificar se as meta tags de `theme-color` e as `safe-area-insets` estão presentes no DOM.
+
 ## ✅ Definição de Pronto (DoD)
 
 - [ ] Testado exaustivamente em iOS (Safari/PWA) e Android (Chrome/PWA).

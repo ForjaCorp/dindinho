@@ -39,6 +39,16 @@ export async function main() {
     }
   }
 
+  const isDev = process.env.NODE_ENV !== "production";
+  const autoSeed = process.env.AUTO_SEED === "true";
+
+  if (!isDev && !autoSeed) {
+    writeOut(
+      "Seed de usuário dev ignorado fora do ambiente de desenvolvimento (use AUTO_SEED=true para forçar)",
+    );
+    return;
+  }
+
   const existingUser = await prisma.user.findUnique({
     where: { email },
   });
@@ -53,30 +63,72 @@ export async function main() {
     } else {
       writeOut(`Usuário de dev já existe e é ADMIN: ${email}`);
     }
-    return;
+  } else {
+    const passwordHash = await hash(password, 8);
+    const user = await prisma.user.create({
+      data: {
+        name: "Desenvolvedor Dindinho",
+        email,
+        passwordHash,
+        systemRole: "ADMIN",
+      },
+    });
+    writeOut(`Usuário de dev criado com sucesso: ${user.email}`);
+    writeOut(`Senha: ${password}`);
   }
 
-  const isDev = process.env.NODE_ENV !== "production";
-  const autoSeed = process.env.AUTO_SEED === "true";
+  if (autoSeed) {
+    writeOut("AUTO_SEED enabled, creating E2E test users...");
+    const testUsers = [
+      {
+        email: "e2e@example.com",
+        name: "E2E Test User",
+        pass: "Dindinho#1234",
+      },
+      {
+        email: "e2e-inviter@example.com",
+        name: "E2E Inviter",
+        pass: "Dindinho#1234",
+      },
+      {
+        email: "e2e-invitee@example.com",
+        name: "E2E Invitee",
+        pass: "Dindinho#1234",
+      },
+    ];
 
-  if (!isDev && !autoSeed) {
-    writeOut(
-      "Seed de usuário dev ignorado fora do ambiente de desenvolvimento (use AUTO_SEED=true para forçar)",
-    );
-    return;
+    for (const tu of testUsers) {
+      let user = await prisma.user.findUnique({
+        where: { email: tu.email },
+        include: { myAccounts: true },
+      });
+
+      if (!user) {
+        const tuHash = await hash(tu.pass, 8);
+        user = await prisma.user.create({
+          data: {
+            name: tu.name,
+            email: tu.email,
+            passwordHash: tuHash,
+            systemRole: "USER",
+          },
+          include: { myAccounts: true },
+        });
+        writeOut(`Test user created: ${tu.email}`);
+      }
+
+      if (user.myAccounts.length === 0) {
+        await prisma.account.create({
+          data: {
+            name: "Conta Padrão",
+            color: "#10b981",
+            icon: "pi-wallet",
+            type: "STANDARD",
+            ownerId: user.id,
+          },
+        });
+        writeOut(`Default account created for test user: ${tu.email}`);
+      }
+    }
   }
-
-  const passwordHash = await hash(password, 8);
-
-  const user = await prisma.user.create({
-    data: {
-      name: "Desenvolvedor Dindinho",
-      email,
-      passwordHash,
-      systemRole: "ADMIN",
-    },
-  });
-
-  writeOut(`Usuário de dev criado com sucesso: ${user.email}`);
-  writeOut(`Senha: ${password}`);
 }

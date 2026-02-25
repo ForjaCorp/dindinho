@@ -19,7 +19,8 @@ O deploy do Dindinho é automatizado e baseado em containers.
 
 - **Orquestração:** Docker Compose.
 - **Gerenciamento:** Coolify.
-- **Ambientes:** Staging e Production.
+- **Ambientes:** Staging, Production e Previews (dinâmicos por PR).
+- **PR Previews:** Ambientes efêmeros criados automaticamente para cada Pull Request, permitindo validação isolada com banco de dados próprio.
 
 ---
 

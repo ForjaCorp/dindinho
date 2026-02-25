@@ -22,7 +22,7 @@ export const routes: Routes = [
     pathMatch: 'full',
     redirectTo: () => {
       const hostname = window.location.hostname;
-      if (hostname.startsWith('docs.')) {
+      if (hostname.includes('docs.') || hostname.includes('.docs.')) {
         return 'docs/intro'; // Nova rota principal unificada
       }
       return 'login';
