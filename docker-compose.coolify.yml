@@ -27,7 +27,7 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL:-mysql://root:root@dindinho-db:3306/dindinho}
       - JWT_SECRET=${JWT_SECRET:-dummy_secret_for_preview_only_1234567890}
-      - FRONTEND_URL=${FRONTEND_URL:-${COOLIFY_URL:-http://localhost}}
+      - FRONTEND_URL=${FRONTEND_URL:-https://${COOLIFY_PR_ID:-preview}.dindinho.forjacorp.com,https://${COOLIFY_PR_ID:-preview}.docs.dindinho.forjacorp.com,https://dindinho.forjacorp.com,https://docs.dindinho.forjacorp.com}
       - ALLOWLIST_ADMIN_KEY=${ALLOWLIST_ADMIN_KEY:-dummy_admin_key}
       - SIGNUP_ALLOWLIST_ENABLED=${SIGNUP_ALLOWLIST_ENABLED:-true}
       - ENABLE_REFRESH_CLEANUP=${ENABLE_REFRESH_CLEANUP:-true}
