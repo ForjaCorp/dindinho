@@ -72,10 +72,12 @@
   },
   "dependencies": {
     "primeicons": "^7.0.0",
-    "undici": "7.18.2"
+    "undici": "7.18.2",
+    "zone.js": "0.15.1"
   },
   "overrides": {
     "undici": "7.18.2",
+    "zone.js": "0.15.1",
     "@angular/build": {
       "undici": "7.18.2"
     },
