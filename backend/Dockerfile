@@ -1,13 +1,15 @@
-FROM node:20-alpine AS deps
+FROM node:20-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/
 COPY packages/shared/package.json ./packages/shared/
 ENV HUSKY=0
+# Prisma requires openssl on slim images
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 RUN npm ci --workspaces --include-workspace-root
 
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 WORKDIR /app
 COPY --from=deps /app ./
 COPY . .
@@ -15,7 +17,7 @@ ENV CI=true
 RUN npm --prefix packages/shared run build
 RUN npm --prefix backend run build
 
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/node_modules ./node_modules
@@ -27,7 +29,7 @@ COPY --from=builder /app/backend/prisma ./backend/prisma
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/packages/shared/package.json ./packages/shared/package.json
 EXPOSE 3333
-RUN apk add --no-cache tini
+RUN apt-get update && apt-get install -y tini openssl && rm -rf /var/lib/apt/lists/*
 USER node
 ENTRYPOINT ["/sbin/tini", "--"]
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
