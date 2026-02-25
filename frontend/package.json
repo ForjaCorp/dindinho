@@ -49,7 +49,7 @@
     "primeng": "^21.0.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
-    "undici": "7.20.0"
+    "undici": "7.18.2"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "^21.1.3",
