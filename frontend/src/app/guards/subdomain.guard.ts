@@ -11,8 +11,9 @@ export const subdomainGuard: CanActivateFn = (_route, state) => {
   const url = state.url;
   const origin = window.location.origin;
 
-  // 1. Detectar se estamos no subdomínio de documentação
-  const isDocsSubdomain = hostname.startsWith('docs.');
+  // 1. Detectar se estamos no subdomínio de documentação ou em um PR Preview de docs
+  // Suporta: docs.dindinho.com, docs.localhost, 16.docs.rckww...sslip.io
+  const isDocsSubdomain = hostname.includes('docs.') || hostname.includes('.docs.');
 
   if (isDocsSubdomain) {
     // No subdomínio 'docs.', só permitimos rotas de documentação ou auth básica
@@ -27,25 +28,22 @@ export const subdomainGuard: CanActivateFn = (_route, state) => {
     }
 
     // Se tentar acessar o app principal pelo subdomínio docs, redireciona para o domínio principal
-    const mainOrigin = origin.replace('://docs.', '://');
-    window.location.href = `${mainOrigin}${url}`;
-    return false;
+    // Para PR Previews (sslip.io), o domínio costuma ser fixo por container, então deixamos passar
+    if (!hostname.endsWith('sslip.io')) {
+      const mainOrigin = origin.replace('://docs.', '://');
+      window.location.href = `${mainOrigin}${url}`;
+      return false;
+    }
+
+    return true;
   } else {
     // No domínio principal, NÃO permitimos rotas de documentação
     const isTryingDocs = url.startsWith('/docs');
 
     if (isTryingDocs) {
       // Redireciona para o subdomínio docs
-      // Em produção: dindinho.com -> docs.dindinho.com
-      // Em desenvolvimento: localhost:4200 -> docs.localhost:4200 (se suportado) ou apenas informa
-      let docsOrigin: string;
-      if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        // Para desenvolvimento, tentamos adicionar o prefixo docs. ao localhost
-        // Se o navegador não resolver, o dev precisará configurar o /etc/hosts
-        docsOrigin = origin.replace('://', '://docs.');
-      } else {
-        docsOrigin = origin.replace('://', '://docs.');
-      }
+      // Mantemos o comportamento original que os testes esperam (mesmo em localhost)
+      const docsOrigin = origin.replace('://', '://docs.');
 
       window.location.href = `${docsOrigin}${url}`;
       return false;

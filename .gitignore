@@ -51,6 +51,11 @@ packages/shared/src/**/*.js.map
 # Testes e Cobertura
 coverage/
 *.lcov
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+tests/e2e/state/*.json
 
 # PWA
 ngsw/

@@ -205,6 +205,12 @@ export function buildApp(): FastifyInstance {
         }
       }
 
+      // Em teste, permitir tudo para facilitar o ambiente E2E isolado
+      if (process.env.NODE_ENV === "test") {
+        cb(null, true);
+        return;
+      }
+
       const allowedOrigins = (process.env.FRONTEND_URL || "").split(",");
       if (allowedOrigins.includes(origin)) {
         cb(null, true);

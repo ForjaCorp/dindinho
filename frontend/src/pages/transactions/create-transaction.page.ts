@@ -17,6 +17,7 @@ import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
 import { DrawerModule } from 'primeng/drawer';
+import { MessageService } from 'primeng/api';
 import { ApiService } from '../../app/services/api.service';
 import { AccountService } from '../../app/services/account.service';
 import {
@@ -802,6 +803,7 @@ export class CreateTransactionPage {
   private fb = inject(FormBuilder);
   private api = inject(ApiService);
   private accountService = inject(AccountService);
+  private messageService = inject(MessageService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private destroyRef = inject(DestroyRef);
@@ -1499,6 +1501,11 @@ export class CreateTransactionPage {
       )
       .subscribe({
         next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Sucesso',
+            detail: 'Transação criada com sucesso!',
+          });
           this.router.navigate(['/dashboard']);
         },
         error: (err) => {

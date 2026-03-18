@@ -1,0 +1,9 @@
+# Playwright E2E Test Artifacts
+test-results/
+playwright-report/
+.auth.json
+*.trace
+*.webm
+
+# StorageState (testes de sessão)
+state/

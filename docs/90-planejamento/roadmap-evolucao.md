@@ -31,42 +31,47 @@ Estes itens já possuem planejamento iniciado ou são essenciais para o fechamen
 - **Status**: [Concluído](./concluido/sistema-convites.md)
 - **Foco**: Fluxo de link de convite para compartilhar múltiplas contas com permissões (Viewer/Editor/Admin).
 
-### 2. Metas de Economia Híbridas
+### 2. Plano de Testes E2E (Qualidade)
+
+- **Status**: [Concluído](./concluido/plano-testes-e2e.md)
+- **Foco**: Garantir a integridade dos fluxos críticos (Auth, Transações) com Playwright e MySQL efêmero.
+
+### 3. Metas de Economia Híbridas
 
 - **Status**: [Em Andamento](./em-discussao/planejamento-metas.md)
 - **Foco**: Implementação do motor de cálculo para Limites de Gastos e Objetivos de Poupança.
 
-### 3. Perfil do Usuário e Preferências
+### 4. Perfil do Usuário e Preferências
 
 - **Status**: [Em Discussão](./em-discussao/perfil-usuario.md)
 - **Foco**: Gestão de dados cadastrais, avatar e preferências de UI (moeda, tema).
 
-### 4. Portal de Administração Centralizado
+### 5. Portal de Administração Centralizado
 
 - **Status**: [Em Discussão](./em-discussao/portal-admin.md)
 - **Foco**: Unificação de Allowlist e monitoramento em uma área restrita.
 
-### 5. PWA Full (Progressive Web App)
+### 6. PWA Full (Progressive Web App)
 
 - **Status**: [Em Discussão](./em-discussao/pwa-full.md)
 - **Foco**: Transformar a aplicação Angular em um PWA completo com suporte a offline, instalação e APIs de hardware (Vibration/Badging). **Assenta a base necessária para o Sistema de Notificações.**
 
-### 6. Sistema de Notificações
+### 7. Sistema de Notificações
 
 - **Status**: [Em Discussão](./em-discussao/notificacoes.md)
 - **Foco**: Central de notificações in-app e push para alertas financeiros e convites. **Depende da infraestrutura de Service Worker do PWA.**
 
-### 7. Privacidade e Criptografia E2E
+### 8. Privacidade e Criptografia E2E
 
 - **Status**: [Em Discussão](./em-discussao/criptografia-privacidade.md)
 - **Foco**: Criptografia na camada de aplicação para dados sensíveis.
 
-### 8. Evolução de Roteamento e API
+### 9. Evolução de Roteamento e API
 
 - **Status**: [Pendente](./em-discussao/evolucao-rotas.md)
 - **Foco**: Padronização de slugs, versionamento de API e melhorias na navegação do portal.
 
-### 9. Padronização de Versionamento (SemVer)
+### 10. Padronização de Versionamento (SemVer)
 
 - **Status**: [Em Discussão](./em-discussao/planejamento-versionamento.md)
 - **Foco**: Unificar o versionamento de todos os pacotes do monorepo e automatizar releases.
@@ -131,12 +136,7 @@ Focado em definir o valor do produto e converter visitantes em usuários pagante
 
 Garantindo que a evolução do app não comprometa a estabilidade.
 
-### 11. Plano de Testes E2E
-
-- **Foco**: Garantir que as jornadas críticas funcionem de ponta a ponta.
-- **Documento**: [Plano de Testes E2E](./em-discussao/plano-testes-e2e.md)
-
-### 12. Testes de Regressão Visual
+### 11. Testes de Regressão Visual
 
 - **Foco**: Garantir que customizações (cores, skins) não quebrem o layout em diferentes dispositivos.
 

@@ -4,7 +4,7 @@ description: Avalia e conserta discrepâncias entre READMEs, documentação e in
 
 # Fluxo: Auditoria de Documentações (`/audit_docs`)
 
-**Objetivo:** Realizar curadoria do padrão *Docs-as-Code* do Dindinho, certificando-se de que nada fique defasado (arquitetura e contratos).
+**Objetivo:** Realizar curadoria do padrão _Docs-as-Code_ do Dindinho, certificando-se de que nada fique defasado (arquitetura e contratos).
 
 1. **Arquitetura JSDoc no Código:** Garanta que serviços-chave e funções do Monorepo tenham descrições estritas e exemplos quando forem complexos:
    - Funções/Classes exportadas que operem cross-module ou publicamente.

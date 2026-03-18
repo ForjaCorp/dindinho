@@ -7,6 +7,7 @@ description: Índice e introdução aos workflows do Projeto Dindinho
 Esta pasta (`.agents/workflows/`) contém os manuais de procedimentos para executar tarefas específicas no repositório `dindinho-monorepo`. Quando precisar atuar, o assistente lerá essas instruções para garantir que siga os padrões de arquitetura (Turbo, Angular, Prisma, Fastify/Hono) e execute estritamente os scripts locais.
 
 ## Comandos Disponíveis (Workflows)
+
 - `/ask` (`ask.md`): Dúvidas e análise de código sem gerar código imediato.
 - `/plan` (`plan.md`): Planejamento de funcionalidades.
 - `/review` (`review.md`): Revisões de código e Pull Requests.

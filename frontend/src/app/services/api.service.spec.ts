@@ -1,13 +1,23 @@
 /**
+ * @vitest-environment jsdom
+ */
+/**
  * Testes do serviço de API
  * @description Testes unitários do ApiService responsável por comunicação com backend
  * @since 1.0.0
  */
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { HttpRequest, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ApiService, AllowlistDeleteResponse, AllowlistItem } from './api.service';
+import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
+import { getTestBed } from '@angular/core/testing';
+
+const testBed = getTestBed();
+if (!testBed.platform) {
+  testBed.initTestEnvironment(BrowserTestingModule, platformBrowserTesting());
+}
 import {
   HealthCheckDTO,
   LoginDTO,
@@ -21,6 +31,8 @@ import {
   UpdateTransactionDTO,
   DeleteTransactionResponseDTO,
   SystemRole,
+  CreateUserDTO,
+  CreateWaitlistDTO,
 } from '@dindinho/shared';
 
 /**
@@ -211,6 +223,43 @@ describe('ApiService', () => {
       expect(req.request.method).toBe('POST');
       expect(req.request.body).toEqual(mockLoginData);
       req.flush(mockLoginResponse);
+    });
+  });
+
+  /**
+   * Testes dos métodos de criação de usuário e lista de espera
+   */
+  describe('User and Waitlist creation', () => {
+    it('deve chamar createUser com os dados corretos', () => {
+      const userData: CreateUserDTO = {
+        name: 'Vini Teste',
+        email: 'vini@teste.com',
+        phone: '+5511999999999',
+        password: 'SenhaForte123@',
+        acceptedTerms: true,
+      };
+
+      service.createUser(userData).subscribe();
+
+      const req = httpMock.expectOne('http://localhost:3333/api/users');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(userData);
+      req.flush({});
+    });
+
+    it('deve chamar joinWaitlist com os dados corretos', () => {
+      const waitlistData: CreateWaitlistDTO = {
+        name: 'Vini Teste',
+        email: 'vini@teste.com',
+        phone: '+5511999999999',
+      };
+
+      service.joinWaitlist(waitlistData).subscribe();
+
+      const req = httpMock.expectOne('http://localhost:3333/api/waitlist');
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual(waitlistData);
+      req.flush({ message: 'Success' });
     });
   });
 

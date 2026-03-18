@@ -21,7 +21,7 @@ Nossa estratégia é baseada na pirâmide de testes clássica, com foco em veloc
 
 1.  **Testes Unitários (Base):** Validam lógica pura, serviços e pipes. Executados com Vitest.
 2.  **Testes de Componente (Meio):** Validam a interação do template com o componente e mocks de serviços.
-3.  **Testes E2E (Topo - Em Roadmap):** Fluxos críticos de usuário (login, transação, relatórios). Planejado com Playwright.
+3.  **End-to-End (E2E):** Fluxos críticos de usuário (login, transação, relatórios, colaboração) validados em navegadores reais via **Playwright**.
 
 ## Ferramentas
 
@@ -29,7 +29,7 @@ Nossa estratégia é baseada na pirâmide de testes clássica, com foco em veloc
 | :--------------------------- | :------------------------------- | :-------------------------------------- |
 | **Frontend Unit/Component**  | Vitest + Angular Testing Library | Rapidez e isolamento.                   |
 | **Backend Unit/Integration** | Vitest + Supertest               | Validação de rotas e lógica de domínio. |
-| **End-to-End (E2E)**         | Playwright (Roadmap)             | Simulação real de usuário no navegador. |
+| **End-to-End (E2E)**         | Playwright                       | Simulação real de usuário no navegador. |
 | **Linting**                  | ESLint                           | Garantia de padrões de código.          |
 
 ## Padrões e Convenções
@@ -64,6 +64,7 @@ Utilizamos o **Turbo (Turborepo)** para gerenciar e acelerar a execução de tar
 | `npm run test`             | Executa todos os testes do monorepo      | Monorepo |
 | `npm run test:unit`        | Executa apenas testes unitários          | Monorepo |
 | `npm run test:integration` | Executa testes de integração (Backend)   | Monorepo |
+| `npm run test:e2e`         | Executa suíte completa E2E (UI)          | Monorepo |
 | `npm run lint`             | Valida padrões de código e estilo        | Monorepo |
 | `npm run typecheck`        | Valida tipagem TypeScript                | Monorepo |
 | `npm run quality:ci`       | Pipeline completo (Lint + Tests + Build) | CI/Local |
@@ -77,26 +78,17 @@ Para rodar testes em modo watch durante o desenvolvimento:
 
 ## Pipeline de CI (GitHub Actions)
 
-Nossa integração contínua é automatizada via GitHub Actions e está definida em [.ci.yml](../../.github/workflows/ci.yml). O pipeline é otimizado para velocidade usando cache do Turbo e execução seletiva (apenas o que foi afetado em PRs).
+Nossa integração contínua é automatizada via GitHub Actions e está definida em [.ci.yml](../../.github/workflows/ci.yml). O pipeline é otimizado para velocidade:
 
-### Etapas do Pipeline
+1.  **Paralelismo**: Tarefas de qualidade (`lint`, `test`, `build`, `typecheck`) rodam simultaneamente.
+2.  **Sharding E2E**: Testes E2E são divididos em 2 shards paralelos para execução ultra-rápida.
+3.  **Quality Gate**: Existe um check consolidado chamado **Quality** que exige sucesso em todos os shards e tarefas paralelas para permitir o merge.
+4.  **PR Previews**: Cada PR gera um ambiente isolado (Coolify) para validação visual e manual.
 
-1.  **Validação de Documentação:** Executa `npx turbo run docs:check` para garantir integridade de links e metadados.
-2.  **Instalação e Build:** Instala dependências e realiza o build dos pacotes compartilhados.
+## Roadmap de Testes (Próximos Passos)
 
-### Qualidade (Execução Seletiva)
-
-    - **Em PRs:** Executa `npm run quality:ci` apenas nos pacotes afetados pelas mudanças.
-    - **Na Main:** Executa a verificação completa de todo o monorepo.
-
-> **Dica:** O comando `quality:ci` engloba `lint`, `typecheck`, `build`, `test` (unitários) e `test:integration` (API/Serviços).
-
-## Roadmap de Testes (Em Planejamento)
-
-Atualmente, o foco está na cobertura de testes unitários e de integração (API). A implementação de testes de ponta a ponta (E2E) está planejada para fases futuras.
-
-1.  **Testes E2E (UI):** Planejado o uso de **Playwright** para validar fluxos críticos de usuário no Frontend.
-2.  **Testes de Performance:** Planejado para rotas críticas de sincronização de dados.
+1.  **Testes de Performance:** Planejado para rotas críticas de sincronização de dados.
+2.  **Testes de Regressão Visual:** Garantir que mudanças na interface não causem quebras estéticas.
 
 ---
 

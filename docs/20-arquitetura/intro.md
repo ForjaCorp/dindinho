@@ -39,8 +39,9 @@ A arquitetura é dividida em três camadas principais coordenadas por um orquest
 
 ### 🗄️ Infraestrutura
 
-- **MySQL DB:** Banco de dados relacional para persistência.
+- **MySQL DB:** Banco de dados relacional para persistência (MariaDB).
 - **Docker/Coolify:** Empacotamento em containers e gerenciamento de deploy automático.
+- **CI/CD Quality Gate:** Pipeline paralelo com Sharding E2E e validação automática de PR Previews.
 
 ## 🚀 Pilares Arquiteturais
 
@@ -99,3 +100,5 @@ O Dindinho segue a filosofia de **Infraestrutura Imutável**:
 - **Docker:** Tudo roda em containers, garantindo que o ambiente de dev seja idêntico ao de produção.
 - **Coolify:** Nossa plataforma de PaaS que gerencia o ciclo de vida do deploy, certificados SSL e banco de dados.
 - **PWA:** A aplicação é instalável e funciona offline, otimizada para dispositivos móveis.
+
+ <!-- Última revisão de infraestrutura: 24/02/2026 -->

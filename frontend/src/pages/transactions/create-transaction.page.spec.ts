@@ -1,6 +1,7 @@
+/** @vitest-environment jsdom */
 import { ComponentFixture, TestBed, getTestBed } from '@angular/core/testing';
 import { BrowserTestingModule, platformBrowserTesting } from '@angular/platform-browser/testing';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { FormGroup } from '@angular/forms';
 import { of } from 'rxjs';
@@ -8,6 +9,7 @@ import { CreateTransactionPage } from './create-transaction.page';
 import { AccountService } from '../../app/services/account.service';
 import { ApiService } from '../../app/services/api.service';
 import { CategoryDTO, AccountDTO } from '@dindinho/shared';
+import { MessageService } from 'primeng/api';
 
 const testBed = getTestBed();
 if (!testBed.platform) {
@@ -47,6 +49,10 @@ describe('CreateTransactionPage', () => {
     loadAccounts: vi.fn(),
   });
 
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+  });
+
   it('deve renderizar a página', async () => {
     localStorage.clear();
     const accountServiceMock = createAccountServiceMock({ accounts, loading: false });
@@ -62,6 +68,7 @@ describe('CreateTransactionPage', () => {
         provideRouter([]),
         { provide: AccountService, useValue: accountServiceMock },
         { provide: ApiService, useValue: apiServiceMock },
+        { provide: MessageService, useValue: { add: vi.fn() } },
       ],
     }).compileComponents();
 
@@ -113,6 +120,7 @@ describe('CreateTransactionPage', () => {
         },
         { provide: AccountService, useValue: accountServiceMock },
         { provide: ApiService, useValue: apiServiceMock },
+        { provide: MessageService, useValue: { add: vi.fn() } },
       ],
     }).compileComponents();
 
@@ -138,6 +146,7 @@ describe('CreateTransactionPage', () => {
         provideRouter([]),
         { provide: AccountService, useValue: accountServiceMock },
         { provide: ApiService, useValue: apiServiceMock },
+        { provide: MessageService, useValue: { add: vi.fn() } },
       ],
     }).compileComponents();
 
@@ -202,6 +211,7 @@ describe('CreateTransactionPage', () => {
         provideRouter([]),
         { provide: AccountService, useValue: accountServiceMock },
         { provide: ApiService, useValue: apiServiceMock },
+        { provide: MessageService, useValue: { add: vi.fn() } },
       ],
     }).compileComponents();
 

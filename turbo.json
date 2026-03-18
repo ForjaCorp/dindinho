@@ -32,6 +32,7 @@
       "dependsOn": ["^lint"]
     },
     "docs:check": {
+      "dependsOn": ["^build"],
       "cache": true,
       "inputs": ["docs/**", "frontend/scripts/validate-docs.mjs"]
     }

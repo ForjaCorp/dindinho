@@ -28,7 +28,9 @@ Padronizamos a infraestrutura baseada em containers:
 1.  **Docker:** Todos os serviços (Frontend, Backend, Banco de Dados) são empacotados como imagens Docker.
 2.  **Docker Compose:** Utilizado para definir a orquestração local e servir de base para o deploy.
 3.  **Coolify:** Adotado como plataforma de gerenciamento de deploy (Self-Hosted PaaS). Ele automatiza o build via GitHub Webhooks, gerencia certificados SSL (Let's Encrypt), logs e monitoramento básico.
-4.  **Infraestrutura como Código:** O arquivo `docker-compose.coolify.yml` e as configurações de variáveis de ambiente no Coolify servem como a definição da nossa infraestrutura.
+4.  **PR Previews:** Implementação de ambientes efêmeros para cada Pull Request, permitindo validação isolada de funcionalidades antes do merge.
+5.  **Isolamento de Banco de Dados:** Para ambientes de Preview, utiliza-se uma instância dedicada de MariaDB via Docker Compose para garantir que testes paralelos não interfiram entre si, enquanto a Produção utiliza um banco de dados gerenciado externo.
+6.  **Infraestrutura como Código:** O arquivo `docker-compose.coolify.yml` e as configurações de variáveis de ambiente no Coolify servem como a definição da nossa infraestrutura.
 
 ## Consequências
 
