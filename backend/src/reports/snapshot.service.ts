@@ -147,10 +147,6 @@ export class SnapshotService {
         await this.prisma.$transaction(chunk);
       }
     } catch (err) {
-      require("fs").writeFileSync(
-        "/tmp/snapshot_error.json",
-        JSON.stringify(err, Object.getOwnPropertyNames(err), 2),
-      );
       throw err;
     }
   }
