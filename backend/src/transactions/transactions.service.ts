@@ -4,8 +4,6 @@ import {
   ResourcePermission,
   TransactionType,
   AccountType,
-  RecurrenceFrequency,
-  Transaction,
   CreditCardInfo,
 } from "@prisma/client";
 import { randomUUID } from "node:crypto";
@@ -18,6 +16,16 @@ import {
 } from "@dindinho/shared";
 import { SnapshotService } from "../reports/snapshot.service";
 import { ForbiddenError, NotFoundError } from "../lib/domain-exceptions";
+import { InstallmentsService } from "./installments.service";
+import { RecurrenceService } from "./recurrence.service";
+import { TransfersService } from "./transfers.service";
+import {
+  computeInvoiceMonth,
+  addDaysByMs,
+  parseIsoDayToUtcStartOfDay,
+  parseInvoiceMonthToDate,
+  toTransactionDTO,
+} from "./transactions.utils";
 
 class InternalError extends Error {
   readonly statusCode = 500;
@@ -27,179 +35,21 @@ class InternalError extends Error {
 }
 
 /**
- * Adiciona meses a uma data.
- * @param {Date} date - Data base.
- * @param {number} monthsToAdd - Quantidade de meses a adicionar.
- * @returns {Date} Nova data calculada.
- */
-const addMonths = (date: Date, monthsToAdd: number) => {
-  const d = new Date(date);
-  d.setMonth(d.getMonth() + monthsToAdd);
-  return d;
-};
-
-/**
- * Adiciona dias a uma data.
- * @param {Date} date - Data base.
- * @param {number} daysToAdd - Quantidade de dias a adicionar.
- * @returns {Date} Nova data calculada.
- */
-const addDays = (date: Date, daysToAdd: number) => {
-  const d = new Date(date);
-  d.setDate(d.getDate() + daysToAdd);
-  return d;
-};
-
-/**
- * Adiciona dias a uma data usando milissegundos para maior precisão.
- * @param {Date} date - Data base.
- * @param {number} daysToAdd - Quantidade de dias a adicionar.
- * @returns {Date} Nova data calculada.
- */
-const addDaysByMs = (date: Date, daysToAdd: number) =>
-  new Date(date.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
-
-/**
- * Adiciona anos a uma data.
- * @param {Date} date - Data base.
- * @param {number} yearsToAdd - Quantidade de anos a adicionar.
- * @returns {Date} Nova data calculada.
- */
-const addYears = (date: Date, yearsToAdd: number) => {
-  const d = new Date(date);
-  d.setFullYear(d.getFullYear() + yearsToAdd);
-  return d;
-};
-
-/**
- * Formata uma data para o padrão de mês de fatura (YYYY-MM).
- * @param {Date} date - Data para formatar.
- * @returns {string} String no formato YYYY-MM em UTC.
- */
-const formatInvoiceMonth = (date: Date) => {
-  const y = date.getUTCFullYear();
-  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
-  return `${y}-${m}`;
-};
-
-/**
- * Converte uma string de mês de fatura para um objeto Date.
- * @param {string} invoiceMonth - String no formato YYYY-MM.
- * @returns {Date} Data no primeiro dia do mês em UTC.
- */
-const parseInvoiceMonthToDate = (invoiceMonth: string) => {
-  const [y, m] = invoiceMonth.split("-").map((v) => Number(v));
-  return new Date(Date.UTC(y, m - 1, 1, 0, 0, 0));
-};
-
-/**
- * Converte um ISO day (YYYY-MM-DD) no início do dia em UTC.
- * @param {string} value - String no formato YYYY-MM-DD.
- * @param {number | null} tzOffsetMinutes - Offset do fuso horário em minutos.
- * @returns {Date | null} Objeto Date ou null se inválido.
- */
-const parseIsoDayToUtcStartOfDay = (
-  value: string,
-  tzOffsetMinutes: number | null,
-): Date | null => {
-  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!match) return null;
-
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-
-  if (
-    !Number.isFinite(year) ||
-    !Number.isFinite(month) ||
-    !Number.isFinite(day)
-  )
-    return null;
-  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-
-  const utcStartMs = Date.UTC(year, month - 1, day, 0, 0, 0, 0);
-  const utcCandidate = new Date(utcStartMs);
-  if (
-    utcCandidate.getUTCFullYear() !== year ||
-    utcCandidate.getUTCMonth() !== month - 1 ||
-    utcCandidate.getUTCDate() !== day
-  )
-    return null;
-  const offsetMs =
-    typeof tzOffsetMinutes === "number" && Number.isFinite(tzOffsetMinutes)
-      ? tzOffsetMinutes * 60 * 1000
-      : 0;
-  return new Date(utcStartMs + offsetMs);
-};
-
-/**
- * Adiciona meses a um mês de fatura (YYYY-MM).
- * @param {string} invoiceMonth - Mês de fatura inicial.
- * @param {number} monthsToAdd - Quantidade de meses a adicionar.
- * @returns {string} Novo mês de fatura formatado.
- */
-const addInvoiceMonths = (invoiceMonth: string, monthsToAdd: number) => {
-  const base = parseInvoiceMonthToDate(invoiceMonth);
-  return formatInvoiceMonth(addMonths(base, monthsToAdd));
-};
-
-/**
- * Calcula o mês de fatura para uma compra baseada no dia de fechamento.
- * @param {Date} purchaseDate - Data da compra.
- * @param {number} closingDay - Dia de fechamento da fatura.
- * @returns {string} Mês de fatura resultante (YYYY-MM).
- */
-const computeInvoiceMonth = (purchaseDate: Date, closingDay: number) => {
-  const utcDay = purchaseDate.getUTCDate();
-  const base = new Date(
-    Date.UTC(
-      purchaseDate.getUTCFullYear(),
-      purchaseDate.getUTCMonth(),
-      1,
-      0,
-      0,
-      0,
-    ),
-  );
-  return formatInvoiceMonth(utcDay > closingDay ? addMonths(base, 1) : base);
-};
-
-/**
- * Converte um modelo de transação do Prisma para um DTO de saída.
- * @param {Transaction} t - Modelo da transação.
- * @returns {TransactionDTO} DTO formatado.
- */
-const toTransactionDTO = (t: Transaction): TransactionDTO => ({
-  id: t.id,
-  accountId: t.accountId,
-  categoryId: t.categoryId ?? null,
-  amount: t.amount.toNumber(),
-  description: t.description ?? null,
-  date: new Date(t.date).toISOString(),
-  type: t.type,
-  isPaid: t.isPaid,
-  transferId: t.transferId ?? null,
-  recurrenceId: t.recurrenceId ?? null,
-  recurrenceFrequency: t.recurrenceFrequency ?? null,
-  recurrenceIntervalDays: t.recurrenceIntervalDays ?? null,
-  installmentNumber: t.installmentNumber ?? null,
-  totalInstallments: t.totalInstallments ?? null,
-  tags: Array.isArray(t.tags) ? (t.tags as string[]) : null,
-  purchaseDate: t.purchaseDate ? new Date(t.purchaseDate).toISOString() : null,
-  invoiceMonth: t.invoiceMonth ?? null,
-  createdAt: new Date(t.createdAt).toISOString(),
-  updatedAt: new Date(t.updatedAt).toISOString(),
-});
-
-/**
  * Serviço responsável pela lógica de negócio de transações
  * @class TransactionsService
  * @description Gerencia operações de criação, listagem, atualização e exclusão de transações e transferências
  */
 export class TransactionsService {
   private snapshotService: SnapshotService;
+  private installmentsService: InstallmentsService;
+  private recurrenceService: RecurrenceService;
+  private transfersService: TransfersService;
+
   constructor(private prisma: PrismaClient) {
     this.snapshotService = new SnapshotService(prisma);
+    this.installmentsService = new InstallmentsService();
+    this.recurrenceService = new RecurrenceService();
+    this.transfersService = new TransfersService();
   }
 
   /**
@@ -418,6 +268,7 @@ export class TransactionsService {
       const baseDate = data.date ? new Date(data.date) : new Date();
       const tags = data.tags && data.tags.length ? data.tags : undefined;
 
+      // DELGADO: Transfer Logic
       if (data.type === "TRANSFER") {
         const destinationAccount = await this.getWritableAccount(
           userId,
@@ -425,62 +276,15 @@ export class TransactionsService {
         );
         this.ensureCreditCardInfo(destinationAccount);
 
-        const transferId = randomUUID();
-        const invoiceMonth =
-          typeof data.invoiceMonth === "string"
-            ? data.invoiceMonth
-            : destinationAccount.type === AccountType.CREDIT
-              ? computeInvoiceMonth(
-                  baseDate,
-                  destinationAccount.creditCardInfo!.closingDay,
-                )
-              : undefined;
-
         const created = await this.prisma.$transaction(async (tx) => {
-          const outTx = await tx.transaction.create({
-            data: {
-              accountId: originAccount.id,
-              categoryId: data.categoryId,
-              amount: -Math.abs(data.amount),
-              description: data.description,
-              date: baseDate,
-              type: TransactionType.TRANSFER,
-              isPaid: data.isPaid,
-              transferId,
-              tags,
-            },
-          });
-
-          const inTx = await tx.transaction.create({
-            data: {
-              accountId: destinationAccount.id,
-              categoryId: data.categoryId,
-              amount: Math.abs(data.amount),
-              description: data.description,
-              date: baseDate,
-              type: TransactionType.TRANSFER,
-              isPaid: data.isPaid,
-              transferId,
-              tags,
-              ...(destinationAccount.type === AccountType.CREDIT && invoiceMonth
-                ? { invoiceMonth }
-                : {}),
-            },
-          });
-
-          if (destinationAccount.type === AccountType.CREDIT && data.isPaid) {
-            await tx.transaction.updateMany({
-              where: {
-                accountId: destinationAccount.id,
-                type: TransactionType.EXPENSE,
-                isPaid: false,
-                invoiceMonth,
-              },
-              data: { isPaid: true },
-            });
-          }
-
-          return [outTx, inTx];
+          return this.transfersService.createTransfer(
+            tx,
+            originAccount,
+            destinationAccount,
+            baseDate,
+            data,
+            tags,
+          );
         });
 
         await this.snapshotService.updateSnapshots(originAccount.id, baseDate);
@@ -501,58 +305,25 @@ export class TransactionsService {
       const totalInstallments = data.totalInstallments ?? 1;
       const recurrenceId = data.recurrence ? randomUUID() : null;
 
+      // DELEGADO: Recurrence Logic
       if (data.recurrence) {
-        const count = data.recurrence.forever
-          ? 360
-          : (data.recurrence.count as number);
-        const freq = data.recurrence
-          .frequency as unknown as RecurrenceFrequency;
-        const intervalDays =
-          data.recurrence.frequency === "CUSTOM"
-            ? (data.recurrence.intervalDays as number)
-            : null;
-
         const created = await this.prisma.$transaction(async (tx) => {
-          const results: Transaction[] = [];
-
-          for (let i = 1; i <= count; i++) {
-            const date =
-              data.recurrence!.frequency === "MONTHLY"
-                ? addMonths(baseDate, i - 1)
-                : data.recurrence!.frequency === "WEEKLY"
-                  ? addDays(baseDate, (i - 1) * 7)
-                  : data.recurrence!.frequency === "YEARLY"
-                    ? addYears(baseDate, i - 1)
-                    : addDays(baseDate, (i - 1) * (intervalDays as number));
-
-            const t = await tx.transaction.create({
-              data: {
-                accountId: originAccount.id,
-                categoryId: data.categoryId,
-                amount: data.amount,
-                description: data.description,
-                date,
-                type: data.type as TransactionType,
-                isPaid: i === 1 ? data.isPaid : false,
-                recurrenceId,
-                recurrenceFrequency: freq,
-                recurrenceIntervalDays: intervalDays,
-                installmentNumber: i,
-                totalInstallments: count,
-                tags,
-              },
-            });
-            results.push(t);
-          }
-
-          return results;
+          return this.recurrenceService.createRecurring(
+            tx,
+            originAccount.id,
+            originAccount.type,
+            baseDate,
+            data,
+            recurrenceId!,
+            tags,
+          );
         });
 
         await this.snapshotService.updateSnapshots(originAccount.id, baseDate);
-
         return created.map(toTransactionDTO);
       }
 
+      // DELEGADO: Simple Transaction
       if (totalInstallments <= 1) {
         const invoiceMonth =
           originAccount.type === AccountType.CREDIT
@@ -582,69 +353,29 @@ export class TransactionsService {
         });
 
         await this.snapshotService.updateSnapshots(originAccount.id, baseDate);
-
         return toTransactionDTO(created);
       }
 
-      const totalCents = Math.round(Math.abs(data.amount) * 100);
-      const baseCents = Math.floor(totalCents / totalInstallments);
+      // DELEGADO: Installments Logic
       const installmentsGroupId = randomUUID();
-      const firstInvoiceMonth =
-        originAccount.type === AccountType.CREDIT
-          ? typeof data.invoiceMonth === "string"
-            ? data.invoiceMonth
-            : computeInvoiceMonth(
-                baseDate,
-                originAccount.creditCardInfo!.closingDay,
-              )
-          : null;
-
       const created = await this.prisma.$transaction(async (tx) => {
-        const results: Transaction[] = [];
-        for (let i = 1; i <= totalInstallments; i++) {
-          const cents =
-            i < totalInstallments
-              ? baseCents
-              : totalCents - baseCents * (totalInstallments - 1);
-          const amount = cents / 100;
-          const installmentDate = addMonths(baseDate, i - 1);
-          const invoiceMonth =
-            originAccount.type === AccountType.CREDIT && firstInvoiceMonth
-              ? addInvoiceMonths(firstInvoiceMonth, i - 1)
-              : null;
-
-          const t = await tx.transaction.create({
-            data: {
-              accountId: originAccount.id,
-              categoryId: data.categoryId,
-              amount,
-              description: data.description,
-              date: installmentDate,
-              type: data.type as TransactionType,
-              isPaid:
-                originAccount.type === AccountType.CREDIT
-                  ? false
-                  : i === 1
-                    ? data.isPaid
-                    : false,
-              recurrenceId: installmentsGroupId,
-              installmentNumber: i,
-              totalInstallments,
-              tags,
-              ...(originAccount.type === AccountType.CREDIT
-                ? { purchaseDate: baseDate, invoiceMonth }
-                : {}),
-            },
-          });
-          results.push(t);
-        }
-        return results;
+        return this.installmentsService.createInstallments(
+          tx,
+          originAccount.id,
+          originAccount.type,
+          originAccount.creditCardInfo?.closingDay ?? null,
+          baseDate,
+          data,
+          installmentsGroupId,
+          tags,
+        );
       });
 
       await this.snapshotService.updateSnapshots(originAccount.id, baseDate);
 
       return created.map(toTransactionDTO);
     } catch (error) {
+      console.error("CREATE ERROR:", error);
       return this.handlePrismaCreateError(error);
     }
   }

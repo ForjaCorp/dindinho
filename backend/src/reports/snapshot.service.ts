@@ -1,4 +1,9 @@
-import { Prisma, PrismaClient, TransactionType } from "@prisma/client";
+import {
+  Prisma,
+  PrismaClient,
+  TransactionType,
+  DailySnapshot,
+} from "@prisma/client";
 
 /**
  * Serviço responsável por gerenciar snapshots diários de saldo das contas
@@ -66,68 +71,84 @@ export class SnapshotService {
     const lastDate = endDate ? new Date(endDate) : new Date();
     lastDate.setUTCHours(0, 0, 0, 0);
 
+    const upserts: Prisma.PrismaPromise<DailySnapshot>[] = [];
+
     if (dailyBalances.size === 0) {
       const currentDate = new Date(startOfDate);
       while (currentDate <= lastDate) {
-        await this.upsertSnapshot(
-          accountId,
-          new Date(currentDate),
-          account.initialBalance,
+        upserts.push(
+          this.prisma.dailySnapshot.upsert({
+            where: {
+              accountId_date: {
+                accountId,
+                date: new Date(currentDate),
+              },
+            },
+            update: {
+              balance: account.initialBalance,
+              calcVersion: SnapshotService.CALC_VERSION,
+            },
+            create: {
+              accountId,
+              date: new Date(currentDate),
+              balance: account.initialBalance,
+              calcVersion: SnapshotService.CALC_VERSION,
+            },
+          }),
         );
         currentDate.setUTCDate(currentDate.getUTCDate() + 1);
       }
-      return;
+    } else {
+      const sortedDates = Array.from(dailyBalances.keys()).sort();
+      const firstTxDate = new Date(sortedDates[0]);
+      const firstDate = new Date(
+        Math.min(firstTxDate.getTime(), startOfDate.getTime()),
+      );
+
+      let runningBalance = Number(account.initialBalance);
+      const currentDate = new Date(firstDate);
+
+      while (currentDate <= lastDate) {
+        const dateKey = currentDate.toISOString().split("T")[0];
+        const dayBalance = dailyBalances.get(dateKey);
+
+        if (dayBalance !== undefined) {
+          runningBalance = dayBalance;
+        }
+
+        // Só persistimos se a data for >= startDate
+        if (currentDate >= startOfDate) {
+          upserts.push(
+            this.prisma.dailySnapshot.upsert({
+              where: {
+                accountId_date: {
+                  accountId,
+                  date: new Date(currentDate),
+                },
+              },
+              update: {
+                balance: runningBalance,
+                calcVersion: SnapshotService.CALC_VERSION,
+              },
+              create: {
+                accountId,
+                date: new Date(currentDate),
+                balance: runningBalance,
+                calcVersion: SnapshotService.CALC_VERSION,
+              },
+            }),
+          );
+        }
+
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+      }
     }
 
-    const sortedDates = Array.from(dailyBalances.keys()).sort();
-    const firstTxDate = new Date(sortedDates[0]);
-    const firstDate = new Date(
-      Math.min(firstTxDate.getTime(), startOfDate.getTime()),
-    );
-
-    let runningBalance = Number(account.initialBalance);
-    const currentDate = new Date(firstDate);
-
-    while (currentDate <= lastDate) {
-      const dateKey = currentDate.toISOString().split("T")[0];
-      const dayBalance = dailyBalances.get(dateKey);
-
-      if (dayBalance !== undefined) {
-        runningBalance = dayBalance;
-      }
-
-      // Só persistimos se a data for >= startDate
-      if (currentDate >= startOfDate) {
-        await this.upsertSnapshot(
-          accountId,
-          new Date(currentDate),
-          runningBalance,
-        );
-      }
-
-      currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+    // Executa os upserts em chunks controlados via $transaction para evitar exaustão de pool ou N+1
+    const chunkSize = 500;
+    for (let i = 0; i < upserts.length; i += chunkSize) {
+      const chunk = upserts.slice(i, i + chunkSize);
+      await this.prisma.$transaction(chunk);
     }
-  }
-
-  private async upsertSnapshot(
-    accountId: string,
-    date: Date,
-    balance: number | Prisma.Decimal,
-  ) {
-    await this.prisma.dailySnapshot.upsert({
-      where: {
-        accountId_date: {
-          accountId,
-          date,
-        },
-      },
-      update: { balance, calcVersion: SnapshotService.CALC_VERSION },
-      create: {
-        accountId,
-        date,
-        balance,
-        calcVersion: SnapshotService.CALC_VERSION,
-      },
-    });
   }
 }
