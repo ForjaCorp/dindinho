@@ -4,8 +4,17 @@ import { addDays, addMonths, addYears } from "./transactions.utils";
 
 export class RecurrenceService {
   /**
-   * Explodes a single recurring transaction creation payload into multiple occurrences
-   * and inserts them using the active transaction (tx).
+   * Expande a criação de uma transação recorrente em múltiplas ocorrências (até 360)
+   * e as insere individualmente no banco de dados usando a transação ativa (tx).
+   * @async
+   * @param {Prisma.TransactionClient} tx - Cliente de transação do Prisma
+   * @param {string} accountId - ID da conta destino
+   * @param {string} accountType - Tipo da conta
+   * @param {Date} baseDate - Data da primeira ocorrência
+   * @param {CreateTransactionDTO} data - Dados base para a recorrência
+   * @param {string} recurrenceId - Identificador único da série de recorrência
+   * @param {string[]} [tags] - Lista de tags opcionais
+   * @returns {Promise<Transaction[]>} Lista de transações recorrentes criadas
    */
   async createRecurring(
     tx: Prisma.TransactionClient,

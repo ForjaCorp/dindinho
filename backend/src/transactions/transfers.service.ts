@@ -5,8 +5,16 @@ import { randomUUID } from "node:crypto";
 
 export class TransfersService {
   /**
-   * Explodes the logical parts of a transfer into an array of in/out transactions
-   * executing them securely using a Prisma transaction.
+   * Realiza a explosão lógica de uma transferência em duas transações (saída e entrada)
+   * de forma atômica e segura usando o cliente de transação (tx).
+   * @async
+   * @param {Prisma.TransactionClient} tx - Cliente de transação do Prisma
+   * @param {Object} originAccount - Conta de origem dos fundos
+   * @param {Object} destinationAccount - Conta de destino dos fundos
+   * @param {Date} baseDate - Data da transferência
+   * @param {CreateTransactionDTO} data - Dados da transferência
+   * @param {string[]} [tags] - Lista de tags opcionais
+   * @returns {Promise<Transaction[]>} Par de transações criadas [Saída, Entrada]
    */
   async createTransfer(
     tx: Prisma.TransactionClient,

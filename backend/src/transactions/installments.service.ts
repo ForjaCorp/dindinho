@@ -8,8 +8,18 @@ import {
 
 export class InstallmentsService {
   /**
-   * Divides a transaction payload into installments safely accounting for rounding errors,
-   * then inserts them using the active transaction (tx).
+   * Divide o payload de uma transação em parcelas, tratando erros de arredondamento de centavos
+   * e inserindo-as no banco de dados através da transação ativa (tx).
+   * @async
+   * @param {Prisma.TransactionClient} tx - Cliente de transação do Prisma
+   * @param {string} accountId - ID da conta destino das parcelas
+   * @param {string} accountType - Tipo da conta (CREDIT ou STANDARD)
+   * @param {number | null} closingDay - Dia de fechamento da fatura (para cartões)
+   * @param {Date} baseDate - Data de início do parcelamento
+   * @param {CreateTransactionDTO} data - Dados base da transação
+   * @param {string} installmentsGroupId - Identificador único do grupo de parcelas
+   * @param {string[]} [tags] - Lista de tags opcionais
+   * @returns {Promise<Transaction[]>} Lista de transações (parcelas) criadas
    */
   async createInstallments(
     tx: Prisma.TransactionClient,
