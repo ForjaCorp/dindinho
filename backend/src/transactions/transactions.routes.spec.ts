@@ -43,11 +43,12 @@ describe("Rotas de Transações", () => {
     vi.stubEnv("JWT_SECRET", "test-secret");
     mockReset(prismaMock);
 
-    prismaMock.$transaction.mockImplementation(
-      async (fn: (prisma: PrismaClient) => Promise<unknown>) => {
-        return fn(prismaMock);
-      },
-    );
+    prismaMock.$transaction.mockImplementation(async (arg: any) => {
+      if (Array.isArray(arg)) {
+        return Promise.all(arg);
+      }
+      return arg(prismaMock);
+    });
 
     app = Fastify().withTypeProvider<ZodTypeProvider>();
     app.setValidatorCompiler(validatorCompiler);

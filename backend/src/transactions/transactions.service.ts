@@ -645,6 +645,7 @@ export class TransactionsService {
 
       return created.map(toTransactionDTO);
     } catch (error) {
+      console.error("CREATE ERROR:", error);
       return this.handlePrismaCreateError(error);
     }
   }
