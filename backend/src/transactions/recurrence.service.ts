@@ -1,12 +1,6 @@
-import { AccountType, Prisma, TransactionType } from "@prisma/client";
+import { Prisma, TransactionType, RecurrenceFrequency } from "@prisma/client";
 import { CreateTransactionDTO } from "@dindinho/shared";
-import {
-  addDays,
-  addDaysByMs,
-  addMonths,
-  addYears,
-} from "./transactions.utils";
-import { randomUUID } from "node:crypto";
+import { addDays, addMonths, addYears } from "./transactions.utils";
 
 export class RecurrenceService {
   /**
@@ -51,7 +45,7 @@ export class RecurrenceService {
           type: data.type as TransactionType,
           isPaid: i === 1 ? data.isPaid : false,
           recurrenceId,
-          recurrenceFrequency: freq as any,
+          recurrenceFrequency: freq as RecurrenceFrequency,
           recurrenceIntervalDays: intervalDays,
           installmentNumber: i,
           totalInstallments: count,

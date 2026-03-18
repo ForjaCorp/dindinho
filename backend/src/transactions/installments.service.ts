@@ -5,7 +5,6 @@ import {
   addMonths,
   computeInvoiceMonth,
 } from "./transactions.utils";
-import { randomUUID } from "node:crypto";
 
 export class InstallmentsService {
   /**
