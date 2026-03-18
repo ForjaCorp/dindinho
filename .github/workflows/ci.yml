@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: ["**"]
   push:
-    branches: ["**"]
+    branches: ["main"]
   merge_group:
   workflow_dispatch:
 
@@ -26,6 +26,20 @@ jobs:
     name: Quality
     runs-on: ubuntu-latest
     timeout-minutes: 20
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: dindinho
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
 
     steps:
       - name: Checkout (full history)
@@ -66,7 +80,7 @@ jobs:
       - name: Generate Prisma Client (Backend)
         run: npx turbo run prisma:generate --filter=dindinho-backend
         env:
-          DATABASE_URL: "mysql://root:root@localhost:3306/dindinho" # Dummy URL for build
+          DATABASE_URL: "mysql://root:root@127.0.0.1:3306/dindinho" # Contextualizado para o MySQL Service Container
 
       - name: "Quality (PR: affected)"
         if: ${{ github.event_name == 'pull_request' }}
